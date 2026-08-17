@@ -1,0 +1,122 @@
+from sqlalchemy import Column, String, Integer, Float, Text, DateTime, ForeignKey, JSON
+from sqlalchemy.orm import DeclarativeBase, relationship
+from datetime import datetime
+import uuid
+
+
+def gen_id() -> str:
+    return str(uuid.uuid4())
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+class Campaign(Base):
+    __tablename__ = "campaigns"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    name = Column(String, nullable=False)
+    description = Column(Text, default="")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    current_session_id = Column(String, nullable=True)
+    current_location_id = Column(String, nullable=True)
+    settings_json = Column(JSON, default=dict)
+
+    sessions = relationship("Session", back_populates="campaign")
+    characters = relationship("Character", back_populates="campaign")
+
+
+class Session(Base):
+    __tablename__ = "sessions"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    campaign_id = Column(String, ForeignKey("campaigns.id"), nullable=False)
+    number = Column(Integer, nullable=False)
+    date = Column(String, nullable=False)
+    title = Column(String, default="")
+    raw_notes = Column(Text, default="")
+    summary = Column(Text, default="")
+    status = Column(String, default="DRAFT")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    campaign = relationship("Campaign", back_populates="sessions")
+
+
+class Character(Base):
+    __tablename__ = "characters"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    campaign_id = Column(String, ForeignKey("campaigns.id"), nullable=False)
+    name = Column(String, nullable=False)
+    type = Column(String, default="player")
+    description = Column(Text, default="")
+    class_ = Column("class", String, default="")
+    race = Column(String, default="")
+    status = Column(String, default="alive")
+    current_location_id = Column(String, nullable=True)
+    visual_config_json = Column(JSON, default=dict)
+    knowledge_scope = Column(String, default="PARTY_KNOWN")
+
+    campaign = relationship("Campaign", back_populates="characters")
+
+
+class NPC(Base):
+    __tablename__ = "npcs"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    campaign_id = Column(String, ForeignKey("campaigns.id"), nullable=False)
+    name = Column(String, nullable=False)
+    description = Column(Text, default="")
+    status = Column(String, default="alive")
+    current_location_id = Column(String, nullable=True)
+    faction_id = Column(String, nullable=True)
+    knowledge_scope = Column(String, default="PARTY_KNOWN")
+    visual_config_json = Column(JSON, default=dict)
+
+
+class Location(Base):
+    __tablename__ = "locations"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    campaign_id = Column(String, ForeignKey("campaigns.id"), nullable=False)
+    name = Column(String, nullable=False)
+    type = Column(String, default="custom")
+    description = Column(Text, default="")
+    parent_location_id = Column(String, nullable=True)
+    status = Column(String, default="ACTIVE")
+    coordinates_json = Column(JSON, default=dict)
+    scene_id = Column(String, nullable=True)
+
+
+class Event(Base):
+    __tablename__ = "events"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    campaign_id = Column(String, ForeignKey("campaigns.id"), nullable=False)
+    session_id = Column(String, ForeignKey("sessions.id"), nullable=False)
+    type = Column(String, nullable=False)
+    actor_id = Column(String, nullable=False)
+    target_id = Column(String, nullable=True)
+    location_id = Column(String, nullable=True)
+    description = Column(Text, default="")
+    confidence = Column(Float, default=1.0)
+    status = Column(String, default="PROPOSED")
+    source_id = Column(String, nullable=True)
+
+
+class Relationship(Base):
+    __tablename__ = "relationships"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    campaign_id = Column(String, ForeignKey("campaigns.id"), nullable=False)
+    source_entity_id = Column(String, nullable=False)
+    target_entity_id = Column(String, nullable=False)
+    type = Column(String, nullable=False)
+    strength = Column(Float, default=1.0)
+    status = Column(String, default="active")
+    source_event_id = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

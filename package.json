@@ -1,0 +1,16 @@
+{
+  "name": "roleito",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Persistent AI RPG World Engine",
+  "scripts": {
+    "dev": "npm run dev:dm",
+    "dev:dm": "npm run dev --workspace=apps/dm",
+    "dev:renderer": "npm run dev --workspace=apps/renderer",
+    "lint": "npm run lint --workspace=apps/dm",
+    "typecheck": "npm run typecheck --workspace=apps/dm"
+  },
+  "workspaces": [
+    "apps/*"
+  ]
+}
