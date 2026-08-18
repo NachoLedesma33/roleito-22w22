@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { api, Campaign, Character, NPC } from '@/lib/api';
+import { api, Campaign, Character, NPC, Session } from '@/lib/api';
 
 export default function CampaignDetail() {
   const { id } = useParams<{ id: string }>();
@@ -8,6 +8,7 @@ export default function CampaignDetail() {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [npcs, setNpcs] = useState<NPC[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,11 +18,13 @@ export default function CampaignDetail() {
       api.campaigns.get(id),
       api.characters.list(id).catch(() => []),
       api.npcs.list(id).catch(() => []),
+      api.sessions.list(id).catch(() => []),
     ])
-      .then(([c, chars, npcList]) => {
+      .then(([c, chars, npcList, sessList]) => {
         setCampaign(c);
         setCharacters(chars);
         setNpcs(npcList);
+        setSessions(sessList);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -104,10 +107,13 @@ export default function CampaignDetail() {
             <p className="font-medium">NPCs</p>
             <p className="text-xs text-[var(--text-secondary)] mt-1">{npcs.length} NPCs</p>
           </Link>
-          <div className="border border-[var(--bg-tertiary)] rounded-lg p-4 opacity-40">
+          <Link
+            to={`/campaigns/${campaign.id}/sessions`}
+            className="border border-[var(--bg-tertiary)] rounded-lg p-4 hover:border-[var(--accent)] transition-colors"
+          >
             <p className="font-medium">Sessions</p>
-            <p className="text-xs text-[var(--text-secondary)] mt-1">Coming soon</p>
-          </div>
+            <p className="text-xs text-[var(--text-secondary)] mt-1">{sessions.length} sessions</p>
+          </Link>
           <div className="border border-[var(--bg-tertiary)] rounded-lg p-4 opacity-40">
             <p className="font-medium">Locations</p>
             <p className="text-xs text-[var(--text-secondary)] mt-1">Coming soon</p>

@@ -167,3 +167,36 @@ class NPCResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class SessionCreate(BaseModel):
+    number: int
+    date: str
+    title: str = ""
+    raw_notes: str = ""
+    summary: str = ""
+
+
+class SessionUpdate(BaseModel):
+    number: Optional[int] = None
+    date: Optional[str] = None
+    title: Optional[str] = None
+    raw_notes: Optional[str] = None
+    summary: Optional[str] = None
+    status: Optional[str] = None
+
+
+class SessionResponse(BaseModel):
+    id: str
+    campaign_id: str
+    number: int
+    date: str
+    title: str
+    raw_notes: str
+    summary: str
+    status: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True

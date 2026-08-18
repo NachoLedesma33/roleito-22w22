@@ -98,6 +98,29 @@ type NPCCreateFields = {
 
 type NPCUpdateFields = Partial<NPCCreateFields>;
 
+export interface Session {
+  id: string;
+  campaign_id: string;
+  number: number;
+  date: string;
+  title: string;
+  raw_notes: string;
+  summary: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+type SessionCreateFields = {
+  number: number;
+  date: string;
+  title?: string;
+  raw_notes?: string;
+  summary?: string;
+};
+
+type SessionUpdateFields = Partial<SessionCreateFields> & { status?: string };
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -145,5 +168,21 @@ export const api = {
       request<NPC>(`/campaigns/${campaignId}/npcs/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (campaignId: string, id: string) =>
       request<{ status: string; id: string }>(`/campaigns/${campaignId}/npcs/${id}`, { method: 'DELETE' }),
+  },
+
+  sessions: {
+    list: (campaignId: string) => request<Session[]>(`/campaigns/${campaignId}/sessions`),
+    get: (campaignId: string, id: string) => request<Session>(`/campaigns/${campaignId}/sessions/${id}`),
+    getCurrent: (campaignId: string) => request<Session>(`/campaigns/${campaignId}/sessions/current`),
+    create: (campaignId: string, data: SessionCreateFields) =>
+      request<Session>(`/campaigns/${campaignId}/sessions`, { method: 'POST', body: JSON.stringify(data) }),
+    update: (campaignId: string, id: string, data: SessionUpdateFields) =>
+      request<Session>(`/campaigns/${campaignId}/sessions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (campaignId: string, id: string) =>
+      request<{ status: string; id: string }>(`/campaigns/${campaignId}/sessions/${id}`, { method: 'DELETE' }),
+    start: (campaignId: string, id: string) =>
+      request<Session>(`/campaigns/${campaignId}/sessions/${id}/start`, { method: 'POST' }),
+    end: (campaignId: string, id: string) =>
+      request<Session>(`/campaigns/${campaignId}/sessions/${id}/end`, { method: 'POST' }),
   },
 };
