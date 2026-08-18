@@ -1,17 +1,20 @@
+import { Routes, Route } from 'react-router-dom';
+import Layout from '@/components/Layout';
+import CampaignList from '@/pages/CampaignList';
+import CampaignForm from '@/pages/CampaignForm';
+import CampaignDetail from '@/pages/CampaignDetail';
+
 function App() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Roleito</h1>
-        <p className="text-[var(--text-secondary)]">
-          Persistent AI RPG World Engine — DM Control
-        </p>
-        <p className="text-sm text-[var(--text-secondary)] mt-4 opacity-60">
-          Phase 0 — Foundation
-        </p>
-      </div>
-    </div>
-  )
+    <Routes>
+      <Route element={<Layout />}>
+        <Route path="/" element={<CampaignList />} />
+        <Route path="/campaigns/new" element={<CampaignForm />} />
+        <Route path="/campaigns/:id" element={<CampaignDetail />} />
+        <Route path="/campaigns/:id/edit" element={<CampaignForm />} />
+      </Route>
+    </Routes>
+  );
 }
 
 export default App
