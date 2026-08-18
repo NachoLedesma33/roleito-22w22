@@ -1,25 +1,72 @@
+# Dependencies
 node_modules/
+.pnp
+.pnp.js
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
 dist/
+build/
+
+# Environment
 .env
 .env.local
-__pycache__/
-*.pyc
-.venv/
-venv/
-*.sqlite
+.env.*.local
+
+# Database
 *.db
-data/roleito.db
-data/campaigns/*/state/
-data/setting-cache/raw/
-data/setting-cache/normalized/
-data/setting-cache/metadata/
-assets/characters/*
-assets/environments/*
-assets/audio/*
-assets/video/*
-assets/images/*
-!assets/**/.gitkeep
-*.rpgworld
+*.sqlite
+*.sqlite3
+data/*.db
+data/**/*.db
+
+# IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
 *.log
+logs/
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini
+
+# Test
+coverage/
+htmlcov/
+.pytest_cache/
+.coverage
+
+# Build
+dist/
+build/
+*.tsbuildinfo
+
+# Temporary
+tmp/
+temp/
+*.tmp
+*.bak
+
+# Generated assets (regenerate from source)
+assets/generated/
+assets/temp/
