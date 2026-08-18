@@ -60,6 +60,13 @@ class Character(Base):
     visual_config_json = Column(JSON, default=dict)
     knowledge_scope = Column(String, default="PARTY_KNOWN")
 
+    vigor = Column(Integer, default=1)
+    intelligence = Column(Integer, default=1)
+    dexterity = Column(Integer, default=1)
+    cunning = Column(Integer, default=1)
+    current_pv = Column(Integer, nullable=True)
+    current_pm = Column(Integer, nullable=True)
+
     campaign = relationship("Campaign", back_populates="characters")
 
 
@@ -75,6 +82,13 @@ class NPC(Base):
     faction_id = Column(String, nullable=True)
     knowledge_scope = Column(String, default="PARTY_KNOWN")
     visual_config_json = Column(JSON, default=dict)
+
+    vigor = Column(Integer, default=1)
+    intelligence = Column(Integer, default=1)
+    dexterity = Column(Integer, default=1)
+    cunning = Column(Integer, default=1)
+    current_pv = Column(Integer, nullable=True)
+    current_pm = Column(Integer, nullable=True)
 
 
 class Location(Base):
