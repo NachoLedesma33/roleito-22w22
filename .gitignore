@@ -70,3 +70,6 @@ temp/
 # Generated assets (regenerate from source)
 assets/generated/
 assets/temp/
+
+# Graphify output
+graphify-out/
