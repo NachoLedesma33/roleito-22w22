@@ -21,6 +21,83 @@ export interface CampaignExport {
   relationships: Record<string, unknown>[];
 }
 
+export interface Character {
+  id: string;
+  campaign_id: string;
+  name: string;
+  type: string;
+  description: string;
+  class_: string;
+  race: string;
+  status: string;
+  current_location_id: string | null;
+  visual_config_json: Record<string, unknown>;
+  knowledge_scope: string;
+  vigor: number;
+  intelligence: number;
+  dexterity: number;
+  cunning: number;
+  max_pv: number;
+  max_pm: number;
+  defense: number;
+  current_pv: number | null;
+  current_pm: number | null;
+}
+
+export interface NPC {
+  id: string;
+  campaign_id: string;
+  name: string;
+  description: string;
+  status: string;
+  current_location_id: string | null;
+  faction_id: string | null;
+  knowledge_scope: string;
+  visual_config_json: Record<string, unknown>;
+  vigor: number;
+  intelligence: number;
+  dexterity: number;
+  cunning: number;
+  max_pv: number;
+  max_pm: number;
+  defense: number;
+  current_pv: number | null;
+  current_pm: number | null;
+}
+
+type CharacterCreateFields = {
+  name: string;
+  type?: string;
+  description?: string;
+  class_name?: string;
+  race?: string;
+  status?: string;
+  knowledge_scope?: string;
+  vigor?: number;
+  intelligence?: number;
+  dexterity?: number;
+  cunning?: number;
+  current_pv?: number;
+  current_pm?: number;
+};
+
+type CharacterUpdateFields = Partial<CharacterCreateFields>;
+
+type NPCCreateFields = {
+  name: string;
+  description?: string;
+  status?: string;
+  knowledge_scope?: string;
+  vigor?: number;
+  intelligence?: number;
+  dexterity?: number;
+  cunning?: number;
+  current_pv?: number;
+  current_pm?: number;
+};
+
+type NPCUpdateFields = Partial<NPCCreateFields>;
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -46,5 +123,27 @@ export const api = {
     export: (id: string) => request<CampaignExport>(`/campaigns/${id}/export`),
     import: (data: Record<string, unknown>) =>
       request<Campaign>('/campaigns/import', { method: 'POST', body: JSON.stringify(data) }),
+  },
+
+  characters: {
+    list: (campaignId: string) => request<Character[]>(`/campaigns/${campaignId}/characters`),
+    get: (campaignId: string, id: string) => request<Character>(`/campaigns/${campaignId}/characters/${id}`),
+    create: (campaignId: string, data: CharacterCreateFields) =>
+      request<Character>(`/campaigns/${campaignId}/characters`, { method: 'POST', body: JSON.stringify(data) }),
+    update: (campaignId: string, id: string, data: CharacterUpdateFields) =>
+      request<Character>(`/campaigns/${campaignId}/characters/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (campaignId: string, id: string) =>
+      request<{ status: string; id: string }>(`/campaigns/${campaignId}/characters/${id}`, { method: 'DELETE' }),
+  },
+
+  npcs: {
+    list: (campaignId: string) => request<NPC[]>(`/campaigns/${campaignId}/npcs`),
+    get: (campaignId: string, id: string) => request<NPC>(`/campaigns/${campaignId}/npcs/${id}`),
+    create: (campaignId: string, data: NPCCreateFields) =>
+      request<NPC>(`/campaigns/${campaignId}/npcs`, { method: 'POST', body: JSON.stringify(data) }),
+    update: (campaignId: string, id: string, data: NPCUpdateFields) =>
+      request<NPC>(`/campaigns/${campaignId}/npcs/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (campaignId: string, id: string) =>
+      request<{ status: string; id: string }>(`/campaigns/${campaignId}/npcs/${id}`, { method: 'DELETE' }),
   },
 };

@@ -181,6 +181,12 @@ async def import_campaign(
             current_location_id=c.get("current_location_id"),
             visual_config_json=c.get("visual_config_json", {}),
             knowledge_scope=c.get("knowledge_scope", "PARTY_KNOWN"),
+            vigor=c.get("vigor", 1),
+            intelligence=c.get("intelligence", 1),
+            dexterity=c.get("dexterity", 1),
+            cunning=c.get("cunning", 1),
+            current_pv=c.get("current_pv"),
+            current_pm=c.get("current_pm"),
         )
         db.add(new_char)
         await db.flush()
@@ -197,6 +203,12 @@ async def import_campaign(
             faction_id=n.get("faction_id"),
             knowledge_scope=n.get("knowledge_scope", "PARTY_KNOWN"),
             visual_config_json=n.get("visual_config_json", {}),
+            vigor=n.get("vigor", 1),
+            intelligence=n.get("intelligence", 1),
+            dexterity=n.get("dexterity", 1),
+            cunning=n.get("cunning", 1),
+            current_pv=n.get("current_pv"),
+            current_pm=n.get("current_pm"),
         )
         db.add(new_npc)
         await db.flush()
