@@ -90,12 +90,13 @@ PHASE 6  Sistema de Escenas
 PHASE 7  Renderer Básico (3D env + 2D sprites)
 PHASE 8  Sistema de Recaps
 PHASE 9  Slice Vertical
-PHASE 10 Fichas de Jugador + Condiciones Dinámicas ← NUEVA
-PHASE 11 Sistema de Mapas + Tracking de Ubicación ← NUEVA
+PHASE 10 Fichas de Jugador + Condiciones Dinámicas
+PHASE 11 Sistema de Mapas + Tracking de Ubicación
 PHASE 12 Sistema de Dados
 PHASE 13 Cuaderno de Decisiones DM
-PHASE 14 Integración de Personajes en Sesiones ← NUEVA
-PHASE 15 Entornos 3D con IA ← FUTURO
+PHASE 14 Integración de Personajes en Sesiones
+PHASE 15 World State Snapshots + Time Travel ← NUEVA
+PHASE 16 Entornos 3D con IA ← FUTURO
 ```
 
 ---
@@ -1696,4 +1697,10 @@ PHASE 10, 11, 12, 13 DESPUÉS porque:
 - Personajes pueden estar ausentes si están en otra ubicación
 - Condiciones temporales y permanentes (ej: piernas rotas → silla de ruedas)
 - Todo estado debe ser curable y controlado por el DM
+- SESIONES: Se pueden pausar y reanudar en cualquier momento
+- World State Snapshots para guardar estado completo del mundo
+- Time Travel: ability to revert to any previous snapshot
+- Historia lineal dentro de mundo abierto (The Archive In Between)
+- DM tiene control total sobre el flujo del juego
+- Location states: cada ubicación puede tener múltiples estados
 ```
