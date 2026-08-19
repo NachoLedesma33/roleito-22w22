@@ -121,6 +121,76 @@ type SessionCreateFields = {
 
 type SessionUpdateFields = Partial<SessionCreateFields> & { status?: string };
 
+export interface Event {
+  id: string;
+  campaign_id: string;
+  session_id: string;
+  type: string;
+  actor_id: string;
+  target_id: string | null;
+  location_id: string | null;
+  description: string;
+  confidence: number;
+  status: string;
+  source_id: string | null;
+}
+
+export interface WorldState {
+  campaign_id: string;
+  current_session_id: string | null;
+  current_location_id: string | null;
+  characters: { id: string; name: string; type: string; status: string; current_location_id: string | null }[];
+  npcs: { id: string; name: string; status: string; current_location_id: string | null }[];
+  events: { id: string; type: string; actor_id: string; target_id: string | null; location_id: string | null; description: string; session_id: string }[];
+  total_sessions: number;
+  total_canon_events: number;
+}
+
+export interface Player {
+  id: string;
+  campaign_id: string;
+  name: string;
+  character_id: string | null;
+  role: string;
+  notes: string;
+  created_at: string;
+}
+
+export interface Map {
+  id: string;
+  campaign_id: string;
+  name: string;
+  description: string;
+  file_path: string;
+  thumbnail_path: string | null;
+  map_type: string;
+  created_at: string;
+}
+
+export interface Asset {
+  id: string;
+  campaign_id: string;
+  name: string;
+  file_path: string;
+  asset_type: string;
+  entity_type: string | null;
+  entity_id: string | null;
+  created_at: string;
+}
+
+type EventCreateFields = {
+  session_id: string;
+  type: string;
+  actor_id: string;
+  target_id?: string;
+  location_id?: string;
+  description?: string;
+  confidence?: number;
+  source_id?: string;
+};
+
+type EventUpdateFields = Partial<Omit<EventCreateFields, 'session_id'>> & { status?: string };
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -184,5 +254,85 @@ export const api = {
       request<Session>(`/campaigns/${campaignId}/sessions/${id}/start`, { method: 'POST' }),
     end: (campaignId: string, id: string) =>
       request<Session>(`/campaigns/${campaignId}/sessions/${id}/end`, { method: 'POST' }),
+  },
+
+  events: {
+    listBySession: (campaignId: string, sessionId: string) =>
+      request<Event[]>(`/campaigns/${campaignId}/sessions/${sessionId}/events`),
+    listByCampaign: (campaignId: string) =>
+      request<Event[]>(`/campaigns/${campaignId}/events`),
+    get: (eventId: string) =>
+      request<Event>(`/events/${eventId}`),
+    create: (campaignId: string, sessionId: string, data: EventCreateFields) =>
+      request<Event>(`/campaigns/${campaignId}/sessions/${sessionId}/events`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    update: (eventId: string, data: EventUpdateFields) =>
+      request<Event>(`/events/${eventId}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    approve: (eventId: string) =>
+      request<Event>(`/events/${eventId}/approve`, { method: 'PUT' }),
+    reject: (eventId: string) =>
+      request<Event>(`/events/${eventId}/reject`, { method: 'PUT' }),
+    delete: (eventId: string) =>
+      request<{ status: string; id: string }>(`/events/${eventId}`, { method: 'DELETE' }),
+  },
+
+  worldState: {
+    get: (campaignId: string) =>
+      request<WorldState>(`/campaigns/${campaignId}/world-state`),
+  },
+
+  players: {
+    list: (campaignId: string) =>
+      request<Player[]>(`/campaigns/${campaignId}/players`),
+    get: (campaignId: string, id: string) =>
+      request<Player>(`/campaigns/${campaignId}/players/${id}`),
+    create: (campaignId: string, data: { name: string; character_id?: string; role?: string; notes?: string }) =>
+      request<Player>(`/campaigns/${campaignId}/players`, { method: 'POST', body: JSON.stringify(data) }),
+    update: (campaignId: string, id: string, data: { name?: string; character_id?: string; role?: string; notes?: string }) =>
+      request<Player>(`/campaigns/${campaignId}/players/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (campaignId: string, id: string) =>
+      request<{ status: string; id: string }>(`/campaigns/${campaignId}/players/${id}`, { method: 'DELETE' }),
+  },
+
+  maps: {
+    list: (campaignId: string) =>
+      request<Map[]>(`/campaigns/${campaignId}/maps`),
+    create: (campaignId: string, data: { name: string; description?: string; map_type?: string }) =>
+      request<Map>(`/campaigns/${campaignId}/maps`, { method: 'POST', body: JSON.stringify(data) }),
+    upload: async (campaignId: string, mapId: string, file: File) => {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${API_BASE}/campaigns/${campaignId}/maps/${mapId}/upload`, {
+        method: 'POST',
+        body: form,
+      });
+      if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+      return res.json() as Promise<Map>;
+    },
+    delete: (campaignId: string, id: string) =>
+      request<{ status: string; id: string }>(`/campaigns/${campaignId}/maps/${id}`, { method: 'DELETE' }),
+  },
+
+  assets: {
+    list: (campaignId: string) =>
+      request<Asset[]>(`/campaigns/${campaignId}/assets`),
+    upload: async (campaignId: string, file: File, name?: string) => {
+      const form = new FormData();
+      form.append('file', file);
+      if (name) form.append('name', name);
+      const res = await fetch(`${API_BASE}/campaigns/${campaignId}/assets/upload`, {
+        method: 'POST',
+        body: form,
+      });
+      if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+      return res.json() as Promise<Asset>;
+    },
+    delete: (campaignId: string, id: string) =>
+      request<{ status: string; id: string }>(`/campaigns/${campaignId}/assets/${id}`, { method: 'DELETE' }),
   },
 };

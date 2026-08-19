@@ -12,6 +12,11 @@ import NPCDetail from '@/pages/NPCDetail';
 import SessionList from '@/pages/SessionList';
 import SessionForm from '@/pages/SessionForm';
 import SessionDetail from '@/pages/SessionDetail';
+import EventList from '@/pages/EventList';
+import EventDetail from '@/pages/EventDetail';
+import PlayerList from '@/pages/PlayerList';
+import MapList from '@/pages/MapList';
+import AssetList from '@/pages/AssetList';
 
 function App() {
   return (
@@ -33,6 +38,12 @@ function App() {
         <Route path="/campaigns/:id/sessions/new" element={<SessionForm />} />
         <Route path="/campaigns/:id/sessions/:sessionId" element={<SessionDetail />} />
         <Route path="/campaigns/:id/sessions/:sessionId/edit" element={<SessionForm />} />
+        <Route path="/campaigns/:id/sessions/:sessionId/events" element={<EventList />} />
+        <Route path="/campaigns/:id/events" element={<EventList />} />
+        <Route path="/events/:eventId" element={<EventDetail />} />
+        <Route path="/campaigns/:id/players" element={<PlayerList />} />
+        <Route path="/campaigns/:id/maps" element={<MapList />} />
+        <Route path="/campaigns/:id/assets" element={<AssetList />} />
       </Route>
     </Routes>
   );

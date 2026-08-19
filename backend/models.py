@@ -134,3 +134,41 @@ class Relationship(Base):
     source_event_id = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class Player(Base):
+    __tablename__ = "players"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    campaign_id = Column(String, ForeignKey("campaigns.id"), nullable=False)
+    name = Column(String, nullable=False)
+    character_id = Column(String, ForeignKey("characters.id"), nullable=True)
+    role = Column(String, default="player")
+    notes = Column(Text, default="")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Map(Base):
+    __tablename__ = "maps"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    campaign_id = Column(String, ForeignKey("campaigns.id"), nullable=False)
+    name = Column(String, nullable=False)
+    description = Column(Text, default="")
+    file_path = Column(String, nullable=False)
+    thumbnail_path = Column(String, nullable=True)
+    map_type = Column(String, default="world")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Asset(Base):
+    __tablename__ = "assets"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    campaign_id = Column(String, ForeignKey("campaigns.id"), nullable=False)
+    name = Column(String, nullable=False)
+    file_path = Column(String, nullable=False)
+    asset_type = Column(String, default="image")
+    entity_type = Column(String, nullable=True)
+    entity_id = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)

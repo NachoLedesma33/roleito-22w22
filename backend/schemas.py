@@ -200,3 +200,102 @@ class SessionResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class EventCreate(BaseModel):
+    session_id: str
+    type: str
+    actor_id: str
+    target_id: Optional[str] = None
+    location_id: Optional[str] = None
+    description: str = ""
+    confidence: float = 1.0
+    source_id: Optional[str] = None
+
+
+class EventUpdate(BaseModel):
+    type: Optional[str] = None
+    actor_id: Optional[str] = None
+    target_id: Optional[str] = None
+    location_id: Optional[str] = None
+    description: Optional[str] = None
+    confidence: Optional[float] = None
+    status: Optional[str] = None
+
+
+class EventResponse(BaseModel):
+    id: str
+    campaign_id: str
+    session_id: str
+    type: str
+    actor_id: str
+    target_id: Optional[str] = None
+    location_id: Optional[str] = None
+    description: str
+    confidence: float
+    status: str
+    source_id: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class PlayerCreate(BaseModel):
+    name: str
+    character_id: Optional[str] = None
+    role: str = "player"
+    notes: str = ""
+
+
+class PlayerUpdate(BaseModel):
+    name: Optional[str] = None
+    character_id: Optional[str] = None
+    role: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class PlayerResponse(BaseModel):
+    id: str
+    campaign_id: str
+    name: str
+    character_id: Optional[str] = None
+    role: str
+    notes: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class MapCreate(BaseModel):
+    name: str
+    description: str = ""
+    map_type: str = "world"
+
+
+class MapResponse(BaseModel):
+    id: str
+    campaign_id: str
+    name: str
+    description: str
+    file_path: str
+    thumbnail_path: Optional[str] = None
+    map_type: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class AssetResponse(BaseModel):
+    id: str
+    campaign_id: str
+    name: str
+    file_path: str
+    asset_type: str
+    entity_type: Optional[str] = None
+    entity_id: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
