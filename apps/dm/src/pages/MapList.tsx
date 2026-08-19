@@ -66,7 +66,7 @@ export default function MapList() {
   return (
     <div className="max-w-3xl">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Maps</h1>
+        <h1 className="text-2xl font-bold">Image Library</h1>
         <button
           onClick={() => setShowForm(!showForm)}
           className="px-4 py-2 text-sm rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"

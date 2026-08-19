@@ -76,3 +76,7 @@ assets/temp/
 
 # Graphify output
 graphify-out/
+
+# Uploaded assets
+data/assets/
+data/roleito.db

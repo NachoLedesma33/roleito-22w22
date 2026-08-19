@@ -33,6 +33,7 @@ export interface Character {
   current_location_id: string | null;
   visual_config_json: Record<string, unknown>;
   knowledge_scope: string;
+  portrait_path: string | null;
   vigor: number;
   intelligence: number;
   dexterity: number;
@@ -54,6 +55,7 @@ export interface NPC {
   faction_id: string | null;
   knowledge_scope: string;
   visual_config_json: Record<string, unknown>;
+  portrait_path: string | null;
   vigor: number;
   intelligence: number;
   dexterity: number;
@@ -178,6 +180,31 @@ export interface Asset {
   created_at: string;
 }
 
+export interface Scene {
+  id: string;
+  campaign_id: string;
+  name: string;
+  description: string;
+  background_path: string | null;
+  lighting: string;
+  audio_path: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SceneCharacter {
+  id: string;
+  scene_id: string;
+  entity_type: string;
+  entity_id: string;
+  x: number;
+  y: number;
+  z: number;
+  visible: boolean;
+  order: number;
+}
+
 type EventCreateFields = {
   session_id: string;
   type: string;
@@ -227,6 +254,16 @@ export const api = {
       request<Character>(`/campaigns/${campaignId}/characters/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (campaignId: string, id: string) =>
       request<{ status: string; id: string }>(`/campaigns/${campaignId}/characters/${id}`, { method: 'DELETE' }),
+    uploadPortrait: async (campaignId: string, characterId: string, file: File) => {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${API_BASE}/campaigns/${campaignId}/characters/${characterId}/portrait`, {
+        method: 'POST',
+        body: form,
+      });
+      if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+      return res.json() as Promise<Character>;
+    },
   },
 
   npcs: {
@@ -238,6 +275,16 @@ export const api = {
       request<NPC>(`/campaigns/${campaignId}/npcs/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (campaignId: string, id: string) =>
       request<{ status: string; id: string }>(`/campaigns/${campaignId}/npcs/${id}`, { method: 'DELETE' }),
+    uploadPortrait: async (campaignId: string, npcId: string, file: File) => {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${API_BASE}/campaigns/${campaignId}/npcs/${npcId}/portrait`, {
+        method: 'POST',
+        body: form,
+      });
+      if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+      return res.json() as Promise<NPC>;
+    },
   },
 
   sessions: {
@@ -334,5 +381,35 @@ export const api = {
     },
     delete: (campaignId: string, id: string) =>
       request<{ status: string; id: string }>(`/campaigns/${campaignId}/assets/${id}`, { method: 'DELETE' }),
+  },
+
+  scenes: {
+    list: (campaignId: string) =>
+      request<Scene[]>(`/campaigns/${campaignId}/scenes`),
+    get: (campaignId: string, id: string) =>
+      request<Scene>(`/campaigns/${campaignId}/scenes/${id}`),
+    create: (campaignId: string, data: { name: string; description?: string; lighting?: string }) =>
+      request<Scene>(`/campaigns/${campaignId}/scenes`, { method: 'POST', body: JSON.stringify(data) }),
+    update: (campaignId: string, id: string, data: { name?: string; description?: string; lighting?: string; status?: string }) =>
+      request<Scene>(`/campaigns/${campaignId}/scenes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (campaignId: string, id: string) =>
+      request<{ status: string; id: string }>(`/campaigns/${campaignId}/scenes/${id}`, { method: 'DELETE' }),
+    uploadBackground: async (campaignId: string, sceneId: string, file: File) => {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${API_BASE}/campaigns/${campaignId}/scenes/${sceneId}/upload-background`, {
+        method: 'POST',
+        body: form,
+      });
+      if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+      return res.json() as Promise<Scene>;
+    },
+    getCharacters: (campaignId: string, sceneId: string) =>
+      request<SceneCharacter[]>(`/campaigns/${campaignId}/scenes/${sceneId}/characters`),
+    updateCharacters: (campaignId: string, sceneId: string, characters: { entity_type: string; entity_id: string; x: number; y: number; z: number; visible: boolean; order: number }[]) =>
+      request<SceneCharacter[]>(`/campaigns/${campaignId}/scenes/${sceneId}/characters`, {
+        method: 'PUT',
+        body: JSON.stringify(characters),
+      }),
   },
 };

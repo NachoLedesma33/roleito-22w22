@@ -1,14 +1,17 @@
 import logging
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from database import init_db
 from routes import campaigns_router
 from character_routes import router as character_router
 from session_routes import router as session_router
 from event_routes import router as event_router
 from player_routes import router as player_router
+from scene_routes import router as scene_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -64,6 +67,11 @@ app.include_router(character_router, prefix="/api")
 app.include_router(session_router, prefix="/api")
 app.include_router(event_router, prefix="/api")
 app.include_router(player_router, prefix="/api")
+app.include_router(scene_router, prefix="/api")
+
+ASSETS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "assets")
+os.makedirs(ASSETS_DIR, exist_ok=True)
+app.mount("/api/static", StaticFiles(directory=ASSETS_DIR), name="static")
 
 
 @app.get("/health")

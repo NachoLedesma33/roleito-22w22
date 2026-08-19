@@ -1,7 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, Character } from '@/lib/api';
 import { VidaBar, VidaAttrs, VidaDerived } from '@/components/VidaDisplay';
+
+function portraitUrl(path: string | null): string | null {
+  if (!path) return null;
+  return `http://localhost:8000/api/static/${path.replace(/\\/g, '/').split('/assets/')[1]}`;
+}
 
 export default function CharacterDetail() {
   const { id: campaignId, characterId } = useParams<{ id: string; characterId: string }>();
@@ -9,6 +14,7 @@ export default function CharacterDetail() {
   const [character, setCharacter] = useState<Character | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!campaignId || !characterId) return;
@@ -24,29 +30,69 @@ export default function CharacterDetail() {
     navigate(`/campaigns/${campaignId}/characters`);
   };
 
+  const handlePortraitUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !campaignId || !characterId) return;
+    try {
+      const updated = await api.characters.uploadPortrait(campaignId, characterId, file);
+      setCharacter(updated);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Upload failed');
+    }
+    e.target.value = '';
+  };
+
   if (loading) return <p className="text-[var(--text-secondary)]">Loading...</p>;
   if (error) return <p className="text-red-400">Error: {error}</p>;
   if (!character) return <p className="text-[var(--text-secondary)]">Character not found</p>;
 
+  const pUrl = portraitUrl(character.portrait_path);
+
   return (
     <div className="max-w-2xl">
       <div className="flex items-start justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-[var(--bg-tertiary)] flex items-center justify-center text-2xl font-bold text-[var(--accent)]">
-            {character.name.charAt(0).toUpperCase()}
-          </div>
-          <div>
+        <div className="flex items-start gap-4">
+          <button
+            onClick={() => fileInput.current?.click()}
+            className="w-20 h-20 rounded-lg bg-[var(--bg-tertiary)] flex items-center justify-center text-3xl font-bold text-[var(--accent)] overflow-hidden shrink-0 border-2 border-dashed border-[var(--bg-tertiary)] hover:border-[var(--accent)] transition-all cursor-pointer"
+            title="Click to upload portrait"
+          >
+            {pUrl ? (
+              <img src={pUrl} alt={character.name} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-sm">📷</span>
+            )}
+          </button>
+          <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={handlePortraitUpload} />
+          <div className="flex-1">
             <h1 className="text-2xl font-bold">{character.name}</h1>
             <p className="text-[var(--text-secondary)]">
               {character.race} {character.class_} · {character.type}
             </p>
-            <span className={`text-xs px-2 py-0.5 rounded inline-block mt-1 ${
-              character.status === 'alive' ? 'bg-green-900/50 text-green-400' :
-              character.status === 'dead' ? 'bg-red-900/50 text-red-400' :
-              'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'
-            }`}>
-              {character.status}
-            </span>
+            <div className="flex items-center gap-3 mt-2">
+              <span className={`text-xs px-2 py-0.5 rounded ${
+                character.status === 'alive' ? 'bg-green-900/50 text-green-400' :
+                character.status === 'dead' ? 'bg-red-900/50 text-red-400' :
+                'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'
+              }`}>
+                {character.status}
+              </span>
+              {!pUrl && (
+                <button
+                  onClick={() => fileInput.current?.click()}
+                  className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)]"
+                >
+                  + Upload portrait
+                </button>
+              )}
+              {pUrl && (
+                <span
+                  className="text-xs text-red-400"
+                >
+                  Portrait uploaded
+                </span>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex gap-2">

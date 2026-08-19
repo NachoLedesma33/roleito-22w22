@@ -6,9 +6,6 @@ import CampaignDetail from '@/pages/CampaignDetail';
 import CharacterList from '@/pages/CharacterList';
 import CharacterForm from '@/pages/CharacterForm';
 import CharacterDetail from '@/pages/CharacterDetail';
-import NPCList from '@/pages/NPCList';
-import NPCForm from '@/pages/NPCForm';
-import NPCDetail from '@/pages/NPCDetail';
 import SessionList from '@/pages/SessionList';
 import SessionForm from '@/pages/SessionForm';
 import SessionDetail from '@/pages/SessionDetail';
@@ -17,6 +14,8 @@ import EventDetail from '@/pages/EventDetail';
 import PlayerList from '@/pages/PlayerList';
 import MapList from '@/pages/MapList';
 import AssetList from '@/pages/AssetList';
+import SceneList from '@/pages/SceneList';
+import SceneDetail from '@/pages/SceneDetail';
 
 function App() {
   return (
@@ -30,10 +29,6 @@ function App() {
         <Route path="/campaigns/:id/characters/new" element={<CharacterForm />} />
         <Route path="/campaigns/:id/characters/:characterId" element={<CharacterDetail />} />
         <Route path="/campaigns/:id/characters/:characterId/edit" element={<CharacterForm />} />
-        <Route path="/campaigns/:id/npcs" element={<NPCList />} />
-        <Route path="/campaigns/:id/npcs/new" element={<NPCForm />} />
-        <Route path="/campaigns/:id/npcs/:npcId" element={<NPCDetail />} />
-        <Route path="/campaigns/:id/npcs/:npcId/edit" element={<NPCForm />} />
         <Route path="/campaigns/:id/sessions" element={<SessionList />} />
         <Route path="/campaigns/:id/sessions/new" element={<SessionForm />} />
         <Route path="/campaigns/:id/sessions/:sessionId" element={<SessionDetail />} />
@@ -44,6 +39,8 @@ function App() {
         <Route path="/campaigns/:id/players" element={<PlayerList />} />
         <Route path="/campaigns/:id/maps" element={<MapList />} />
         <Route path="/campaigns/:id/assets" element={<AssetList />} />
+        <Route path="/campaigns/:id/scenes" element={<SceneList />} />
+        <Route path="/campaigns/:id/scenes/:sceneId" element={<SceneDetail />} />
       </Route>
     </Routes>
   );

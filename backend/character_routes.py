@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from database import get_session
@@ -11,8 +11,12 @@ from schemas import (
     NPCUpdate,
     NPCResponse,
 )
+import os
+import uuid
 
 router = APIRouter(tags=["characters", "npcs"])
+
+ASSETS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "assets")
 
 
 def calc_vida(vigor: int, intelligence: int, dexterity: int, cunning: int):
@@ -37,6 +41,7 @@ def apply_vida_response(char: Character) -> dict:
         "current_location_id": char.current_location_id,
         "visual_config_json": char.visual_config_json or {},
         "knowledge_scope": char.knowledge_scope,
+        "portrait_path": char.portrait_path,
         "vigor": char.vigor,
         "intelligence": char.intelligence,
         "dexterity": char.dexterity,
@@ -59,6 +64,7 @@ def apply_npc_vida_response(npc: NPC) -> dict:
         "faction_id": npc.faction_id,
         "knowledge_scope": npc.knowledge_scope,
         "visual_config_json": npc.visual_config_json or {},
+        "portrait_path": npc.portrait_path,
         "vigor": npc.vigor,
         "intelligence": npc.intelligence,
         "dexterity": npc.dexterity,
@@ -293,3 +299,70 @@ async def delete_npc(
     await db.delete(npc)
     await db.commit()
     return {"status": "deleted", "id": npc_id}
+
+
+# ── Portrait Upload ─────────────────────────────────────────
+
+
+@router.post("/campaigns/{campaign_id}/characters/{character_id}/portrait")
+async def upload_character_portrait(
+    campaign_id: str,
+    character_id: str,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_session),
+):
+    result = await db.execute(
+        select(Character).where(
+            Character.id == character_id,
+            Character.campaign_id == campaign_id,
+        )
+    )
+    char = result.scalar_one_or_none()
+    if not char:
+        raise HTTPException(status_code=404, detail="Character not found")
+
+    ext = os.path.splitext(file.filename or "portrait.png")[1] or ".png"
+    portrait_dir = os.path.join(ASSETS_DIR, campaign_id, "characters", character_id)
+    os.makedirs(portrait_dir, exist_ok=True)
+    file_path = os.path.join(portrait_dir, f"portrait{ext}")
+
+    content = await file.read()
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    char.portrait_path = file_path
+    await db.commit()
+    await db.refresh(char)
+    return apply_vida_response(char)
+
+
+@router.post("/campaigns/{campaign_id}/npcs/{npc_id}/portrait")
+async def upload_npc_portrait(
+    campaign_id: str,
+    npc_id: str,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_session),
+):
+    result = await db.execute(
+        select(NPC).where(
+            NPC.id == npc_id,
+            NPC.campaign_id == campaign_id,
+        )
+    )
+    npc = result.scalar_one_or_none()
+    if not npc:
+        raise HTTPException(status_code=404, detail="NPC not found")
+
+    ext = os.path.splitext(file.filename or "portrait.png")[1] or ".png"
+    portrait_dir = os.path.join(ASSETS_DIR, campaign_id, "npcs", npc_id)
+    os.makedirs(portrait_dir, exist_ok=True)
+    file_path = os.path.join(portrait_dir, f"portrait{ext}")
+
+    content = await file.read()
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    npc.portrait_path = file_path
+    await db.commit()
+    await db.refresh(npc)
+    return apply_npc_vida_response(npc)

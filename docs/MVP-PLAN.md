@@ -84,23 +84,18 @@ PHASE 0  Fundación              ✓ COMPLETADA
 PHASE 1  Campaign CRUD          ✓ COMPLETADA
 PHASE 2  Sistema de Personajes  ✓ COMPLETADA
 PHASE 3  Sistema de Sesiones    ✓ COMPLETADA
-PHASE 4  Sistema de Eventos
-PHASE 5  Dashboard DM (Superadmin) ← PRIORIDAD
-PHASE 6  Sistema de Escenas
-PHASE 7  Renderer Básico (3D env + 2D sprites)
-PHASE 8  Sistema de Recaps
-PHASE 9  Slice Vertical
-PHASE 10 Fichas de Jugador + Condiciones Dinámicas
-PHASE 11 Sistema de Mapas + Tracking de Ubicación
-PHASE 12 Sistema de Dados
-PHASE 13 Cuaderno de Decisiones DM
-PHASE 14 Integración de Personajes en Sesiones
-PHASE 15 World State Snapshots + Time Travel
-PHASE 16 Player View + 3D Tokens + Abilities
-PHASE 17 Environment Generation System
-PHASE 18 Adaptive Camera System
-PHASE 19 Fog of War & DM Environment Control ← NUEVA
-PHASE 20 Entornos 3D con IA ← FUTURO
+PHASE 4  Sistema de Eventos     ✓ COMPLETADA
+PHASE 5  Dashboard DM (Superadmin) ✓ COMPLETADA
+PHASE 6  Sistema de Escenas     ✓ COMPLETADA (backend + frontend básico)
+PHASE 7  Renderer Básico (3D env + 2D sprites) ✓ COMPLETADA (Three.js + R3F)
+PHASE 6.5 DM Dashboard VTT ← ACTUAL (mapa always-on + HUD panels)
+PHASE 8  Sistema de Transiciones (puertas, cambio automático de escena)
+PHASE 9  Token Drag & Drop (movimiento en mapa)
+PHASE 10 HUD Panels completos (Character Sheet, Session Log, Scene Notes)
+PHASE 11 Sistema de Recaps
+PHASE 12 Player View
+PHASE 13 Sistema de Dados
+...
 ```
 
 ---

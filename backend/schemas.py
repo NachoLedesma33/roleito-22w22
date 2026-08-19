@@ -99,6 +99,7 @@ class CharacterResponse(BaseModel):
     current_location_id: Optional[str] = None
     visual_config_json: dict
     knowledge_scope: str
+    portrait_path: Optional[str] = None
     vigor: int
     intelligence: int
     dexterity: int
@@ -155,6 +156,7 @@ class NPCResponse(BaseModel):
     faction_id: Optional[str] = None
     knowledge_scope: str
     visual_config_json: dict
+    portrait_path: Optional[str] = None
     vigor: int
     intelligence: int
     dexterity: int
@@ -296,6 +298,60 @@ class AssetResponse(BaseModel):
     entity_type: Optional[str] = None
     entity_id: Optional[str] = None
     created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class SceneCreate(BaseModel):
+    name: str
+    description: str = ""
+    lighting: str = "neutral"
+
+
+class SceneUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    lighting: Optional[str] = None
+    status: Optional[str] = None
+
+
+class SceneCharacterPosition(BaseModel):
+    entity_type: str
+    entity_id: str
+    x: float = 0.0
+    y: float = 0.0
+    z: float = 0.0
+    visible: bool = True
+    order: int = 0
+
+
+class SceneResponse(BaseModel):
+    id: str
+    campaign_id: str
+    name: str
+    description: str
+    background_path: Optional[str] = None
+    lighting: str
+    audio_path: Optional[str] = None
+    status: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class SceneCharacterResponse(BaseModel):
+    id: str
+    scene_id: str
+    entity_type: str
+    entity_id: str
+    x: float
+    y: float
+    z: float
+    visible: bool
+    order: int
 
     class Config:
         from_attributes = True

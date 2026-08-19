@@ -3,11 +3,11 @@ import { Link, Outlet, useLocation, useParams } from 'react-router-dom';
 const campaignNav = [
   { to: '', label: 'Overview', icon: '◆' },
   { to: '/characters', label: 'Characters', icon: '♦' },
-  { to: '/npcs', label: 'NPCs', icon: '♣' },
   { to: '/sessions', label: 'Sessions', icon: '♠' },
+  { to: '/scenes', label: 'Scenes', icon: '▣' },
   { to: '/events', label: 'Events', icon: '•' },
   { to: '/players', label: 'Players', icon: '○' },
-  { to: '/maps', label: 'Maps', icon: '◇' },
+  { to: '/maps', label: 'Images', icon: '◇' },
   { to: '/assets', label: 'Assets', icon: '□' },
 ];
 

@@ -40,11 +40,12 @@ Persistent AI RPG World Engine. Local-first platform for tabletop RPG campaigns.
 ## Documentation Reading Order
 1. `docs/CONTEXT.md` — Read first, always
 2. `docs/PRODUCT.md`
-3. `docs/DOMAIN.md` — Conceptual contract
-4. `docs/ARCHITECTURE.md`
-5. `docs/DATABASE.md` — SQLite persistence
-6. `docs/EVENT-SYSTEM.md` — Core event pipeline
-7. Then read only the docs relevant to your task
+3. `docs/DM-DASHBOARD-VTT.md` — VTT UI design (current focus)
+4. `docs/DOMAIN.md` — Conceptual contract
+5. `docs/ARCHITECTURE.md`
+6. `docs/DATABASE.md` — SQLite persistence
+7. `docs/EVENT-SYSTEM.md` — Core event pipeline
+8. Then read only the docs relevant to your task
 
 ## Coding Conventions
 - TypeScript strict mode

@@ -1,7 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, NPC } from '@/lib/api';
 import { VidaBar, VidaAttrs, VidaDerived } from '@/components/VidaDisplay';
+
+function portraitUrl(path: string | null): string | null {
+  if (!path) return null;
+  return `http://localhost:8000/api/static/${path.replace(/\\/g, '/').split('/assets/')[1]}`;
+}
 
 export default function NPCDetail() {
   const { id: campaignId, npcId } = useParams<{ id: string; npcId: string }>();
@@ -9,6 +14,7 @@ export default function NPCDetail() {
   const [npc, setNpc] = useState<NPC | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!campaignId || !npcId) return;
@@ -24,17 +30,40 @@ export default function NPCDetail() {
     navigate(`/campaigns/${campaignId}/npcs`);
   };
 
+  const handlePortraitUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !campaignId || !npcId) return;
+    try {
+      const updated = await api.npcs.uploadPortrait(campaignId, npcId, file);
+      setNpc(updated);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Upload failed');
+    }
+    e.target.value = '';
+  };
+
   if (loading) return <p className="text-[var(--text-secondary)]">Loading...</p>;
   if (error) return <p className="text-red-400">Error: {error}</p>;
   if (!npc) return <p className="text-[var(--text-secondary)]">NPC not found</p>;
+
+  const pUrl = portraitUrl(npc.portrait_path);
 
   return (
     <div className="max-w-2xl">
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-[var(--bg-tertiary)] flex items-center justify-center text-2xl font-bold text-[var(--text-secondary)]">
-            {npc.name.charAt(0).toUpperCase()}
-          </div>
+          <button
+            onClick={() => fileInput.current?.click()}
+            className="w-16 h-16 rounded-full bg-[var(--bg-tertiary)] flex items-center justify-center text-2xl font-bold text-[var(--text-secondary)] overflow-hidden shrink-0 hover:ring-2 hover:ring-[var(--accent)] transition-all cursor-pointer"
+            title="Click to upload portrait"
+          >
+            {pUrl ? (
+              <img src={pUrl} alt={npc.name} className="w-full h-full object-cover" />
+            ) : (
+              npc.name.charAt(0).toUpperCase()
+            )}
+          </button>
+          <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={handlePortraitUpload} />
           <div>
             <h1 className="text-2xl font-bold">{npc.name}</h1>
             <span className={`text-xs px-2 py-0.5 rounded inline-block mt-1 ${

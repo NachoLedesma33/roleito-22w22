@@ -59,6 +59,7 @@ class Character(Base):
     current_location_id = Column(String, nullable=True)
     visual_config_json = Column(JSON, default=dict)
     knowledge_scope = Column(String, default="PARTY_KNOWN")
+    portrait_path = Column(String, nullable=True)
 
     vigor = Column(Integer, default=1)
     intelligence = Column(Integer, default=1)
@@ -82,6 +83,7 @@ class NPC(Base):
     faction_id = Column(String, nullable=True)
     knowledge_scope = Column(String, default="PARTY_KNOWN")
     visual_config_json = Column(JSON, default=dict)
+    portrait_path = Column(String, nullable=True)
 
     vigor = Column(Integer, default=1)
     intelligence = Column(Integer, default=1)
@@ -172,3 +174,32 @@ class Asset(Base):
     entity_type = Column(String, nullable=True)
     entity_id = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Scene(Base):
+    __tablename__ = "scenes"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    campaign_id = Column(String, ForeignKey("campaigns.id"), nullable=False)
+    name = Column(String, nullable=False)
+    description = Column(Text, default="")
+    background_path = Column(String, nullable=True)
+    lighting = Column(String, default="neutral")
+    audio_path = Column(String, nullable=True)
+    status = Column(String, default="inactive")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class SceneCharacter(Base):
+    __tablename__ = "scene_characters"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    scene_id = Column(String, ForeignKey("scenes.id"), nullable=False)
+    entity_type = Column(String, nullable=False)
+    entity_id = Column(String, nullable=False)
+    x = Column(Float, default=0.0)
+    y = Column(Float, default=0.0)
+    z = Column(Float, default=0.0)
+    visible = Column(Integer, default=1)
+    order = Column(Integer, default=0)
