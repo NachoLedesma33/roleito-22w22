@@ -176,6 +176,7 @@ export default function SceneDetail() {
                   const ent = allEntities.find((e) => e.id === sc.entity_id);
                   return {
                     id: sc.id,
+                    sceneCharId: sc.id,
                     name: ent?.name || 'Unknown',
                     type: sc.entity_type,
                     x: sc.x,

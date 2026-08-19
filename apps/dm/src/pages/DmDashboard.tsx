@@ -75,6 +75,71 @@ export default function DmDashboard() {
     setSelectedTokenId((prev) => prev === tokenId ? null : tokenId);
   }, []);
 
+  const handleTokenDrop = useCallback(async (sceneCharId: string, x: number, z: number) => {
+    if (!campaignId || !activeScene) return;
+    // Update local state immediately
+    setSceneChars((prev) =>
+      prev.map((sc) => sc.id === sceneCharId ? { ...sc, x, z } : sc)
+    );
+    // Persist to backend
+    const updated = sceneChars.map((sc) =>
+      sc.id === sceneCharId
+        ? { entity_type: sc.entity_type, entity_id: sc.entity_id, x, y: sc.y, z, visible: !!sc.visible, order: sc.order }
+        : { entity_type: sc.entity_type, entity_id: sc.entity_id, x: sc.x, y: sc.y, z: sc.z, visible: !!sc.visible, order: sc.order }
+    );
+    try {
+      await api.scenes.updateCharacters(campaignId, activeScene.id, updated);
+    } catch (err) {
+      console.error('Failed to persist token position:', err);
+    }
+  }, [campaignId, activeScene, sceneChars]);
+
+  const handleAddToScene = useCallback(async (entityType: string, entityId: string) => {
+    if (!campaignId || !activeScene) return;
+    const newChars = [...sceneChars, {
+      entity_type: entityType,
+      entity_id: entityId,
+      x: Math.random() * 4 - 2,
+      y: 0,
+      z: Math.random() * 4 - 2,
+      visible: true,
+      order: sceneChars.length,
+    }];
+    try {
+      const result = await api.scenes.updateCharacters(campaignId, activeScene.id, newChars);
+      setSceneChars(result);
+    } catch (err) {
+      console.error('Failed to add token:', err);
+    }
+  }, [campaignId, activeScene, sceneChars]);
+
+  const handleRemoveFromScene = useCallback(async (sceneCharId: string) => {
+    if (!campaignId || !activeScene) return;
+    const updated = sceneChars.filter((sc) => sc.id !== sceneCharId);
+    try {
+      const result = await api.scenes.updateCharacters(campaignId, activeScene.id, updated);
+      setSceneChars(result);
+      if (selectedTokenId === sceneCharId) setSelectedTokenId(null);
+    } catch (err) {
+      console.error('Failed to remove token:', err);
+    }
+  }, [campaignId, activeScene, sceneChars, selectedTokenId]);
+
+  const handleToggleVisibility = useCallback(async (sceneCharId: string) => {
+    if (!campaignId || !activeScene) return;
+    const updated = sceneChars.map((sc) =>
+      sc.id === sceneCharId
+        ? { entity_type: sc.entity_type, entity_id: sc.entity_id, x: sc.x, y: sc.y, z: sc.z, visible: !sc.visible, order: sc.order }
+        : { entity_type: sc.entity_type, entity_id: sc.entity_id, x: sc.x, y: sc.y, z: sc.z, visible: !!sc.visible, order: sc.order }
+    );
+    try {
+      const result = await api.scenes.updateCharacters(campaignId, activeScene.id, updated);
+      setSceneChars(result);
+    } catch (err) {
+      console.error('Failed to toggle visibility:', err);
+    }
+  }, [campaignId, activeScene, sceneChars]);
+
   const allEntities = [
     ...characters.map((c) => ({ ...c, type: 'character' as const, sub: `${c.race} ${c.class_}` })),
     ...npcs.map((n) => ({ ...n, type: 'npc' as const, sub: n.status })),
@@ -281,6 +346,7 @@ export default function DmDashboard() {
                   const ent = allEntities.find((e) => e.id === sc.entity_id);
                   return {
                     id: sc.id,
+                    sceneCharId: sc.id,
                     name: ent?.name || 'Unknown',
                     type: sc.entity_type,
                     x: sc.x,
@@ -291,6 +357,9 @@ export default function DmDashboard() {
                   };
                 })}
                 lighting={activeScene.lighting}
+                selectedTokenId={selectedTokenId}
+                onTokenClick={handleTokenClick}
+                onTokenDrop={handleTokenDrop}
               />
             </Suspense>
           ) : (
@@ -307,38 +376,79 @@ export default function DmDashboard() {
           )}
 
           {/* Token Tray — bottom left */}
-          {sceneChars.length > 0 && (
-            <div className="absolute bottom-4 left-4 z-10 bg-[var(--bg-primary)]/90 backdrop-blur border border-[var(--bg-tertiary)] rounded-lg p-2 max-h-48 overflow-y-auto">
-              <p className="text-[10px] text-[var(--text-secondary)] mb-1 px-1">Tokens ({sceneChars.length})</p>
-              <div className="space-y-0.5">
+          <div className="absolute bottom-4 left-4 z-10 bg-[var(--bg-primary)]/90 backdrop-blur border border-[var(--bg-tertiary)] rounded-lg p-2 max-h-64 overflow-y-auto w-52">
+            <p className="text-[10px] text-[var(--text-secondary)] mb-1 px-1">On Scene ({sceneChars.length})</p>
+            {sceneChars.length > 0 ? (
+              <div className="space-y-0.5 mb-2">
                 {sceneChars.map((sc) => {
                   const ent = allEntities.find((e) => e.id === sc.entity_id);
                   const isSelected = selectedTokenId === sc.id;
                   return (
-                    <button
+                    <div
                       key={sc.id}
-                      onClick={() => handleTokenClick(sc.id)}
-                      className={`w-full flex items-center gap-2 px-2 py-1 rounded text-xs transition-colors text-left ${
+                      className={`flex items-center gap-1 px-1.5 py-1 rounded text-xs transition-colors ${
                         isSelected
                           ? 'bg-[var(--accent)]/20 text-[var(--accent)]'
-                          : 'hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'
+                          : 'text-[var(--text-secondary)]'
                       }`}
                     >
-                      <span
-                        className="w-2 h-2 rounded-full shrink-0"
-                        style={{
-                          backgroundColor:
-                            sc.entity_type === 'character' ? '#4ade80' :
-                            sc.entity_type === 'npc' ? '#facc15' : '#94a3b8',
-                        }}
-                      />
-                      {ent?.name || 'Unknown'}
-                    </button>
+                      <button
+                        onClick={() => handleTokenClick(sc.id)}
+                        className="flex items-center gap-1.5 flex-1 text-left"
+                      >
+                        <span
+                          className="w-2 h-2 rounded-full shrink-0"
+                          style={{
+                            backgroundColor:
+                              sc.entity_type === 'character' ? '#4ade80' :
+                              sc.entity_type === 'npc' ? '#facc15' : '#94a3b8',
+                          }}
+                        />
+                        <span className="truncate">{ent?.name || 'Unknown'}</span>
+                      </button>
+                      <button
+                        onClick={() => handleToggleVisibility(sc.id)}
+                        className="text-[10px] opacity-50 hover:opacity-100 shrink-0"
+                        title={sc.visible ? 'Hide' : 'Show'}
+                      >
+                        {sc.visible ? '👁' : '🚫'}
+                      </button>
+                      <button
+                        onClick={() => handleRemoveFromScene(sc.id)}
+                        className="text-red-400 hover:text-red-300 text-[10px] shrink-0"
+                        title="Remove"
+                      >
+                        ×
+                      </button>
+                    </div>
                   );
                 })}
               </div>
-            </div>
-          )}
+            ) : (
+              <p className="text-[10px] text-[var(--text-secondary)] px-1 mb-2">No tokens placed</p>
+            )}
+
+            {/* Available entities to add */}
+            {allEntities.filter((e) => !new Set(sceneChars.map((sc) => sc.entity_id)).has(e.id)).length > 0 && (
+              <>
+                <p className="text-[10px] text-[var(--text-secondary)] mb-1 px-1">Available</p>
+                <div className="space-y-0.5 max-h-32 overflow-y-auto">
+                  {allEntities
+                    .filter((e) => !new Set(sceneChars.map((sc) => sc.entity_id)).has(e.id))
+                    .map((ent) => (
+                      <button
+                        key={ent.id}
+                        onClick={() => handleAddToScene(ent.type, ent.id)}
+                        className="w-full flex items-center gap-1.5 px-1.5 py-1 rounded text-[10px] hover:bg-[var(--bg-tertiary)] transition-colors text-left text-[var(--text-secondary)]"
+                      >
+                        <span className="text-[var(--accent)]">+</span>
+                        <span className="truncate">{ent.name}</span>
+                      </button>
+                    ))}
+                </div>
+              </>
+            )}
+          </div>
 
           {/* Character Sheet HUD — bottom right, on token click */}
           {selectedChar && selectedEntity && (

@@ -1,10 +1,12 @@
-import { Suspense, useMemo } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Suspense, useMemo, useRef, useCallback, useEffect } from 'react';
+import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, useTexture } from '@react-three/drei';
+import * as THREE from 'three';
 import TokenSprite from './TokenSprite';
 
 interface SceneEntity {
   id: string;
+  sceneCharId: string;
   name: string;
   type: string;
   x: number;
@@ -18,6 +20,9 @@ interface SceneRendererProps {
   backgroundUrl: string;
   characters: SceneEntity[];
   lighting?: string;
+  selectedTokenId?: string | null;
+  onTokenClick?: (sceneCharId: string) => void;
+  onTokenDrop?: (sceneCharId: string, x: number, z: number) => void;
 }
 
 function SceneBackground({ url }: { url: string }) {
@@ -74,25 +79,178 @@ function SceneLighting({ mode }: { mode: string }) {
   }
 }
 
-export default function SceneRenderer({ backgroundUrl, characters, lighting = 'neutral' }: SceneRendererProps) {
+const GROUND_Y = 0;
+const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -GROUND_Y);
+
+function DragController({
+  onTokenDrop,
+}: {
+  onTokenDrop?: (sceneCharId: string, x: number, z: number) => void;
+}) {
+  const { camera, gl, scene } = useThree();
+  const raycaster = useMemo(() => new THREE.Raycaster(), []);
+  const dragState = useRef<{
+    active: boolean;
+    sceneCharId: string;
+    offset: THREE.Vector3;
+  } | null>(null);
+
+  const getGroundPoint = useCallback(
+    (clientX: number, clientY: number) => {
+      const rect = gl.domElement.getBoundingClientRect();
+      const mouse = new THREE.Vector2(
+        ((clientX - rect.left) / rect.width) * 2 - 1,
+        -((clientY - rect.top) / rect.height) * 2 + 1
+      );
+      raycaster.setFromCamera(mouse, camera);
+      const hit = new THREE.Vector3();
+      raycaster.ray.intersectPlane(groundPlane, hit);
+      return hit;
+    },
+    [camera, gl, raycaster]
+  );
+
+  useEffect(() => {
+    const canvas = gl.domElement;
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (!dragState.current?.active) return;
+
+      const hit = getGroundPoint(e.clientX, e.clientY);
+      if (!hit) return;
+
+      const newPos = hit.add(dragState.current.offset);
+
+      // Update token group position via userData
+      scene.traverse((child: THREE.Object3D) => {
+        if (
+          child.userData?.sceneCharId === dragState.current?.sceneCharId &&
+          child instanceof THREE.Group &&
+          child.children.length > 0
+        ) {
+          // Move the group (which contains the Billboard/TokenSprite)
+          child.position.x = newPos.x;
+          child.position.z = newPos.z;
+        }
+      });
+    };
+
+    const onPointerUp = (e: PointerEvent) => {
+      if (!dragState.current?.active) return;
+
+      const hit = getGroundPoint(e.clientX, e.clientY);
+      if (hit) {
+        const newPos = hit.add(dragState.current.offset);
+        onTokenDrop?.(dragState.current.sceneCharId, newPos.x, newPos.z);
+      }
+
+      dragState.current = null;
+      canvas.style.cursor = 'auto';
+    };
+
+    canvas.addEventListener('pointermove', onPointerMove);
+    canvas.addEventListener('pointerup', onPointerUp);
+    return () => {
+      canvas.removeEventListener('pointermove', onPointerMove);
+      canvas.removeEventListener('pointerup', onPointerUp);
+    };
+  }, [gl, getGroundPoint, onTokenDrop]);
+
+  // Expose startDrag via a global function on the canvas
+  useEffect(() => {
+    const canvas = gl.domElement as HTMLCanvasElement & {
+      __startDrag?: (sceneCharId: string, x: number, z: number) => void;
+    };
+    canvas.__startDrag = (sceneCharId: string, x: number, z: number) => {
+      dragState.current = {
+        active: true,
+        sceneCharId,
+        offset: new THREE.Vector3(x, 0, z),
+      };
+      canvas.style.cursor = 'grabbing';
+    };
+    return () => {
+      canvas.__startDrag = undefined;
+    };
+  }, [gl]);
+
+  return null;
+}
+
+function DraggableToken({
+  entity,
+  isSelected,
+  onClick,
+}: {
+  entity: SceneEntity;
+  isSelected: boolean;
+  onClick?: (sceneCharId: string) => void;
+}) {
+  const groupRef = useRef<THREE.Group>(null);
+
+  useFrame(() => {
+    if (groupRef.current) {
+      groupRef.current.userData.sceneCharId = entity.sceneCharId;
+    }
+  });
+
+  const handlePointerDown = useCallback(
+    (_e: THREE.Event) => {
+      // Start drag via canvas __startDrag
+      const canvas = document.querySelector('canvas') as (HTMLCanvasElement & {
+        __startDrag?: (sceneCharId: string, x: number, z: number) => void;
+      }) | null;
+      if (canvas?.__startDrag) {
+        canvas.__startDrag(entity.sceneCharId, entity.x, entity.z);
+      }
+
+      onClick?.(entity.sceneCharId);
+    },
+    [entity, onClick]
+  );
+
+  return (
+    <group ref={groupRef} position={[entity.x, entity.y, entity.z]}>
+      <TokenSprite
+        id={entity.sceneCharId}
+        name={entity.name}
+        type={entity.type}
+        position={[0, 0, 0]}
+        portraitUrl={entity.portraitUrl}
+        isSelected={isSelected}
+        onPointerDown={handlePointerDown}
+      />
+    </group>
+  );
+}
+
+export default function SceneRenderer({
+  backgroundUrl,
+  characters,
+  lighting = 'neutral',
+  selectedTokenId,
+  onTokenClick,
+  onTokenDrop,
+}: SceneRendererProps) {
   const visibleChars = useMemo(() => characters.filter((c) => c.visible), [characters]);
 
   return (
     <Canvas
       camera={{ position: [0, 8, 8], fov: 50 }}
       style={{ width: '100%', height: '100%' }}
+      onPointerMissed={() => onTokenClick?.('')}
     >
       <SceneLighting mode={lighting} />
       <Suspense fallback={null}>
         <SceneBackground url={backgroundUrl} />
       </Suspense>
+      <DragController onTokenDrop={onTokenDrop} />
       {visibleChars.map((ch) => (
-        <TokenSprite
-          key={ch.id}
-          name={ch.name}
-          type={ch.type}
-          position={[ch.x, ch.y, ch.z]}
-          portraitUrl={ch.portraitUrl}
+        <DraggableToken
+          key={ch.sceneCharId}
+          entity={ch}
+          isSelected={selectedTokenId === ch.sceneCharId}
+          onClick={onTokenClick}
         />
       ))}
       <OrbitControls
