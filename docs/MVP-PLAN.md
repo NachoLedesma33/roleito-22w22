@@ -90,11 +90,12 @@ PHASE 6  Sistema de Escenas
 PHASE 7  Renderer Básico (3D env + 2D sprites)
 PHASE 8  Sistema de Recaps
 PHASE 9  Slice Vertical
-PHASE 10 Fichas de Jugador
-PHASE 11 Sistema de Mapas
+PHASE 10 Fichas de Jugador + Condiciones Dinámicas ← NUEVA
+PHASE 11 Sistema de Mapas + Tracking de Ubicación ← NUEVA
 PHASE 12 Sistema de Dados
 PHASE 13 Cuaderno de Decisiones DM
-PHASE 14 Entornos 3D con IA ← FUTURO
+PHASE 14 Integración de Personajes en Sesiones ← NUEVA
+PHASE 15 Entornos 3D con IA ← FUTURO
 ```
 
 ---
@@ -1690,4 +1691,9 @@ PHASE 10, 11, 12, 13 DESPUÉS porque:
 - IA 3D: Estrategia híbrida (MVP=2D, Post-MVP=assets 3D, Futuro=escenas completas)
 - Modelos open-source: TripoSR (8GB), TRELLIS.2 (24GB), Hunyuan3D (16GB)
 - Pendiente: info del DM sobre mecánica de salvada especial
+- PERSONAJES: Persisten entre sesiones, estado dinámico (heridas, discapacidades)
+- DM controla qué personajes están en cada sesión
+- Personajes pueden estar ausentes si están en otra ubicación
+- Condiciones temporales y permanentes (ej: piernas rotas → silla de ruedas)
+- Todo estado debe ser curable y controlado por el DM
 ```
