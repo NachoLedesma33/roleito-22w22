@@ -189,6 +189,9 @@ export interface Scene {
   lighting: string;
   audio_path: string | null;
   status: string;
+  notes: string;
+  entrance_x: number;
+  entrance_z: number;
   created_at: string;
   updated_at: string;
 }
@@ -390,7 +393,7 @@ export const api = {
       request<Scene>(`/campaigns/${campaignId}/scenes/${id}`),
     create: (campaignId: string, data: { name: string; description?: string; lighting?: string }) =>
       request<Scene>(`/campaigns/${campaignId}/scenes`, { method: 'POST', body: JSON.stringify(data) }),
-    update: (campaignId: string, id: string, data: { name?: string; description?: string; lighting?: string; status?: string }) =>
+    update: (campaignId: string, id: string, data: { name?: string; description?: string; lighting?: string; status?: string; notes?: string; entrance_x?: number; entrance_z?: number }) =>
       request<Scene>(`/campaigns/${campaignId}/scenes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (campaignId: string, id: string) =>
       request<{ status: string; id: string }>(`/campaigns/${campaignId}/scenes/${id}`, { method: 'DELETE' }),

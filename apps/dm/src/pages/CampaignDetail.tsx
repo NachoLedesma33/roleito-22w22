@@ -70,6 +70,12 @@ export default function CampaignDetail() {
         </div>
         <div className="flex gap-2">
           <Link
+            to={`/campaigns/${campaign.id}`}
+            className="text-sm px-3 py-1 rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
+          >
+            Open VTT
+          </Link>
+          <Link
             to={`/campaigns/${campaign.id}/edit`}
             className="text-sm px-3 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
           >

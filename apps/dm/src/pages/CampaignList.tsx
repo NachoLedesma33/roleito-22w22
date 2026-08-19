@@ -100,6 +100,12 @@ export default function CampaignList() {
                   </p>
                 </Link>
                 <div className="flex gap-2 ml-4">
+                  <Link
+                    to={`/campaigns/${c.id}/manage`}
+                    className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  >
+                    Manage
+                  </Link>
                   <button
                     onClick={() => handleExport(c.id)}
                     className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"

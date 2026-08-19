@@ -187,6 +187,9 @@ class Scene(Base):
     lighting = Column(String, default="neutral")
     audio_path = Column(String, nullable=True)
     status = Column(String, default="inactive")
+    notes = Column(Text, default="")
+    entrance_x = Column(Float, default=0.0)
+    entrance_z = Column(Float, default=0.0)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

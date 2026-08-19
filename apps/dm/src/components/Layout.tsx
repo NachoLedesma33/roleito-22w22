@@ -1,13 +1,14 @@
 import { Link, Outlet, useLocation, useParams } from 'react-router-dom';
 
 const campaignNav = [
-  { to: '', label: 'Overview', icon: '◆' },
+  { to: '', label: 'VTT', icon: '◆' },
+  { to: '/manage', label: 'Overview', icon: '◇' },
   { to: '/characters', label: 'Characters', icon: '♦' },
   { to: '/sessions', label: 'Sessions', icon: '♠' },
   { to: '/scenes', label: 'Scenes', icon: '▣' },
   { to: '/events', label: 'Events', icon: '•' },
   { to: '/players', label: 'Players', icon: '○' },
-  { to: '/maps', label: 'Images', icon: '◇' },
+  { to: '/maps', label: 'Images', icon: '◈' },
   { to: '/assets', label: 'Assets', icon: '□' },
 ];
 
@@ -47,9 +48,9 @@ export default function Layout() {
 
   const navItems = campaignNav.map((item) => {
     const fullPath = item.to ? `${basePath}${item.to}` : basePath;
-    const isExact = item.to === '';
+    const isExact = item.to === '' || item.to === '/manage';
     const isActive = isExact
-      ? location.pathname === basePath
+      ? location.pathname === fullPath
       : location.pathname.startsWith(`${basePath}${item.to}`);
     return { ...item, fullPath, isActive };
   });

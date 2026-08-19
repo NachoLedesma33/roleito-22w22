@@ -314,6 +314,9 @@ class SceneUpdate(BaseModel):
     description: Optional[str] = None
     lighting: Optional[str] = None
     status: Optional[str] = None
+    notes: Optional[str] = None
+    entrance_x: Optional[float] = None
+    entrance_z: Optional[float] = None
 
 
 class SceneCharacterPosition(BaseModel):
@@ -335,6 +338,9 @@ class SceneResponse(BaseModel):
     lighting: str
     audio_path: Optional[str] = None
     status: str
+    notes: str = ""
+    entrance_x: float = 0.0
+    entrance_z: float = 0.0
     created_at: datetime
     updated_at: datetime
 

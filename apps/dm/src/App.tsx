@@ -16,14 +16,19 @@ import MapList from '@/pages/MapList';
 import AssetList from '@/pages/AssetList';
 import SceneList from '@/pages/SceneList';
 import SceneDetail from '@/pages/SceneDetail';
+import DmDashboard from '@/pages/DmDashboard';
 
 function App() {
   return (
     <Routes>
+      {/* VTT Dashboard — fullscreen, no Layout wrapper */}
+      <Route path="/campaigns/:id" element={<DmDashboard />} />
+
+      {/* Management routes — wrapped in Layout with sidebar */}
       <Route element={<Layout />}>
         <Route path="/" element={<CampaignList />} />
         <Route path="/campaigns/new" element={<CampaignForm />} />
-        <Route path="/campaigns/:id" element={<CampaignDetail />} />
+        <Route path="/campaigns/:id/manage" element={<CampaignDetail />} />
         <Route path="/campaigns/:id/edit" element={<CampaignForm />} />
         <Route path="/campaigns/:id/characters" element={<CharacterList />} />
         <Route path="/campaigns/:id/characters/new" element={<CharacterForm />} />

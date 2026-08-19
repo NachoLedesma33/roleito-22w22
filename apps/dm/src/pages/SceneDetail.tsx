@@ -20,6 +20,7 @@ export default function SceneDetail() {
   const [name, setName] = useState('');
   const [desc, setDesc] = useState('');
   const [lighting, setLighting] = useState('neutral');
+  const [notes, setNotes] = useState('');
   const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -40,13 +41,14 @@ export default function SceneDetail() {
         setName(s.name);
         setDesc(s.description);
         setLighting(s.lighting);
+        setNotes(s.notes || '');
       })
       .finally(() => setLoading(false));
   }, [campaignId, sceneId]);
 
   const handleSave = async () => {
     if (!campaignId || !sceneId) return;
-    const updated = await api.scenes.update(campaignId, sceneId, { name, description: desc, lighting });
+    const updated = await api.scenes.update(campaignId, sceneId, { name, description: desc, lighting, notes });
     setScene(updated);
     setEditing(false);
   };
@@ -252,6 +254,17 @@ export default function SceneDetail() {
                 </button>
               ))}
             </div>
+          </div>
+
+          <div className="border border-[var(--bg-tertiary)] rounded-lg p-3">
+            <h3 className="text-sm font-medium mb-2">Scene Notes</h3>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              onBlur={handleSave}
+              placeholder="Notes about this scene..."
+              className="w-full h-32 text-xs bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded p-2 text-[var(--text-primary)] placeholder-[var(--text-secondary)] resize-none focus:outline-none focus:border-[var(--accent)]"
+            />
           </div>
         </div>
       </div>
