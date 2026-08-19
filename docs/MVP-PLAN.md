@@ -98,8 +98,9 @@ PHASE 14 Integración de Personajes en Sesiones
 PHASE 15 World State Snapshots + Time Travel
 PHASE 16 Player View + 3D Tokens + Abilities
 PHASE 17 Environment Generation System
-PHASE 18 Adaptive Camera System ← NUEVA
-PHASE 19 Entornos 3D con IA ← FUTURO
+PHASE 18 Adaptive Camera System
+PHASE 19 Fog of War & DM Environment Control ← NUEVA
+PHASE 20 Entornos 3D con IA ← FUTURO
 ```
 
 ---
