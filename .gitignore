@@ -17,9 +17,12 @@ dist/
 build/
 
 # Environment
-.env
 .env.local
 .env.*.local
+
+# Keep example env files
+!backend/.env
+!apps/dm/.env
 
 # Database
 *.db
