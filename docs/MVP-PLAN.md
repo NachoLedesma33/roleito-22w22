@@ -95,8 +95,9 @@ PHASE 11 Sistema de Mapas + Tracking de Ubicación
 PHASE 12 Sistema de Dados
 PHASE 13 Cuaderno de Decisiones DM
 PHASE 14 Integración de Personajes en Sesiones
-PHASE 15 World State Snapshots + Time Travel ← NUEVA
-PHASE 16 Entornos 3D con IA ← FUTURO
+PHASE 15 World State Snapshots + Time Travel
+PHASE 16 Player View + 3D Tokens + Abilities ← NUEVA
+PHASE 17 Entornos 3D con IA ← FUTURO
 ```
 
 ---
