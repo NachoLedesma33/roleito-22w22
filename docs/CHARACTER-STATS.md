@@ -53,6 +53,14 @@ Tasas fijas de recuperación durante descanso:
 # 4. Uso en Resolución de Combate
 
 ```
+INICIATIVA:
+1. DM dice: "Tiren dados para la iniciativa"
+2. Cada jugador tira 1d6 (o dado que DM indique)
+3. DM tira por enemigos/NPCs
+4. DM carga resultados en orden
+5. Se establece orden de turnos
+
+COMBATE:
 Atacante: tira contra Defensa del objetivo
 Defensa = Destreza + Astucia del objetivo
 
@@ -62,7 +70,55 @@ Si tiro < Defensa  → Fallo/Evasión
 
 ---
 
-# 5. Creación de Personaje
+# 5. Sistema de Dados
+
+## Dados Disponibles (6 tipos comunes)
+
+| Dado | Caras | Forma | Uso principal |
+|------|-------|-------|---------------|
+| d4 | 4 | Tetraedro | Daño menor, magia básica |
+| d6 | 6 | Cubo | **Uso principal del grupo** |
+| d8 | 8 | Octaedro | Daño medio, habilidades |
+| d10 | 10 | Trapezoedro | Porcentajes, escalas |
+| d12 | 12 | Dodecaedro | Daño alto, críticos |
+| d20 | 20 | Icosaedro | Tiradas importantes |
+
+## Cantidad de Dados
+
+El usuario selecciona un tipo de dado y puede tirar múltiples dados de ese mismo tipo:
+
+```
+1d6 → 1 dado de 6 caras
+2d6 → 2 dados de 6 caras
+3d6 → 3 dados de 6 caras
+...
+10d6 → 10 dados de 6 caras (máximo)
+```
+
+**Límite**: 1-10 dados por tirada
+
+## Modal de Tirada
+
+```
+┌─────────────────────────────────────────┐
+│  TIRADA DE DADOS                        │
+├─────────────────────────────────────────┤
+│                                         │
+│  Tipo: [d6 ▼]                           │
+│  Cantidad: [-] 3 [+]                    │
+│                                         │
+│    [d6] [d6] [d6]  ← dados visuales    │
+│                                         │
+│    Resultado: 4 + 6 + 2 = 12           │
+│                                         │
+│  [Tirar de nuevo]  [Cerrar]            │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+---
+
+# 6. Creación de Personaje
 
 Al crear un personaje:
 
@@ -72,11 +128,12 @@ Al crear un personaje:
 3. PV y PM son barras de recursos consumibles
 4. Disminuyen con daño/estrés
 5. Se recuperan con descanso según tasas de §3
+6. Seleccionar dados de daño según clase/arma
 ```
 
 ---
 
-# 6. Notas Pendientes
+# 7. Notas Pendientes
 
 ```text
 □ Rango permitido para atributos base (1-10? 1-20?)
@@ -88,13 +145,15 @@ Al crear un personaje:
 □ ¿Resistencia psíquica separada de PM?
 □ ¿Armadura modifica Defensa?
 □ ¿Bonificaciones por equipo?
+□ ¿Dado especial de salvada? (pendiente info del DM)
+□ ¿Cómo funciona la mecánica de salvada?
+□ ¿Qué atributo se usa para salvadas?
+□ ¿Hay dados personalizados para la campaña?
 ```
 
 ---
 
-# 7. Impacto en el Sistema
-
-Este sistema afecta:
+# 8. Impacto en el Sistema
 
 ```text
 Character Model       → atributos VIDA + stats derivados
@@ -103,6 +162,8 @@ Session Events        → eventos de daño consumen PV/PM
 DM Control UI         → barras de PV/PM visibles por personaje
 Renderer              → indicadores de estado visual
 Context System        → estado de salud para agentes IA
+Dice System           → tiradas de dados por jugador
+Dice Modal            → visualización de dados tirados
 ```
 
 ---

@@ -1,80 +1,100 @@
 # MVP-PLAN.md
 
-> Phased development plan for Roleito MVP.
+> Plan de desarrollo incremental para Roleito MVP.
 >
-> Covers incremental development, asset checkpoints,
-> and 3D environment + 2D character approach.
+> Cubre desarrollo incremental, puntos de control de assets,
+> y enfoque de entorno 3D + personajes 2D.
 
 ---
 
-# 1. Current State
+# 1. Estado Actual
 
-## What Exists
+## Lo que existe
 
 ```text
 BACKEND
-  FastAPI app with /health endpoint
-  SQLAlchemy models (Campaign, Session, Character, NPC, Location, Event, Relationship)
-  SQLite database config
+  FastAPI app con endpoint /health
+  Modelos SQLAlchemy (Campaign, Session, Character, NPC, Location, Event, Relationship)
+  Configuración SQLite database
 
 FRONTEND
-  Vite + React DM app (placeholder UI)
-  TypeScript domain types (all entities defined)
+  Vite + React app DM (placeholder UI)
+  Tipos TypeScript del dominio (todas las entidades definidas)
 
 DOCS
-  32 comprehensive docs
-  Architecture, domain, database, renderer, session system, etc.
+  32 docs comprensivos
+  Arquitectura, dominio, base de datos, renderer, sistema de sesiones, etc.
 
-NOT YET
-  CRUD endpoints
-  UI components
-  Event system
-  Scene system
+AÚN NO
+  Endpoints CRUD
+  Componentes UI
+  Sistema de eventos
+  Sistema de escenas
   Renderer
   Tests
 ```
 
 ---
 
-# 2. MVP Goal
+# 2. Objetivo MVP
 
-Build incrementally toward a playable version that allows:
+Desarrollar incrementalmente hacia una versión jugable que permita:
 
 ```text
-LOAD CAMPAIGN
+CARGAR CAMPAÑA
   ↓
-START SESSION
+INICIAR SESIÓN
   ↓
-LOAD CURRENT SCENE
+CARGAR ESCENA ACTUAL
   ↓
-PLACE CHARACTERS
+UBICAR PERSONAJES
   ↓
-DM CONTROLS SCENE
+DM CONTROLA ESCENA
   ↓
-RECORD EVENTS
+REGISTRAR EVENTOS
   ↓
-END SESSION
+FINALIZAR SESIÓN
   ↓
-GENERATE RECAP
+GENERAR RECAP
   ↓
-SAVE CAMPAIGN
+GUARDAR CAMPAÑA
+```
+
+**Requisitos del DM (actualizados)**:
+```text
+DASHBOARD DM COMO SUPERADMIN
+  ↓
+PANEL PRINCIPAL DE CONTROL
+  ↓
+GESTIÓN DE JUGADORES SECUNDARIOS
+  ↓
+FICHAS DE PERSONAJE POR JUGADOR
+  ↓
+MAPAS CON IMÁGENES
+  ↓
+PREPARACIÓN DE SESIONES
 ```
 
 ---
 
-# 3. Phase Overview
+# 3. Resumen de Fases
 
 ```text
-PHASE 0  Foundation          (current)
+PHASE 0  Fundación              (actual)
 PHASE 1  Campaign CRUD
-PHASE 2  Character System
-PHASE 3  Session System
-PHASE 4  Event System
-PHASE 5  DM Control UI
-PHASE 6  Scene System
-PHASE 7  Basic Renderer (3D env + 2D sprites)
-PHASE 8  Recap System
-PHASE 9  Vertical Slice
+PHASE 2  Sistema de Personajes
+PHASE 3  Sistema de Sesiones
+PHASE 4  Sistema de Eventos
+PHASE 5  Dashboard DM (Superadmin) ← PRIORIDAD
+PHASE 6  Sistema de Escenas
+PHASE 7  Renderer Básico (3D env + 2D sprites)
+PHASE 8  Sistema de Recaps
+PHASE 9  Slice Vertical
+PHASE 10 Fichas de Jugador
+PHASE 11 Sistema de Mapas
+PHASE 12 Sistema de Dados
+PHASE 13 Cuaderno de Decisiones DM
+PHASE 14 Entornos 3D con IA ← FUTURO
 ```
 
 ---
@@ -378,73 +398,150 @@ AI proposes → DM approves/rejects
 
 ---
 
-# 9. PHASE 5 — DM CONTROL UI
+# 9. PHASE 5 — DASHBOARD DM (SUPERADMIN)
 
-## Objective
+## Objetivo
 
-Primary interface for Dungeon Master during sessions.
+Panel de administración principal donde el DM controla todo.
 
-## Frontend
+**Concepto clave**: El DM es el usuario principal que carga todo para las sesiones.
+Los jugadores son secundarios (no NPCs).
 
+## Funcionalidades
+
+### Gestión de Campañas
 ```text
-□ DM dashboard (campaign overview)
-□ Session control panel
-  - Start/End session
-  - Current scene display
-  - Character positions
-□ Character quick actions
-  - Move character
-  - Change status
-  - View details
-□ Event logging
-  - Quick event creation
-  - Event type selector
-□ NPC management
-  - Quick NPC creation
-  - NPC status changes
-□ Location selector
-  - Location list
-  - Location details
+□ Crear campaña
+□ Editar campaña
+□ Cargar campaña existente
+□ Exportar/Importar campaña
+□ Configurar campaña
 ```
 
-## Layout
-
+### Gestión de Jugadores
 ```text
-┌─────────────────────────────────────────┐
-│  DM CONTROL PANEL                       │
-├──────────────┬──────────────────────────┤
-│  SIDEBAR     │  MAIN VIEW               │
-│              │                          │
-│  Campaign    │  [Scene/Characters/      │
-│  Sessions    │   Events/Locations]      │
-│  Characters  │                          │
-│  NPCs        │                          │
-│  Locations   │                          │
-│  Events      │                          │
-│              │                          │
-├──────────────┴──────────────────────────┤
-│  STATUS BAR                             │
-│  Current Session | Scene | Characters   │
-└─────────────────────────────────────────┘
+□ Crear jugador secundario
+□ Asignar personaje a jugador
+□ Gestionar permisos de jugador
+□ Ver estado de jugador
+□ Controlar acceso a información
 ```
 
-## Asset Checkpoint
-
+### Gestión de Sesiones
 ```text
-□ Upload test environment images (5-10 scenes)
-□ Test scene backgrounds in DM panel
-□ Verify scene switching works
-□ Test character positioning in scene
+□ Crear sesión
+□ Preparar sesión (cargar info del DM)
+□ Iniciar/Finalizar sesión
+□ Ver historial de sesiones
+□ Controlar estado de sesión
 ```
 
-## Exit Criteria
+### Gestión de Personajes
+```text
+□ Crear personaje
+□ Editar ficha de personaje
+□ Asignar personaje a jugador
+□ Ver estado actual de personaje
+□ Subir retrato de personaje
+```
+
+### Gestión de NPCs
+```text
+□ Crear NPC
+□ Editar NPC
+□ Asignar NPC a ubicación
+□ Ver estado de NPC
+□ Subir retrato de NPC
+```
+
+### Gestión de Mapas
+```text
+□ Subir imágenes de mapa
+□ Asignar mapa a campaña
+□ Asignar mapa a sesión
+□ Ver mapa en sesión
+□ Controlar capas de mapa
+```
+
+### Gestión de Assets
+```text
+□ Subir imágenes (retratos, fondos, mapas)
+□ Organizar assets por campaña
+□ Asignar assets a entidades
+□ Previsualizar assets
+```
+
+## Layout del Dashboard
 
 ```text
-□ DM can control session from UI
-□ DM can manage characters quickly
-□ DM can log events in real-time
-□ DM can view current world state
-□ UI is responsive and fast
+┌─────────────────────────────────────────────────────────────┐
+│  DASHBOARD DM (SUPERADMIN)                                 │
+├──────────────┬──────────────────────────────────────────────┤
+│  SIDEBAR     │  MAIN VIEW                                   │
+│              │                                              │
+│  Campañas    │  [Vista actual:                             │
+│  Jugadores   │   - Panel de campaña                        │
+│  Sesiones    │   - Lista de personajes                     │
+│  Personajes  │   - Gestión de mapas                        │
+│  NPCs        │   - Control de sesión                       │
+│  Mapas       │   - Subida de assets]                       │
+│  Assets      │                                              │
+│              │                                              │
+├──────────────┴──────────────────────────────────────────────┤
+│  STATUS BAR                                                 │
+│  Campaña | Sesión Actual | Jugadores | Mapas               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Flujo de Trabajo del DM
+
+```text
+1. CREAR CAMPAÑA
+   ↓
+2. AGREGAR JUGADORES
+   ↓
+3. CREAR PERSONAJES
+   ↓
+4. ASIGNAR PERSONAJES A JUGADORES
+   ↓
+5. SUBIR MAPAS
+   ↓
+6. CREAR SESIÓN
+   ↓
+7. PREPARAR SESIÓN (cargar info)
+   ↓
+8. INICIAR SESIÓN
+   ↓
+9. DURANTE SESIÓN: Controlar todo desde dashboard
+   ↓
+10. FINALIZAR SESIÓN
+   ↓
+11. GENERAR RECAP
+```
+
+## Checkpoint de Assets
+
+```text
+□ Subir imágenes de prueba de entornos (5-10 escenas)
+□ Probar fondos de escena en panel DM
+□ Verificar cambio de escenas funcione
+□ Probar posicionamiento de personajes en escena
+□ Subir imágenes de mapas de prueba
+□ Probar visualización de mapas
+□ Verificar subida de retratos de personajes
+```
+
+## Criterios de Salida
+
+```text
+□ DM puede controlar sesión desde UI
+□ DM puede gestionar jugadores secundarios
+□ DM puede crear y editar fichas de personaje
+□ DM puede subir y gestionar mapas
+□ DM puede registrar eventos en tiempo real
+□ DM puede ver estado actual del mundo
+□ UI es responsive y rápida
+□ Dashboard funciona como superadmin
 ```
 
 ---
@@ -1218,4 +1315,378 @@ This knowledge base enables:
 □ Can build location hierarchy
 □ Can generate timeline from events
 □ Can query knowledge base
+```
+
+---
+
+# 22. PHASE 10 — FICHAS DE JUGADOR
+
+## Objetivo
+
+Sistema de fichas de personaje para cada jugador.
+
+**Requisito del DM**: Cada jugador necesita ver su ficha de personaje con el estado actual.
+Si no es posible el estado completo, al menos una ficha inicial.
+
+## Funcionalidades
+
+### Ficha de Personaje
+```text
+□ Ver ficha de personaje
+□ Editar ficha (solo DM)
+□ Imprimir ficha
+□ Exportar ficha (PDF/Markdown)
+□ Versiones de ficha (historial)
+```
+
+### Contenido de Ficha
+```text
+□ Información básica (nombre, clase, raza, nivel)
+□ Estadísticas (HP, AC, habilidades)
+□ Habilidades y talentos
+□ Inventario
+□ Hechizos (si aplica)
+□ Antecedentes
+□ Notas del jugador
+□ Retrato de personaje
+□ Estado actual (HP, condiciones, ubicación)
+```
+
+### Permisos
+```text
+□ DM puede ver todas las fichas
+□ Jugador solo ve su ficha
+□ Jugador puede editar notas propias
+□ DM controla qué campos son editables
+```
+
+## Backend
+
+```text
+□ GET    /api/campaigns/{id}/characters/{cid}/sheet    Ver ficha
+□ PUT    /api/campaigns/{id}/characters/{cid}/sheet    Actualizar ficha
+□ GET    /api/campaigns/{id}/characters/{cid}/sheet/history  Historial
+□ POST   /api/campaigns/{id}/characters/{cid}/sheet/print    Generar PDF
+```
+
+## Frontend
+
+```text
+□ Vista de ficha de personaje
+□ Editor de ficha (para DM)
+□ Vista de impresión
+□ Historial de cambios
+□ Ficha inicial (template)
+```
+
+## Ficha Inicial (Template)
+
+```text
+Para cuando no hay estado completo:
+
+FICHA INICIAL
+├── Nombre: [Nombre del personaje]
+├── Clase: [Clase]
+├── Raza: [Raza]
+├── Nivel: [Nivel]
+├── HP: [HP máximo]
+├── AC: [Armadura]
+├── Habilidades: [Lista]
+├── Inventario: [Lista básica]
+├── Hechizos: [Lista si aplica]
+└── Notas: [Espacio libre]
+```
+
+## Checkpoint de Assets
+
+```text
+□ Probar vista de ficha de personaje
+□ Probar edición de ficha
+□ Probar impresión de ficha
+□ Probar historial de cambios
+□ Verificar persistencia de fichas
+□ Probar permisos de jugador
+```
+
+## Criterios de Salida
+
+```text
+□ Cada jugador puede ver su ficha
+□ DM puede editar todas las fichas
+□ Fichas persisten entre sesiones
+□ Historial de cambios funciona
+□ Ficha inicial disponible
+□ Impresión funciona
+□ Permisos correctos
+```
+
+---
+
+# 23. PHASE 11 — SISTEMA DE MAPAS
+
+## Objetivo
+
+Soporte para imágenes de mapas en campañas.
+
+**Requisito del DM**: Necesita imágenes del mapa para las sesiones.
+
+## Funcionalidades
+
+### Gestión de Mapas
+```text
+□ Subir imagen de mapa
+□ Editar mapa (nombre, descripción)
+□ Eliminar mapa
+□ Organizar mapas por campaña
+□ Asignar mapa a sesión
+```
+
+### Visualización
+```text
+□ Ver mapa en panel DM
+□ Ver mapa en sesión
+□ Zoom de mapa
+□ Navegación de mapa
+□ Marcadores en mapa
+□ Capas de mapa (si aplica)
+```
+
+### Mapas por Campaña
+```text
+□ Mapa mundial (overview)
+□ Mapas regionales
+□ Mapas de ubicación (dungeon, edificio)
+□ Mapas de batalla
+□ Mapas personalizados
+```
+
+### Marcadores
+```text
+□ Crear marcador en mapa
+□ Mover marcador
+□ Eliminar marcador
+□ Asignar marcador a personaje/NPC
+□ Color de marcador por tipo
+□ Notas en marcador
+```
+
+## Backend
+
+```text
+□ POST   /api/campaigns/{id}/maps              Subir mapa
+□ GET    /api/campaigns/{id}/maps              Listar mapas
+□ GET    /api/campaigns/{id}/maps/{mid}        Ver mapa
+□ PUT    /api/campaigns/{id}/maps/{mid}        Actualizar mapa
+□ DELETE /api/campaigns/{id}/maps/{mid}        Eliminar mapa
+□ POST   /api/campaigns/{id}/maps/{mid}/markers  Crear marcador
+□ PUT    /api/campaigns/{id}/maps/{mid}/markers/{mkid}  Actualizar marcador
+□ DELETE /api/campaigns/{id}/maps/{mid}/markers/{mkid}  Eliminar marcador
+```
+
+## Frontend
+
+```text
+□ Lista de mapas
+□ Vista de mapa (con zoom y navegación)
+□ Editor de mapas
+□ Panel de marcadores
+□ Asignación de mapa a sesión
+□ Mapa en vista de sesión
+```
+
+## Estructura de Assets
+
+```text
+assets/
+  maps/
+    {campaign_id}/
+      {map_id}/
+        map.png           ← imagen del mapa
+        markers.json      ← marcadores
+        thumbnail.png     ← miniatura
+```
+
+## Formatos Soportados
+
+```text
+□ PNG
+□ JPG
+□ JPEG
+□ WEBP
+□ SVG (futuro)
+```
+
+## Checkpoint de Assets
+
+```text
+□ Subir imágenes de mapa de prueba
+□ Probar visualización de mapa
+□ Probar zoom y navegación
+□ Probar creación de marcadores
+□ Probar asignación de mapa a sesión
+□ Verificar rendimiento con mapas grandes
+□ Probar persistencia de mapas
+```
+
+## Criterios de Salida
+
+```text
+□ Puede subir imagen de mapa
+□ Puede ver mapa en panel DM
+□ Puede ver mapa en sesión
+□ Puede crear y mover marcadores
+□ Puede asignar mapa a campaña
+□ Puede asignar mapa a sesión
+□ Mapas persisten entre sesiones
+□ Rendimiento aceptable
+□ Marcadores funcionan correctamente
+```
+
+---
+
+# 24. Resumen de Fases Actualizado
+
+```text
+PHASE 0  Fundación              (actual)
+  ✓ FastAPI app
+  ✓ SQLAlchemy models
+  ✓ TypeScript types
+  ✓ React app scaffold
+  □ Configuración pendiente
+
+PHASE 1  Campaign CRUD
+  □ CRUD completo de campañas
+  □ UI de campañas
+
+PHASE 2  Sistema de Personajes
+  □ CRUD de personajes
+  □ CRUD de NPCs
+  □ UI de personajes
+
+PHASE 3  Sistema de Sesiones
+  □ Ciclo de vida de sesiones
+  □ UI de sesiones
+
+PHASE 4  Sistema de Eventos
+  □ Registro de eventos
+  □ Flujo de canon
+
+PHASE 5  Dashboard DM (Superadmin) ← PRIORIDAD
+  □ Panel principal de administración
+  □ Gestión de jugadores
+  □ Gestión de assets
+  □ Control completo de sesión
+
+PHASE 6  Sistema de Escenas
+  □ Escenas con fondos
+  □ Tokens de personajes
+
+PHASE 7  Renderer Básico
+  □ Entorno 3D simple
+  □ Sprites 2D
+
+PHASE 8  Sistema de Recaps
+  □ Generación de recaps
+  □ Exportación
+
+PHASE 9  Slice Vertical
+  □ Prueba completa
+  □ Validación
+
+PHASE 10  Fichas de Jugador ← NUEVO
+  □ Sistema de fichas
+  □ Permisos
+  □ Historial
+
+PHASE 11  Sistema de Mapas ← NUEVO
+  □ Gestión de mapas
+  □ Marcadores
+  □ Visualización
+
+PHASE 12  Sistema de Dados ← NUEVO
+  □ 6 tipos de dados (d4, d6, d8, d10, d12, d20)
+  □ Modal de tirada
+  □ Cantidad 1-10 dados por tirada
+  □ Historial de tiradas
+  □ Sistema de iniciativa
+  □ DM tira por enemigos/NPCs
+  □ Panel de orden de turnos
+
+PHASE 13  Cuaderno de Decisiones DM ← NUEVO
+  □ Notas tipo Notion
+  □ Reglas del DM (editables)
+  □ Decisiones de sesión
+  □ Historial de versiones
+  □ Vinculación con entidades
+  □ Persistencia automática
+```
+
+---
+
+# 25. Orden de Desarrollo Recomendado
+
+## Secuencia
+
+```text
+1. Phase 0 (terminar fundación)
+2. Phase 1 (campaign CRUD)
+3. Phase 5 (Dashboard DM) ← PRIORIDAD POR REQUISITO DEL DM
+4. Phase 2 (sistema de personajes)
+5. Phase 10 (fichas de jugador)
+6. Phase 11 (sistema de mapas)
+7. Phase 12 (sistema de dados)
+8. Phase 13 (cuaderno de decisiones) ← NUEVO
+9. Phase 3 (sistema de sesiones)
+10. Phase 4 (sistema de eventos)
+11. Phase 6 (sistema de escenas)
+12. Phase 7 (renderer básico)
+13. Phase 8 (sistema de recaps)
+14. Phase 9 (slice vertical)
+```
+
+## Justificación
+
+```text
+PHASE 5 PRIMERO porque:
+- DM es el usuario principal
+- Necesita panel para cargar todo
+- Permite probar flujo completo
+- Base para funcionalidades posteriores
+
+PHASE 10, 11, 12, 13 DESPUÉS porque:
+- Son requisitos explícitos del DM
+- Fichas = información de jugadores
+- Mapas = visualización de escenarios
+- Dados = mecánica de juego
+- Cuaderno = notas y decisiones del DM
+- Complementan el dashboard
+```
+
+---
+
+# 26. Notas
+
+```text
+- Plan es incremental: cada fase produce software funcionando
+- Puntos de control de assets aseguran que nada se rompa al agregar imágenes
+- Personajes 2D en espacio 3D es suficiente para MVP
+- Modelos 3D completos vienen mucho después
+- Autoridad del DM es final: IA propone, DM aprueba
+- Offline-first: no se requiere internet para funcionalidades core
+- SQLite suficiente para MVP: no se necesita migración aún
+- Dashboard DM como superadmin es prioridad por requisito del DM
+- Fichas de jugador son necesarias para sistema de jugadores secundarios
+- Mapas son necesarios para visualización de escenarios
+- Sistema de dados: 6 tipos (d4, d6, d8, d10, d12, d20), máximo 10 por tirada
+- d6 es el dado principal, los demás son ocasionales
+- El usuario selecciona tipo y cantidad (ej: 3d6)
+- Iniciativa: DM annuncia, jugadores tiran, DM tira por enemigos
+- DM controla el orden de turnos y flujo del combate
+- DM tiene reglas dinámicas que pueden cambiar
+- DM quiere anotar todo tipo Notion
+- Cuaderno de decisiones: notas, reglas, decisiones, versiones
+- Todo debe persistir y poder editarse
+- IA 3D: Estrategia híbrida (MVP=2D, Post-MVP=assets 3D, Futuro=escenas completas)
+- Modelos open-source: TripoSR (8GB), TRELLIS.2 (24GB), Hunyuan3D (16GB)
+- Pendiente: info del DM sobre mecánica de salvada especial
 ```
