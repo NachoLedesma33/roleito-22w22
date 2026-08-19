@@ -6,6 +6,140 @@
 Describe STRUCTURE and STYLE, not specific images
 YAML specs → 3D environment generation
 Modular, reusable, consistent
+Three-layer system: Layout → Style → Assets
+```
+
+---
+
+## Three-Layer Architecture
+
+### 1. MAP_LAYOUT
+
+**Defines HOW the scenario is organized.**
+
+```yaml
+map_layout:
+  # Size
+  width: 20  # grid units
+  height: 20
+  
+  # Rooms
+  rooms:
+    count: 4
+    sizes: [4x4, 5x5, 6x4, 3x3]
+    shapes: [rectangular, L-shaped]
+    
+  # Connections
+  corridors:
+    count: 3
+    width: 1-2
+    style: winding  # straight, winding, branching
+    
+  # Special areas
+  entrances: 2
+  exits: 1
+  secret_areas: 1
+  vertical_levels: 1
+  
+  # Grid structure
+  grid:
+    size: 1  # square size in world units
+    visible: true
+```
+
+### 2. ENVIRONMENT_STYLE
+
+**Defines HOW it looks.**
+
+```yaml
+environment_style:
+  # Camera
+  camera:
+    type: isometric
+    projection: orthographic
+    angle: 35  # degrees from ground
+    rotation: 45  # degrees from north
+    
+  # Rendering
+  rendering: stylized_3d
+  aesthetic: tactical_rpg
+  
+  # Architecture
+  architecture:
+    type: ancient_ruins
+    age: ancient
+    condition: partially_deteriorated
+    
+  # Materials
+  materials:
+    primary: stone
+    secondary: moss
+    accent: wood
+    
+  # Lighting
+  lighting:
+    type: warm
+    sources: [torches, ambient]
+    shadows: enabled
+    
+  # Modularity
+  modularity: high
+```
+
+### 3. ASSET_SET
+
+**Defines WHAT pieces are used to build it.**
+
+```yaml
+asset_set:
+  # Floor pieces
+  floors:
+    - stone_floor
+    - cracked_floor
+    - elevated_floor
+    - wooden_floor
+    - dirt_floor
+    
+  # Wall pieces
+  walls:
+    - straight_wall
+    - corner_wall
+    - broken_wall
+    - window_wall
+    
+  # Architecture
+  architecture:
+    - arch
+    - doorway
+    - stairs
+    - pillar
+    - column
+    
+  # Decorations
+  decorations:
+    - statue
+    - chest
+    - barrel
+    - torch
+    - banner
+    - rubble
+    - vegetation
+    - table
+    - chair
+    
+  # Interactive
+  interactive:
+    - door_locked
+    - door_unlocked
+    - lever
+    - pressure_plate
+    
+  # Lighting
+  lighting:
+    - torch_wall
+    - torch_floor
+    - crystal_glow
+    - lantern
 ```
 
 ---
@@ -17,6 +151,7 @@ base_style:
   # Camera
   camera:
     type: isometric
+    projection: orthographic
     angle: 35  # degrees from ground
     rotation: 45  # degrees from north
     zoom: tactical  # close enough to see details
@@ -35,6 +170,13 @@ base_style:
     - isometric_rpgs
     - modular_dioramas
     - tabletop_terrain
+    
+  # Presentation
+  presentation:
+    background: neutral_dark
+    environment_isolated: true
+    show_external_walls: true
+    diorama_presentation: true
 ```
 
 ---
@@ -682,47 +824,107 @@ async function generateMap(spec: EnvironmentSpec): Promise<Map3D> {
   // 1. Load preset
   const preset = loadPreset(spec.preset);
   
-  // 2. Generate layout
+  // 2. Generate layout from MAP_LAYOUT
   const layout = await generateLayout({
-    width: spec.width,
-    height: spec.height,
-    rooms: spec.roomCount,
-    corridors: spec.corridorStyle,
+    width: spec.layout.width,
+    height: spec.layout.height,
+    rooms: spec.layout.rooms,
+    corridors: spec.layout.corridors,
+    secretAreas: spec.layout.secret_areas,
   });
   
-  // 3. Place elements
-  const elements = placeElements({
+  // 3. Convert layout to modules
+  const modules = convertToModules({
     layout,
-    preset: preset.elements,
+    assetSet: preset.asset_set,
+  });
+  
+  // 4. Apply style from ENVIRONMENT_STYLE
+  const styled = applyStyle({
+    modules,
+    style: preset.environment_style,
+  });
+  
+  // 5. Place decorations
+  const decorated = placeDecorations({
+    modules: styled,
+    decorations: preset.asset_set.decorations,
     density: spec.density,
   });
   
-  // 4. Apply materials
-  const materials = applyMaterials({
-    layout,
-    elements,
-    preset: preset.materials,
+  // 6. Setup lighting
+  const lit = setupLighting({
+    modules: decorated,
+    lighting: preset.environment_style.lighting,
   });
   
-  // 5. Setup lighting
-  const lighting = setupLighting({
-    layout,
-    preset: preset.lighting,
+  // 7. Add atmosphere
+  const atmospheric = addAtmosphere({
+    modules: lit,
+    atmosphere: preset.atmosphere,
   });
   
-  // 6. Add atmosphere
-  const atmosphere = addAtmosphere({
-    layout,
-    preset: preset.atmosphere,
-  });
-  
-  // 7. Build 3D scene
+  // 8. Build 3D scene with diorama presentation
   return buildScene({
-    layout,
-    elements,
-    materials,
-    lighting,
-    atmosphere,
+    modules: atmospheric,
+    presentation: {
+      background: 'neutral_dark',
+      isolated: true,
+      showExternalWalls: true,
+      dioramaStyle: true,
+    },
   });
 }
+```
+
+### Pipeline Flow
+
+```text
+              NARRATIVE / DM INPUT
+                     │
+                     ▼
+              ┌─────────────┐
+              │ MAP_LAYOUT  │ (rooms, corridors, size)
+              └──────┬──────┘
+                     │
+          ┌──────────┼──────────┐
+          ▼          ▼          ▼
+       ROOMS      CORRIDORS    SPECIAL
+          │          │          │
+          └──────────┼──────────┘
+                     ▼
+              MODULES CONVERSION
+                     │
+       ┌─────────────┼─────────────┐
+       ▼             ▼             ▼
+     WALLS         FLOORS       DOORS
+       │             │             │
+       └─────────────┼─────────────┘
+                     ▼
+              ┌─────────────┐
+              │ ASSET_SET   │ (which pieces to use)
+              └──────┬──────┘
+                     │
+                     ▼
+              ┌─────────────┐
+              │ENVIRONMENT  │ (how it looks)
+              │   STYLE     │
+              └──────┬──────┘
+                     │
+       ┌─────────────┼─────────────┐
+       ▼             ▼             ▼
+     LIGHTING     MATERIALS    DECORATION
+       │             │             │
+       └─────────────┼─────────────┘
+                     ▼
+              3D DIORAMA SCENE
+```
+
+### Key Principle
+
+```text
+The AI should NOT interpret images as "copy this image"
+The AI SHOULD use images as "visual references for design language"
+
+Result: Different maps, same consistent visual style
 ```
