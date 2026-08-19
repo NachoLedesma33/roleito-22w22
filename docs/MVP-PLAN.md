@@ -82,8 +82,8 @@ PREPARACIÓN DE SESIONES
 ```text
 PHASE 0  Fundación              ✓ COMPLETADA
 PHASE 1  Campaign CRUD          ✓ COMPLETADA
-PHASE 2  Sistema de Personajes
-PHASE 3  Sistema de Sesiones
+PHASE 2  Sistema de Personajes  ✓ COMPLETADA
+PHASE 3  Sistema de Sesiones    ✓ COMPLETADA
 PHASE 4  Sistema de Eventos
 PHASE 5  Dashboard DM (Superadmin) ← PRIORIDAD
 PHASE 6  Sistema de Escenas
