@@ -3,14 +3,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from database import get_session
-from models import Campaign, Session, Character, NPC, Location, Event, Relationship
+from models import Campaign, Session, Character, NPC, Location, Event, Relationship, Scene, SceneCharacter
 from schemas import (
     CampaignCreate,
     CampaignUpdate,
     CampaignResponse,
     CampaignExport,
     CampaignImport,
+    SceneResponse,
+    SceneCharacterResponse,
+    CharacterResponse,
+    NPCResponse,
 )
+import secrets
 
 campaigns_router = APIRouter(tags=["campaigns"])
 
@@ -267,3 +272,88 @@ async def import_campaign(
     await db.commit()
     await db.refresh(campaign)
     return campaign
+
+
+@campaigns_router.post("/campaigns/{campaign_id}/invite-code", response_model=CampaignResponse)
+async def generate_invite_code(
+    campaign_id: str,
+    db: AsyncSession = Depends(get_session),
+):
+    result = await db.execute(
+        select(Campaign).where(Campaign.id == campaign_id)
+    )
+    campaign = result.scalar_one_or_none()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    campaign.invite_code = secrets.token_urlsafe(8)
+    await db.commit()
+    await db.refresh(campaign)
+    return campaign
+
+
+@campaigns_router.get("/campaigns/invite/{code}")
+async def join_by_invite_code(
+    code: str,
+    db: AsyncSession = Depends(get_session),
+):
+    result = await db.execute(
+        select(Campaign).where(Campaign.invite_code == code)
+    )
+    campaign = result.scalar_one_or_none()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Invalid invite code")
+
+    scenes_r = await db.execute(
+        select(Scene).where(Scene.campaign_id == campaign.id)
+    )
+    scenes = scenes_r.scalars().all()
+    active_scene = next((s for s in scenes if s.status == "active"), scenes[0] if scenes else None)
+
+    characters_r = await db.execute(
+        select(Character).where(Character.campaign_id == campaign.id)
+    )
+    npcs_r = await db.execute(
+        select(NPC).where(NPC.campaign_id == campaign.id)
+    )
+    all_entities = {
+        **{c.id: c for c in characters_r.scalars().all()},
+        **{n.id: n for n in npcs_r.scalars().all()},
+    }
+
+    scene_chars = []
+    scene_name = ""
+    background_path = None
+    lighting = "neutral"
+    if active_scene:
+        scene_name = active_scene.name
+        background_path = active_scene.background_path
+        lighting = active_scene.lighting
+        sc_r = await db.execute(
+            select(SceneCharacter).where(
+                SceneCharacter.scene_id == active_scene.id,
+                SceneCharacter.visible == 1,
+            )
+        )
+        for sc in sc_r.scalars().all():
+            ent = all_entities.get(sc.entity_id)
+            if ent:
+                scene_chars.append({
+                    "id": sc.id,
+                    "name": ent.name,
+                    "type": "character" if isinstance(ent, Character) else "npc",
+                    "x": sc.x,
+                    "y": sc.y,
+                    "z": sc.z,
+                    "portrait_path": ent.portrait_path,
+                })
+
+    return {
+        "campaign_id": campaign.id,
+        "campaign_name": campaign.name,
+        "scene_id": active_scene.id if active_scene else None,
+        "scene_name": scene_name,
+        "background_path": background_path,
+        "lighting": lighting,
+        "characters": scene_chars,
+    }

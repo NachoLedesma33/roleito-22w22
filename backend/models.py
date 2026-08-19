@@ -23,6 +23,7 @@ class Campaign(Base):
     current_session_id = Column(String, nullable=True)
     current_location_id = Column(String, nullable=True)
     settings_json = Column(JSON, default=dict)
+    invite_code = Column(String, nullable=True, unique=True)
 
     sessions = relationship("Session", back_populates="campaign")
     characters = relationship("Character", back_populates="campaign")

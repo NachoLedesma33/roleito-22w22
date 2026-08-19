@@ -25,6 +25,7 @@ export default function DmDashboard() {
   const [showSessionLog, setShowSessionLog] = useState(false);
   const [showSceneNotes, setShowSceneNotes] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
+  const [copiedInvite, setCopiedInvite] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -146,6 +147,23 @@ export default function DmDashboard() {
     }
   }, [campaignId, activeScene, sceneChars]);
 
+  const handleInviteCode = useCallback(async () => {
+    if (!campaignId) return;
+    if (!campaign?.invite_code) {
+      const updated = await api.campaigns.generateInviteCode(campaignId);
+      setCampaign(updated);
+      const url = `${window.location.origin}/campaigns/join/${updated.invite_code}`;
+      navigator.clipboard.writeText(url);
+      setCopiedInvite(true);
+      setTimeout(() => setCopiedInvite(false), 2000);
+    } else {
+      const url = `${window.location.origin}/campaigns/join/${campaign.invite_code}`;
+      navigator.clipboard.writeText(url);
+      setCopiedInvite(true);
+      setTimeout(() => setCopiedInvite(false), 2000);
+    }
+  }, [campaignId, campaign]);
+
   const allEntities = [
     ...characters.map((c) => ({ ...c, type: 'character' as const, sub: `${c.race} ${c.class_}` })),
     ...npcs.map((n) => ({ ...n, type: 'npc' as const, sub: n.status })),
@@ -246,6 +264,19 @@ export default function DmDashboard() {
             ))}
           </div>
         </div>
+
+        {/* Invite Code */}
+        <button
+          onClick={handleInviteCode}
+          className={`text-xs px-2 py-1 rounded transition-colors ${
+            copiedInvite
+              ? 'bg-emerald-600 text-white'
+              : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+          }`}
+          title="Copy player invite link"
+        >
+          {copiedInvite ? 'Copied!' : campaign?.invite_code ? '🔗 Invite' : '🔗 Get Invite'}
+        </button>
 
         {/* HUD Toggle Buttons */}
         <button

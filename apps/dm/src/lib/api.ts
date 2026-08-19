@@ -9,6 +9,7 @@ export interface Campaign {
   current_session_id: string | null;
   current_location_id: string | null;
   settings_json: Record<string, unknown>;
+  invite_code: string | null;
 }
 
 export interface CampaignExport {
@@ -246,6 +247,8 @@ export const api = {
     export: (id: string) => request<CampaignExport>(`/campaigns/${id}/export`),
     import: (data: Record<string, unknown>) =>
       request<Campaign>('/campaigns/import', { method: 'POST', body: JSON.stringify(data) }),
+    generateInviteCode: (id: string) =>
+      request<Campaign>(`/campaigns/${id}/invite-code`, { method: 'POST' }),
   },
 
   characters: {

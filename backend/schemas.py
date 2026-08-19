@@ -24,6 +24,7 @@ class CampaignResponse(BaseModel):
     current_session_id: Optional[str] = None
     current_location_id: Optional[str] = None
     settings_json: dict
+    invite_code: Optional[str] = None
 
     class Config:
         from_attributes = True

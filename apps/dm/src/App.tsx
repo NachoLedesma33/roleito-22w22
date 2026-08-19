@@ -17,12 +17,16 @@ import AssetList from '@/pages/AssetList';
 import SceneList from '@/pages/SceneList';
 import SceneDetail from '@/pages/SceneDetail';
 import DmDashboard from '@/pages/DmDashboard';
+import PlayerView from '@/pages/PlayerView';
 
 function App() {
   return (
     <Routes>
       {/* VTT Dashboard — fullscreen, no Layout wrapper */}
       <Route path="/campaigns/:id" element={<DmDashboard />} />
+
+      {/* Player View — fullscreen, read-only */}
+      <Route path="/campaigns/join/:code" element={<PlayerView />} />
 
       {/* Management routes — wrapped in Layout with sidebar */}
       <Route element={<Layout />}>
