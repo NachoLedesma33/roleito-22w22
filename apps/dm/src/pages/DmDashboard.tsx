@@ -2,6 +2,9 @@ import { useEffect, useState, useRef, Suspense, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api, Campaign, Scene, SceneCharacter, Character, NPC } from '@/lib/api';
 import SceneRenderer from '@/components/SceneRenderer';
+import SessionLogHud from '@/components/SessionLogHud';
+import SceneNotesHud from '@/components/SceneNotesHud';
+import QuickActionsHud from '@/components/QuickActionsHud';
 
 function staticUrl(path: string | null): string | null {
   if (!path) return null;
@@ -19,6 +22,9 @@ export default function DmDashboard() {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null);
+  const [showSessionLog, setShowSessionLog] = useState(false);
+  const [showSceneNotes, setShowSceneNotes] = useState(false);
+  const [showQuickActions, setShowQuickActions] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -240,6 +246,29 @@ export default function DmDashboard() {
             ))}
           </div>
         </div>
+
+        {/* HUD Toggle Buttons */}
+        <button
+          onClick={() => setShowQuickActions(!showQuickActions)}
+          className={`text-xs px-2 py-1 rounded transition-colors ${showQuickActions ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+          title="Quick Actions"
+        >
+          ⚡
+        </button>
+        <button
+          onClick={() => setShowSessionLog(!showSessionLog)}
+          className={`text-xs px-2 py-1 rounded transition-colors ${showSessionLog ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+          title="Session Log"
+        >
+          📋
+        </button>
+        <button
+          onClick={() => setShowSceneNotes(!showSceneNotes)}
+          className={`text-xs px-2 py-1 rounded transition-colors ${showSceneNotes ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+          title="Scene Notes"
+        >
+          📝
+        </button>
 
         <Link
           to={`/campaigns/${campaignId}/scenes`}
@@ -543,6 +572,28 @@ export default function DmDashboard() {
                 </button>
               </div>
             </div>
+          )}
+          {/* HUD Panels */}
+          {showQuickActions && (
+            <QuickActionsHud
+              campaignId={campaignId!}
+              onClose={() => setShowQuickActions(false)}
+            />
+          )}
+          {showSessionLog && (
+            <SessionLogHud
+              sessionId={null}
+              sessionTitle=""
+              onClose={() => setShowSessionLog(false)}
+            />
+          )}
+          {showSceneNotes && activeScene && (
+            <SceneNotesHud
+              campaignId={campaignId!}
+              sceneId={activeScene.id}
+              sceneName={activeScene.name || ''}
+              onClose={() => setShowSceneNotes(false)}
+            />
           )}
         </div>
       </div>
