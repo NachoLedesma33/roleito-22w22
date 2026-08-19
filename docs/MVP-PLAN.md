@@ -80,8 +80,8 @@ PREPARACIÓN DE SESIONES
 # 3. Resumen de Fases
 
 ```text
-PHASE 0  Fundación              (actual)
-PHASE 1  Campaign CRUD
+PHASE 0  Fundación              ✓ COMPLETADA
+PHASE 1  Campaign CRUD          ✓ COMPLETADA
 PHASE 2  Sistema de Personajes
 PHASE 3  Sistema de Sesiones
 PHASE 4  Sistema de Eventos
@@ -147,6 +147,12 @@ NO ASSETS YET
 
 # 5. PHASE 1 — CAMPAIGN CRUD
 
+## Status
+
+```text
+COMPLETE ✓
+```
+
 ## Objective
 
 Create, load, save, export, import campaigns.
@@ -154,22 +160,22 @@ Create, load, save, export, import campaigns.
 ## Backend
 
 ```text
-□ POST   /api/campaigns           Create campaign
-□ GET    /api/campaigns           List campaigns
-□ GET    /api/campaigns/{id}      Get campaign
-□ PUT    /api/campaigns/{id}      Update campaign
-□ DELETE /api/campaigns/{id}      Delete campaign
-□ POST   /api/campaigns/{id}/export  Export campaign
-□ POST   /api/campaigns/import    Import campaign
+✓ POST   /api/campaigns           Create campaign
+✓ GET    /api/campaigns           List campaigns
+✓ GET    /api/campaigns/{id}      Get campaign
+✓ PUT    /api/campaigns/{id}      Update campaign
+✓ DELETE /api/campaigns/{id}      Delete campaign
+✓ POST   /api/campaigns/{id}/export  Export campaign
+✓ POST   /api/campaigns/import    Import campaign
 ```
 
 ## Frontend
 
 ```text
-□ Campaign list view
-□ Campaign create/edit form
-□ Campaign detail view
-□ Campaign selector (load existing)
+✓ Campaign list view
+✓ Campaign create/edit form
+✓ Campaign detail view
+✓ Campaign selector (load existing)
 ```
 
 ## Asset Checkpoint
