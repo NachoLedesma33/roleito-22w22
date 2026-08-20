@@ -13,6 +13,7 @@ from event_routes import router as event_router
 from player_routes import router as player_router
 from scene_routes import router as scene_router
 from map_marker_routes import router as map_marker_router
+from notebook_routes import router as notebook_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -70,6 +71,7 @@ app.include_router(event_router, prefix="/api")
 app.include_router(player_router, prefix="/api")
 app.include_router(scene_router, prefix="/api")
 app.include_router(map_marker_router, prefix="/api")
+app.include_router(notebook_router, prefix="/api")
 
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "assets")
 os.makedirs(ASSETS_DIR, exist_ok=True)

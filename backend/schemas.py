@@ -409,3 +409,42 @@ class MapMarkerResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class DMNotebookCreate(BaseModel):
+    title: str
+    content: str = ""
+    category: str = "notes"
+
+
+class DMNotebookUpdate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    category: Optional[str] = None
+    pinned: Optional[int] = None
+
+
+class DMNotebookResponse(BaseModel):
+    id: str
+    campaign_id: str
+    title: str
+    content: str
+    category: str
+    pinned: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class DMNotebookVersionResponse(BaseModel):
+    id: str
+    notebook_id: str
+    title: str
+    content: str
+    version_number: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

@@ -207,6 +207,26 @@ export interface MapMarker {
   created_at: string;
 }
 
+export interface DMNotebook {
+  id: string;
+  campaign_id: string;
+  title: string;
+  content: string;
+  category: string;
+  pinned: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DMNotebookVersion {
+  id: string;
+  notebook_id: string;
+  title: string;
+  content: string;
+  version_number: number;
+  created_at: string;
+}
+
 export interface Asset {
   id: string;
   campaign_id: string;
@@ -468,5 +488,22 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify(characters),
       }),
+  },
+
+  notebooks: {
+    list: (campaignId: string) =>
+      request<DMNotebook[]>(`/campaigns/${campaignId}/notebooks`),
+    get: (campaignId: string, id: string) =>
+      request<DMNotebook>(`/campaigns/${campaignId}/notebooks/${id}`),
+    create: (campaignId: string, data: { title: string; content?: string; category?: string }) =>
+      request<DMNotebook>(`/campaigns/${campaignId}/notebooks`, { method: 'POST', body: JSON.stringify(data) }),
+    update: (campaignId: string, id: string, data: { title?: string; content?: string; category?: string; pinned?: number }) =>
+      request<DMNotebook>(`/campaigns/${campaignId}/notebooks/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (campaignId: string, id: string) =>
+      request<{ status: string; id: string }>(`/campaigns/${campaignId}/notebooks/${id}`, { method: 'DELETE' }),
+    versions: (notebookId: string) =>
+      request<DMNotebookVersion[]>(`/notebooks/${notebookId}/versions`),
+    restoreVersion: (notebookId: string, versionId: string) =>
+      request<DMNotebook>(`/notebooks/${notebookId}/restore/${versionId}`, { method: 'POST' }),
   },
 };

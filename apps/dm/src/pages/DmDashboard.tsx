@@ -9,6 +9,7 @@ import DiceRoller from '@/components/DiceRoller';
 import RecapPanel from '@/components/RecapPanel';
 import CharacterSheet from '@/components/CharacterSheet';
 import MapViewer from '@/components/MapViewer';
+import DMNotebookHud from '@/components/DMNotebookHud';
 import ContextMenu, { ContextMenuItem } from '@/components/ContextMenu';
 
 function staticUrl(path: string | null): string | null {
@@ -35,6 +36,7 @@ export default function DmDashboard() {
   const [showRecap, setShowRecap] = useState(false);
   const [viewingMap, setViewingMap] = useState<Map | null>(null);
   const [maps, setMaps] = useState<Map[]>([]);
+  const [showNotebook, setShowNotebook] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -258,6 +260,8 @@ export default function DmDashboard() {
             setShowDiceRoller(false);
           } else if (showRecap) {
             setShowRecap(false);
+          } else if (showNotebook) {
+            setShowNotebook(false);
           } else if (showQuickActions) {
             setShowQuickActions(false);
           } else if (showSessionLog) {
@@ -281,6 +285,9 @@ export default function DmDashboard() {
           break;
         case 'r':
           setShowRecap((p) => !p);
+          break;
+        case 'n':
+          setShowNotebook((p) => !p);
           break;
         case 'ArrowLeft': {
           if (scenes.length === 0) return;
@@ -307,7 +314,7 @@ export default function DmDashboard() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [scenes, activeScene, selectedTokenId, showQuickActions, showSessionLog, showSceneNotes, showDiceRoller, showRecap, viewingMap, handleRemoveFromScene, setContextMenu]);
+  }, [scenes, activeScene, selectedTokenId, showQuickActions, showSessionLog, showSceneNotes, showDiceRoller, showRecap, showNotebook, viewingMap, handleRemoveFromScene, setContextMenu]);
 
   const selectedEntity = selectedTokenId
     ? sceneChars.find((sc) => sc.id === selectedTokenId)
@@ -432,6 +439,14 @@ export default function DmDashboard() {
           title="Session Recap (R)"
         >
           📋
+        </button>
+
+        <button
+          onClick={() => setShowNotebook(!showNotebook)}
+          className={`text-xs px-2 py-1 rounded transition-colors ${showNotebook ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+          title="DM Notebook (N)"
+        >
+          📓
         </button>
 
         {/* Map Button */}
@@ -780,6 +795,12 @@ export default function DmDashboard() {
             <MapViewer
               map={viewingMap}
               onClose={() => setViewingMap(null)}
+            />
+          )}
+          {showNotebook && campaignId && (
+            <DMNotebookHud
+              campaignId={campaignId}
+              onClose={() => setShowNotebook(false)}
             />
           )}
         </div>

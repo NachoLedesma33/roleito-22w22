@@ -226,3 +226,27 @@ class MapMarker(Base):
     color = Column(String, default="#60a5fa")
     description = Column(Text, default="")
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class DMNotebook(Base):
+    __tablename__ = "dm_notebooks"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    campaign_id = Column(String, ForeignKey("campaigns.id"), nullable=False)
+    title = Column(String, nullable=False)
+    content = Column(Text, default="")
+    category = Column(String, default="notes")
+    pinned = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class DMNotebookVersion(Base):
+    __tablename__ = "dm_notebook_versions"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    notebook_id = Column(String, ForeignKey("dm_notebooks.id"), nullable=False)
+    title = Column(String, nullable=False)
+    content = Column(Text, default="")
+    version_number = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
