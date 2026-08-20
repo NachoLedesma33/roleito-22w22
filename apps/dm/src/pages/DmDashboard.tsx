@@ -5,6 +5,7 @@ import SceneRenderer from '@/components/SceneRenderer';
 import SessionLogHud from '@/components/SessionLogHud';
 import SceneNotesHud from '@/components/SceneNotesHud';
 import QuickActionsHud from '@/components/QuickActionsHud';
+import DiceRoller from '@/components/DiceRoller';
 import ContextMenu, { ContextMenuItem } from '@/components/ContextMenu';
 
 function staticUrl(path: string | null): string | null {
@@ -27,6 +28,7 @@ export default function DmDashboard() {
   const [showSceneNotes, setShowSceneNotes] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [copiedInvite, setCopiedInvite] = useState(false);
+  const [showDiceRoller, setShowDiceRoller] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -234,6 +236,8 @@ export default function DmDashboard() {
         case 'Escape':
           if (selectedTokenId) {
             setSelectedTokenId(null);
+          } else if (showDiceRoller) {
+            setShowDiceRoller(false);
           } else if (showQuickActions) {
             setShowQuickActions(false);
           } else if (showSessionLog) {
@@ -251,6 +255,9 @@ export default function DmDashboard() {
           break;
         case '3':
           setShowSceneNotes((p) => !p);
+          break;
+        case 'd':
+          setShowDiceRoller((p) => !p);
           break;
         case 'ArrowLeft': {
           if (scenes.length === 0) return;
@@ -277,7 +284,7 @@ export default function DmDashboard() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [scenes, activeScene, selectedTokenId, showQuickActions, showSessionLog, showSceneNotes, handleRemoveFromScene, setContextMenu]);
+  }, [scenes, activeScene, selectedTokenId, showQuickActions, showSessionLog, showSceneNotes, showDiceRoller, handleRemoveFromScene, setContextMenu]);
 
   const selectedEntity = selectedTokenId
     ? sceneChars.find((sc) => sc.id === selectedTokenId)
@@ -386,6 +393,14 @@ export default function DmDashboard() {
           title="Copy player invite link"
         >
           {copiedInvite ? 'Copied!' : campaign?.invite_code ? '🔗 Invite' : '🔗 Get Invite'}
+        </button>
+
+        <button
+          onClick={() => setShowDiceRoller(!showDiceRoller)}
+          className={`text-xs px-2 py-1 rounded transition-colors ${showDiceRoller ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+          title="Roll dice (D)"
+        >
+          🎲
         </button>
 
         {/* HUD Toggle Buttons */}
@@ -739,6 +754,11 @@ export default function DmDashboard() {
               sceneId={activeScene.id}
               sceneName={activeScene.name || ''}
               onClose={() => setShowSceneNotes(false)}
+            />
+          )}
+          {showDiceRoller && (
+            <DiceRoller
+              onClose={() => setShowDiceRoller(false)}
             />
           )}
         </div>
