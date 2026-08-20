@@ -31,6 +31,7 @@ export default function DmDashboard() {
   const [showDiceRoller, setShowDiceRoller] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const charPortraitInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!campaignId) return;
@@ -72,6 +73,22 @@ export default function DmDashboard() {
     const updated = await api.scenes.uploadBackground(campaignId, activeScene.id, file);
     setActiveScene(updated);
     setScenes((prev) => prev.map((s) => s.id === updated.id ? updated : s));
+    e.target.value = '';
+  };
+
+  const handlePortraitUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !campaignId || !selectedEntity) return;
+    try {
+      if (selectedEntity.entity_type === 'character') {
+        const updated = await api.characters.uploadPortrait(campaignId, selectedEntity.entity_id, file);
+        setCharacters((prev) => prev.map((c) => c.id === updated.id ? updated : c));
+      } else {
+        const updated = await api.npcs.uploadPortrait(campaignId, selectedEntity.entity_id, file);
+        setNpcs((prev) => prev.map((n) => n.id === updated.id ? updated : n));
+      }
+    } catch {
+    }
     e.target.value = '';
   };
 
@@ -644,17 +661,24 @@ export default function DmDashboard() {
           {selectedChar && selectedEntity && (
             <div className="absolute bottom-4 right-4 z-10 bg-[var(--bg-primary)]/95 backdrop-blur border border-[var(--bg-tertiary)] rounded-lg p-4 w-72">
               <div className="flex items-start gap-3 mb-3">
-                {selectedChar.portrait_path ? (
-                  <img
-                    src={staticUrl(selectedChar.portrait_path)!}
-                    alt={selectedChar.name}
-                    className="w-12 h-12 rounded object-cover"
-                  />
-                ) : (
-                  <div className="w-12 h-12 rounded bg-[var(--bg-tertiary)] flex items-center justify-center text-lg font-bold text-[var(--accent)]">
-                    {selectedChar.name.charAt(0)}
-                  </div>
-                )}
+                <button
+                  onClick={() => charPortraitInput.current?.click()}
+                  className="w-12 h-12 rounded overflow-hidden shrink-0 border border-dashed border-[var(--bg-tertiary)] hover:border-[var(--accent)] transition-colors cursor-pointer"
+                  title="Click to upload portrait"
+                >
+                  {selectedChar.portrait_path ? (
+                    <img
+                      src={staticUrl(selectedChar.portrait_path)!}
+                      alt={selectedChar.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-[var(--bg-tertiary)] flex items-center justify-center text-lg font-bold text-[var(--accent)]">
+                      {selectedChar.name.charAt(0)}
+                    </div>
+                  )}
+                </button>
+                <input ref={charPortraitInput} type="file" accept="image/*" className="hidden" onChange={handlePortraitUpload} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold truncate">{selectedChar.name}</p>
                   <p className="text-[10px] text-[var(--text-secondary)]">
