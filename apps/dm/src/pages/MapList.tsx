@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api, Map } from '@/lib/api';
 
+function staticUrl(path: string | null): string | null {
+  if (!path) return null;
+  return `http://localhost:8000/api/static/${path.replace(/\\/g, '/').split('/assets/')[1]}`;
+}
+
 export default function MapList() {
   const { id: campaignId } = useParams<{ id: string }>();
   const [maps, setMaps] = useState<Map[]>([]);
@@ -131,8 +136,12 @@ export default function MapList() {
               className="border border-[var(--bg-tertiary)] rounded-lg overflow-hidden"
             >
               {m.file_path ? (
-                <div className="h-40 bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-secondary)] text-sm">
-                  🗺 Map image
+                <div className="h-40 bg-[var(--bg-tertiary)] flex items-center justify-center overflow-hidden">
+                  {staticUrl(m.file_path) ? (
+                    <img src={staticUrl(m.file_path)!} alt={m.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-[var(--text-secondary)] text-sm">Map image</span>
+                  )}
                 </div>
               ) : (
                 <div className="h-40 bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-secondary)] text-sm">

@@ -330,6 +330,7 @@ class SceneUpdate(BaseModel):
     notes: Optional[str] = None
     entrance_x: Optional[float] = None
     entrance_z: Optional[float] = None
+    map_id: Optional[str] = None
 
 
 class SceneCharacterPosition(BaseModel):
@@ -348,6 +349,7 @@ class SceneResponse(BaseModel):
     name: str
     description: str
     background_path: Optional[str] = None
+    map_id: Optional[str] = None
     lighting: str
     audio_path: Optional[str] = None
     status: str
@@ -371,6 +373,39 @@ class SceneCharacterResponse(BaseModel):
     z: float
     visible: bool
     order: int
+
+    class Config:
+        from_attributes = True
+
+
+class MapMarkerCreate(BaseModel):
+    label: str = ""
+    marker_type: str = "poi"
+    x: float = 0.5
+    y: float = 0.5
+    color: str = "#60a5fa"
+    description: str = ""
+
+
+class MapMarkerUpdate(BaseModel):
+    label: Optional[str] = None
+    marker_type: Optional[str] = None
+    x: Optional[float] = None
+    y: Optional[float] = None
+    color: Optional[str] = None
+    description: Optional[str] = None
+
+
+class MapMarkerResponse(BaseModel):
+    id: str
+    map_id: str
+    label: str
+    marker_type: str
+    x: float
+    y: float
+    color: str
+    description: str
+    created_at: datetime
 
     class Config:
         from_attributes = True

@@ -195,6 +195,18 @@ export interface Map {
   created_at: string;
 }
 
+export interface MapMarker {
+  id: string;
+  map_id: string;
+  label: string;
+  marker_type: string;
+  x: number;
+  y: number;
+  color: string;
+  description: string;
+  created_at: string;
+}
+
 export interface Asset {
   id: string;
   campaign_id: string;
@@ -212,6 +224,7 @@ export interface Scene {
   name: string;
   description: string;
   background_path: string | null;
+  map_id: string | null;
   lighting: string;
   audio_path: string | null;
   status: string;
@@ -380,6 +393,8 @@ export const api = {
   maps: {
     list: (campaignId: string) =>
       request<Map[]>(`/campaigns/${campaignId}/maps`),
+    get: (campaignId: string, id: string) =>
+      request<Map>(`/campaigns/${campaignId}/maps/${id}`),
     create: (campaignId: string, data: { name: string; description?: string; map_type?: string }) =>
       request<Map>(`/campaigns/${campaignId}/maps`, { method: 'POST', body: JSON.stringify(data) }),
     upload: async (campaignId: string, mapId: string, file: File) => {
@@ -394,6 +409,17 @@ export const api = {
     },
     delete: (campaignId: string, id: string) =>
       request<{ status: string; id: string }>(`/campaigns/${campaignId}/maps/${id}`, { method: 'DELETE' }),
+  },
+
+  mapMarkers: {
+    list: (mapId: string) =>
+      request<MapMarker[]>(`/maps/${mapId}/markers`),
+    create: (mapId: string, data: { label?: string; marker_type?: string; x?: number; y?: number; color?: string; description?: string }) =>
+      request<MapMarker>(`/maps/${mapId}/markers`, { method: 'POST', body: JSON.stringify(data) }),
+    update: (markerId: string, data: { label?: string; marker_type?: string; x?: number; y?: number; color?: string; description?: string }) =>
+      request<MapMarker>(`/markers/${markerId}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (markerId: string) =>
+      request<{ status: string; id: string }>(`/markers/${markerId}`, { method: 'DELETE' }),
   },
 
   assets: {
@@ -421,7 +447,7 @@ export const api = {
       request<Scene>(`/campaigns/${campaignId}/scenes/${id}`),
     create: (campaignId: string, data: { name: string; description?: string; lighting?: string }) =>
       request<Scene>(`/campaigns/${campaignId}/scenes`, { method: 'POST', body: JSON.stringify(data) }),
-    update: (campaignId: string, id: string, data: { name?: string; description?: string; lighting?: string; status?: string; notes?: string; entrance_x?: number; entrance_z?: number }) =>
+    update: (campaignId: string, id: string, data: { name?: string; description?: string; lighting?: string; status?: string; notes?: string; entrance_x?: number; entrance_z?: number; map_id?: string }) =>
       request<Scene>(`/campaigns/${campaignId}/scenes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (campaignId: string, id: string) =>
       request<{ status: string; id: string }>(`/campaigns/${campaignId}/scenes/${id}`, { method: 'DELETE' }),

@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, Suspense, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { api, Campaign, Scene, SceneCharacter, Character, NPC } from '@/lib/api';
+import { api, Campaign, Scene, SceneCharacter, Character, NPC, Map } from '@/lib/api';
 import SceneRenderer from '@/components/SceneRenderer';
 import SessionLogHud from '@/components/SessionLogHud';
 import SceneNotesHud from '@/components/SceneNotesHud';
@@ -8,6 +8,7 @@ import QuickActionsHud from '@/components/QuickActionsHud';
 import DiceRoller from '@/components/DiceRoller';
 import RecapPanel from '@/components/RecapPanel';
 import CharacterSheet from '@/components/CharacterSheet';
+import MapViewer from '@/components/MapViewer';
 import ContextMenu, { ContextMenuItem } from '@/components/ContextMenu';
 
 function staticUrl(path: string | null): string | null {
@@ -32,6 +33,8 @@ export default function DmDashboard() {
   const [copiedInvite, setCopiedInvite] = useState(false);
   const [showDiceRoller, setShowDiceRoller] = useState(false);
   const [showRecap, setShowRecap] = useState(false);
+  const [viewingMap, setViewingMap] = useState<Map | null>(null);
+  const [maps, setMaps] = useState<Map[]>([]);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -42,12 +45,14 @@ export default function DmDashboard() {
       api.scenes.list(campaignId).catch(() => []),
       api.characters.list(campaignId).catch(() => []),
       api.npcs.list(campaignId).catch(() => []),
+      api.maps.list(campaignId).catch(() => []),
     ])
-      .then(([c, sc, chars, npcList]) => {
+      .then(([c, sc, chars, npcList, mapList]) => {
         setCampaign(c);
         setScenes(sc);
         setCharacters(chars);
         setNpcs(npcList);
+        setMaps(mapList);
         const active = sc.find((s) => s.status === 'active') || sc[0] || null;
         setActiveScene(active);
       })
@@ -245,7 +250,9 @@ export default function DmDashboard() {
           setSidebarOpen((p) => !p);
           break;
         case 'Escape':
-          if (selectedTokenId) {
+          if (viewingMap) {
+            setViewingMap(null);
+          } else if (selectedTokenId) {
             setSelectedTokenId(null);
           } else if (showDiceRoller) {
             setShowDiceRoller(false);
@@ -300,7 +307,7 @@ export default function DmDashboard() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [scenes, activeScene, selectedTokenId, showQuickActions, showSessionLog, showSceneNotes, showDiceRoller, showRecap, handleRemoveFromScene, setContextMenu]);
+  }, [scenes, activeScene, selectedTokenId, showQuickActions, showSessionLog, showSceneNotes, showDiceRoller, showRecap, viewingMap, handleRemoveFromScene, setContextMenu]);
 
   const selectedEntity = selectedTokenId
     ? sceneChars.find((sc) => sc.id === selectedTokenId)
@@ -426,6 +433,60 @@ export default function DmDashboard() {
         >
           📋
         </button>
+
+        {/* Map Button */}
+        {activeScene?.map_id && (
+          <button
+            onClick={() => {
+              const m = maps.find((m) => m.id === activeScene.map_id);
+              if (m) setViewingMap(m);
+            }}
+            className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+            title="Open map"
+          >
+            🗺
+          </button>
+        )}
+
+        {/* Map Assign Dropdown */}
+        {maps.length > 0 && (
+          <div className="relative group">
+            <button className="text-[10px] px-1.5 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+              Map ▾
+            </button>
+            <div className="absolute right-0 top-full mt-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 min-w-[140px]">
+              {activeScene?.map_id && (
+                <button
+                  onClick={async () => {
+                    if (!campaignId || !activeScene) return;
+                    const updated = await api.scenes.update(campaignId, activeScene.id, { map_id: undefined });
+                    setActiveScene(updated);
+                    setScenes((prev) => prev.map((s) => s.id === updated.id ? updated : s));
+                  }}
+                  className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-red-400"
+                >
+                  Unlink map
+                </button>
+              )}
+              {maps.map((m) => (
+                <button
+                  key={m.id}
+                  onClick={async () => {
+                    if (!campaignId || !activeScene) return;
+                    const updated = await api.scenes.update(campaignId, activeScene.id, { map_id: m.id });
+                    setActiveScene(updated);
+                    setScenes((prev) => prev.map((s) => s.id === updated.id ? updated : s));
+                  }}
+                  className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${
+                    activeScene?.map_id === m.id ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'
+                  }`}
+                >
+                  {activeScene?.map_id === m.id ? '✓ ' : ''}{m.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* HUD Toggle Buttons */}
         <button
@@ -713,6 +774,12 @@ export default function DmDashboard() {
             <RecapPanel
               campaignId={campaignId}
               onClose={() => setShowRecap(false)}
+            />
+          )}
+          {viewingMap && (
+            <MapViewer
+              map={viewingMap}
+              onClose={() => setViewingMap(null)}
             />
           )}
         </div>

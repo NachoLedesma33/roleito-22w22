@@ -189,6 +189,7 @@ class Scene(Base):
     name = Column(String, nullable=False)
     description = Column(Text, default="")
     background_path = Column(String, nullable=True)
+    map_id = Column(String, ForeignKey("maps.id"), nullable=True)
     lighting = Column(String, default="neutral")
     audio_path = Column(String, nullable=True)
     status = Column(String, default="inactive")
@@ -211,3 +212,17 @@ class SceneCharacter(Base):
     z = Column(Float, default=0.0)
     visible = Column(Integer, default=1)
     order = Column(Integer, default=0)
+
+
+class MapMarker(Base):
+    __tablename__ = "map_markers"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    map_id = Column(String, ForeignKey("maps.id"), nullable=False)
+    label = Column(String, default="")
+    marker_type = Column(String, default="poi")
+    x = Column(Float, default=0.5)
+    y = Column(Float, default=0.5)
+    color = Column(String, default="#60a5fa")
+    description = Column(Text, default="")
+    created_at = Column(DateTime, default=datetime.utcnow)
