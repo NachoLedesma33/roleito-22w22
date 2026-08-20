@@ -69,8 +69,16 @@ export default function DmDashboard() {
 
   const handleUploadBg = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !campaignId || !activeScene) return;
-    const updated = await api.scenes.uploadBackground(campaignId, activeScene.id, file);
+    if (!file || !campaignId) return;
+
+    let scene = activeScene;
+    if (!scene) {
+      scene = await api.scenes.create(campaignId, { name: 'Scene 1' });
+      setScenes((prev) => [...prev, scene!]);
+      setActiveScene(scene);
+    }
+
+    const updated = await api.scenes.uploadBackground(campaignId, scene.id, file);
     setActiveScene(updated);
     setScenes((prev) => prev.map((s) => s.id === updated.id ? updated : s));
     e.target.value = '';
