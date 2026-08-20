@@ -18,6 +18,7 @@ interface TokenSpriteProps {
   isSelected?: boolean;
   isDragging?: boolean;
   onPointerDown?: (e: THREE.Event, id: string) => void;
+  onContextMenu?: (e: THREE.Event) => void;
 }
 
 export default function TokenSprite({
@@ -29,6 +30,7 @@ export default function TokenSprite({
   isSelected,
   isDragging,
   onPointerDown,
+  onContextMenu,
 }: TokenSpriteProps) {
   const groupRef = useRef<THREE.Group>(null);
   const color = TOKEN_COLORS[type] || '#94a3b8';
@@ -60,6 +62,7 @@ export default function TokenSprite({
       <Billboard follow={true} lockX={false} lockY={false} lockZ={false}>
         <group
           onPointerDown={handlePointerDown}
+          onContextMenu={(e) => onContextMenu?.(e)}
           onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = 'grab'; }}
           onPointerOut={() => { document.body.style.cursor = 'auto'; }}
         >

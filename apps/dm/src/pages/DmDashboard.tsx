@@ -5,6 +5,7 @@ import SceneRenderer from '@/components/SceneRenderer';
 import SessionLogHud from '@/components/SessionLogHud';
 import SceneNotesHud from '@/components/SceneNotesHud';
 import QuickActionsHud from '@/components/QuickActionsHud';
+import ContextMenu, { ContextMenuItem } from '@/components/ContextMenu';
 
 function staticUrl(path: string | null): string | null {
   if (!path) return null;
@@ -26,6 +27,7 @@ export default function DmDashboard() {
   const [showSceneNotes, setShowSceneNotes] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [copiedInvite, setCopiedInvite] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -168,6 +170,114 @@ export default function DmDashboard() {
     ...characters.map((c) => ({ ...c, type: 'character' as const, sub: `${c.race} ${c.class_}` })),
     ...npcs.map((n) => ({ ...n, type: 'npc' as const, sub: n.status })),
   ];
+
+  // Close context menu on any click
+  useEffect(() => {
+    if (!contextMenu) return;
+    const close = () => setContextMenu(null);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [contextMenu]);
+
+  const handleTokenContextMenu = useCallback((sceneCharId: string, clientX: number, clientY: number) => {
+    const sc = sceneChars.find((s) => s.id === sceneCharId);
+    const ent = allEntities.find((x) => x.id === sc?.entity_id);
+    const name = ent?.name || 'Unknown';
+
+    setContextMenu({
+      x: clientX,
+      y: clientY,
+      items: [
+        {
+          label: `Select ${name}`,
+          icon: '◉',
+          onClick: () => setSelectedTokenId(sceneCharId),
+        },
+        {
+          label: sc?.visible ? 'Hide from players' : 'Show to players',
+          icon: sc?.visible ? '👁' : '🚫',
+          onClick: () => handleToggleVisibility(sceneCharId),
+        },
+        { label: '', separator: true, onClick: () => {} },
+        {
+          label: 'View character sheet',
+          icon: '📄',
+          onClick: () => {
+            setSelectedTokenId(sceneCharId);
+          },
+          disabled: !ent,
+        },
+        { label: '', separator: true, onClick: () => {} },
+        {
+          label: 'Remove from scene',
+          icon: '🗑',
+          onClick: () => handleRemoveFromScene(sceneCharId),
+          danger: true,
+        },
+      ],
+    });
+  }, [sceneChars, allEntities, handleToggleVisibility, handleRemoveFromScene]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const isEditable = (el: Element | null) =>
+      el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isEditable(e.target as Element)) return;
+
+      switch (e.key) {
+        case 'Tab':
+          e.preventDefault();
+          setSidebarOpen((p) => !p);
+          break;
+        case 'Escape':
+          if (selectedTokenId) {
+            setSelectedTokenId(null);
+          } else if (showQuickActions) {
+            setShowQuickActions(false);
+          } else if (showSessionLog) {
+            setShowSessionLog(false);
+          } else if (showSceneNotes) {
+            setShowSceneNotes(false);
+          }
+          setContextMenu(null);
+          break;
+        case '1':
+          setShowQuickActions((p) => !p);
+          break;
+        case '2':
+          setShowSessionLog((p) => !p);
+          break;
+        case '3':
+          setShowSceneNotes((p) => !p);
+          break;
+        case 'ArrowLeft': {
+          if (scenes.length === 0) return;
+          const idx = activeScene ? scenes.findIndex((s) => s.id === activeScene.id) : -1;
+          const prev = idx > 0 ? idx - 1 : scenes.length - 1;
+          setActiveScene(scenes[prev]);
+          break;
+        }
+        case 'ArrowRight': {
+          if (scenes.length === 0) return;
+          const idx = activeScene ? scenes.findIndex((s) => s.id === activeScene.id) : -1;
+          const next = idx < scenes.length - 1 ? idx + 1 : 0;
+          setActiveScene(scenes[next]);
+          break;
+        }
+        case 'Delete':
+        case 'Backspace':
+          if (selectedTokenId) {
+            handleRemoveFromScene(selectedTokenId);
+          }
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [scenes, activeScene, selectedTokenId, showQuickActions, showSessionLog, showSceneNotes, handleRemoveFromScene, setContextMenu]);
 
   const selectedEntity = selectedTokenId
     ? sceneChars.find((sc) => sc.id === selectedTokenId)
@@ -420,6 +530,7 @@ export default function DmDashboard() {
                 selectedTokenId={selectedTokenId}
                 onTokenClick={handleTokenClick}
                 onTokenDrop={handleTokenDrop}
+                onTokenContextMenu={handleTokenContextMenu}
               />
             </Suspense>
           ) : (
@@ -446,7 +557,11 @@ export default function DmDashboard() {
                   return (
                     <div
                       key={sc.id}
-                      className={`flex items-center gap-1 px-1.5 py-1 rounded text-xs transition-colors ${
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        handleTokenContextMenu(sc.id, e.clientX, e.clientY);
+                      }}
+                      className={`flex items-center gap-1 px-1.5 py-1 rounded text-xs transition-colors cursor-default ${
                         isSelected
                           ? 'bg-[var(--accent)]/20 text-[var(--accent)]'
                           : 'text-[var(--text-secondary)]'
@@ -628,6 +743,16 @@ export default function DmDashboard() {
           )}
         </div>
       </div>
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          items={contextMenu.items}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
     </div>
   );
 }

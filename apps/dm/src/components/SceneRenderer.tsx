@@ -23,6 +23,7 @@ interface SceneRendererProps {
   selectedTokenId?: string | null;
   onTokenClick?: (sceneCharId: string) => void;
   onTokenDrop?: (sceneCharId: string, x: number, z: number) => void;
+  onTokenContextMenu?: (sceneCharId: string, clientX: number, clientY: number) => void;
 }
 
 function SceneBackground({ url }: { url: string }) {
@@ -181,10 +182,12 @@ function DraggableToken({
   entity,
   isSelected,
   onClick,
+  onContextMenu,
 }: {
   entity: SceneEntity;
   isSelected: boolean;
   onClick?: (sceneCharId: string) => void;
+  onContextMenu?: (sceneCharId: string, clientX: number, clientY: number) => void;
 }) {
   const groupRef = useRef<THREE.Group>(null);
 
@@ -219,6 +222,10 @@ function DraggableToken({
         portraitUrl={entity.portraitUrl}
         isSelected={isSelected}
         onPointerDown={handlePointerDown}
+        onContextMenu={(e) => {
+          const domEvent = e as unknown as PointerEvent;
+          onContextMenu?.(entity.sceneCharId, domEvent.clientX, domEvent.clientY);
+        }}
       />
     </group>
   );
@@ -231,6 +238,7 @@ export default function SceneRenderer({
   selectedTokenId,
   onTokenClick,
   onTokenDrop,
+  onTokenContextMenu,
 }: SceneRendererProps) {
   const visibleChars = useMemo(() => characters.filter((c) => c.visible), [characters]);
 
@@ -251,6 +259,7 @@ export default function SceneRenderer({
           entity={ch}
           isSelected={selectedTokenId === ch.sceneCharId}
           onClick={onTokenClick}
+          onContextMenu={onTokenContextMenu}
         />
       ))}
       <OrbitControls
