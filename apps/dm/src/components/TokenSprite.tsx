@@ -69,12 +69,12 @@ export default function TokenSprite({
           {texture ? (
             <mesh position={[0, 0.6, 0]}>
               <circleGeometry args={[0.4, 32]} />
-              <meshStandardMaterial map={texture} />
+              <meshStandardMaterial map={texture} emissiveMap={texture} emissive={new THREE.Color(0xffffff)} emissiveIntensity={0.3} />
             </mesh>
           ) : (
             <mesh position={[0, 0.6, 0]}>
               <circleGeometry args={[0.4, 32]} />
-              <meshStandardMaterial color={color} />
+              <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.4} />
             </mesh>
           )}
           {!texture && (

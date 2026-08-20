@@ -34,7 +34,7 @@ function SceneBackground({ url }: { url: string }) {
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
       <planeGeometry args={[width, 10]} />
-      <meshStandardMaterial map={texture} />
+      <meshStandardMaterial map={texture} emissiveMap={texture} emissive={new THREE.Color(0xffffff)} emissiveIntensity={0.3} />
     </mesh>
   );
 }
@@ -51,30 +51,30 @@ function SceneLighting({ mode }: { mode: string }) {
     case 'dim':
       return (
         <>
-          <ambientLight intensity={0.3} />
-          <pointLight position={[0, 5, 0]} intensity={0.6} color="#ffcc77" />
+          <ambientLight intensity={0.6} />
+          <pointLight position={[0, 5, 0]} intensity={1.0} color="#ffcc77" />
         </>
       );
     case 'bright':
       return (
         <>
-          <ambientLight intensity={0.8} />
-          <directionalLight position={[5, 10, 5]} intensity={1.0} />
+          <ambientLight intensity={1.2} />
+          <directionalLight position={[5, 10, 5]} intensity={1.5} />
         </>
       );
     case 'torchlight':
       return (
         <>
-          <ambientLight intensity={0.2} />
-          <pointLight position={[-3, 3, 0]} intensity={0.8} color="#ff6600" distance={12} />
-          <pointLight position={[3, 3, 0]} intensity={0.8} color="#ff6600" distance={12} />
+          <ambientLight intensity={0.5} />
+          <pointLight position={[-3, 3, 0]} intensity={1.2} color="#ff6600" distance={14} />
+          <pointLight position={[3, 3, 0]} intensity={1.2} color="#ff6600" distance={14} />
         </>
       );
     default:
       return (
         <>
-          <ambientLight intensity={0.5} />
-          <directionalLight position={[5, 10, 5]} intensity={0.8} />
+          <ambientLight intensity={1.0} />
+          <directionalLight position={[5, 10, 5]} intensity={1.2} />
         </>
       );
   }
