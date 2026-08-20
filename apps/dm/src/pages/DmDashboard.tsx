@@ -6,6 +6,7 @@ import SessionLogHud from '@/components/SessionLogHud';
 import SceneNotesHud from '@/components/SceneNotesHud';
 import QuickActionsHud from '@/components/QuickActionsHud';
 import DiceRoller from '@/components/DiceRoller';
+import RecapPanel from '@/components/RecapPanel';
 import ContextMenu, { ContextMenuItem } from '@/components/ContextMenu';
 
 function staticUrl(path: string | null): string | null {
@@ -29,6 +30,7 @@ export default function DmDashboard() {
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [copiedInvite, setCopiedInvite] = useState(false);
   const [showDiceRoller, setShowDiceRoller] = useState(false);
+  const [showRecap, setShowRecap] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const charPortraitInput = useRef<HTMLInputElement>(null);
@@ -263,6 +265,8 @@ export default function DmDashboard() {
             setSelectedTokenId(null);
           } else if (showDiceRoller) {
             setShowDiceRoller(false);
+          } else if (showRecap) {
+            setShowRecap(false);
           } else if (showQuickActions) {
             setShowQuickActions(false);
           } else if (showSessionLog) {
@@ -283,6 +287,9 @@ export default function DmDashboard() {
           break;
         case 'd':
           setShowDiceRoller((p) => !p);
+          break;
+        case 'r':
+          setShowRecap((p) => !p);
           break;
         case 'ArrowLeft': {
           if (scenes.length === 0) return;
@@ -309,7 +316,7 @@ export default function DmDashboard() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [scenes, activeScene, selectedTokenId, showQuickActions, showSessionLog, showSceneNotes, showDiceRoller, handleRemoveFromScene, setContextMenu]);
+  }, [scenes, activeScene, selectedTokenId, showQuickActions, showSessionLog, showSceneNotes, showDiceRoller, showRecap, handleRemoveFromScene, setContextMenu]);
 
   const selectedEntity = selectedTokenId
     ? sceneChars.find((sc) => sc.id === selectedTokenId)
@@ -426,6 +433,14 @@ export default function DmDashboard() {
           title="Roll dice (D)"
         >
           🎲
+        </button>
+
+        <button
+          onClick={() => setShowRecap(!showRecap)}
+          className={`text-xs px-2 py-1 rounded transition-colors ${showRecap ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+          title="Session Recap (R)"
+        >
+          📋
         </button>
 
         {/* HUD Toggle Buttons */}
@@ -791,6 +806,12 @@ export default function DmDashboard() {
           {showDiceRoller && (
             <DiceRoller
               onClose={() => setShowDiceRoller(false)}
+            />
+          )}
+          {showRecap && campaignId && (
+            <RecapPanel
+              campaignId={campaignId}
+              onClose={() => setShowRecap(false)}
             />
           )}
         </div>
