@@ -68,6 +68,8 @@ class Character(Base):
     cunning = Column(Integer, default=1)
     current_pv = Column(Integer, nullable=True)
     current_pm = Column(Integer, nullable=True)
+    inventory_json = Column(JSON, default=list)
+    spells_json = Column(JSON, default=list)
 
     campaign = relationship("Campaign", back_populates="characters")
 
@@ -92,6 +94,8 @@ class NPC(Base):
     cunning = Column(Integer, default=1)
     current_pv = Column(Integer, nullable=True)
     current_pm = Column(Integer, nullable=True)
+    inventory_json = Column(JSON, default=list)
+    spells_json = Column(JSON, default=list)
 
 
 class Location(Base):

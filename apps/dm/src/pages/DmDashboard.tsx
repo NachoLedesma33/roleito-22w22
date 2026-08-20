@@ -7,6 +7,7 @@ import SceneNotesHud from '@/components/SceneNotesHud';
 import QuickActionsHud from '@/components/QuickActionsHud';
 import DiceRoller from '@/components/DiceRoller';
 import RecapPanel from '@/components/RecapPanel';
+import CharacterSheet from '@/components/CharacterSheet';
 import ContextMenu, { ContextMenuItem } from '@/components/ContextMenu';
 
 function staticUrl(path: string | null): string | null {
@@ -33,7 +34,6 @@ export default function DmDashboard() {
   const [showRecap, setShowRecap] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
-  const charPortraitInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!campaignId) return;
@@ -83,22 +83,6 @@ export default function DmDashboard() {
     const updated = await api.scenes.uploadBackground(campaignId, scene.id, file);
     setActiveScene(updated);
     setScenes((prev) => prev.map((s) => s.id === updated.id ? updated : s));
-    e.target.value = '';
-  };
-
-  const handlePortraitUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !campaignId || !selectedEntity) return;
-    try {
-      if (selectedEntity.entity_type === 'character') {
-        const updated = await api.characters.uploadPortrait(campaignId, selectedEntity.entity_id, file);
-        setCharacters((prev) => prev.map((c) => c.id === updated.id ? updated : c));
-      } else {
-        const updated = await api.npcs.uploadPortrait(campaignId, selectedEntity.entity_id, file);
-        setNpcs((prev) => prev.map((n) => n.id === updated.id ? updated : n));
-      }
-    } catch {
-    }
     e.target.value = '';
   };
 
@@ -681,104 +665,21 @@ export default function DmDashboard() {
           </div>
 
           {/* Character Sheet HUD — bottom right, on token click */}
-          {selectedChar && selectedEntity && (
-            <div className="absolute bottom-4 right-4 z-10 bg-[var(--bg-primary)]/95 backdrop-blur border border-[var(--bg-tertiary)] rounded-lg p-4 w-72">
-              <div className="flex items-start gap-3 mb-3">
-                <button
-                  onClick={() => charPortraitInput.current?.click()}
-                  className="w-12 h-12 rounded overflow-hidden shrink-0 border border-dashed border-[var(--bg-tertiary)] hover:border-[var(--accent)] transition-colors cursor-pointer"
-                  title="Click to upload portrait"
-                >
-                  {selectedChar.portrait_path ? (
-                    <img
-                      src={staticUrl(selectedChar.portrait_path)!}
-                      alt={selectedChar.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-[var(--bg-tertiary)] flex items-center justify-center text-lg font-bold text-[var(--accent)]">
-                      {selectedChar.name.charAt(0)}
-                    </div>
-                  )}
-                </button>
-                <input ref={charPortraitInput} type="file" accept="image/*" className="hidden" onChange={handlePortraitUpload} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold truncate">{selectedChar.name}</p>
-                  <p className="text-[10px] text-[var(--text-secondary)]">
-                    {selectedChar.type === 'character'
-                      ? `${selectedChar.race} ${selectedChar.class_}`
-                      : `NPC · ${selectedChar.status}`}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setSelectedTokenId(null)}
-                  className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs"
-                >
-                  ×
-                </button>
-              </div>
-
-              {/* VIDA Stats */}
-              <div className="grid grid-cols-4 gap-1 mb-3">
-                {[
-                  { label: 'V', value: selectedChar.vigor },
-                  { label: 'I', value: selectedChar.intelligence },
-                  { label: 'D', value: selectedChar.dexterity },
-                  { label: 'A', value: selectedChar.cunning },
-                ].map((stat) => (
-                  <div key={stat.label} className="text-center bg-[var(--bg-tertiary)] rounded py-1">
-                    <p className="text-[9px] text-[var(--text-secondary)]">{stat.label}</p>
-                    <p className="text-xs font-bold">{stat.value}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* PV/PM Bars */}
-              <div className="space-y-2">
-                <div>
-                  <div className="flex justify-between text-[10px] mb-0.5">
-                    <span className="text-red-400">PV</span>
-                    <span className="text-[var(--text-secondary)]">
-                      {selectedChar.current_pv ?? selectedChar.max_pv}/{selectedChar.max_pv}
-                    </span>
-                  </div>
-                  <div className="h-1.5 bg-[var(--bg-tertiary)] rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-red-500 rounded-full transition-all"
-                      style={{ width: `${((selectedChar.current_pv ?? selectedChar.max_pv) / selectedChar.max_pv) * 100}%` }}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-[10px] mb-0.5">
-                    <span className="text-blue-400">PM</span>
-                    <span className="text-[var(--text-secondary)]">
-                      {selectedChar.current_pm ?? selectedChar.max_pm}/{selectedChar.max_pm}
-                    </span>
-                  </div>
-                  <div className="h-1.5 bg-[var(--bg-tertiary)] rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-blue-500 rounded-full transition-all"
-                      style={{ width: `${((selectedChar.current_pm ?? selectedChar.max_pm) / selectedChar.max_pm) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-2 mt-3">
-                <Link
-                  to={`/campaigns/${campaignId}/characters/${selectedChar.id}`}
-                  className="flex-1 text-center text-[10px] px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-                >
-                  View Sheet
-                </Link>
-                <button
-                  onClick={() => setSelectedTokenId(null)}
-                  className="text-[10px] px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-                >
-                  Remove
-                </button>
-              </div>
+          {selectedChar && selectedEntity && campaignId && (
+            <div className="absolute bottom-4 right-4 z-10">
+              <CharacterSheet
+                entity={selectedChar}
+                entityType={selectedEntity.entity_type as 'character' | 'npc'}
+                campaignId={campaignId}
+                onUpdate={(updated) => {
+                  if (selectedEntity.entity_type === 'character') {
+                    setCharacters((prev) => prev.map((c) => c.id === updated.id ? updated as Character : c));
+                  } else {
+                    setNpcs((prev) => prev.map((n) => n.id === updated.id ? updated as NPC : n));
+                  }
+                }}
+                onClose={() => setSelectedTokenId(null)}
+              />
             </div>
           )}
           {/* HUD Panels */}

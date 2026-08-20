@@ -68,6 +68,8 @@ class CharacterCreate(BaseModel):
     cunning: int = 1
     current_pv: Optional[int] = None
     current_pm: Optional[int] = None
+    inventory_json: list = []
+    spells_json: list = []
 
 
 class CharacterUpdate(BaseModel):
@@ -86,6 +88,8 @@ class CharacterUpdate(BaseModel):
     cunning: Optional[int] = None
     current_pv: Optional[int] = None
     current_pm: Optional[int] = None
+    inventory_json: Optional[list] = None
+    spells_json: Optional[list] = None
 
 
 class CharacterResponse(BaseModel):
@@ -110,6 +114,8 @@ class CharacterResponse(BaseModel):
     defense: int
     current_pv: Optional[int] = None
     current_pm: Optional[int] = None
+    inventory_json: list = []
+    spells_json: list = []
 
     class Config:
         from_attributes = True
@@ -129,6 +135,8 @@ class NPCCreate(BaseModel):
     cunning: int = 1
     current_pv: Optional[int] = None
     current_pm: Optional[int] = None
+    inventory_json: list = []
+    spells_json: list = []
 
 
 class NPCUpdate(BaseModel):
@@ -145,6 +153,8 @@ class NPCUpdate(BaseModel):
     cunning: Optional[int] = None
     current_pv: Optional[int] = None
     current_pm: Optional[int] = None
+    inventory_json: Optional[list] = None
+    spells_json: Optional[list] = None
 
 
 class NPCResponse(BaseModel):
@@ -167,6 +177,8 @@ class NPCResponse(BaseModel):
     defense: int
     current_pv: Optional[int] = None
     current_pm: Optional[int] = None
+    inventory_json: list = []
+    spells_json: list = []
 
     class Config:
         from_attributes = True

@@ -44,6 +44,25 @@ export interface Character {
   defense: number;
   current_pv: number | null;
   current_pm: number | null;
+  inventory_json: InventoryItem[];
+  spells_json: Spell[];
+}
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  description: string;
+  quantity: number;
+  weight?: number;
+  equipped?: boolean;
+}
+
+export interface Spell {
+  id: string;
+  name: string;
+  description: string;
+  level: number;
+  cost_pm: number;
 }
 
 export interface NPC {
@@ -66,6 +85,8 @@ export interface NPC {
   defense: number;
   current_pv: number | null;
   current_pm: number | null;
+  inventory_json: InventoryItem[];
+  spells_json: Spell[];
 }
 
 type CharacterCreateFields = {
@@ -82,6 +103,8 @@ type CharacterCreateFields = {
   cunning?: number;
   current_pv?: number;
   current_pm?: number;
+  inventory_json?: InventoryItem[];
+  spells_json?: Spell[];
 };
 
 type CharacterUpdateFields = Partial<CharacterCreateFields>;
@@ -97,6 +120,8 @@ type NPCCreateFields = {
   cunning?: number;
   current_pv?: number;
   current_pm?: number;
+  inventory_json?: InventoryItem[];
+  spells_json?: Spell[];
 };
 
 type NPCUpdateFields = Partial<NPCCreateFields>;
