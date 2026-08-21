@@ -3,7 +3,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from database import get_session
-from models import Campaign, Session, Character, NPC, Location, Event, Relationship, Scene, SceneCharacter
+from models import (
+    Campaign,
+    Session,
+    Character,
+    NPC,
+    Location,
+    Event,
+    Relationship,
+    Scene,
+    SceneCharacter,
+    Player,
+    Map,
+    Asset,
+    MapMarker,
+    DMNotebook,
+    DMNotebookVersion,
+)
 from schemas import (
     CampaignCreate,
     CampaignUpdate,
@@ -92,6 +108,42 @@ async def delete_campaign(
     campaign = result.scalar_one_or_none()
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
+
+    notebooks_r = await db.execute(
+        select(DMNotebook).where(DMNotebook.campaign_id == campaign_id)
+    )
+    for nb in notebooks_r.scalars().all():
+        versions_r = await db.execute(
+            select(DMNotebookVersion).where(DMNotebookVersion.notebook_id == nb.id)
+        )
+        for version in versions_r.scalars().all():
+            await db.delete(version)
+        await db.delete(nb)
+
+    scenes_r = await db.execute(select(Scene).where(Scene.campaign_id == campaign_id))
+    for scene in scenes_r.scalars().all():
+        scene_chars_r = await db.execute(
+            select(SceneCharacter).where(SceneCharacter.scene_id == scene.id)
+        )
+        for scene_char in scene_chars_r.scalars().all():
+            await db.delete(scene_char)
+        await db.delete(scene)
+
+    maps_r = await db.execute(select(Map).where(Map.campaign_id == campaign_id))
+    for map_ in maps_r.scalars().all():
+        markers_r = await db.execute(
+            select(MapMarker).where(MapMarker.map_id == map_.id)
+        )
+        for marker in markers_r.scalars().all():
+            await db.delete(marker)
+        await db.delete(map_)
+
+    for model in (Event, Relationship, Location, NPC, Character, Player, Session, Asset):
+        rows_r = await db.execute(
+            select(model).where(model.campaign_id == campaign_id)
+        )
+        for row in rows_r.scalars().all():
+            await db.delete(row)
 
     await db.delete(campaign)
     await db.commit()
