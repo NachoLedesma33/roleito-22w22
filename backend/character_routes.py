@@ -48,6 +48,8 @@ def apply_vida_response(char: Character) -> dict:
         "cunning": char.cunning,
         "current_pv": char.current_pv,
         "current_pm": char.current_pm,
+        "inventory_json": char.inventory_json or [],
+        "spells_json": char.spells_json or [],
         **stats,
     }
 
@@ -71,6 +73,8 @@ def apply_npc_vida_response(npc: NPC) -> dict:
         "cunning": npc.cunning,
         "current_pv": npc.current_pv,
         "current_pm": npc.current_pm,
+        "inventory_json": npc.inventory_json or [],
+        "spells_json": npc.spells_json or [],
         **stats,
     }
 
