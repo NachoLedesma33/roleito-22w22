@@ -138,21 +138,37 @@ export async function seedToken(
   x = 0,
   z = 0,
 ): Promise<SceneCharacter[]> {
+  return seedTokens(request, campaignId, sceneId, [
+    { entityType, entityId, x, z },
+  ]);
+}
+
+export interface SeedTokenInput {
+  entityType: string;
+  entityId: string;
+  x?: number;
+  z?: number;
+}
+
+export async function seedTokens(
+  request: APIRequestContext,
+  campaignId: string,
+  sceneId: string,
+  tokens: SeedTokenInput[],
+): Promise<SceneCharacter[]> {
   const res = await request.put(
     `${API_BASE}/campaigns/${campaignId}/scenes/${sceneId}/characters`,
     {
-      data: [
-        {
-          entity_type: entityType,
-          entity_id: entityId,
-          x,
-          y: 0,
-          z,
-          visible: true,
-          order: 0,
-        },
-      ],
+      data: tokens.map((t, i) => ({
+        entity_type: t.entityType,
+        entity_id: t.entityId,
+        x: t.x ?? 0,
+        y: 0,
+        z: t.z ?? 0,
+        visible: true,
+        order: i,
+      })),
     },
   );
-  return jsonOrThrow<SceneCharacter[]>(res, 'seedToken');
+  return jsonOrThrow<SceneCharacter[]>(res, 'seedTokens');
 }

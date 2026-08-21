@@ -123,4 +123,59 @@ test.describe('Dashboard VTT Core', () => {
       `token no se movió: x=${sceneChars[0].x}, z=${sceneChars[0].z}`,
     ).toBe(true);
   });
+
+  test('D5: click en token abre character sheet con datos', async ({ page, campaign, request }) => {
+    const scene = await createScene(request, campaign.id, 'Escena Sheet');
+    const char = await createCharacter(request, campaign.id, {
+      name: 'Cedric',
+      vigor: 4,
+      intelligence: 3,
+      dexterity: 5,
+      cunning: 2,
+    });
+    await seedToken(request, campaign.id, scene.id, 'character', char.id, 0, 0);
+
+    await page.goto(`/campaigns/${campaign.id}`);
+    await expect(page.getByText('On Scene (1)')).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('button', { name: 'Cedric' }).click();
+
+    const sheet = page.getByText('Cedric — Sheet');
+    await expect(sheet).toBeVisible();
+    await expect(page.getByText('Max PV')).toBeVisible();
+    await expect(page.locator('input.text-red-400')).toHaveValue('13');
+    await expect(page.locator('input.text-blue-400')).toHaveValue('8');
+  });
+
+  test('D6: tecla D abre dice roller y Escape cierra', async ({ page, campaign }) => {
+    await page.goto(`/campaigns/${campaign.id}`);
+    await expect(page.getByTitle('Roll dice (D)')).toBeVisible();
+
+    await page.keyboard.press('d');
+    await expect(page.getByText('Dice Roller')).toBeVisible();
+
+    await page.keyboard.press('Escape');
+    await expect(page.getByText('Dice Roller')).toHaveCount(0);
+  });
+
+  test('D7: tecla N abre notebook y Escape cierra', async ({ page, campaign }) => {
+    await page.goto(`/campaigns/${campaign.id}`);
+    await expect(page.getByTitle('DM Notebook (N)')).toBeVisible();
+
+    await page.keyboard.press('n');
+    await expect(page.getByText('DM Notebook').first()).toBeVisible();
+
+    await page.keyboard.press('Escape');
+    await expect(page.getByText('DM Notebook')).toHaveCount(0);
+  });
+
+  test('D8: tecla R abre recap y Escape cierra', async ({ page, campaign }) => {
+    await page.goto(`/campaigns/${campaign.id}`);
+    await expect(page.getByTitle('Session Recap (R)')).toBeVisible();
+
+    await page.keyboard.press('r');
+    await expect(page.getByText('Session Recap')).toBeVisible();
+
+    await page.keyboard.press('Escape');
+    await expect(page.getByText('Session Recap')).toHaveCount(0);
+  });
 });
