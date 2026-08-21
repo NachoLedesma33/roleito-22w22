@@ -8,6 +8,7 @@ import QuickActionsHud from '@/components/QuickActionsHud';
 import DiceRoller from '@/components/DiceRoller';
 import RecapPanel from '@/components/RecapPanel';
 import CharacterSheet from '@/components/CharacterSheet';
+import InitiativeTracker from '@/components/InitiativeTracker';
 import MapViewer from '@/components/MapViewer';
 import DMNotebookHud from '@/components/DMNotebookHud';
 import ContextMenu, { ContextMenuItem } from '@/components/ContextMenu';
@@ -33,6 +34,7 @@ export default function DmDashboard() {
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [copiedInvite, setCopiedInvite] = useState(false);
   const [showDiceRoller, setShowDiceRoller] = useState(false);
+  const [showInitiative, setShowInitiative] = useState(false);
   const [showRecap, setShowRecap] = useState(false);
   const [viewingMap, setViewingMap] = useState<Map | null>(null);
   const [maps, setMaps] = useState<Map[]>([]);
@@ -258,6 +260,8 @@ export default function DmDashboard() {
             setSelectedTokenId(null);
           } else if (showDiceRoller) {
             setShowDiceRoller(false);
+          } else if (showInitiative) {
+            setShowInitiative(false);
           } else if (showRecap) {
             setShowRecap(false);
           } else if (showNotebook) {
@@ -322,6 +326,57 @@ export default function DmDashboard() {
   const selectedChar = selectedEntity
     ? allEntities.find((e) => e.id === selectedEntity.entity_id)
     : null;
+
+  const initiativeCombatants = sceneChars
+    .map((sc) => {
+      const ent = allEntities.find((e) => e.id === sc.entity_id);
+      if (!ent) return null;
+      return {
+        id: ent.id,
+        name: ent.name,
+        type: sc.entity_type as 'character' | 'npc',
+        initiative: 0,
+        current_pv: ent.current_pv ?? ent.max_pv,
+        max_pv: ent.max_pv,
+        current_pm: ent.current_pm ?? ent.max_pm,
+        max_pm: ent.max_pm,
+      };
+    })
+    .filter((c): c is NonNullable<typeof c> => c !== null);
+
+  const handleInitiativeHp = useCallback(
+    (entityId: string, current_pv: number) => {
+      const sc = sceneChars.find((s) => s.entity_id === entityId);
+      if (!sc) return;
+      if (sc.entity_type === 'character') {
+        api.characters.update(campaignId!, entityId, { current_pv }).then((updated) => {
+          setCharacters((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+        });
+      } else {
+        api.npcs.update(campaignId!, entityId, { current_pv }).then((updated) => {
+          setNpcs((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
+        });
+      }
+    },
+    [sceneChars, campaignId]
+  );
+
+  const handleInitiativePm = useCallback(
+    (entityId: string, current_pm: number) => {
+      const sc = sceneChars.find((s) => s.entity_id === entityId);
+      if (!sc) return;
+      if (sc.entity_type === 'character') {
+        api.characters.update(campaignId!, entityId, { current_pm }).then((updated) => {
+          setCharacters((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+        });
+      } else {
+        api.npcs.update(campaignId!, entityId, { current_pm }).then((updated) => {
+          setNpcs((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
+        });
+      }
+    },
+    [sceneChars, campaignId]
+  );
 
   if (loading) {
     return (
@@ -423,6 +478,14 @@ export default function DmDashboard() {
           title="Copy player invite link"
         >
           {copiedInvite ? 'Copied!' : campaign?.invite_code ? '🔗 Invite' : '🔗 Get Invite'}
+        </button>
+
+        <button
+          onClick={() => setShowInitiative(!showInitiative)}
+          className={`text-xs px-2 py-1 rounded transition-colors ${showInitiative ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+          title="Initiative Tracker"
+        >
+          ⚔
         </button>
 
         <button
@@ -783,6 +846,14 @@ export default function DmDashboard() {
           {showDiceRoller && (
             <DiceRoller
               onClose={() => setShowDiceRoller(false)}
+            />
+          )}
+          {showInitiative && (
+            <InitiativeTracker
+              combatants={initiativeCombatants}
+              onUpdateHp={handleInitiativeHp}
+              onUpdatePm={handleInitiativePm}
+              onClose={() => setShowInitiative(false)}
             />
           )}
           {showRecap && campaignId && (
