@@ -80,3 +80,12 @@ graphify-out/
 # Uploaded assets
 data/assets/
 data/roleito.db
+
+# Playwright
+test-results/
+playwright-report/
+
+
+# Playwright
+test-results/
+playwright-report/

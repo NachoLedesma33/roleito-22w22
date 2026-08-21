@@ -9,9 +9,13 @@
     "dev:renderer": "npm run dev --workspace=apps/renderer",
     "dev:backend": "cd backend && ..\\venv\\Scripts\\python.exe -m uvicorn main:app --port 8000 --reload",
     "lint": "npm run lint --workspace=apps/dm",
-    "typecheck": "npm run typecheck --workspace=apps/dm"
+    "typecheck": "npm run typecheck --workspace=apps/dm",
+    "test:e2e": "playwright test"
   },
   "workspaces": [
     "apps/*"
-  ]
+  ],
+  "devDependencies": {
+    "@playwright/test": "^1.62.1"
+  }
 }
