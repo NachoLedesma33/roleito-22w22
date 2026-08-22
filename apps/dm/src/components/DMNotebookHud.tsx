@@ -94,7 +94,12 @@ export default function DMNotebookHud({ campaignId, onClose }: DMNotebookHudProp
 
   const handlePin = useCallback(async (id: string, pinned: number) => {
     const updated = await api.notebooks.update(campaignId, id, { pinned: pinned ? 0 : 1 });
-    setNotebooks((prev) => prev.map((n) => (n.id === id ? updated : n)));
+    setNotebooks((prev) => {
+      const next = prev.map((n) => (n.id === id ? updated : n));
+      return [...next].sort(
+        (a, b) => b.pinned - a.pinned || b.updated_at.localeCompare(a.updated_at),
+      );
+    });
   }, [campaignId]);
 
   const handleShowVersions = useCallback(async (id: string) => {

@@ -172,3 +172,138 @@ export async function seedTokens(
   );
   return jsonOrThrow<SceneCharacter[]>(res, 'seedTokens');
 }
+
+export interface Npc {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export async function createNpc(
+  request: APIRequestContext,
+  campaignId: string,
+  data: { name: string; description?: string },
+): Promise<Npc> {
+  const res = await request.post(`${API_BASE}/campaigns/${campaignId}/npcs`, {
+    data: { vigor: 1, intelligence: 1, dexterity: 1, cunning: 1, ...data },
+  });
+  return jsonOrThrow<Npc>(res, 'createNpc');
+}
+
+export async function getNpc(
+  request: APIRequestContext,
+  campaignId: string,
+  npcId: string,
+): Promise<Npc> {
+  const res = await request.get(`${API_BASE}/campaigns/${campaignId}/npcs/${npcId}`);
+  return jsonOrThrow<Npc>(res, 'getNpc');
+}
+
+export interface GameMap {
+  id: string;
+  name: string;
+  file_path: string | null;
+}
+
+export async function createMap(
+  request: APIRequestContext,
+  campaignId: string,
+  name: string,
+): Promise<GameMap> {
+  const res = await request.post(`${API_BASE}/campaigns/${campaignId}/maps`, {
+    data: { name },
+  });
+  return jsonOrThrow<GameMap>(res, 'createMap');
+}
+
+export async function uploadMapFile(
+  request: APIRequestContext,
+  campaignId: string,
+  mapId: string,
+): Promise<GameMap> {
+  const res = await request.post(
+    `${API_BASE}/campaigns/${campaignId}/maps/${mapId}/upload`,
+    {
+      multipart: {
+        file: { name: 'map.png', mimeType: 'image/png', buffer: PNG_1PX },
+      },
+    },
+  );
+  return jsonOrThrow<GameMap>(res, 'uploadMapFile');
+}
+
+export async function createMapWithFile(
+  request: APIRequestContext,
+  campaignId: string,
+  name: string,
+): Promise<GameMap> {
+  const map = await createMap(request, campaignId, name);
+  return uploadMapFile(request, campaignId, map.id);
+}
+
+export async function updateScene(
+  request: APIRequestContext,
+  campaignId: string,
+  sceneId: string,
+  data: { map_id?: string | null; lighting?: string; status?: string },
+): Promise<Scene> {
+  const res = await request.put(
+    `${API_BASE}/campaigns/${campaignId}/scenes/${sceneId}`,
+    { data },
+  );
+  return jsonOrThrow<Scene>(res, 'updateScene');
+}
+
+export interface TestSession {
+  id: string;
+  number: number;
+  date: string;
+  title: string;
+  summary: string;
+  status: string;
+}
+
+export async function createSession(
+  request: APIRequestContext,
+  campaignId: string,
+  data: { number: number; date?: string; title?: string },
+): Promise<TestSession> {
+  const res = await request.post(
+    `${API_BASE}/campaigns/${campaignId}/sessions`,
+    {
+      data: { date: '2026-08-22', ...data },
+    },
+  );
+  return jsonOrThrow<TestSession>(res, 'createSession');
+}
+
+export async function getSession(
+  request: APIRequestContext,
+  campaignId: string,
+  sessionId: string,
+): Promise<TestSession> {
+  const res = await request.get(
+    `${API_BASE}/campaigns/${campaignId}/sessions/${sessionId}`,
+  );
+  return jsonOrThrow<TestSession>(res, 'getSession');
+}
+
+export interface TestEvent {
+  id: string;
+  type: string;
+  actor_id: string;
+  description: string;
+}
+
+export async function seedEvent(
+  request: APIRequestContext,
+  campaignId: string,
+  sessionId: string,
+  data: { type: string; actor_id: string; target_id?: string; description?: string },
+): Promise<TestEvent> {
+  const res = await request.post(
+    `${API_BASE}/campaigns/${campaignId}/sessions/${sessionId}/events`,
+    { data: { session_id: sessionId, ...data } },
+  );
+  return jsonOrThrow<TestEvent>(res, 'seedEvent');
+}

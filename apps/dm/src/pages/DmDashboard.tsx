@@ -537,7 +537,7 @@ export default function DmDashboard() {
                 <button
                   onClick={async () => {
                     if (!campaignId || !activeScene) return;
-                    const updated = await api.scenes.update(campaignId, activeScene.id, { map_id: undefined });
+                    const updated = await api.scenes.update(campaignId, activeScene.id, { map_id: null });
                     setActiveScene(updated);
                     setScenes((prev) => prev.map((s) => s.id === updated.id ? updated : s));
                   }}
