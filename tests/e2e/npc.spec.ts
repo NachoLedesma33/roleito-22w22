@@ -41,7 +41,7 @@ test.describe('NPC CRUD', () => {
   });
 
   test('N3: elimina NPC con confirmación', async ({ page, campaign, request }) => {
-    const npc = await createNpc(request, campaign.id, { name: 'Nix' });
+    await createNpc(request, campaign.id, { name: 'Nix' });
 
     await page.goto(`/campaigns/${campaign.id}/npcs`);
     await expect(page.getByText('Nix')).toBeVisible();

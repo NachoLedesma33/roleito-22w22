@@ -1,5 +1,5 @@
 import { test as base, expect } from '@playwright/test';
-import { API_BASE, Campaign, createCampaign, deleteCampaign } from '../helpers/api-helpers';
+import { Campaign, createCampaign, deleteCampaign } from '../helpers/api-helpers';
 
 type Fixtures = {
   campaign: Campaign;

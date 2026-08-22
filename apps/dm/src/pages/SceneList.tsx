@@ -31,6 +31,7 @@ export default function SceneList() {
       setShowForm(false);
       navigate(`/campaigns/${campaignId}/scenes/${scene.id}`);
     } catch {
+      // scene creation failure is surfaced by the form staying open
     } finally {
       setSaving(false);
     }

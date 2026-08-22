@@ -17,6 +17,13 @@ function groupEvents(events: Event[]): Record<string, Event[]> {
   return groups;
 }
 
+function buildEntityMap(chars: Character[], npcList: NPC[]): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const c of chars) map[c.id] = c.name;
+  for (const n of npcList) map[n.id] = n.name;
+  return map;
+}
+
 const EVENT_LABELS: Record<string, string> = {
   COMBAT: 'Combat',
   DIALOGUE: 'Dialogue',
@@ -87,11 +94,7 @@ export default function RecapPanel({ campaignId, onClose }: RecapPanelProps) {
   }, [campaignId]);
 
   useEffect(() => {
-    if (!selectedSessionId) {
-      setEvents([]);
-      setRecap('');
-      return;
-    }
+    if (!selectedSessionId) return;
     api.events.listBySession(campaignId, selectedSessionId)
       .then((evts) => {
         setEvents(evts);
@@ -104,13 +107,6 @@ export default function RecapPanel({ campaignId, onClose }: RecapPanelProps) {
         setRecap('No events found for this session.');
       });
   }, [selectedSessionId, campaignId, sessions, characters, npcs]);
-
-  const buildEntityMap = (chars: Character[], npcList: NPC[]): Record<string, string> => {
-    const map: Record<string, string> = {};
-    for (const c of chars) map[c.id] = c.name;
-    for (const n of npcList) map[n.id] = n.name;
-    return map;
-  };
 
   const handleSave = useCallback(async () => {
     if (!selectedSessionId) return;

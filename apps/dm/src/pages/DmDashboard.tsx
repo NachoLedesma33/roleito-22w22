@@ -64,10 +64,7 @@ export default function DmDashboard() {
   }, [campaignId]);
 
   useEffect(() => {
-    if (!campaignId || !activeScene) {
-      setSceneChars([]);
-      return;
-    }
+    if (!campaignId || !activeScene) return;
     api.scenes.getCharacters(campaignId, activeScene.id)
       .then(setSceneChars)
       .catch(() => setSceneChars([]));

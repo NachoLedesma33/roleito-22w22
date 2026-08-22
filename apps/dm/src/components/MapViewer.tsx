@@ -80,7 +80,9 @@ export default function MapViewer({ map, onClose }: MapViewerProps) {
       setMarkers((prev) => [...prev, marker]);
       setPlacing(false);
       setNewLabel('');
-    } catch {}
+    } catch {
+      // marker creation failure is non-fatal; stay in placing mode
+    }
   }, [placing, map.id, newLabel, newType, newColor]);
 
   const handleDeleteMarker = useCallback(async (id: string) => {

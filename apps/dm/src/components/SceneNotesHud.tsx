@@ -19,10 +19,7 @@ export default function SceneNotesHud({
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!sceneId) {
-      setNotes('');
-      return;
-    }
+    if (!sceneId) return;
     api.scenes.get(campaignId, sceneId)
       .then((s) => setNotes(s.notes || ''))
       .catch(() => setNotes(''));

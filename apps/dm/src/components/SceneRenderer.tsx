@@ -26,6 +26,8 @@ interface SceneRendererProps {
   onTokenContextMenu?: (sceneCharId: string, clientX: number, clientY: number) => void;
 }
 
+type DragStarter = (sceneCharId: string, x: number, z: number) => void;
+
 function SceneBackground({ url }: { url: string }) {
   const texture = useTexture(url);
   const img = texture.image as HTMLImageElement;
@@ -157,11 +159,13 @@ function DragController({
     };
   }, [gl, getGroundPoint, onTokenDrop]);
 
-  // Expose startDrag via a global function on the canvas
+  // Expose startDrag via a global function on the canvas.
+  // Mutating the external DOM canvas node inside an effect is intentional:
+  // DOM nodes live outside React's render graph, but the immutability rule
+  // cannot see that `canvas` aliases `gl.domElement` rather than a render value.
+  /* eslint-disable react-hooks/immutability */
   useEffect(() => {
-    const canvas = gl.domElement as HTMLCanvasElement & {
-      __startDrag?: (sceneCharId: string, x: number, z: number) => void;
-    };
+    const canvas = gl.domElement as HTMLCanvasElement & { __startDrag?: DragStarter };
     canvas.__startDrag = (sceneCharId: string, x: number, z: number) => {
       dragState.current = {
         active: true,
@@ -174,6 +178,7 @@ function DragController({
       canvas.__startDrag = undefined;
     };
   }, [gl]);
+  /* eslint-enable react-hooks/immutability */
 
   return null;
 }
@@ -197,20 +202,16 @@ function DraggableToken({
     }
   });
 
-  const handlePointerDown = useCallback(
-    (_e: THREE.Event) => {
-      // Start drag via canvas __startDrag
-      const canvas = document.querySelector('canvas') as (HTMLCanvasElement & {
-        __startDrag?: (sceneCharId: string, x: number, z: number) => void;
-      }) | null;
-      if (canvas?.__startDrag) {
-        canvas.__startDrag(entity.sceneCharId, entity.x, entity.z);
-      }
+  const handlePointerDown = useCallback(() => {
+    const canvas = document.querySelector('canvas') as (HTMLCanvasElement & {
+      __startDrag?: (sceneCharId: string, x: number, z: number) => void;
+    }) | null;
+    if (canvas?.__startDrag) {
+      canvas.__startDrag(entity.sceneCharId, entity.x, entity.z);
+    }
 
-      onClick?.(entity.sceneCharId);
-    },
-    [entity, onClick]
-  );
+    onClick?.(entity.sceneCharId);
+  }, [entity, onClick]);
 
   return (
     <group ref={groupRef} position={[entity.x, entity.y, entity.z]}>

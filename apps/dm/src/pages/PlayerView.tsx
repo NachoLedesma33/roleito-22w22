@@ -37,11 +37,7 @@ export default function PlayerView() {
   const pollRef = useRef<ReturnType<typeof setInterval>>();
 
   useEffect(() => {
-    if (!code) {
-      setError('No invite code provided');
-      setLoading(false);
-      return;
-    }
+    if (!code) return;
 
     fetch(`${API_BASE}/campaigns/invite/${code}`)
       .then(async (res) => {
@@ -76,7 +72,9 @@ export default function PlayerView() {
     return () => clearInterval(pollRef.current);
   }, [code, data?.scene_id]);
 
-  if (loading) {
+  const missingCode = !code;
+
+  if (loading && !missingCode) {
     return (
       <div className="h-screen flex items-center justify-center bg-black text-gray-400">
         Joining campaign...
@@ -84,10 +82,10 @@ export default function PlayerView() {
     );
   }
 
-  if (error || !data) {
+  if (error || missingCode || !data) {
     return (
       <div className="h-screen flex items-center justify-center bg-black text-red-400">
-        {error || 'Failed to join'}
+        {error || (missingCode ? 'No invite code provided' : 'Failed to join')}
       </div>
     );
   }

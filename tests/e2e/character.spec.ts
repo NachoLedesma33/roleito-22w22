@@ -57,11 +57,10 @@ test.describe('Character CRUD', () => {
   });
 
   test('CH3: elimina personaje con confirmación', async ({ page, campaign, request }) => {
-    const created = await request.post(
+    await request.post(
       `http://localhost:8000/api/campaigns/${campaign.id}/characters`,
       { data: { name: 'Nadia', type: 'player' } },
     );
-    const char = await created.json();
 
     await page.goto(`/campaigns/${campaign.id}/characters`);
     page.on('dialog', (dialog) => dialog.accept());

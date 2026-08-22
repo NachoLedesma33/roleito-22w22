@@ -50,7 +50,9 @@ export default function CharacterSheet({
         const updated = await api.npcs.uploadPortrait(campaignId, entity.id, file);
         onUpdate(updated);
       }
-    } catch {}
+    } catch {
+      // portrait upload failure is non-fatal; keep current portrait
+    }
     e.target.value = '';
   }, [campaignId, entity.id, entityType, onUpdate]);
 

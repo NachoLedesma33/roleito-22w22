@@ -51,11 +51,7 @@ export default function DMNotebookHud({ campaignId, onClose }: DMNotebookHudProp
   const selected = notebooks.find((n) => n.id === selectedId);
 
   useEffect(() => {
-    if (!selectedId) {
-      setEditing(false);
-      setShowVersions(false);
-      return;
-    }
+    if (!selectedId) return;
     api.notebooks.get(campaignId, selectedId).then((n) => {
       setTitleDraft(n.title);
       setContentDraft(n.content);
@@ -89,7 +85,11 @@ export default function DMNotebookHud({ campaignId, onClose }: DMNotebookHudProp
     if (!confirm('Delete this note?')) return;
     await api.notebooks.delete(campaignId, id);
     setNotebooks((prev) => prev.filter((n) => n.id !== id));
-    if (selectedId === id) setSelectedId(null);
+    if (selectedId === id) {
+      setSelectedId(null);
+      setEditing(false);
+      setShowVersions(false);
+    }
   }, [campaignId, selectedId]);
 
   const handlePin = useCallback(async (id: string, pinned: number) => {
@@ -252,7 +252,11 @@ export default function DMNotebookHud({ campaignId, onClose }: DMNotebookHudProp
             )}
 
             <button
-              onClick={() => setSelectedId(null)}
+              onClick={() => {
+                setSelectedId(null);
+                setEditing(false);
+                setShowVersions(false);
+              }}
               className="text-[10px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             >
               ← Back to list

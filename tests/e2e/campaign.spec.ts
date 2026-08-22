@@ -1,7 +1,7 @@
 import { expect, test } from '../fixtures/campaign-fixture';
 
 test.describe('Campaign CRUD', () => {
-  test('C1: crea campaña desde la UI y redirige al dashboard', async ({ page, request }) => {
+  test('C1: crea campaña desde la UI y redirige al dashboard', async ({ page }) => {
     const name = `UI Campaign ${Date.now()}`;
 
     await page.goto('/');

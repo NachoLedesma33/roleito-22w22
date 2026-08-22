@@ -8,6 +8,10 @@ function staticUrl(path: string | null): string | null {
   return `http://localhost:8000/api/static/${path.replace(/\\/g, '/').split('/assets/')[1]}`;
 }
 
+function randomOffset(): number {
+  return Math.random() * 4 - 2;
+}
+
 export default function SceneDetail() {
   const { id: campaignId, sceneId } = useParams<{ id: string; sceneId: string }>();
   const [scene, setScene] = useState<Scene | null>(null);
@@ -81,9 +85,9 @@ export default function SceneDetail() {
     const newChars = [...sceneChars, {
       entity_type: entityType,
       entity_id: entityId,
-      x: Math.random() * 4 - 2,
+      x: randomOffset(),
       y: 0,
-      z: Math.random() * 4 - 2,
+      z: randomOffset(),
       visible: true,
       order: sceneChars.length,
     }];
