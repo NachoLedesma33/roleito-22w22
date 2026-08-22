@@ -200,6 +200,7 @@ export interface MapMarker {
   map_id: string;
   label: string;
   marker_type: string;
+  target_scene_id: string | null;
   x: number;
   y: number;
   color: string;
@@ -434,9 +435,9 @@ export const api = {
   mapMarkers: {
     list: (mapId: string) =>
       request<MapMarker[]>(`/maps/${mapId}/markers`),
-    create: (mapId: string, data: { label?: string; marker_type?: string; x?: number; y?: number; color?: string; description?: string }) =>
+    create: (mapId: string, data: { label?: string; marker_type?: string; target_scene_id?: string; x?: number; y?: number; color?: string; description?: string }) =>
       request<MapMarker>(`/maps/${mapId}/markers`, { method: 'POST', body: JSON.stringify(data) }),
-    update: (markerId: string, data: { label?: string; marker_type?: string; x?: number; y?: number; color?: string; description?: string }) =>
+    update: (markerId: string, data: { label?: string; marker_type?: string; target_scene_id?: string | null; x?: number; y?: number; color?: string; description?: string }) =>
       request<MapMarker>(`/markers/${markerId}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (markerId: string) =>
       request<{ status: string; id: string }>(`/markers/${markerId}`, { method: 'DELETE' }),

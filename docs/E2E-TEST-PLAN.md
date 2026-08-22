@@ -244,6 +244,22 @@ export { expect } from '@playwright/test';
 
 ---
 
+## 12b. Suite: Scene Transitions
+
+> FASE 8. Una transición = marcador `transition` con `target_scene_id`.
+> Los mapas de estos tests se suben como SVG de 600x400 (`createSizedMap`):
+> con imágenes de 1px el wrapper del mapa es degenerado y los markers/popup
+> caen fuera del viewport.
+
+| # | Test | Pasos | Resultado esperado |
+|---|------|-------|--------------------|
+| TR1 | Crear transición con retorno | Add Marker → tipo Transition → click mapa → elegir destino → Create | Marker en origen + marcador de retorno en mapa destino apuntando a escena actual |
+| TR2 | Travel cambia de escena | Click en marker → Travel | Escena activa = destino y viewer reabierto con mapa destino |
+| TR3 | Puerta de retorno | Viajar → click retorno → Travel | Vuelve a escena/mapa originales |
+| TR4 | Sin checkbox retorno | Crear transición con retorno desmarcado | Solo 1 marker; mapa destino sin markers |
+
+---
+
 ## 13. Suite: API Health
 
 | # | Test | Pasos | Resultado esperado |

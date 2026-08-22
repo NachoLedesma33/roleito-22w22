@@ -37,6 +37,7 @@ async def create_marker(
         map_id=map_id,
         label=data.label,
         marker_type=data.marker_type,
+        target_scene_id=data.target_scene_id,
         x=data.x,
         y=data.y,
         color=data.color,

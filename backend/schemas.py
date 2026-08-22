@@ -381,6 +381,7 @@ class SceneCharacterResponse(BaseModel):
 class MapMarkerCreate(BaseModel):
     label: str = ""
     marker_type: str = "poi"
+    target_scene_id: Optional[str] = None
     x: float = 0.5
     y: float = 0.5
     color: str = "#60a5fa"
@@ -390,6 +391,7 @@ class MapMarkerCreate(BaseModel):
 class MapMarkerUpdate(BaseModel):
     label: Optional[str] = None
     marker_type: Optional[str] = None
+    target_scene_id: Optional[str] = None
     x: Optional[float] = None
     y: Optional[float] = None
     color: Optional[str] = None
@@ -401,6 +403,7 @@ class MapMarkerResponse(BaseModel):
     map_id: str
     label: str
     marker_type: str
+    target_scene_id: Optional[str] = None
     x: float
     y: float
     color: str

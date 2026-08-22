@@ -221,6 +221,7 @@ class MapMarker(Base):
     map_id = Column(String, ForeignKey("maps.id"), nullable=False)
     label = Column(String, default="")
     marker_type = Column(String, default="poi")
+    target_scene_id = Column(String, nullable=True)
     x = Column(Float, default=0.5)
     y = Column(Float, default=0.5)
     color = Column(String, default="#60a5fa")

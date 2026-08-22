@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { api, Map, MapMarker } from '@/lib/api';
+import { api, Map, MapMarker, Scene } from '@/lib/api';
 
 function staticUrl(path: string | null): string | null {
   if (!path) return null;
@@ -21,12 +21,19 @@ const MARKER_TYPES = [
   { value: 'camp', label: 'Camp' },
 ];
 
+const TRANSITION_COLOR = '#fbbf24';
+
+const TRANSITION_TYPES = [{ value: 'transition', label: 'Transition' }];
+
 interface MapViewerProps {
   map: Map;
   onClose: () => void;
+  scenes?: Scene[];
+  currentSceneId?: string | null;
+  onTransit?: (targetSceneId: string) => void;
 }
 
-export default function MapViewer({ map, onClose }: MapViewerProps) {
+export default function MapViewer({ map, onClose, scenes, currentSceneId, onTransit }: MapViewerProps) {
   const [markers, setMarkers] = useState<MapMarker[]>([]);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -38,6 +45,11 @@ export default function MapViewer({ map, onClose }: MapViewerProps) {
   const [newLabel, setNewLabel] = useState('');
   const [newType, setNewType] = useState('poi');
   const [newColor, setNewColor] = useState('#60a5fa');
+  const [transitionForm, setTransitionForm] = useState<{ x: number; y: number } | null>(null);
+  const [transTargetId, setTransTargetId] = useState('');
+  const [transReturn, setTransReturn] = useState(true);
+
+  const availableTypes = onTransit ? [...MARKER_TYPES, ...TRANSITION_TYPES] : MARKER_TYPES;
 
   useEffect(() => {
     api.mapMarkers.list(map.id).then(setMarkers).catch(() => setMarkers([]));
@@ -70,6 +82,13 @@ export default function MapViewer({ map, onClose }: MapViewerProps) {
     const x = (e.clientX - rect.left) / rect.width;
     const y = (e.clientY - rect.top) / rect.height;
 
+    if (newType === 'transition') {
+      setTransTargetId('');
+      setTransReturn(true);
+      setTransitionForm({ x, y });
+      return;
+    }
+
     try {
       const marker = await api.mapMarkers.create(map.id, {
         label: newLabel || 'Marker',
@@ -84,6 +103,40 @@ export default function MapViewer({ map, onClose }: MapViewerProps) {
       // marker creation failure is non-fatal; stay in placing mode
     }
   }, [placing, map.id, newLabel, newType, newColor]);
+
+  const destScenes = scenes?.filter((s) => s.id !== currentSceneId) ?? [];
+
+  const handleCreateTransition = useCallback(async () => {
+    if (!transitionForm || !transTargetId || !onTransit) return;
+    const target = scenes?.find((s) => s.id === transTargetId);
+    try {
+      const marker = await api.mapMarkers.create(map.id, {
+        label: target?.name || 'Transition',
+        marker_type: 'transition',
+        target_scene_id: transTargetId,
+        x: transitionForm.x,
+        y: transitionForm.y,
+        color: TRANSITION_COLOR,
+      });
+      setMarkers((prev) => [...prev, marker]);
+      const here = scenes?.find((s) => s.id === currentSceneId);
+      if (transReturn && target?.map_id) {
+        await api.mapMarkers.create(target.map_id, {
+          label: here?.name || 'Transition',
+          marker_type: 'transition',
+          target_scene_id: currentSceneId ?? undefined,
+          x: transitionForm.x,
+          y: transitionForm.y,
+          color: TRANSITION_COLOR,
+        });
+      }
+    } catch {
+      // creation failure is non-fatal; keep the form open for retry
+      return;
+    }
+    setTransitionForm(null);
+    setPlacing(false);
+  }, [transitionForm, transTargetId, transReturn, map.id, scenes, currentSceneId, onTransit]);
 
   const handleDeleteMarker = useCallback(async (id: string) => {
     await api.mapMarkers.delete(id);
@@ -148,22 +201,27 @@ export default function MapViewer({ map, onClose }: MapViewerProps) {
             />
             <select
               value={newType}
-              onChange={(e) => setNewType(e.target.value)}
+              onChange={(e) => {
+                setNewType(e.target.value);
+                if (e.target.value === 'transition') setNewColor(TRANSITION_COLOR);
+              }}
               className="text-[10px] px-1 py-1 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] focus:outline-none"
             >
-              {MARKER_TYPES.map((t) => (
+              {availableTypes.map((t) => (
                 <option key={t.value} value={t.value}>{t.label}</option>
               ))}
             </select>
-            <select
-              value={newColor}
-              onChange={(e) => setNewColor(e.target.value)}
-              className="text-[10px] px-1 py-1 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] focus:outline-none"
-            >
-              {MARKER_COLORS.map((c) => (
-                <option key={c} value={c} style={{ color: c }}>●</option>
-              ))}
-            </select>
+            {newType !== 'transition' && (
+              <select
+                value={newColor}
+                onChange={(e) => setNewColor(e.target.value)}
+                className="text-[10px] px-1 py-1 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] focus:outline-none"
+              >
+                {MARKER_COLORS.map((c) => (
+                  <option key={c} value={c} style={{ color: c }}>●</option>
+                ))}
+              </select>
+            )}
             <button
               onClick={() => setPlacing(false)}
               className="text-[10px] px-2 py-1 rounded bg-red-900/50 text-red-300"
@@ -291,8 +349,20 @@ export default function MapViewer({ map, onClose }: MapViewerProps) {
                     ) : (
                       <div>
                         <p className="text-xs font-bold">{m.label}</p>
-                        <p className="text-[10px] text-[var(--text-secondary)]">{m.marker_type}</p>
+                        {m.marker_type === 'transition' && m.target_scene_id && (
+                          <p className="text-[10px] text-[var(--text-secondary)]">
+                            → {scenes?.find((s) => s.id === m.target_scene_id)?.name ?? 'unknown scene'}
+                          </p>
+                        )}
                         <div className="flex gap-1 mt-1">
+                          {m.marker_type === 'transition' && m.target_scene_id && onTransit && (
+                            <button
+                              onClick={() => onTransit(m.target_scene_id!)}
+                              className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)]"
+                            >
+                              Travel
+                            </button>
+                          )}
                           <button
                             onClick={() => setEditingMarker(m.id)}
                             className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)]"
@@ -316,9 +386,56 @@ export default function MapViewer({ map, onClose }: MapViewerProps) {
         </div>
 
         {/* Placing hint */}
-        {placing && (
+        {placing && !transitionForm && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-[var(--accent)]/90 text-white text-xs px-3 py-1.5 rounded-full">
-            Click on map to place marker
+            {newType === 'transition' ? 'Click on map to place the transition' : 'Click on map to place marker'}
+          </div>
+        )}
+
+        {/* Transition destination form */}
+        {transitionForm && (
+          <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-30">
+            <div
+              className="bg-[var(--bg-primary)] border border-[var(--bg-tertiary)] rounded-lg p-4 w-72 space-y-3 shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p className="text-sm font-bold">Transition to…</p>
+              <select
+                value={transTargetId}
+                onChange={(e) => setTransTargetId(e.target.value)}
+                className="w-full text-xs px-2 py-1.5 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
+                autoFocus
+              >
+                <option value="">Select scene…</option>
+                {destScenes.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+              <label className="flex items-center gap-2 text-[11px] text-[var(--text-secondary)] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={transReturn}
+                  onChange={(e) => setTransReturn(e.target.checked)}
+                  className="accent-[var(--accent)]"
+                />
+                Create return door on destination
+              </label>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleCreateTransition}
+                  disabled={!transTargetId}
+                  className="flex-1 text-xs py-1.5 rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Create
+                </button>
+                <button
+                  onClick={() => setTransitionForm(null)}
+                  className="text-xs px-3 py-1.5 rounded bg-red-900/50 text-red-300"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

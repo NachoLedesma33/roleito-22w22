@@ -14,6 +14,7 @@ async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit
 
 MIGRATIONS = [
     ("scenes", "map_id", "ALTER TABLE scenes ADD COLUMN map_id TEXT"),
+    ("map_markers", "target_scene_id", "ALTER TABLE map_markers ADD COLUMN target_scene_id TEXT"),
     ("characters", "inventory_json", "ALTER TABLE characters ADD COLUMN inventory_json TEXT DEFAULT '[]'"),
     ("characters", "spells_json", "ALTER TABLE characters ADD COLUMN spells_json TEXT DEFAULT '[]'"),
     ("npcs", "inventory_json", "ALTER TABLE npcs ADD COLUMN inventory_json TEXT DEFAULT '[]'"),

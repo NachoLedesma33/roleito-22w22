@@ -38,6 +38,7 @@ export default function DmDashboard() {
   const [showRecap, setShowRecap] = useState(false);
   const [viewingMap, setViewingMap] = useState<Map | null>(null);
   const [maps, setMaps] = useState<Map[]>([]);
+  const [transitioning, setTransitioning] = useState<'idle' | 'in' | 'out'>('idle');
   const [showNotebook, setShowNotebook] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -74,6 +75,21 @@ export default function DmDashboard() {
     const scene = scenes.find((s) => s.id === sceneId);
     if (scene) setActiveScene(scene);
   }, [scenes]);
+
+  const handleTransit = useCallback(async (targetSceneId: string) => {
+    const target = scenes.find((s) => s.id === targetSceneId);
+    if (!target) return;
+    setTransitioning('in');
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    setActiveScene(target);
+    setSelectedTokenId(null);
+    const destMap = target.map_id ? maps.find((m) => m.id === target.map_id) : null;
+    setViewingMap(destMap ?? null);
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    setTransitioning('out');
+    await new Promise((resolve) => setTimeout(resolve, 320));
+    setTransitioning('idle');
+  }, [scenes, maps]);
 
   const handleUploadBg = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -863,7 +879,13 @@ export default function DmDashboard() {
             <MapViewer
               map={viewingMap}
               onClose={() => setViewingMap(null)}
+              scenes={scenes}
+              currentSceneId={activeScene?.id ?? null}
+              onTransit={handleTransit}
             />
+          )}
+          {transitioning !== 'idle' && (
+            <div className={`scene-transition-overlay ${transitioning === 'out' ? 'scene-transition-overlay--out' : ''}`} />
           )}
           {showNotebook && campaignId && (
             <DMNotebookHud
