@@ -9,29 +9,39 @@
 
 # 1. Estado Actual
 
+> Sincronizado con la realidad del código al 2026-08-22.
+
 ## Lo que existe
 
 ```text
 BACKEND
   FastAPI app con endpoint /health
-  Modelos SQLAlchemy (Campaign, Session, Character, NPC, Location, Event, Relationship)
-  Configuración SQLite database
+  CRUD completo: Campaigns, Sessions, Characters/NPCs, Events, Scenes,
+    Maps + Markers, Notebook (con versiones), Player invite
+  Configuración SQLite database + migraciones async de columnas faltantes
 
-FRONTEND
-  Vite + React app DM (placeholder UI)
-  Tipos TypeScript del dominio (todas las entidades definidas)
+FRONTEND (apps/dm)
+  Dashboard DM VTT: mapa siempre visible + TopBar + HUD panels
+  SceneRenderer 3D (Three.js + R3F) con tokens arrastrables y persistencia
+  MapViewer 2D overlay (pan, zoom, markers CRUD)
+  Character Sheet HUD (PV/PM, inventory, spells, portrait upload)
+  Scene Notes, Recap Panel (con export .md), Dice Roller (d4-d20),
+  DM Notebook (categorías, pin, versiones), Initiative Tracker
 
-DOCS
-  32 docs comprensivos
-  Arquitectura, dominio, base de datos, renderer, sistema de sesiones, etc.
+TESTS / CI
+  Suite E2E Playwright: 64 tests (ver docs/E2E-TEST-PLAN.md)
+  GitHub Actions: typecheck + lint + e2e en cada push
+
+CORE / INFRASTRUCTURE (aún placeholders .gitkeep)
+  core/events, core/world, core/canon, core/memory, core/narrative
+  infrastructure/ai, tts, search, storage
 
 AÚN NO
-  Endpoints CRUD
-  Componentes UI
-  Sistema de eventos
-  Sistema de escenas
-  Renderer
-  Tests
+  Transiciones de escena (puertas, cambio automático)
+  Player View completa (existe versión básica con invite code + polling;
+    falta modelo de sincronización real entre clientes)
+  Capa de IA desacoplada (LLM provider interface)
+  TTS
 ```
 
 ---
@@ -79,6 +89,8 @@ PREPARACIÓN DE SESIONES
 
 # 3. Resumen de Fases
 
+> Estado sincronizado con el código al 2026-08-22.
+
 ```text
 PHASE 0  Fundación              ✓ COMPLETADA
 PHASE 1  Campaign CRUD          ✓ COMPLETADA
@@ -88,14 +100,18 @@ PHASE 4  Sistema de Eventos     ✓ COMPLETADA
 PHASE 5  Dashboard DM (Superadmin) ✓ COMPLETADA
 PHASE 6  Sistema de Escenas     ✓ COMPLETADA (backend + frontend básico)
 PHASE 7  Renderer Básico (3D env + 2D sprites) ✓ COMPLETADA (Three.js + R3F)
-PHASE 6.5 DM Dashboard VTT ← ACTUAL (mapa always-on + HUD panels)
-PHASE 8  Sistema de Transiciones (puertas, cambio automático de escena)
-PHASE 9  Token Drag & Drop (movimiento en mapa)
-PHASE 10 HUD Panels completos (Character Sheet, Session Log, Scene Notes)
-PHASE 11 Sistema de Recaps
-PHASE 12 Player View
-PHASE 13 Sistema de Dados
-...
+PHASE 6.5 DM Dashboard VTT      ✓ COMPLETADA (mapa always-on + HUD panels + notebook + iniciativa)
+PHASE 8  Sistema de Transiciones ← SIGUIENTE (puertas, cambio automático de escena)
+PHASE 9  Token Drag & Drop      ✓ COMPLETADA (drag en renderer, posición persistida; cubierto por E2E D4)
+PHASE 10 HUD Panels completos   ✓ COMPLETADA (Character Sheet, Scene Notes, Recap, Dice)
+PHASE 11 Sistema de Recaps      ✓ COMPLETADA (RecapPanel + export .md)
+PHASE 12 Player View            ◐ PARCIAL (invite code + polling; falta sync real entre clientes)
+PHASE 13 Sistema de Dados       ✓ COMPLETADA (DiceRoller d4-d20)
+
+EXTRA (construido fuera de este plan):
+  DM Notebook con historial de versiones y categorías   ✓
+  Initiative Tracker integrado al TopBar                ✓
+  Suite E2E Playwright (64 tests) + CI en GitHub Actions ✓
 ```
 
 ---
