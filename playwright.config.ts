@@ -19,7 +19,7 @@ export default defineConfig({
       timeout: 60_000,
     },
     {
-      command: 'npm run dev:backend',
+      command: process.env.CI ? 'npm run dev:backend:ci' : 'npm run dev:backend',
       url: 'http://localhost:8000/health',
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,
