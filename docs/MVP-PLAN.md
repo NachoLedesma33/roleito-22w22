@@ -101,11 +101,11 @@ PHASE 5  Dashboard DM (Superadmin) ✓ COMPLETADA
 PHASE 6  Sistema de Escenas     ✓ COMPLETADA (backend + frontend básico)
 PHASE 7  Renderer Básico (3D env + 2D sprites) ✓ COMPLETADA (Three.js + R3F)
 PHASE 6.5 DM Dashboard VTT      ✓ COMPLETADA (mapa always-on + HUD panels + notebook + iniciativa)
-PHASE 8  Sistema de Transiciones ← SIGUIENTE (puertas, cambio automático de escena)
+PHASE 8  Sistema de Transiciones ✓ COMPLETADA (markers transition con destino; fade + auto-open del mapa destino)
 PHASE 9  Token Drag & Drop      ✓ COMPLETADA (drag en renderer, posición persistida; cubierto por E2E D4)
 PHASE 10 HUD Panels completos   ✓ COMPLETADA (Character Sheet, Scene Notes, Recap, Dice)
 PHASE 11 Sistema de Recaps      ✓ COMPLETADA (RecapPanel + export .md)
-PHASE 12 Player View            ◐ PARCIAL (invite code + polling; falta sync real entre clientes)
+PHASE 12 Player View            ◐ PARCIAL ← SIGUIENTE (invite code + polling; falta sync real entre clientes)
 PHASE 13 Sistema de Dados       ✓ COMPLETADA (DiceRoller d4-d20)
 
 EXTRA (construido fuera de este plan):
