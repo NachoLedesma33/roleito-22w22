@@ -25,6 +25,11 @@ MIGRATIONS = [
     ("npcs", "max_pv", "ALTER TABLE npcs ADD COLUMN max_pv INTEGER DEFAULT 10"),
     ("npcs", "max_pm", "ALTER TABLE npcs ADD COLUMN max_pm INTEGER DEFAULT 10"),
     ("npcs", "defense", "ALTER TABLE npcs ADD COLUMN defense INTEGER DEFAULT 5"),
+    # SQLite rechaza ADD COLUMN con default no constante; el valor lo llena el
+    # modelo (default=datetime.utcnow) y las filas viejas quedan en NULL.
+    ("characters", "updated_at", "ALTER TABLE characters ADD COLUMN updated_at TIMESTAMP"),
+    ("npcs", "updated_at", "ALTER TABLE npcs ADD COLUMN updated_at TIMESTAMP"),
+    ("scene_characters", "updated_at", "ALTER TABLE scene_characters ADD COLUMN updated_at TIMESTAMP"),
 ]
 
 VIDA_ATTRS = ["vigor", "intelligence", "dexterity", "cunning"]

@@ -32,8 +32,48 @@ from schemas import (
     NPCResponse,
 )
 import secrets
+import hashlib
 
 campaigns_router = APIRouter(tags=["campaigns"])
+
+
+async def compute_player_revision(db: AsyncSession, campaign_id: str) -> str:
+    scenes_r = await db.execute(
+        select(
+            Scene.id, Scene.name, Scene.status, Scene.background_path,
+            Scene.lighting, Scene.updated_at,
+        ).where(Scene.campaign_id == campaign_id).order_by(Scene.id)
+    )
+    parts = [repr(tuple(r)) for r in scenes_r.all()]
+
+    chars_r = await db.execute(
+        select(
+            Character.id, Character.name, Character.type, Character.portrait_path,
+            Character.current_pv, Character.current_pm,
+        ).where(Character.campaign_id == campaign_id).order_by(Character.id)
+    )
+    parts.extend(repr(tuple(r)) for r in chars_r.all())
+
+    npcs_r = await db.execute(
+        select(
+            NPC.id, NPC.name, NPC.portrait_path, NPC.current_pv, NPC.current_pm,
+        ).where(NPC.campaign_id == campaign_id).order_by(NPC.id)
+    )
+    parts.extend(repr(tuple(r)) for r in npcs_r.all())
+
+    sc_r = await db.execute(
+        select(
+            SceneCharacter.id, SceneCharacter.scene_id, SceneCharacter.entity_type,
+            SceneCharacter.entity_id, SceneCharacter.x, SceneCharacter.y,
+            SceneCharacter.z, SceneCharacter.visible, SceneCharacter.order,
+        )
+        .join(Scene, Scene.id == SceneCharacter.scene_id)
+        .where(Scene.campaign_id == campaign_id)
+        .order_by(SceneCharacter.id)
+    )
+    parts.extend(repr(tuple(r)) for r in sc_r.all())
+
+    return hashlib.sha1("|".join(parts).encode()).hexdigest()[:16]
 
 
 @campaigns_router.post("/campaigns", response_model=CampaignResponse)
@@ -350,6 +390,21 @@ async def generate_invite_code(
     return campaign
 
 
+@campaigns_router.get("/campaigns/invite/{code}/revision")
+async def invite_revision(
+    code: str,
+    db: AsyncSession = Depends(get_session),
+):
+    result = await db.execute(
+        select(Campaign).where(Campaign.invite_code == code)
+    )
+    campaign = result.scalar_one_or_none()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Invalid invite code")
+
+    return {"revision": await compute_player_revision(db, campaign.id)}
+
+
 @campaigns_router.get("/campaigns/invite/{code}")
 async def join_by_invite_code(
     code: str,
@@ -371,13 +426,26 @@ async def join_by_invite_code(
     characters_r = await db.execute(
         select(Character).where(Character.campaign_id == campaign.id)
     )
+    all_chars = characters_r.scalars().all()
     npcs_r = await db.execute(
         select(NPC).where(NPC.campaign_id == campaign.id)
     )
     all_entities = {
-        **{c.id: c for c in characters_r.scalars().all()},
+        **{c.id: c for c in all_chars},
         **{n.id: n for n in npcs_r.scalars().all()},
     }
+
+    player_characters = [
+        {
+            "id": c.id,
+            "name": c.name,
+            "race": c.race,
+            "class_name": c.class_,
+            "portrait_path": c.portrait_path,
+        }
+        for c in all_chars
+        if c.type == "player"
+    ]
 
     scene_chars = []
     scene_name = ""
@@ -414,4 +482,5 @@ async def join_by_invite_code(
         "background_path": background_path,
         "lighting": lighting,
         "characters": scene_chars,
+        "player_characters": player_characters,
     }

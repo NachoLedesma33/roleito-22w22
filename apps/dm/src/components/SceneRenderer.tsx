@@ -21,6 +21,7 @@ interface SceneRendererProps {
   characters: SceneEntity[];
   lighting?: string;
   selectedTokenId?: string | null;
+  readOnly?: boolean;
   onTokenClick?: (sceneCharId: string) => void;
   onTokenDrop?: (sceneCharId: string, x: number, z: number) => void;
   onTokenContextMenu?: (sceneCharId: string, clientX: number, clientY: number) => void;
@@ -322,6 +323,7 @@ export default function SceneRenderer({
   characters,
   lighting = 'neutral',
   selectedTokenId,
+  readOnly = false,
   onTokenClick,
   onTokenDrop,
   onTokenContextMenu,
@@ -338,14 +340,14 @@ export default function SceneRenderer({
       <Suspense fallback={null}>
         <SceneBackground url={backgroundUrl} />
       </Suspense>
-      <DragController onTokenDrop={onTokenDrop} />
+      {!readOnly && <DragController onTokenDrop={onTokenDrop} />}
       {visibleChars.map((ch) => (
         <DraggableToken
           key={ch.sceneCharId}
           entity={ch}
-          isSelected={selectedTokenId === ch.sceneCharId}
-          onClick={onTokenClick}
-          onContextMenu={onTokenContextMenu}
+          isSelected={!readOnly && selectedTokenId === ch.sceneCharId}
+          onClick={readOnly ? undefined : onTokenClick}
+          onContextMenu={readOnly ? undefined : onTokenContextMenu}
         />
       ))}
       <OrbitControls

@@ -38,8 +38,6 @@ CORE / INFRASTRUCTURE (aún placeholders .gitkeep)
 
 AÚN NO
   Transiciones de escena (puertas, cambio automático)
-  Player View completa (existe versión básica con invite code + polling;
-    falta modelo de sincronización real entre clientes)
   Capa de IA desacoplada (LLM provider interface)
   TTS
 ```
@@ -105,13 +103,13 @@ PHASE 8  Sistema de Transiciones ✓ COMPLETADA (markers transition con destino;
 PHASE 9  Token Drag & Drop      ✓ COMPLETADA (drag en renderer, posición persistida; cubierto por E2E D4)
 PHASE 10 HUD Panels completos   ✓ COMPLETADA (Character Sheet, Scene Notes, Recap, Dice)
 PHASE 11 Sistema de Recaps      ✓ COMPLETADA (RecapPanel + export .md)
-PHASE 12 Player View            ◐ PARCIAL ← SIGUIENTE (invite code + polling; falta sync real entre clientes)
+PHASE 12 Player View            ✓ COMPLETADA (polling con revisión ~1s; espectador + ficha propia con PV/PM/inventario en vivo)
 PHASE 13 Sistema de Dados       ✓ COMPLETADA (DiceRoller d4-d20)
 
 EXTRA (construido fuera de este plan):
   DM Notebook con historial de versiones y categorías   ✓
   Initiative Tracker integrado al TopBar                ✓
-  Suite E2E Playwright (64 tests) + CI en GitHub Actions ✓
+  Suite E2E Playwright (77 tests) + CI en GitHub Actions ✓
 ```
 
 ---

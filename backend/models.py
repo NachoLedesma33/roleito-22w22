@@ -74,6 +74,8 @@ class Character(Base):
     inventory_json = Column(JSON, default=list)
     spells_json = Column(JSON, default=list)
 
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
     campaign = relationship("Campaign", back_populates="characters")
 
 
@@ -102,6 +104,8 @@ class NPC(Base):
     current_pm = Column(Integer, nullable=True)
     inventory_json = Column(JSON, default=list)
     spells_json = Column(JSON, default=list)
+
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 class Location(Base):
@@ -218,6 +222,7 @@ class SceneCharacter(Base):
     z = Column(Float, default=0.0)
     visible = Column(Integer, default=1)
     order = Column(Integer, default=0)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 class MapMarker(Base):

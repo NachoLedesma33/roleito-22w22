@@ -213,6 +213,7 @@ export interface SeedTokenInput {
   entityId: string;
   x?: number;
   z?: number;
+  visible?: boolean;
 }
 
 export async function seedTokens(
@@ -230,12 +231,35 @@ export async function seedTokens(
         x: t.x ?? 0,
         y: 0,
         z: t.z ?? 0,
-        visible: true,
+        visible: t.visible ?? true,
         order: i,
       })),
     },
   );
   return jsonOrThrow<SceneCharacter[]>(res, 'seedTokens');
+}
+
+export async function updateCharacter(
+  request: APIRequestContext,
+  campaignId: string,
+  characterId: string,
+  data: Record<string, unknown>,
+): Promise<Character> {
+  const res = await request.put(
+    `${API_BASE}/campaigns/${campaignId}/characters/${characterId}`,
+    { data },
+  );
+  return jsonOrThrow<Character>(res, 'updateCharacter');
+}
+
+export async function generateInviteCode(
+  request: APIRequestContext,
+  campaignId: string,
+): Promise<string> {
+  const res = await request.post(`${API_BASE}/campaigns/${campaignId}/invite-code`);
+  const campaign = await jsonOrThrow<{ invite_code: string | null }>(res, 'generateInviteCode');
+  if (!campaign.invite_code) throw new Error('invite_code no generado');
+  return campaign.invite_code;
 }
 
 export interface Npc {
