@@ -26,7 +26,13 @@ interface SceneRendererProps {
   onTokenContextMenu?: (sceneCharId: string, clientX: number, clientY: number) => void;
 }
 
-type DragStarter = (sceneCharId: string, x: number, z: number) => void;
+type DragStarter = (
+  sceneCharId: string,
+  clientX?: number,
+  clientY?: number,
+  tokenX?: number,
+  tokenZ?: number
+) => void;
 
 function SceneBackground({ url }: { url: string }) {
   const texture = useTexture(url);
@@ -34,7 +40,11 @@ function SceneBackground({ url }: { url: string }) {
   const aspect = img.width / img.height;
   const width = 10 * aspect;
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
+    <mesh
+      name="scene-background"
+      rotation={[-Math.PI / 2, 0, 0]}
+      position={[0, -0.01, 0]}
+    >
       <planeGeometry args={[width, 10]} />
       <meshStandardMaterial map={texture} emissiveMap={texture} emissive={new THREE.Color(0xffffff)} emissiveIntensity={0.3} />
     </mesh>
@@ -91,11 +101,14 @@ function DragController({
   onTokenDrop?: (sceneCharId: string, x: number, z: number) => void;
 }) {
   const { camera, gl, scene } = useThree();
+  const controls = useThree((s) => s.controls) as { enabled: boolean } | null;
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
   const dragState = useRef<{
     active: boolean;
     sceneCharId: string;
-    offset: THREE.Vector3;
+    offsetX: number;
+    offsetZ: number;
+    captured: boolean;
   } | null>(null);
 
   const getGroundPoint = useCallback(
@@ -113,16 +126,53 @@ function DragController({
     [camera, gl, raycaster]
   );
 
+  const clampToBackground = useCallback(
+    (v: THREE.Vector3) => {
+      scene.traverse((o) => {
+        if (o.name === 'scene-background' && o instanceof THREE.Mesh) {
+          const params = (o.geometry as THREE.PlaneGeometry).parameters;
+          if (!params) return;
+          const halfW = params.width / 2;
+          const halfD = params.height / 2;
+          v.x = Math.min(halfW, Math.max(-halfW, v.x));
+          v.z = Math.min(halfD, Math.max(-halfD, v.z));
+        }
+      });
+      return v;
+    },
+    [scene]
+  );
+
   useEffect(() => {
     const canvas = gl.domElement;
 
-    const onPointerMove = (e: PointerEvent) => {
-      if (!dragState.current?.active) return;
+    const applyDragPosition = (e: PointerEvent) => {
+      const st = dragState.current;
+      if (!st?.active) return null;
 
       const hit = getGroundPoint(e.clientX, e.clientY);
-      if (!hit) return;
+      if (!hit) return null;
 
-      const newPos = hit.add(dragState.current.offset);
+      hit.x += st.offsetX;
+      hit.z += st.offsetZ;
+      return clampToBackground(hit);
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      const st = dragState.current;
+      if (!st?.active) return;
+
+      if (!st.captured) {
+        try {
+          canvas.setPointerCapture(e.pointerId);
+          st.captured = true;
+        } catch {
+          // pointer may already be released; drag continues without capture
+        }
+      }
+
+      const newPos = applyDragPosition(e);
+      if (!newPos) return;
 
       // Update token group position via userData
       scene.traverse((child: THREE.Object3D) => {
@@ -138,26 +188,38 @@ function DragController({
       });
     };
 
-    const onPointerUp = (e: PointerEvent) => {
-      if (!dragState.current?.active) return;
+    const releaseDrag = () => {
+      dragState.current = null;
+      if (controls) controls.enabled = true;
+      canvas.style.cursor = 'auto';
+    };
 
-      const hit = getGroundPoint(e.clientX, e.clientY);
-      if (hit) {
-        const newPos = hit.add(dragState.current.offset);
-        onTokenDrop?.(dragState.current.sceneCharId, newPos.x, newPos.z);
+    const onPointerUp = (e: PointerEvent) => {
+      const st = dragState.current;
+      if (!st?.active) return;
+
+      const newPos = applyDragPosition(e);
+      if (newPos) {
+        onTokenDrop?.(st.sceneCharId, newPos.x, newPos.z);
       }
 
-      dragState.current = null;
-      canvas.style.cursor = 'auto';
+      releaseDrag();
+    };
+
+    const onPointerCancel = () => {
+      if (!dragState.current?.active) return;
+      releaseDrag();
     };
 
     canvas.addEventListener('pointermove', onPointerMove);
     canvas.addEventListener('pointerup', onPointerUp);
+    canvas.addEventListener('pointercancel', onPointerCancel);
     return () => {
       canvas.removeEventListener('pointermove', onPointerMove);
       canvas.removeEventListener('pointerup', onPointerUp);
+      canvas.removeEventListener('pointercancel', onPointerCancel);
     };
-  }, [gl, getGroundPoint, onTokenDrop]);
+  }, [gl, getGroundPoint, clampToBackground, onTokenDrop, controls, scene]);
 
   // Expose startDrag via a global function on the canvas.
   // Mutating the external DOM canvas node inside an effect is intentional:
@@ -166,18 +228,30 @@ function DragController({
   /* eslint-disable react-hooks/immutability */
   useEffect(() => {
     const canvas = gl.domElement as HTMLCanvasElement & { __startDrag?: DragStarter };
-    canvas.__startDrag = (sceneCharId: string, x: number, z: number) => {
+    canvas.__startDrag = (sceneCharId, clientX?, clientY?, tokenX = 0, tokenZ = 0) => {
+      let offsetX = 0;
+      let offsetZ = 0;
+      if (clientX != null && clientY != null) {
+        const grabPoint = getGroundPoint(clientX, clientY);
+        if (grabPoint) {
+          offsetX = tokenX - grabPoint.x;
+          offsetZ = tokenZ - grabPoint.z;
+        }
+      }
       dragState.current = {
         active: true,
         sceneCharId,
-        offset: new THREE.Vector3(x, 0, z),
+        offsetX,
+        offsetZ,
+        captured: false,
       };
+      if (controls) controls.enabled = false;
       canvas.style.cursor = 'grabbing';
     };
     return () => {
       canvas.__startDrag = undefined;
     };
-  }, [gl]);
+  }, [gl, getGroundPoint, controls, scene]);
   /* eslint-enable react-hooks/immutability */
 
   return null;
@@ -202,16 +276,27 @@ function DraggableToken({
     }
   });
 
-  const handlePointerDown = useCallback(() => {
-    const canvas = document.querySelector('canvas') as (HTMLCanvasElement & {
-      __startDrag?: (sceneCharId: string, x: number, z: number) => void;
-    }) | null;
-    if (canvas?.__startDrag) {
-      canvas.__startDrag(entity.sceneCharId, entity.x, entity.z);
-    }
+  const handlePointerDown = useCallback(
+    (e: THREE.Event) => {
+      (e as unknown as { stopPropagation?: () => void }).stopPropagation?.();
+      const canvas = document.querySelector('canvas') as (HTMLCanvasElement & {
+        __startDrag?: DragStarter;
+      }) | null;
+      if (canvas?.__startDrag) {
+        const native = (e as unknown as { nativeEvent?: PointerEvent }).nativeEvent;
+        canvas.__startDrag(
+          entity.sceneCharId,
+          native?.clientX,
+          native?.clientY,
+          entity.x,
+          entity.z
+        );
+      }
 
-    onClick?.(entity.sceneCharId);
-  }, [entity, onClick]);
+      onClick?.(entity.sceneCharId);
+    },
+    [entity, onClick]
+  );
 
   return (
     <group ref={groupRef} position={[entity.x, entity.y, entity.z]}>
@@ -264,6 +349,7 @@ export default function SceneRenderer({
         />
       ))}
       <OrbitControls
+        makeDefault
         enablePan={true}
         enableZoom={true}
         enableRotate={true}

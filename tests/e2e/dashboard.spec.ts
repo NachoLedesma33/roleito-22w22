@@ -118,10 +118,10 @@ test.describe('Dashboard VTT Core', () => {
     await canvas.evaluate(
       (el, id) => {
         const c = el as HTMLCanvasElement & {
-          __startDrag?: (sceneCharId: string, x: number, z: number) => void;
+          __startDrag?: (sceneCharId: string, clientX?: number, clientY?: number, tokenX?: number, tokenZ?: number) => void;
         };
         if (!c.__startDrag) throw new Error('__startDrag no disponible');
-        c.__startDrag(id, 0, 0);
+        c.__startDrag(id);
       },
       sceneCharId,
     );
