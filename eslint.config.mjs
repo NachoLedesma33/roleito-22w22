@@ -31,4 +31,17 @@ export default tseslint.config(
     files: ['tests/**/*.ts'],
     ...playwright.configs['flat/recommended'],
   },
+  {
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+        fetch: 'readonly',
+        FormData: 'readonly',
+        Blob: 'readonly',
+        document: 'readonly',
+      },
+    },
+  },
 );
