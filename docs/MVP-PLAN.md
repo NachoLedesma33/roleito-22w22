@@ -37,9 +37,9 @@ CORE / INFRASTRUCTURE (aún placeholders .gitkeep)
   infrastructure/ai, tts, search, storage
 
 AÚN NO
-  Transiciones de escena (puertas, cambio automático)
-  Capa de IA desacoplada (LLM provider interface)
   TTS
+  Agentes IA concretos (session processor, lore extractor, narrador) — la capa
+    provider ya existe (PHASE 14), falta construir agentes encima
 ```
 
 ---
@@ -105,11 +105,12 @@ PHASE 10 HUD Panels completos   ✓ COMPLETADA (Character Sheet, Scene Notes, Re
 PHASE 11 Sistema de Recaps      ✓ COMPLETADA (RecapPanel + export .md)
 PHASE 12 Player View            ✓ COMPLETADA (polling con revisión ~1s; espectador + ficha propia con PV/PM/inventario en vivo)
 PHASE 13 Sistema de Dados       ✓ COMPLETADA (DiceRoller d4-d20)
+PHASE 14 Capa IA Desacoplada    ✓ COMPLETADA (AIProvider base + providers mock/local Ollama/remoto OpenAI-compatible; config persistente + panel test en dashboard)
 
 EXTRA (construido fuera de este plan):
   DM Notebook con historial de versiones y categorías   ✓
   Initiative Tracker integrado al TopBar                ✓
-  Suite E2E Playwright (77 tests) + CI en GitHub Actions ✓
+  Suite E2E Playwright (83 tests) + CI en GitHub Actions ✓
 ```
 
 ---

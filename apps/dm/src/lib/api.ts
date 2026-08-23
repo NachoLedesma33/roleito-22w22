@@ -2,6 +2,24 @@ const API_BASE = 'http://localhost:8000/api';
 
 export type VidaAttr = '+' | '/' | '-';
 
+export interface AISettings {
+  provider: 'mock' | 'local' | 'remote';
+  local_base_url: string;
+  remote_base_url: string;
+  model: string | null;
+  max_tokens: number;
+  temperature: number;
+}
+
+export interface AITestResult {
+  ok: boolean;
+  provider: string;
+  model: string | null;
+  response: string | null;
+  latency_ms: number | null;
+  error: string | null;
+}
+
 export interface Campaign {
   id: string;
   name: string;
@@ -514,5 +532,16 @@ export const api = {
       request<DMNotebookVersion[]>(`/notebooks/${notebookId}/versions`),
     restoreVersion: (notebookId: string, versionId: string) =>
       request<DMNotebook>(`/notebooks/${notebookId}/restore/${versionId}`, { method: 'POST' }),
+  },
+
+  ai: {
+    getConfig: () => request<AISettings>('/ai/config'),
+    updateConfig: (data: Partial<AISettings>) =>
+      request<AISettings>('/ai/config', { method: 'PUT', body: JSON.stringify(data) }),
+    test: (prompt?: string) =>
+      request<AITestResult>('/ai/test', {
+        method: 'POST',
+        body: JSON.stringify(prompt ? { prompt } : {}),
+      }),
   },
 };

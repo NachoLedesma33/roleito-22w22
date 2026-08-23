@@ -11,6 +11,7 @@ import CharacterSheet from '@/components/CharacterSheet';
 import InitiativeTracker from '@/components/InitiativeTracker';
 import MapViewer from '@/components/MapViewer';
 import DMNotebookHud from '@/components/DMNotebookHud';
+import AISettingsPanel from '@/components/AISettingsPanel';
 import ContextMenu, { ContextMenuItem } from '@/components/ContextMenu';
 
 function staticUrl(path: string | null): string | null {
@@ -40,6 +41,7 @@ export default function DmDashboard() {
   const [maps, setMaps] = useState<Map[]>([]);
   const [transitioning, setTransitioning] = useState<'idle' | 'in' | 'out'>('idle');
   const [showNotebook, setShowNotebook] = useState(false);
+  const [showAIPanel, setShowAIPanel] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -525,6 +527,15 @@ export default function DmDashboard() {
           📓
         </button>
 
+        <button
+          onClick={() => setShowAIPanel(!showAIPanel)}
+          className={`text-xs px-2 py-1 rounded transition-colors ${showAIPanel ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+          title="AI Settings"
+          data-testid="ai-panel-button"
+        >
+          🤖
+        </button>
+
         {/* Map Button */}
         {activeScene?.map_id && (
           <button
@@ -877,6 +888,7 @@ export default function DmDashboard() {
               onClose={() => setShowRecap(false)}
             />
           )}
+          {showAIPanel && <AISettingsPanel onClose={() => setShowAIPanel(false)} />}
           {viewingMap && (
             <MapViewer
               map={viewingMap}

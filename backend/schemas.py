@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import Literal, Optional
 
@@ -465,3 +465,29 @@ class DMNotebookVersionResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class AISettingsUpdate(BaseModel):
+    provider: Literal["mock", "local", "remote"] = "mock"
+    local_base_url: str = "http://localhost:11434"
+    remote_base_url: str = "https://api.groq.com/openai/v1"
+    model: Optional[str] = None
+    max_tokens: int = Field(default=512, ge=1, le=8192)
+    temperature: float = Field(default=0.7, ge=0.0, le=2.0)
+
+
+class AISettingsResponse(AISettingsUpdate):
+    pass
+
+
+class AITestRequest(BaseModel):
+    prompt: str = "Responde con OK si me estas leyendo."
+
+
+class AITestResponse(BaseModel):
+    ok: bool
+    provider: str
+    model: Optional[str] = None
+    response: Optional[str] = None
+    latency_ms: Optional[int] = None
+    error: Optional[str] = None
