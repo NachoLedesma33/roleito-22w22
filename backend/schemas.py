@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
+
+VidaAttr = Literal["+", "/", "-"]
 
 
 class CampaignCreate(BaseModel):
@@ -62,10 +64,13 @@ class CharacterCreate(BaseModel):
     current_location_id: Optional[str] = None
     visual_config_json: dict = {}
     knowledge_scope: str = "PARTY_KNOWN"
-    vigor: int = 1
-    intelligence: int = 1
-    dexterity: int = 1
-    cunning: int = 1
+    vigor: VidaAttr = "/"
+    intelligence: VidaAttr = "/"
+    dexterity: VidaAttr = "/"
+    cunning: VidaAttr = "/"
+    max_pv: Optional[int] = None
+    max_pm: Optional[int] = None
+    defense: Optional[int] = None
     current_pv: Optional[int] = None
     current_pm: Optional[int] = None
     inventory_json: list = []
@@ -82,10 +87,13 @@ class CharacterUpdate(BaseModel):
     current_location_id: Optional[str] = None
     visual_config_json: Optional[dict] = None
     knowledge_scope: Optional[str] = None
-    vigor: Optional[int] = None
-    intelligence: Optional[int] = None
-    dexterity: Optional[int] = None
-    cunning: Optional[int] = None
+    vigor: Optional[VidaAttr] = None
+    intelligence: Optional[VidaAttr] = None
+    dexterity: Optional[VidaAttr] = None
+    cunning: Optional[VidaAttr] = None
+    max_pv: Optional[int] = None
+    max_pm: Optional[int] = None
+    defense: Optional[int] = None
     current_pv: Optional[int] = None
     current_pm: Optional[int] = None
     inventory_json: Optional[list] = None
@@ -105,10 +113,10 @@ class CharacterResponse(BaseModel):
     visual_config_json: dict
     knowledge_scope: str
     portrait_path: Optional[str] = None
-    vigor: int
-    intelligence: int
-    dexterity: int
-    cunning: int
+    vigor: VidaAttr
+    intelligence: VidaAttr
+    dexterity: VidaAttr
+    cunning: VidaAttr
     max_pv: int
     max_pm: int
     defense: int
@@ -129,10 +137,13 @@ class NPCCreate(BaseModel):
     faction_id: Optional[str] = None
     knowledge_scope: str = "PARTY_KNOWN"
     visual_config_json: dict = {}
-    vigor: int = 1
-    intelligence: int = 1
-    dexterity: int = 1
-    cunning: int = 1
+    vigor: VidaAttr = "/"
+    intelligence: VidaAttr = "/"
+    dexterity: VidaAttr = "/"
+    cunning: VidaAttr = "/"
+    max_pv: Optional[int] = None
+    max_pm: Optional[int] = None
+    defense: Optional[int] = None
     current_pv: Optional[int] = None
     current_pm: Optional[int] = None
     inventory_json: list = []
@@ -147,10 +158,13 @@ class NPCUpdate(BaseModel):
     faction_id: Optional[str] = None
     knowledge_scope: Optional[str] = None
     visual_config_json: Optional[dict] = None
-    vigor: Optional[int] = None
-    intelligence: Optional[int] = None
-    dexterity: Optional[int] = None
-    cunning: Optional[int] = None
+    vigor: Optional[VidaAttr] = None
+    intelligence: Optional[VidaAttr] = None
+    dexterity: Optional[VidaAttr] = None
+    cunning: Optional[VidaAttr] = None
+    max_pv: Optional[int] = None
+    max_pm: Optional[int] = None
+    defense: Optional[int] = None
     current_pv: Optional[int] = None
     current_pm: Optional[int] = None
     inventory_json: Optional[list] = None
@@ -168,10 +182,10 @@ class NPCResponse(BaseModel):
     knowledge_scope: str
     visual_config_json: dict
     portrait_path: Optional[str] = None
-    vigor: int
-    intelligence: int
-    dexterity: int
-    cunning: int
+    vigor: VidaAttr
+    intelligence: VidaAttr
+    dexterity: VidaAttr
+    cunning: VidaAttr
     max_pv: int
     max_pm: int
     defense: int

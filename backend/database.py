@@ -19,6 +19,19 @@ MIGRATIONS = [
     ("characters", "spells_json", "ALTER TABLE characters ADD COLUMN spells_json TEXT DEFAULT '[]'"),
     ("npcs", "inventory_json", "ALTER TABLE npcs ADD COLUMN inventory_json TEXT DEFAULT '[]'"),
     ("npcs", "spells_json", "ALTER TABLE npcs ADD COLUMN spells_json TEXT DEFAULT '[]'"),
+    ("characters", "max_pv", "ALTER TABLE characters ADD COLUMN max_pv INTEGER DEFAULT 10"),
+    ("characters", "max_pm", "ALTER TABLE characters ADD COLUMN max_pm INTEGER DEFAULT 10"),
+    ("characters", "defense", "ALTER TABLE characters ADD COLUMN defense INTEGER DEFAULT 5"),
+    ("npcs", "max_pv", "ALTER TABLE npcs ADD COLUMN max_pv INTEGER DEFAULT 10"),
+    ("npcs", "max_pm", "ALTER TABLE npcs ADD COLUMN max_pm INTEGER DEFAULT 10"),
+    ("npcs", "defense", "ALTER TABLE npcs ADD COLUMN defense INTEGER DEFAULT 5"),
+]
+
+VIDA_ATTRS = ["vigor", "intelligence", "dexterity", "cunning"]
+
+DATA_MIGRATIONS = [
+    # VIDA cualitativo: atributos numéricos legacy → "/" (neutro)
+    *[f"UPDATE {t} SET {a} = '/' WHERE typeof({a}) = 'integer'" for t in ("characters", "npcs") for a in VIDA_ATTRS],
 ]
 
 
@@ -34,6 +47,11 @@ async def _migrate():
                         logger.info(f"Migration: added {table}.{col}")
                 except Exception as e:
                     logger.warning(f"Migration skip {table}.{col}: {e}")
+            for stmt in DATA_MIGRATIONS:
+                try:
+                    sync_conn.execute(text(stmt))
+                except Exception as e:
+                    logger.warning(f"Data migration skip: {e}")
         await conn.run_sync(_run_migrations)
 
 

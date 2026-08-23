@@ -2,8 +2,6 @@ import { expect, test } from '../fixtures/campaign-fixture';
 import { getCharacter, PNG_1PX } from '../helpers/api-helpers';
 
 test.describe('Character CRUD', () => {
-  const VIDA = { vigor: 4, intelligence: 3, dexterity: 5, cunning: 2 };
-
   async function fillCharacterForm(
     page: import('@playwright/test').Page,
     data: { name: string; race?: string; className?: string },
@@ -12,11 +10,9 @@ test.describe('Character CRUD', () => {
     if (data.race) await page.getByPlaceholder('Humano, Elfo...').fill(data.race);
     if (data.className) await page.getByPlaceholder('Guerrero, Mago...').fill(data.className);
 
-    const numbers = page.locator('input[type="number"]');
-    await numbers.nth(0).fill(String(VIDA.vigor));
-    await numbers.nth(1).fill(String(VIDA.intelligence));
-    await numbers.nth(2).fill(String(VIDA.dexterity));
-    await numbers.nth(3).fill(String(VIDA.cunning));
+    await page.getByRole('radio', { name: 'Vigor más' }).click();
+    await page.getByRole('radio', { name: 'Inteligencia menos' }).click();
+    await page.getByRole('radio', { name: 'Astucia más' }).click();
   }
 
   test('CH1: crea personaje desde la UI', async ({ page, campaign }) => {
@@ -94,17 +90,38 @@ test.describe('Character CRUD', () => {
     expect(updated.portrait_path).toBeTruthy();
   });
 
-  test('CH5: calcula stats derivadas VIDA correctamente', async ({ page, campaign }) => {
+  test('CH5: guarda stats definidas por el DM', async ({ page, campaign }) => {
     await page.goto(`/campaigns/${campaign.id}/characters/new`);
 
     await fillCharacterForm(page, { name: 'Dax' });
 
-    const derived = page.locator('div.grid.grid-cols-3');
-    await expect(derived.getByText('13', { exact: true })).toBeVisible();
-    await expect(derived.getByText('8', { exact: true })).toBeVisible();
-    await expect(derived.getByText('7', { exact: true })).toBeVisible();
+    await page.getByLabel('Max PV').fill('13');
+    await page.getByLabel('Max PM').fill('8');
+    await page.getByLabel('Defensa').fill('7');
 
+    const postPromise = page.waitForResponse(
+      (res) => res.url().includes(`/campaigns/${campaign.id}/characters`) && res.request().method() === 'POST',
+      { timeout: 10_000 },
+    );
     await page.getByRole('button', { name: 'Create Character' }).click();
-    await expect(page).toHaveURL(/\/characters\/[a-z0-9-]+$/, { timeout: 10_000 });
+    const res = await postPromise;
+    expect(res.status()).toBe(200);
+
+    const saved = (await res.json()) as {
+      vigor: string;
+      intelligence: string;
+      dexterity: string;
+      cunning: string;
+      max_pv: number;
+      max_pm: number;
+      defense: number;
+    };
+    expect(saved.vigor).toBe('+');
+    expect(saved.intelligence).toBe('-');
+    expect(saved.dexterity).toBe('/');
+    expect(saved.cunning).toBe('+');
+    expect(saved.max_pv).toBe(13);
+    expect(saved.max_pm).toBe(8);
+    expect(saved.defense).toBe(7);
   });
 });

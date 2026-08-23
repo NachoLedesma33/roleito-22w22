@@ -143,24 +143,28 @@ Los 6 dados están predefinidos en el sistema:
 
 ## 8.1 Tiradas de Combate
 ```text
-Ataque: 1d6 + Modificador vs Defensa
+Ataque: dados que el DM indique vs Defensa
 Daño: 1d6 (según arma)
 Crítico: 2d6 o 3d6
 ```
 
 ## 8.2 Tiradas de Habilidades
+
+La cantidad de dados la indica el DM según el atributo relevante
+(`+` más dados, `/` estándar, `−` menos dados — ver CHARACTER-STATS.md §1):
+
 ```text
-Persuasión: 1d6 + Astucia
-Investigación: 1d6 + Inteligencia
-Sigilo: 1d6 + Destreza
-Resistencia: 1d6 + Vigor
+Persuasión:    N dados según Astucia
+Investigación: N dados según Inteligencia
+Sigilo:        N dados según Destreza
+Resistencia:   N dados según Vigor
 ```
 
 ## 8.3 Tiradas Especiales
 ```text
 Salvación: ??? (pendiente info del DM)
-Initiative: 1d6 + Destreza
-Percepción: 1d6 + Astucia
+Initiative: N dados según Destreza
+Percepción: N dados según Astucia
 ```
 
 ---

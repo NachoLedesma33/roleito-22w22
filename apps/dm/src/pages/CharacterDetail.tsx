@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, Character } from '@/lib/api';
+import type { VidaAttr } from '@/lib/api';
 import { VidaBar, VidaAttrs, VidaDerived } from '@/components/VidaDisplay';
+
+const REGEN_TEXT: Record<VidaAttr, string> = {
+  '+': 'Rápida (más dados)',
+  '/': 'Normal',
+  '-': 'Lenta (menos dados)',
+};
 
 function portraitUrl(path: string | null): string | null {
   if (!path) return null;
@@ -135,15 +142,15 @@ export default function CharacterDetail() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold mb-3">Recovery Rates</h2>
+          <h2 className="text-lg font-semibold mb-3">Recovery</h2>
           <div className="grid grid-cols-2 gap-3">
             <div className="border border-[var(--bg-tertiary)] rounded-lg p-3">
               <p className="text-xs text-[var(--text-secondary)]">Physical Regen</p>
-              <p className="text-sm mt-1">{character.vigor} PV / hour</p>
+              <p className="text-sm mt-1">{REGEN_TEXT[character.vigor]}</p>
             </div>
             <div className="border border-[var(--bg-tertiary)] rounded-lg p-3">
               <p className="text-xs text-[var(--text-secondary)]">Mental Regen</p>
-              <p className="text-sm mt-1">{character.intelligence} PM / hour</p>
+              <p className="text-sm mt-1">{REGEN_TEXT[character.intelligence]}</p>
             </div>
           </div>
         </section>

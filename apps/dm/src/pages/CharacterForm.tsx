@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '@/lib/api';
-import { VidaDerived } from '@/components/VidaDisplay';
+import type { VidaAttr } from '@/lib/api';
+import { VidaAttrsInput, NumberInput } from '@/components/VidaInputs';
 
 export default function CharacterForm() {
   const { id: campaignId, characterId } = useParams<{ id: string; characterId: string }>();
@@ -14,20 +15,19 @@ export default function CharacterForm() {
   const [description, setDescription] = useState('');
   const [className, setClassName] = useState('');
   const [race, setRace] = useState('');
-  const [vigor, setVigor] = useState(1);
-  const [intelligence, setIntelligence] = useState(1);
-  const [dexterity, setDexterity] = useState(1);
-  const [cunning, setCunning] = useState(1);
+  const [vigor, setVigor] = useState<VidaAttr>('/');
+  const [intelligence, setIntelligence] = useState<VidaAttr>('/');
+  const [dexterity, setDexterity] = useState<VidaAttr>('/');
+  const [cunning, setCunning] = useState<VidaAttr>('/');
+  const [maxPv, setMaxPv] = useState(10);
+  const [maxPm, setMaxPm] = useState(10);
+  const [defense, setDefense] = useState(5);
   const [portraitFile, setPortraitFile] = useState<File | null>(null);
   const [portraitPreview, setPortraitPreview] = useState<string | null>(null);
 
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(!!isEdit);
   const [error, setError] = useState<string | null>(null);
-
-  const max_pv = vigor * 2 + dexterity;
-  const max_pm = intelligence * 2 + cunning;
-  const defense = dexterity + cunning;
 
   useEffect(() => {
     if (isEdit && campaignId && characterId) {
@@ -42,6 +42,9 @@ export default function CharacterForm() {
           setIntelligence(c.intelligence);
           setDexterity(c.dexterity);
           setCunning(c.cunning);
+          setMaxPv(c.max_pv);
+          setMaxPm(c.max_pm);
+          setDefense(c.defense);
         })
         .catch((e) => setError(e.message))
         .finally(() => setLoading(false));
@@ -67,6 +70,9 @@ export default function CharacterForm() {
         intelligence,
         dexterity,
         cunning,
+        max_pv: maxPv,
+        max_pm: maxPm,
+        defense,
       };
       if (isEdit) {
         await api.characters.update(campaignId, characterId!, data);
@@ -194,17 +200,27 @@ export default function CharacterForm() {
 
         <div>
           <label className="block text-sm text-[var(--text-secondary)] mb-2">Attributes (VIDA)</label>
-          <div className="grid grid-cols-4 gap-3">
-            <VidaInput label="Vigor [V]" value={vigor} onChange={setVigor} color="text-red-400" />
-            <VidaInput label="Inteligencia [I]" value={intelligence} onChange={setIntelligence} color="text-blue-400" />
-            <VidaInput label="Destreza [D]" value={dexterity} onChange={setDexterity} color="text-green-400" />
-            <VidaInput label="Astucia [A]" value={cunning} onChange={setCunning} color="text-yellow-400" />
-          </div>
+          <VidaAttrsInput
+            vigor={vigor}
+            intelligence={intelligence}
+            dexterity={dexterity}
+            cunning={cunning}
+            onChange={(attr, v) => {
+              if (attr === 'vigor') setVigor(v);
+              else if (attr === 'intelligence') setIntelligence(v);
+              else if (attr === 'dexterity') setDexterity(v);
+              else setCunning(v);
+            }}
+          />
         </div>
 
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-2">Derived Stats</label>
-          <VidaDerived max_pv={max_pv} max_pm={max_pm} defense={defense} />
+          <label className="block text-sm text-[var(--text-secondary)] mb-2">Stats</label>
+          <div className="grid grid-cols-3 gap-3">
+            <NumberInput label="Max PV" value={maxPv} onChange={setMaxPv} />
+            <NumberInput label="Max PM" value={maxPm} onChange={setMaxPm} />
+            <NumberInput label="Defensa" value={defense} onChange={setDefense} />
+          </div>
         </div>
 
         <div className="flex gap-3 pt-2">
@@ -224,27 +240,6 @@ export default function CharacterForm() {
           </button>
         </div>
       </form>
-    </div>
-  );
-}
-
-function VidaInput({ label, value, onChange, color }: {
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-  color: string;
-}) {
-  return (
-    <div className="text-center">
-      <p className={`text-xs ${color} mb-1`}>{label}</p>
-      <input
-        type="number"
-        min={1}
-        max={20}
-        value={value}
-        onChange={(e) => onChange(Math.max(1, parseInt(e.target.value) || 1))}
-        className="w-full px-2 py-2 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] text-center focus:outline-none focus:border-[var(--accent)]"
-      />
     </div>
   );
 }

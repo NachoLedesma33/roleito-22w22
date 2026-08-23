@@ -85,7 +85,7 @@ test.describe('Initiative Tracker', () => {
 
   test('I5: ajustar PV persiste current_pv via API', async ({ page, campaign, request }) => {
     const scene = await createScene(request, campaign.id, 'Escena HP');
-    const aria = await createCharacter(request, campaign.id, { name: 'Aria', vigor: 4, dexterity: 5 });
+    const aria = await createCharacter(request, campaign.id, { name: 'Aria', max_pv: 13, max_pm: 8 });
     const borin = await createCharacter(request, campaign.id, { name: 'Borin' });
 
     await openWithTwoCombatants(page, campaign.id, scene.id, request, aria, borin);

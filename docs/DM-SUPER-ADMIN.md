@@ -201,11 +201,12 @@ FECHA: 2026-08-18
 SESIÓN: 001
 
 REGLA:
-Cuando un jugador quiere esquivar, tira 1d6 + Destreza.
-Si el resultado es mayor que el ataque del enemigo, esquiva.
+Cuando un jugador quiere esquivar, tira los dados que el DM indique
+según Destreza (+ más dados, / estándar, − menos dados).
+Si el resultado supera el ataque del enemigo, esquiva.
 
 EJEMPLO:
-Ardan (D=5) tira 1d6 + 5 = 4 + 5 = 9
+Ardan (D=/) tira 2d6 = 4 + 5 = 9
 Guardia ataca con 7
 9 > 7 → Ardan esquiva
 

@@ -114,11 +114,12 @@ VERSIÓN: 2
 PUEDE CAMBIAR: Sí
 
 REGLA:
-Cuando un jugador quiere esquivar, tira 1d6 + Destreza.
-Si el resultado es mayor que el ataque del enemigo, esquiva.
+Cuando un jugador quiere esquivar, tira los dados que el DM indique
+según Destreza (+ más dados, / estándar, − menos dados).
+Si el resultado supera el ataque del enemigo, esquiva.
 
 EJEMPLO:
-Ardan (D=5) tira 1d6 + 5 = 4 + 5 = 9
+Ardan (D=/) tira 2d6 = 4 + 5 = 9
 Guardia ataca con 7
 9 > 7 → Ardan esquiva
 
@@ -180,7 +181,7 @@ SESIÓN: 001
 HORA: 20:45
 
 JUGADOR: Ardan
-TIRADA: 1d6 + Destreza (5)
+TIRADA: 2d6 (Destreza /, DM indica cantidad)
 RESULTADO: 4 + 5 = 9
 
 CONTEXTO:
@@ -357,7 +358,7 @@ El DM puede:
 
 ```text
 TURNO DE ARDAN:
-1. Jugador tira 1d6 + D = 4 + 5 = 9
+1. Jugador tira 2d6 (D=/, DM indica) = 4 + 5 = 9
 2. DM decide: "Esquiva el ataque"
 3. DM anota en cuaderno:
    - Resultado: 9
@@ -384,7 +385,7 @@ ACCIÓN DEL DM:
 1. DM abre cuaderno
 2. Busca "Regla de daño"
 3. Edita la regla:
-   - Antes: 1d6 + Fuerza
+   - Antes: 2d6 por ataque
    - Ahora: 1d6
 4. Guarda cambios
 5. Anota: "Cambié regla porque era muy fuerte"

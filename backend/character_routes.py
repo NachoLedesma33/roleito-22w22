@@ -18,17 +18,12 @@ router = APIRouter(tags=["characters", "npcs"])
 
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "assets")
 
-
-def calc_vida(vigor: int, intelligence: int, dexterity: int, cunning: int):
-    return {
-        "max_pv": vigor * 2 + dexterity,
-        "max_pm": intelligence * 2 + cunning,
-        "defense": dexterity + cunning,
-    }
+DEFAULT_MAX_PV = 10
+DEFAULT_MAX_PM = 10
+DEFAULT_DEFENSE = 5
 
 
 def apply_vida_response(char: Character) -> dict:
-    stats = calc_vida(char.vigor, char.intelligence, char.dexterity, char.cunning)
     return {
         "id": char.id,
         "campaign_id": char.campaign_id,
@@ -46,16 +41,17 @@ def apply_vida_response(char: Character) -> dict:
         "intelligence": char.intelligence,
         "dexterity": char.dexterity,
         "cunning": char.cunning,
+        "max_pv": char.max_pv if char.max_pv is not None else DEFAULT_MAX_PV,
+        "max_pm": char.max_pm if char.max_pm is not None else DEFAULT_MAX_PM,
+        "defense": char.defense if char.defense is not None else DEFAULT_DEFENSE,
         "current_pv": char.current_pv,
         "current_pm": char.current_pm,
         "inventory_json": char.inventory_json or [],
         "spells_json": char.spells_json or [],
-        **stats,
     }
 
 
 def apply_npc_vida_response(npc: NPC) -> dict:
-    stats = calc_vida(npc.vigor, npc.intelligence, npc.dexterity, npc.cunning)
     return {
         "id": npc.id,
         "campaign_id": npc.campaign_id,
@@ -71,11 +67,13 @@ def apply_npc_vida_response(npc: NPC) -> dict:
         "intelligence": npc.intelligence,
         "dexterity": npc.dexterity,
         "cunning": npc.cunning,
+        "max_pv": npc.max_pv if npc.max_pv is not None else DEFAULT_MAX_PV,
+        "max_pm": npc.max_pm if npc.max_pm is not None else DEFAULT_MAX_PM,
+        "defense": npc.defense if npc.defense is not None else DEFAULT_DEFENSE,
         "current_pv": npc.current_pv,
         "current_pm": npc.current_pm,
         "inventory_json": npc.inventory_json or [],
         "spells_json": npc.spells_json or [],
-        **stats,
     }
 
 
@@ -88,7 +86,8 @@ async def create_character(
     data: CharacterCreate,
     db: AsyncSession = Depends(get_session),
 ):
-    stats = calc_vida(data.vigor, data.intelligence, data.dexterity, data.cunning)
+    max_pv = data.max_pv if data.max_pv is not None else DEFAULT_MAX_PV
+    max_pm = data.max_pm if data.max_pm is not None else DEFAULT_MAX_PM
     char = Character(
         campaign_id=campaign_id,
         name=data.name,
@@ -104,8 +103,11 @@ async def create_character(
         intelligence=data.intelligence,
         dexterity=data.dexterity,
         cunning=data.cunning,
-        current_pv=data.current_pv if data.current_pv is not None else stats["max_pv"],
-        current_pm=data.current_pm if data.current_pm is not None else stats["max_pm"],
+        max_pv=max_pv,
+        max_pm=max_pm,
+        defense=data.defense if data.defense is not None else DEFAULT_DEFENSE,
+        current_pv=data.current_pv if data.current_pv is not None else max_pv,
+        current_pm=data.current_pm if data.current_pm is not None else max_pm,
     )
     db.add(char)
     await db.commit()
@@ -206,7 +208,8 @@ async def create_npc(
     data: NPCCreate,
     db: AsyncSession = Depends(get_session),
 ):
-    stats = calc_vida(data.vigor, data.intelligence, data.dexterity, data.cunning)
+    max_pv = data.max_pv if data.max_pv is not None else DEFAULT_MAX_PV
+    max_pm = data.max_pm if data.max_pm is not None else DEFAULT_MAX_PM
     npc = NPC(
         campaign_id=campaign_id,
         name=data.name,
@@ -220,8 +223,11 @@ async def create_npc(
         intelligence=data.intelligence,
         dexterity=data.dexterity,
         cunning=data.cunning,
-        current_pv=data.current_pv if data.current_pv is not None else stats["max_pv"],
-        current_pm=data.current_pm if data.current_pm is not None else stats["max_pm"],
+        max_pv=max_pv,
+        max_pm=max_pm,
+        defense=data.defense if data.defense is not None else DEFAULT_DEFENSE,
+        current_pv=data.current_pv if data.current_pv is not None else max_pv,
+        current_pm=data.current_pm if data.current_pm is not None else max_pm,
     )
     db.add(npc)
     await db.commit()

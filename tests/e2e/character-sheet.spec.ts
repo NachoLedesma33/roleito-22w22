@@ -34,10 +34,13 @@ test.describe('Character Sheet HUD', () => {
     const scene = await createScene(request, campaign.id, 'Escena Stats');
     const char = await createCharacter(request, campaign.id, {
       name: 'Cedric',
-      vigor: 4,
-      intelligence: 3,
-      dexterity: 5,
-      cunning: 2,
+      vigor: '+',
+      intelligence: '/',
+      dexterity: '-',
+      cunning: '/',
+      max_pv: 13,
+      max_pm: 8,
+      defense: 7,
     });
 
     await openSheet(page, campaign.id, scene.id, request, char);
@@ -46,10 +49,10 @@ test.describe('Character Sheet HUD', () => {
       page.locator(`div:has(> p:text-is("${label}")) > p`).nth(1);
 
     await expect(page.getByText('Vigor', { exact: true })).toBeVisible();
-    await expect(statValue('Vigor')).toHaveText('4');
-    await expect(statValue('Intel')).toHaveText('3');
-    await expect(statValue('Dest')).toHaveText('5');
-    await expect(statValue('Astuc')).toHaveText('2');
+    await expect(statValue('Vigor')).toHaveText('+');
+    await expect(statValue('Intel')).toHaveText('/');
+    await expect(statValue('Dest')).toHaveText('−');
+    await expect(statValue('Astuc')).toHaveText('/');
     await expect(statValue('Max PV')).toHaveText('13');
     await expect(statValue('Max PM')).toHaveText('8');
     await expect(statValue('Defensa')).toHaveText('7');
@@ -162,8 +165,8 @@ test.describe('Character Sheet HUD', () => {
     const scene = await createScene(request, campaign.id, 'Escena PV');
     const char = await createCharacter(request, campaign.id, {
       name: 'Cedric',
-      vigor: 4,
-      dexterity: 5,
+      max_pv: 13,
+      max_pm: 8,
     });
 
     await openSheet(page, campaign.id, scene.id, request, char);

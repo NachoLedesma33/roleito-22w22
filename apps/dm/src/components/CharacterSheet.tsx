@@ -193,7 +193,7 @@ export default function CharacterSheet({
           ].map((a) => (
             <div key={a.abbr} className="text-center bg-[var(--bg-tertiary)] rounded py-1.5">
               <p className="text-[9px] text-[var(--text-secondary)]">{a.label}</p>
-              <p className={`text-sm font-bold ${a.color}`}>{a.value}</p>
+              <p className={`text-sm font-bold ${a.color}`}>{a.value === '-' ? '−' : a.value}</p>
             </div>
           ))}
         </div>

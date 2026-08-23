@@ -1,5 +1,7 @@
 const API_BASE = 'http://localhost:8000/api';
 
+export type VidaAttr = '+' | '/' | '-';
+
 export interface Campaign {
   id: string;
   name: string;
@@ -35,10 +37,10 @@ export interface Character {
   visual_config_json: Record<string, unknown>;
   knowledge_scope: string;
   portrait_path: string | null;
-  vigor: number;
-  intelligence: number;
-  dexterity: number;
-  cunning: number;
+  vigor: VidaAttr;
+  intelligence: VidaAttr;
+  dexterity: VidaAttr;
+  cunning: VidaAttr;
   max_pv: number;
   max_pm: number;
   defense: number;
@@ -76,10 +78,10 @@ export interface NPC {
   knowledge_scope: string;
   visual_config_json: Record<string, unknown>;
   portrait_path: string | null;
-  vigor: number;
-  intelligence: number;
-  dexterity: number;
-  cunning: number;
+  vigor: VidaAttr;
+  intelligence: VidaAttr;
+  dexterity: VidaAttr;
+  cunning: VidaAttr;
   max_pv: number;
   max_pm: number;
   defense: number;
@@ -97,10 +99,13 @@ type CharacterCreateFields = {
   race?: string;
   status?: string;
   knowledge_scope?: string;
-  vigor?: number;
-  intelligence?: number;
-  dexterity?: number;
-  cunning?: number;
+  vigor?: VidaAttr;
+  intelligence?: VidaAttr;
+  dexterity?: VidaAttr;
+  cunning?: VidaAttr;
+  max_pv?: number;
+  max_pm?: number;
+  defense?: number;
   current_pv?: number;
   current_pm?: number;
   inventory_json?: InventoryItem[];
@@ -114,10 +119,13 @@ type NPCCreateFields = {
   description?: string;
   status?: string;
   knowledge_scope?: string;
-  vigor?: number;
-  intelligence?: number;
-  dexterity?: number;
-  cunning?: number;
+  vigor?: VidaAttr;
+  intelligence?: VidaAttr;
+  dexterity?: VidaAttr;
+  cunning?: VidaAttr;
+  max_pv?: number;
+  max_pm?: number;
+  defense?: number;
   current_pv?: number;
   current_pm?: number;
   inventory_json?: InventoryItem[];

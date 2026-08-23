@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { APIRequestContext } from '@playwright/test';
 
 export const API_BASE = 'http://localhost:8000/api';
@@ -6,6 +8,64 @@ export const PNG_1PX = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
   'base64',
 );
+
+const ASSETS_DIR = path.resolve(__dirname, '../assets');
+
+export interface AssetFile {
+  name: string;
+  mimeType: string;
+  buffer: Buffer;
+}
+
+export function loadAsset(relPath: string): AssetFile {
+  const abs = path.join(ASSETS_DIR, relPath);
+  if (!fs.existsSync(abs)) {
+    throw new Error(
+      `asset no encontrado: ${relPath} (ver tests/assets/README.md para descargarlos)`,
+    );
+  }
+  const ext = path.extname(abs).toLowerCase();
+  return {
+    name: path.basename(abs),
+    mimeType: ext === '.png' ? 'image/png' : 'image/jpeg',
+    buffer: fs.readFileSync(abs),
+  };
+}
+
+export function assetExists(relPath: string): boolean {
+  return fs.existsSync(path.join(ASSETS_DIR, relPath));
+}
+
+export async function uploadBackground(
+  request: APIRequestContext,
+  campaignId: string,
+  sceneId: string,
+  file: AssetFile,
+): Promise<Scene> {
+  const res = await request.post(
+    `${API_BASE}/campaigns/${campaignId}/scenes/${sceneId}/upload-background`,
+    {
+      multipart: { file: { name: file.name, mimeType: file.mimeType, buffer: file.buffer } },
+    },
+  );
+  return jsonOrThrow<Scene>(res, 'uploadBackground');
+}
+
+export async function uploadPortrait(
+  request: APIRequestContext,
+  campaignId: string,
+  entityType: 'character' | 'npc',
+  entityId: string,
+  file: AssetFile,
+): Promise<void> {
+  const res = await request.post(
+    `${API_BASE}/campaigns/${campaignId}/${entityType}s/${entityId}/portrait`,
+    {
+      multipart: { file: { name: file.name, mimeType: file.mimeType, buffer: file.buffer } },
+    },
+  );
+  if (!res.ok()) throw new Error(`uploadPortrait failed: ${res.status()}`);
+}
 
 async function jsonOrThrow<T>(res: { ok: boolean; status: () => number; json: () => Promise<T> }, label: string): Promise<T> {
   if (!res.ok()) throw new Error(`${label} failed: ${res.status()}`);
@@ -44,15 +104,20 @@ export interface Character {
   portrait_path: string | null;
 }
 
+export type VidaAttr = '+' | '/' | '-';
+
 export async function createCharacter(
   request: APIRequestContext,
   campaignId: string,
   data: {
     name: string;
-    vigor?: number;
-    intelligence?: number;
-    dexterity?: number;
-    cunning?: number;
+    vigor?: VidaAttr;
+    intelligence?: VidaAttr;
+    dexterity?: VidaAttr;
+    cunning?: VidaAttr;
+    max_pv?: number;
+    max_pm?: number;
+    defense?: number;
     race?: string;
     class_name?: string;
   },
@@ -60,10 +125,10 @@ export async function createCharacter(
   const res = await request.post(`${API_BASE}/campaigns/${campaignId}/characters`, {
     data: {
       type: 'player',
-      vigor: 1,
-      intelligence: 1,
-      dexterity: 1,
-      cunning: 1,
+      vigor: '/',
+      intelligence: '/',
+      dexterity: '/',
+      cunning: '/',
       ...data,
     },
   });
@@ -185,7 +250,7 @@ export async function createNpc(
   data: { name: string; description?: string },
 ): Promise<Npc> {
   const res = await request.post(`${API_BASE}/campaigns/${campaignId}/npcs`, {
-    data: { vigor: 1, intelligence: 1, dexterity: 1, cunning: 1, ...data },
+    data: { vigor: '/', intelligence: '/', dexterity: '/', cunning: '/', ...data },
   });
   return jsonOrThrow<Npc>(res, 'createNpc');
 }

@@ -24,11 +24,13 @@ export interface Session {
 
 export type SessionStatus = 'DRAFT' | 'IMPORTED' | 'PROCESSING' | 'REVIEW' | 'APPROVED' | 'ARCHIVED'
 
+export type VidaAttr = '+' | '/' | '-'
+
 export interface VidaAttributes {
-  vigor: number
-  intelligence: number
-  dexterity: number
-  cunning: number
+  vigor: VidaAttr
+  intelligence: VidaAttr
+  dexterity: VidaAttr
+  cunning: VidaAttr
 }
 
 export interface VidaStats {
@@ -40,21 +42,6 @@ export interface VidaStats {
 export interface VidaState {
   current_pv: number
   current_pm: number
-}
-
-export function calcStats(attrs: VidaAttributes): VidaStats {
-  return {
-    max_pv: attrs.vigor * 2 + attrs.dexterity,
-    max_pm: attrs.intelligence * 2 + attrs.cunning,
-    defense: attrs.dexterity + attrs.cunning,
-  }
-}
-
-export function regenRate(attrs: VidaAttributes): { hp_per_hour: number; mp_per_hour: number } {
-  return {
-    hp_per_hour: attrs.vigor,
-    mp_per_hour: attrs.intelligence,
-  }
 }
 
 export interface Character {

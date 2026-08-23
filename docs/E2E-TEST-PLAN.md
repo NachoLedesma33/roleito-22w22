@@ -296,125 +296,60 @@ jobs:
 
 ## 15. Test Assets — Descarga de demos
 
-### 15.1 Estructura de assets de prueba
+> **Estado**: implementado. Los binarios viven en `tests/assets/` (gitignored,
+> regenerables según `tests/assets/README.md`).
+
+### 15.1 Estructura de assets de prueba (real)
 
 ```text
 tests/
   assets/
     maps/
-      tavern-interior.jpg      ← mapa de taberna con grilla
-      forest-clearing.jpg      ← mapa de claro del bosque
-      dungeon-room.jpg         ← mapa de mazmorra
+      tavern-1536.jpg              ← Dice Grimorium, taberna nevada (1536x1024)
+      forest-wilderness-1024.jpg   ← Dice Grimorium, bosque con río (1024x1536)
+      dungeon-crypt-1024.jpg       ← Dice Grimorium, cripta (1024x1536)
     portraits/
-      warrior-male.png         ← retrato de guerrero
-      mage-female.png          ← retrata de maga
-      rogue-male.png           ← retrato de pícaro
-      cleric-female.png        ← retrata de clériga
-      orc-npc.png              ← retrato de orco NPC
-      goblin-npc.png           ← retrato de goblin NPC
-      undead-skeleton.png      ← retrato de no-muerto
-    tokens/
-      warrior-token.png        ← token circular para el mapa
-      mage-token.png
-      rogue-token.png
-      orc-token.png
-      goblin-token.png
-    README.md                  ← créditos y licencias de cada asset
+      velazquez_portraits/         ← pack "30 Painted Portraits" (OGA, dominio público)
+        female_01.png ... male_17.png
+    README.md                      ← créditos, URLs de descarga y validación anti-truncado
 ```
 
-### 15.2 Script de descarga
+### 15.2 Descarga y validación
 
-```bash
-#!/bin/bash
-# tests/assets/download-demo-assets.sh
-# Descarga assets CC0/CC-BY para tests y demos.
-# Ejecutar una vez: bash tests/assets/download-demo-assets.sh
+Ver `tests/assets/README.md`. Reglas aprendidas:
 
-ASSET_DIR="$(dirname "$0")"
-mkdir -p "$ASSET_DIR/maps" "$ASSET_DIR/portraits" "$ASSET_DIR/tokens"
-
-echo "=== Downloading demo assets ==="
-
-# --- MAPS (battle maps con grilla) ---
-# 2-Minute Tabletop — CC-BY-NC 4.0 — https://2minutetabletop.com
-echo "[1/5] Maps from 2-Minute Tabletop..."
-curl -sL "https://2minutetabletop.com/wp-content/uploads/2019/03/Tavern-Inn-Battle-Map.jpg" \
-  -o "$ASSET_DIR/maps/tavern-interior.jpg"
-curl -sL "https://2minutetabletop.com/wp-content/uploads/2018/10/Forest-Clearing-Battle-Map.jpg" \
-  -o "$ASSET_DIR/maps/forest-clearing.jpg"
-
-# Dice Grimorium — libre para uso personal — https://dicegrimorium.com
-echo "[2/5] Maps from Dice Grimorium..."
-curl -sL "https://dicegrimorium.com/wp-content/uploads/2021/02/dungeon-room-map.jpg" \
-  -o "$ASSET_DIR/maps/dungeon-room.jpg"
-
-# --- PORTRAITS (retratos de personajes) ---
-# OpenGameArt.org CC0 Portraits — https://opengameart.org/content/cc0-portraits
-echo "[3/5] CC0 portraits from OpenGameArt..."
-curl -sL "https://opengameart.org/sites/default/files/warrior_portrait_cc0.png" \
-  -o "$ASSET_DIR/portraits/warrior-male.png"
-
-# kiddolink Fantasy NPC Pack — CC0 — https://kiddolink.itch.io/fantasy-npc-non-playable-characters-pack
-echo "[4/5] NPC portraits from kiddolink (CC0)..."
-# Descarga manual requerida (itch.io), copiar a portraits/ después
-
-# oicaroh Fantasy Character Portrait Pack — Free — https://oicaroh.itch.io/medieval-fantasy-character-portraits
-echo "[5/5] Character portraits from oicaroh (Free)..."
-# Descarga manual requerida (itch.io), copiar a portraits/ después
-
-# --- TOKENS (portraits recortados para el mapa) ---
-# rpg-token-borders — MIT — https://github.com/TuringHuang/rpg-token-borders
-echo "Token borders available at: https://rpgtokenmaker.com"
-echo "(manual: paste portrait URL → export circular PNG token)"
-
-echo ""
-echo "=== Done ==="
-echo "Manual steps needed:"
-echo "  1. Download kiddolink NPC pack: https://kiddolink.itch.io/fantasy-npc-non-playable-characters-pack"
-echo "  2. Download oicaroh portraits: https://oicaroh.itch.io/medieval-fantasy-character-portraits"
-echo "  3. Copy portrait PNGs to tests/assets/portraits/"
-echo "  4. Use https://rpgtokenmaker.com to generate circular tokens"
-echo "  5. Copy tokens to tests/assets/tokens/"
-```
+- Dice Grimorium corta conexiones en archivos `-scaled` grandes → pedir siempre
+  variantes `-1024x1536` / `-1536x1024`.
+- Un JPEG truncado decodifica parcial en el browser → textura negra con
+  `WebGL INVALID_VALUE: texSubImage2D: bad image data`, sin error visible en curl.
+- Validar todo download con GDI+ (`System.Drawing.Image.FromFile`) o equivalente
+  antes de usarlo.
+- URLs viejas (2minutetabletop, itch.io manual) muertas o no automatizables: no usar.
 
 ### 15.3 Fuentes de assets y licencias
 
-| Fuente | Tipo | Licencia | Cantidad | URL |
-|--------|------|----------|----------|-----|
-| 2-Minute Tabletop | Battle maps | CC-BY-NC 4.0 | 200+ maps | https://2minutetabletop.com/gallery/ |
-| Dice Grimorium | Battle maps | Uso libre (personal) | 50+ maps | https://dicegrimorium.com/free-rpg-map-library/ |
-| OpenGameArt.org | Portraits | CC0 (dominio público) | Variable | https://opengameart.org/content/cc0-portraits |
-| kiddolink | NPC portraits + sprites | CC0 | 18 NPCs | https://kiddolink.itch.io/fantasy-npc-non-playable-characters-pack |
-| oicaroh | Character portraits | Free (credit) | 5 portraits | https://oicaroh.itch.io/medieval-fantasy-character-portraits |
-| jira77 | Fantasy portraits | Free | 50 portraits | https://jira77.itch.io/50-fantasy-portraits-free |
-| rpg-token-borders | Token frames SVG | MIT | 15 borders | https://github.com/TuringHuang/rpg-token-borders |
-| rpgtokenmaker.com | Token generator | Gratis | Ilimitado | https://rpgtokenmaker.com |
+| Fuente | Tipo | Licencia | URL |
+|--------|------|----------|-----|
+| Dice Grimorium | Battle maps gridded | Uso libre (personal) | https://dicegrimorium.com/free-rpg-map-library/ |
+| Velázquez Portraits via OpenGameArt | Retratos pintados | Dominio público | https://opengameart.org/content/30-painted-portraits |
 
-### 15.4 Uso en tests
+### 15.4 Uso en tests (implementado)
 
-Los assets se cargan via API en el fixture de campaña:
+Helpers en `tests/helpers/api-helpers.ts`:
 
 ```ts
-// tests/fixtures/campaign-fixture.ts
-import path from 'path';
-import fs from 'fs';
-
-const ASSETS_DIR = path.resolve(__dirname, '../assets');
-
-export async function seedDemoData(request: APIRequestContext, campaignId: string) {
-  // Upload map to scene
-  const mapFile = fs.readFileSync(`${ASSETS_DIR}/maps/tavern-interior.jpg`);
-  // → POST /campaigns/{id}/scenes/{sceneId}/upload-background
-
-  // Create characters with portraits
-  const portrait = fs.readFileSync(`${ASSETS_DIR}/portraits/warrior-male.png`);
-  // → POST /campaigns/{id}/characters + upload portrait
-
-  // Create NPCs
-  const npcPortrait = fs.readFileSync(`${ASSETS_DIR}/portraits/orc-npc.png`);
-  // → POST /campaigns/{id}/npcs + upload portrait
-}
+loadAsset(relPath)                    // lee binario de tests/assets/, lanza si falta
+assetExists(relPath)                  // para test.skip() si no se descargaron
+uploadBackground(request, cid, sid, file)
+uploadPortrait(request, cid, 'character' | 'npc', entityId, file)
 ```
+
+- `PNG_1PX` queda solo para tests de mecánica CRUD/upload (scene, map, character).
+- Los specs de dashboard usan el mapa real de taberna cuando está disponible.
+- Test `D9 @showcase` (dashboard.spec.ts) verifica end-to-end con imágenes reales:
+  background decodifica con variedad de colores (no plano negro), retrato de token
+  responde 200 desde `/api/static/`, y la consola no registra errores WebGL
+  (`texSubImage` / `INVALID_VALUE`). Se salta con skip si faltan los assets.
 
 ### 15.5 Showcase mode (demo visual)
 

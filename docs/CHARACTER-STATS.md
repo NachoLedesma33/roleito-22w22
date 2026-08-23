@@ -4,13 +4,18 @@
 >
 > Basado en el sistema VIDA (Vigor, Inteligencia, Destreza, Astucia).
 >
+> **REGLA VIGENTE**: los atributos NO son numéricos — cada uno es
+> `+` (más), `/` (neutro) o `−` (menos). El DM usa el estado para indicar
+> cuántos dados tira el jugador; todo lo demás lo resuelve el DM según cada caso.
+>
 > **ESTADO: DRAFT — Pendiente confirmación del DM.**
 
 ---
 
 # 1. Atributos Base
 
-Cuatro atributos numéricos definen cada personaje o criatura:
+Cuatro atributos cualitativos definen cada personaje o criatura. **No son números**:
+cada atributo toma uno de tres estados.
 
 | Sigla | Nombre    | Descripción |
 |-------|-----------|-------------|
@@ -19,34 +24,50 @@ Cuatro atributos numéricos definen cada personaje o criatura:
 | **D** | Destreza  | Agilidad, coordinación ojo-mano, reflejos, velocidad |
 | **A** | Astucia   | Percepción, intuición, instinto de supervivencia, anticipación táctica |
 
+## Escala de valores
+
+| Símbolo | Nombre  | Significado en la mesa |
+|---------|---------|------------------------|
+| **+**   | Más     | El DM indica al jugador tirar **más dados** de lo estándar |
+| **/**   | Neutro  | Cantidad **estándar** de dados |
+| **−**   | Menos   | El DM indica al jugador tirar **menos dados** de lo estándar |
+
+El uso principal es que el DM pueda indicar cuántos dados tira el jugador según
+el estado del atributo relevante para la tirada. La cantidad exacta por estado
+y cualquier otro efecto quedan a criterio del DM según cada situación.
+
 ---
 
-# 2. Fórmulas de Estadísticas Derivadas
+# 2. Estadísticas Derivadas
 
-Estadísticas calculadas automáticamente a partir de los atributos base:
+PV, PM y Defensa siguen existiendo como conceptos, pero **no se derivan de
+fórmulas numéricas** (los atributos ya no son números):
 
-```
-PV (Puntos de Vida)  = (Vigor * 2) + Destreza
-PM (Puntos de Mente)  = (Inteligencia * 2) + Astucia
-Defensa (Evasión)     = Destreza + Astucia
-```
+| Estadística | Representa |
+|-------------|------------|
+| **PV**      | Daño físico que el cuerpo puede soportar antes de caer |
+| **PM**      | Resistencia al estrés mental, locura, control mental, energía mágica |
+| **Defensa** | Dificultad base que un atacante debe superar para impactar |
 
-| Estadística | Fórmula | Representa |
-|-------------|---------|------------|
-| **PV**      | `(V * 2) + D` | Daño físico que el cuerpo puede soportar antes de caer |
-| **PM**      | `(I * 2) + A` | Resistencia al estrés mental, locura, control mental, energía mágica |
-| **Defensa** | `D + A` | Dificultad base que un atacante debe superar para impactar |
+El valor concreto de cada una lo maneja el DM según cada personaje/situación.
+
+> **Obsoleto** (modelo anterior con atributos numéricos):
+> `PV = (V * 2) + D`, `PM = (I * 2) + A`, `Defensa = D + A`.
 
 ---
 
 # 3. Recuperación (Sustento)
 
-Tasas fijas de recuperación durante descanso:
+La recuperación durante descanso la maneja el DM según cada caso, teniendo en
+cuenta el estado de Vigor (física) e Inteligencia (mental):
 
-| Tipo | Rate | Condición |
-|------|------|-----------|
-| Regeneración Física | **[Vigor]** PV / hora | Descanso completo |
-| Regeneración Mental | **[Inteligencia]** PM / hora | Descanso completo |
+| Tipo | Atributo relevante | Condición |
+|------|--------------------|-----------|
+| Regeneración Física | Vigor (+ / / −) | Descanso completo |
+| Regeneración Mental | Inteligencia (+ / / −) | Descanso completo |
+
+Vigor o Inteligencia en `+` → recuperan más rápido; en `−` → más lento;
+en `/` → ritmo estándar. Cifras exactas: criterio del DM.
 
 ---
 
@@ -55,17 +76,19 @@ Tasas fijas de recuperación durante descanso:
 ```
 INICIATIVA:
 1. DM dice: "Tiren dados para la iniciativa"
-2. Cada jugador tira 1d6 (o dado que DM indique)
+2. Cada jugador tira los dados que el DM indique
+   (Destreza + / − puede sumar o restar dados)
 3. DM tira por enemigos/NPCs
 4. DM carga resultados en orden
 5. Se establece orden de turnos
 
 COMBATE:
-Atacante: tira contra Defensa del objetivo
-Defensa = Destreza + Astucia del objetivo
+Atacante tira los dados que el DM indique contra
+la Defensa del objetivo (definida por el DM según
+Destreza y Astucia del objetivo).
 
-Si tiro >= Defensa → Impacto
-Si tiro < Defensa  → Fallo/Evasión
+Si el resultado supera la Defensa → Impacto
+Si no → Fallo/Evasión
 ```
 
 ---
@@ -123,11 +146,11 @@ El usuario selecciona un tipo de dado y puede tirar múltiples dados de ese mism
 Al crear un personaje:
 
 ```
-1. Asignar valores a V, I, D, A (rango pendiente de definir)
-2. Calcular automáticamente PV, PM, Defensa
+1. Asignar estado a V, I, D, A: + (más), / (neutro) o − (menos)
+2. PV, PM y Defensa los define el DM según cada personaje
 3. PV y PM son barras de recursos consumibles
 4. Disminuyen con daño/estrés
-5. Se recuperan con descanso según tasas de §3
+5. Se recuperan con descanso según §3
 6. Seleccionar dados de daño según clase/arma
 ```
 
@@ -136,7 +159,9 @@ Al crear un personaje:
 # 7. Notas Pendientes
 
 ```text
-□ Rango permitido para atributos base (1-10? 1-20?)
+□ Cantidad estándar de dados por tirada (¿cuántos dados tira un atributo en /?)
+□ ¿Cuántos dados suma/resta exactamente + y −? (¿1? ¿2? ¿lo decide el DM cada vez?)
+□ ¿PV/PM iniciales según estado de atributos o valor fijo?
 □ ¿Hay modificadores de clase/raza?
 □ ¿Críticos? ¿Fisuras?
 □ ¿Límite de PV/PM en 0? (¿muerte vs inconsciente?)
@@ -156,8 +181,8 @@ Al crear un personaje:
 # 8. Impacto en el Sistema
 
 ```text
-Character Model       → atributos VIDA + stats derivados
-Character Creation    → formulario con 4 inputs + stats auto-calculados
+Character Model       → atributos VIDA (+ / / −) + PV/PM/Defensa
+Character Creation    → 4 selectores de estado (+ / / −), PV/PM los define el DM
 Session Events        → eventos de daño consumen PV/PM
 DM Control UI         → barras de PV/PM visibles por personaje
 Renderer              → indicadores de estado visual
@@ -176,7 +201,7 @@ Opción A: campos dedicados en Character
   → Simple, queryable, explícito
 
 Opción B: JSON embebido
-  character.stats_json = { "vigor": 5, ... }
+  character.stats_json = { "vigor": "+", ... }
   → Flexible, no requiere migration
 
 Opción C (recomendada): campos base + JSON derivados
@@ -184,3 +209,9 @@ Opción C (recomendada): campos base + JSON derivados
   PV, PM, Defensa como JSON calculado (derivable)
   → Mejor de ambos mundos
 ```
+
+> **Implementado (2026-08-22)**: Opción A — V, I, D, A como columnas `String` con
+> valores `+` / `/` / `-` (default `/`), y Max PV / Max PM / Defensa como columnas
+> `Integer` definidas por el DM (defaults 10/10/5, sin fórmulas). Migración automática:
+> los atributos numéricos legacy se convierten a `/` al arrancar el backend
+> (`DATA_MIGRATIONS` en `database.py`). Los PV/PM actuales previos se preservan tal cual.

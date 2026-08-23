@@ -1,3 +1,5 @@
+import type { VidaAttr } from '@/lib/api';
+
 interface VidaBarProps {
   current: number | null;
   max: number;
@@ -26,11 +28,17 @@ export function VidaBar({ current, max, label, color }: VidaBarProps) {
 }
 
 interface VidaAttrsProps {
-  vigor: number;
-  intelligence: number;
-  dexterity: number;
-  cunning: number;
+  vigor: VidaAttr;
+  intelligence: VidaAttr;
+  dexterity: VidaAttr;
+  cunning: VidaAttr;
 }
+
+const ATTR_STATE_LABEL: Record<VidaAttr, string> = {
+  '+': 'Más',
+  '/': 'Neutro',
+  '-': 'Menos',
+};
 
 export function VidaAttrs({ vigor, intelligence, dexterity, cunning }: VidaAttrsProps) {
   const attrs = [
@@ -44,7 +52,9 @@ export function VidaAttrs({ vigor, intelligence, dexterity, cunning }: VidaAttrs
     <div className="grid grid-cols-4 gap-2">
       {attrs.map((a) => (
         <div key={a.label} className="text-center border border-[var(--bg-tertiary)] rounded p-2">
-          <p className={`text-lg font-bold ${a.color}`}>{a.value}</p>
+          <p className={`text-lg font-bold ${a.color}`} title={ATTR_STATE_LABEL[a.value]}>
+            {a.value === '-' ? '−' : a.value}
+          </p>
           <p className="text-xs text-[var(--text-secondary)]">{a.name}</p>
           <p className="text-[10px] text-[var(--text-secondary)] opacity-60">[{a.label}]</p>
         </div>
