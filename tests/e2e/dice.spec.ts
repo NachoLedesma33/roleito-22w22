@@ -1,4 +1,5 @@
 import { expect, test } from '../fixtures/campaign-fixture';
+import { createCharacter } from '../helpers/api-helpers';
 
 async function openRoller(page: import('@playwright/test').Page, campaignId: string) {
   await page.goto(`/campaigns/${campaignId}`);
@@ -66,5 +67,28 @@ test.describe('Dice Roller', () => {
 
     await page.keyboard.press('Escape');
     await expect(page.getByText('Dice Roller')).toHaveCount(0);
+  });
+
+  test('DR6: roller para personaje muestra atributos y tag en historial', async ({ page, request, campaign }) => {
+    await createCharacter(request, campaign.id, {
+      name: 'Lyra Roller',
+      vigor: '+',
+      dexterity: '-',
+    });
+    await openRoller(page, campaign.id);
+
+    const select = page.getByLabel('Roller Para');
+    await expect(select).toBeVisible();
+    await select.selectOption({ label: 'Lyra Roller' });
+
+    await expect(page.getByTitle('Vigor: Más')).toBeVisible();
+    await expect(page.getByTitle('Destreza: Menos')).toBeVisible();
+
+    await page.getByPlaceholder('Habilidad (ej: Sigilo) — opcional').fill('Sigilo');
+    await page.getByRole('button', { name: 'Roll 1d6' }).click();
+
+    await expect(page.locator('span.text-lg.font-bold.font-mono')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Sigilo — Lyra Roller').first()).toBeVisible();
+    await expect(page.getByText('Sigilo — Lyra Roller')).toHaveCount(2);
   });
 });

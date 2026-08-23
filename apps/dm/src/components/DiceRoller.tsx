@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import HudPanel from './HudPanel';
+import type { Character, NPC, VidaAttr } from '@/lib/api';
 
 export interface DiceRoll {
   id: string;
@@ -11,12 +12,41 @@ export interface DiceRoll {
   label?: string;
 }
 
+interface RollerEntity {
+  key: string;
+  name: string;
+  vigor: VidaAttr;
+  intelligence: VidaAttr;
+  dexterity: VidaAttr;
+  cunning: VidaAttr;
+}
+
 interface DiceRollerProps {
   onClose: () => void;
   onRoll?: (roll: DiceRoll) => void;
+  characters?: Character[];
+  npcs?: NPC[];
 }
 
 const DICE_TYPES = [4, 6, 8, 10, 12, 20];
+
+const STATE_NAME: Record<VidaAttr, string> = {
+  '+': 'Más',
+  '/': 'Neutro',
+  '-': 'Menos',
+};
+
+function AttrChip({ name, value, color }: { name: string; value: VidaAttr; color: string }) {
+  return (
+    <div
+      title={`${name}: ${STATE_NAME[value]}`}
+      className="flex items-center justify-center gap-1 border border-[var(--bg-tertiary)] rounded py-1"
+    >
+      <span className={`text-[10px] font-bold ${color}`}>{value === '-' ? '−' : value}</span>
+      <span className="text-[10px] text-[var(--text-secondary)]">{name[0]}</span>
+    </div>
+  );
+}
 
 function rollDie(sides: number): number {
   return Math.floor(Math.random() * sides) + 1;
@@ -33,18 +63,41 @@ function formatTime(ts: number): string {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
-export default function DiceRoller({ onClose, onRoll }: DiceRollerProps) {
+export default function DiceRoller({ onClose, onRoll, characters = [], npcs = [] }: DiceRollerProps) {
   const [diceType, setDiceType] = useState(6);
   const [count, setCount] = useState(1);
+  const [entityKey, setEntityKey] = useState('');
+  const [skill, setSkill] = useState('');
   const [lastRoll, setLastRoll] = useState<DiceRoll | null>(null);
   const [history, setHistory] = useState<DiceRoll[]>([]);
   const [rolling, setRolling] = useState(false);
   const rollTimeout = useRef<ReturnType<typeof setTimeout>>();
 
+  const entities: RollerEntity[] = [
+    ...characters.map((c) => ({
+      key: `char:${c.id}`,
+      name: c.name,
+      vigor: c.vigor,
+      intelligence: c.intelligence,
+      dexterity: c.dexterity,
+      cunning: c.cunning,
+    })),
+    ...npcs.map((n) => ({
+      key: `npc:${n.id}`,
+      name: n.name,
+      vigor: n.vigor,
+      intelligence: n.intelligence,
+      dexterity: n.dexterity,
+      cunning: n.cunning,
+    })),
+  ];
+  const selected = entities.find((e) => e.key === entityKey) ?? null;
+
   const handleRoll = useCallback(() => {
     setRolling(true);
     rollTimeout.current = setTimeout(() => {
       const { results, total } = rollDice(diceType, count);
+      const label = [skill.trim(), selected?.name].filter(Boolean).join(' — ') || undefined;
       const roll: DiceRoll = {
         id: crypto.randomUUID(),
         diceType,
@@ -52,13 +105,14 @@ export default function DiceRoller({ onClose, onRoll }: DiceRollerProps) {
         results,
         total,
         timestamp: Date.now(),
+        label,
       };
       setLastRoll(roll);
       setHistory((prev) => [roll, ...prev].slice(0, 50));
       setRolling(false);
       onRoll?.(roll);
     }, 300);
-  }, [diceType, count, onRoll]);
+  }, [diceType, count, skill, selected, onRoll]);
 
   useEffect(() => {
     return () => {
@@ -115,6 +169,50 @@ export default function DiceRoller({ onClose, onRoll }: DiceRollerProps) {
           </div>
         </div>
 
+        {/* Roller Context (optional) */}
+        <div>
+          <p className="text-[10px] text-[var(--text-secondary)] mb-1 uppercase tracking-wide">Roller Para</p>
+          <select
+            aria-label="Roller Para"
+            value={entityKey}
+            onChange={(e) => setEntityKey(e.target.value)}
+            className="w-full bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-xs rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+          >
+            <option value="">— Sin personaje —</option>
+            {characters.length > 0 && (
+              <optgroup label="Personajes">
+                {characters.map((c) => (
+                  <option key={c.id} value={`char:${c.id}`}>{c.name}</option>
+                ))}
+              </optgroup>
+            )}
+            {npcs.length > 0 && (
+              <optgroup label="NPCs">
+                {npcs.map((n) => (
+                  <option key={n.id} value={`npc:${n.id}`}>{n.name}</option>
+                ))}
+              </optgroup>
+            )}
+          </select>
+
+          {selected && (
+            <div className="grid grid-cols-4 gap-1 mt-2">
+              <AttrChip name="Vigor" value={selected.vigor} color="text-red-400" />
+              <AttrChip name="Inteligencia" value={selected.intelligence} color="text-blue-400" />
+              <AttrChip name="Destreza" value={selected.dexterity} color="text-green-400" />
+              <AttrChip name="Astucia" value={selected.cunning} color="text-yellow-400" />
+            </div>
+          )}
+
+          <input
+            type="text"
+            value={skill}
+            onChange={(e) => setSkill(e.target.value)}
+            placeholder="Habilidad (ej: Sigilo) — opcional"
+            className="w-full mt-2 bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-xs rounded px-2 py-1.5 placeholder:text-[var(--text-secondary)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+          />
+        </div>
+
         {/* Roll Button */}
         <button
           onClick={handleRoll}
@@ -131,6 +229,9 @@ export default function DiceRoller({ onClose, onRoll }: DiceRollerProps) {
         {/* Last Roll Result */}
         {lastRoll && (
           <div className="bg-[var(--bg-tertiary)]/50 rounded-lg p-3">
+            {lastRoll.label && (
+              <p className="text-xs font-semibold text-[var(--accent)] truncate mb-1">{lastRoll.label}</p>
+            )}
             <div className="flex items-center justify-between mb-1">
               <span className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">Result</span>
               <span className="text-[10px] text-[var(--text-secondary)]">{lastRoll.count}d{lastRoll.diceType}</span>
@@ -168,20 +269,25 @@ export default function DiceRoller({ onClose, onRoll }: DiceRollerProps) {
               {history.map((r) => (
                 <div
                   key={r.id}
-                  className="flex items-center gap-2 px-2 py-1 rounded text-[10px] hover:bg-[var(--bg-tertiary)] transition-colors"
+                  className="px-2 py-1 rounded hover:bg-[var(--bg-tertiary)] transition-colors"
                 >
-                  <span className="text-[var(--text-secondary)] font-mono w-14 shrink-0">
-                    {formatTime(r.timestamp)}
-                  </span>
-                  <span className="text-[var(--text-secondary)] shrink-0">
-                    {r.count}d{r.diceType}
-                  </span>
-                  <span className="flex-1 truncate text-[var(--text-secondary)]">
-                    {r.results.join(' + ')}
-                  </span>
-                  <span className="font-bold font-mono text-[var(--text-primary)]">
-                    {r.total}
-                  </span>
+                  {r.label && (
+                    <p className="text-[10px] font-semibold text-[var(--accent)] truncate">{r.label}</p>
+                  )}
+                  <div className="flex items-center gap-2 text-[10px]">
+                    <span className="text-[var(--text-secondary)] font-mono w-14 shrink-0">
+                      {formatTime(r.timestamp)}
+                    </span>
+                    <span className="text-[var(--text-secondary)] shrink-0">
+                      {r.count}d{r.diceType}
+                    </span>
+                    <span className="flex-1 truncate text-[var(--text-secondary)]">
+                      {r.results.join(' + ')}
+                    </span>
+                    <span className="font-bold font-mono text-[var(--text-primary)]">
+                      {r.total}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>

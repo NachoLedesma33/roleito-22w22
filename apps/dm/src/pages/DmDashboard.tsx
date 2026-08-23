@@ -859,6 +859,8 @@ export default function DmDashboard() {
           {showDiceRoller && (
             <DiceRoller
               onClose={() => setShowDiceRoller(false)}
+              characters={characters}
+              npcs={npcs}
             />
           )}
           {showInitiative && (
