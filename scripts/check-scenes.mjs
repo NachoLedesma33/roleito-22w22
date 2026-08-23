@@ -1,6 +1,6 @@
 import { chromium } from '@playwright/test';
 
-const CAMPAIGN = process.argv[2] || '511d941b-e9c3-4ebd-bf5f-63c94b07ee23';
+const CAMPAIGN = process.argv[2] || '566921f6-83ef-4b78-ad0d-5ae179ddd84f';
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 page.on('console', (m) => {

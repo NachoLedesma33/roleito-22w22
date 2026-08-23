@@ -141,30 +141,46 @@ Los 6 dados están predefinidos en el sistema:
 
 # 8. Uso en el Juego
 
+> **DECISIÓN (2026-08-22)**: las tiradas son **INFORMATIVAS y MANUALES**.
+>
+> - No hay mapping fijo atributo→dados ni habilidad→atributo.
+> - El atributo (`+` / `/` / `−`) es solo una **guía visual** para que el DM
+>   decida cuántos dados tira el jugador ("tirás con 2 dados").
+> - El sistema tira lo que se le pide y muestra el resultado; nada más.
+> - La interpretación del resultado y las consecuencias son 100% del DM.
+>
+> Ver CHARACTER-STATS.md §1 y §4.
+
 ## 8.1 Tiradas de Combate
 ```text
-Ataque: dados que el DM indique vs Defensa
-Daño: 1d6 (según arma)
-Crítico: 2d6 o 3d6
+Ataque: N dados que el DM indique vs Defensa
+Daño:   los dados que defina el DM según arma/situación
+Crítico: criterio del DM (ej: tirar más dados)
 ```
 
 ## 8.2 Tiradas de Habilidades
 
-La cantidad de dados la indica el DM según el atributo relevante
-(`+` más dados, `/` estándar, `−` menos dados — ver CHARACTER-STATS.md §1):
+Sin mapping fijo. El DM mira el estado del atributo relevante (guía visual)
+y decide cuántos dados tira el jugador:
 
 ```text
-Persuasión:    N dados según Astucia
-Investigación: N dados según Inteligencia
-Sigilo:        N dados según Destreza
-Resistencia:   N dados según Vigor
++ → más dados de lo estándar
+/ → cantidad estándar
+− → menos dados de lo estándar
+```
+
+Ejemplos (la relación con el atributo la define el DM en cada caso):
+
+```text
+Persuasión, Investigación, Sigilo, Resistencia, etc.
+→ el DM anuncia la tirada y el jugador tira lo indicado
 ```
 
 ## 8.3 Tiradas Especiales
 ```text
 Salvación: ??? (pendiente info del DM)
-Initiative: N dados según Destreza
-Percepción: N dados según Astucia
+Iniciativa: ver §16 — cada jugador tira el dado que el DM indique
+Percepción: como cualquier tirada — el DM define tipo y cantidad
 ```
 
 ---
@@ -252,7 +268,8 @@ DM:
 ```text
 □ ¿Las tiradas son públicas o privadas?
 □ ¿El DM ve todas las tiradas de jugadores?
-□ ¿Hay modificadores por atributo?
+✓ ¿Hay modificadores por atributo? → NO (2026-08-22): sin modificadores ni
+  mapping fijo; atributo = guía visual para el DM (ver §8)
 □ ¿Cómo se integra con el sistema de combate?
 □ ¿Dado especial de salvada? (pendiente info del DM)
 □ ¿Animaciones de dados 3D o 2D?
@@ -409,6 +426,8 @@ DM:
 
 ```text
 - El sistema es simple: select dice → roll → see result
+- Las tiradas son informativas y manuales (decisión 2026-08-22, ver §8):
+  el sistema tira lo pedido y muestra el resultado; interpretación 100% del DM
 - Máximo 10 dados por tirada (limitado por UI)
 - 6 tipos de dados comunes: d4, d6, d8, d10, d12, d20
 - El d6 es el dado principal del grupo

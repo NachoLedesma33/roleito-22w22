@@ -1,7 +1,7 @@
 import { chromium } from '@playwright/test';
 
 const urls = process.argv.slice(2);
-const CAMPAIGN = '511d941b-e9c3-4ebd-bf5f-63c94b07ee23';
+const CAMPAIGN = '566921f6-83ef-4b78-ad0d-5ae179ddd84f';
 
 for (const base of urls.length ? urls : ['http://localhost:5173', 'http://127.0.0.1:5173']) {
   const browser = await chromium.launch();

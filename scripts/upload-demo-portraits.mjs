@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 
 const API = 'http://localhost:8000/api';
-const CID = process.argv[2] || '511d941b-e9c3-4ebd-bf5f-63c94b07ee23';
+const CID = process.argv[2] || '566921f6-83ef-4b78-ad0d-5ae179ddd84f';
 const DIR = 'tests/assets/portraits/velazquez_portraits';
 
 const MAP = {
