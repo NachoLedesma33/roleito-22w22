@@ -1,0 +1,6 @@
+{
+  "provider": "mock",
+  "voice": "mock-voice-1",
+  "speed": 1.0,
+  "language": "es"
+}

@@ -9,6 +9,7 @@ const campaignNav = [
   { to: '/events', label: 'Events', icon: '•' },
   { to: '/narrative', label: 'Narrative', icon: '▸' },
   { to: '/agents', label: 'Agents', icon: '◆' },
+  { to: '/tts', label: 'Voice', icon: '♪' },
   { to: '/players', label: 'Players', icon: '○' },
   { to: '/maps', label: 'Images', icon: '◈' },
   { to: '/assets', label: 'Assets', icon: '□' },
