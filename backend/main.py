@@ -18,6 +18,7 @@ from ai_routes import router as ai_router
 from narrative_routes import router as narrative_router
 from agent_routes import router as agent_router
 from tts_routes import router as tts_router
+from world_routes import router as world_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -81,6 +82,7 @@ app.include_router(ai_router, prefix="/api")
 app.include_router(narrative_router, prefix="/api")
 app.include_router(agent_router, prefix="/api")
 app.include_router(tts_router, prefix="/api")
+app.include_router(world_router, prefix="/api")
 
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "assets")
 os.makedirs(ASSETS_DIR, exist_ok=True)
