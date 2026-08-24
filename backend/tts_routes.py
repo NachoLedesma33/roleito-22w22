@@ -19,10 +19,10 @@ router = APIRouter(tags=["tts"])
 CONFIG_PATH = Path("data/tts_config.json")
 
 DEFAULTS = {
-    "provider": "mock",
-    "voice": "mock-voice-1",
+    "provider": "edge",
+    "voice": "es-AR-TomasNeural",
     "speed": 1.0,
-    "language": "es",
+    "language": "es-AR",
 }
 
 

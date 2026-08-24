@@ -145,6 +145,31 @@ export default function TTSPanel() {
       </div>
 
       <div className="border border-[var(--bg-tertiary)] rounded-lg p-4">
+        <h2 className="text-lg font-semibold mb-4">Voces Argentinas Disponibles</h2>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-sm font-medium">Tomas</span>
+              <span className="text-xs px-1.5 py-0.5 rounded bg-blue-900/50 text-blue-400">Masculino</span>
+            </div>
+            <p className="text-xs text-[var(--text-secondary)]">es-AR-TomasNeural</p>
+            <p className="text-xs text-[var(--text-secondary)] mt-1">Voz masculina argentina, tono amigable y natural.</p>
+          </div>
+          <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-sm font-medium">Elena</span>
+              <span className="text-xs px-1.5 py-0.5 rounded bg-pink-900/50 text-pink-400">Femenino</span>
+            </div>
+            <p className="text-xs text-[var(--text-secondary)]">es-AR-ElenaNeural</p>
+            <p className="text-xs text-[var(--text-secondary)] mt-1">Voz femenina argentina, tono cálido y expresivo.</p>
+          </div>
+        </div>
+        <p className="text-xs text-[var(--text-secondary)] mt-3">
+          Voces neurales de Microsoft Edge, gratuitas y sin límites. Acento rioplatense argentino.
+        </p>
+      </div>
+
+      <div className="border border-[var(--bg-tertiary)] rounded-lg p-4">
         <h2 className="text-lg font-semibold mb-4">Configuration</h2>
 
         {config && (
@@ -158,6 +183,7 @@ export default function TTSPanel() {
                 onChange={(e) => setConfig({ ...config, provider: e.target.value })}
                 className="w-full bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-3 py-2 text-sm"
               >
+                <option value="edge">Edge TTS (Gratis, Neural)</option>
                 <option value="mock">Mock (Testing)</option>
               </select>
             </div>
