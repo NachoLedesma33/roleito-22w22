@@ -16,6 +16,7 @@ from map_marker_routes import router as map_marker_router
 from notebook_routes import router as notebook_router
 from ai_routes import router as ai_router
 from narrative_routes import router as narrative_router
+from agent_routes import router as agent_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -76,6 +77,7 @@ app.include_router(map_marker_router, prefix="/api")
 app.include_router(notebook_router, prefix="/api")
 app.include_router(ai_router, prefix="/api")
 app.include_router(narrative_router, prefix="/api")
+app.include_router(agent_router, prefix="/api")
 
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "assets")
 os.makedirs(ASSETS_DIR, exist_ok=True)

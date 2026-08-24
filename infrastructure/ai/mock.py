@@ -71,5 +71,39 @@ class MockProvider(AIProvider):
             ]
             return json.dumps(events)
 
+        if "session processor" in system.lower() or "session notes" in prompt.lower():
+            return json.dumps({
+                "summary": "The party explored the dungeon and encountered enemies.",
+                "events": [
+                    {"type": "LOCATION_ENTERED", "description": "Party entered the dungeon", "actors": ["Party"], "targets": [], "location": "Dungeon", "importance": "NORMAL"},
+                    {"type": "COMBAT_STARTED", "description": "Combat with goblins", "actors": ["Party"], "targets": ["Goblins"], "location": "Dungeon", "importance": "HIGH"},
+                ],
+                "entities": {
+                    "characters": [{"name": "Ardan", "status": "alive"}],
+                    "npcs": [{"name": "Guard", "status": "alive"}],
+                    "locations": [{"name": "Dungeon", "type": "dungeon"}],
+                    "items": [{"name": "Gold Coin", "found_by": "Ardan"}],
+                },
+                "thread_hooks": ["What lies beyond the dungeon?"],
+                "character_changes": [{"character": "Ardan", "change": "Found a gold coin"}],
+            })
+
+        if "lore keeper" in system.lower() or "campaign context" in prompt.lower():
+            return json.dumps({
+                "answer": "Based on the campaign context, this appears to be related to the dungeon exploration.",
+                "entities_mentioned": ["Ardan", "Dungeon"],
+                "confidence": 0.7,
+                "related_topics": ["dungeon", "exploration"],
+                "source_hint": "Campaign events and character data",
+            })
+
+        if "narrator" in system.lower():
+            return json.dumps({
+                "narration": "The torchlight flickers against the damp stone walls, casting long shadows that dance like silent sentinels. A cold draft carries the scent of earth and something ancient.",
+                "mood": "mysterious",
+                "environmental_cues": ["flickering torchlight", "damp stone", "cold draft"],
+                "suggested_effects": ["fog", "flickering light", "ambient sounds"],
+            })
+
         digest = hashlib.sha1(f"{system}|{prompt}".encode()).hexdigest()[:8]
         return f"[mock:{model or 'mock-1'}:{digest}] {prompt[:120]}"

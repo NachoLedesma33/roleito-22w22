@@ -22,6 +22,7 @@ import SceneDetail from '@/pages/SceneDetail';
 import DmDashboard from '@/pages/DmDashboard';
 import PlayerView from '@/pages/PlayerView';
 import NarrativeEngine from '@/pages/NarrativeEngine';
+import AgentPanel from '@/pages/AgentPanel';
 
 function App() {
   return (
@@ -59,6 +60,7 @@ function App() {
         <Route path="/campaigns/:id/scenes" element={<SceneList />} />
         <Route path="/campaigns/:id/scenes/:sceneId" element={<SceneDetail />} />
         <Route path="/campaigns/:id/narrative" element={<NarrativeEngine />} />
+        <Route path="/campaigns/:id/agents" element={<AgentPanel />} />
       </Route>
     </Routes>
   );
