@@ -484,3 +484,26 @@ async def join_by_invite_code(
         "characters": scene_chars,
         "player_characters": player_characters,
     }
+
+
+@campaigns_router.post("/campaigns/{campaign_id}/locations")
+async def create_location(
+    campaign_id: str,
+    data: dict,
+    db: AsyncSession = Depends(get_session),
+):
+    campaign = (await db.execute(
+        select(Campaign).where(Campaign.id == campaign_id)
+    )).scalar_one_or_none()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    loc = Location(
+        campaign_id=campaign_id,
+        name=data.get("name", ""),
+        type=data.get("type", "custom"),
+        description=data.get("description", ""),
+    )
+    db.add(loc)
+    await db.commit()
+    return {"id": loc.id, "name": loc.name}

@@ -7,6 +7,7 @@ const campaignNav = [
   { to: '/sessions', label: 'Sessions', icon: '♠' },
   { to: '/scenes', label: 'Scenes', icon: '▣' },
   { to: '/events', label: 'Events', icon: '•' },
+  { to: '/narrative', label: 'Narrative', icon: '▸' },
   { to: '/players', label: 'Players', icon: '○' },
   { to: '/maps', label: 'Images', icon: '◈' },
   { to: '/assets', label: 'Assets', icon: '□' },

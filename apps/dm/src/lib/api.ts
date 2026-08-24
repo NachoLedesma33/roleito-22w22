@@ -20,6 +20,24 @@ export interface AITestResult {
   error: string | null;
 }
 
+export interface NarrativeEvent {
+  event_id: string;
+  type: string;
+  description: string;
+  actor_id: string | null;
+  target_id: string | null;
+  location_id: string | null;
+  confidence: number;
+  unresolved_actors: string[];
+  unresolved_targets: string[];
+}
+
+export interface ParseResponse {
+  events: NarrativeEvent[];
+  warnings: string[];
+  raw_count: number;
+}
+
 export interface Campaign {
   id: string;
   name: string;
@@ -544,6 +562,14 @@ export const api = {
       request<AITestResult>('/ai/test', {
         method: 'POST',
         body: JSON.stringify(prompt ? { prompt } : {}),
+      }),
+  },
+
+  narrative: {
+    parse: (campaignId: string, data: { text: string; session_id: string; scene_name?: string }) =>
+      request<ParseResponse>(`/campaigns/${campaignId}/narrative/parse`, {
+        method: 'POST',
+        body: JSON.stringify(data),
       }),
   },
 };

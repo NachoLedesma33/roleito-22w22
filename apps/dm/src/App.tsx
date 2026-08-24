@@ -21,6 +21,7 @@ import SceneList from '@/pages/SceneList';
 import SceneDetail from '@/pages/SceneDetail';
 import DmDashboard from '@/pages/DmDashboard';
 import PlayerView from '@/pages/PlayerView';
+import NarrativeEngine from '@/pages/NarrativeEngine';
 
 function App() {
   return (
@@ -57,6 +58,7 @@ function App() {
         <Route path="/campaigns/:id/assets" element={<AssetList />} />
         <Route path="/campaigns/:id/scenes" element={<SceneList />} />
         <Route path="/campaigns/:id/scenes/:sceneId" element={<SceneDetail />} />
+        <Route path="/campaigns/:id/narrative" element={<NarrativeEngine />} />
       </Route>
     </Routes>
   );
