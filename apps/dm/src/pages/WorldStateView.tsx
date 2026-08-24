@@ -37,7 +37,7 @@ export default function WorldStateView() {
     if (!campaignId) return;
     try {
       setLoading(true);
-      const data = await api.get<WorldState>(`/world-state/${campaignId}`);
+      const data = await api.worldState.get(campaignId);
       setState(data);
       setError('');
     } catch (e) {

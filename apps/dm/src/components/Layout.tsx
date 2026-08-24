@@ -11,6 +11,7 @@ const campaignNav = [
   { to: '/agents', label: 'Agents', icon: '◆' },
   { to: '/tts', label: 'Voice', icon: '♪' },
   { to: '/world-state', label: 'World State', icon: '◉' },
+  { to: '/memory', label: 'Memory', icon: '◎' },
   { to: '/players', label: 'Players', icon: '○' },
   { to: '/maps', label: 'Images', icon: '◈' },
   { to: '/assets', label: 'Assets', icon: '□' },

@@ -439,11 +439,6 @@ export const api = {
       request<{ status: string; id: string }>(`/events/${eventId}`, { method: 'DELETE' }),
   },
 
-  worldState: {
-    get: (campaignId: string) =>
-      request<WorldState>(`/campaigns/${campaignId}/world-state`),
-  },
-
   players: {
     list: (campaignId: string) =>
       request<Player[]>(`/campaigns/${campaignId}/players`),
@@ -571,5 +566,23 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+  },
+
+  memory: {
+    get: (campaignId: string) =>
+      request<any>(`/memory/${campaignId}`),
+    getSession: (campaignId: string, sessionNumber: number) =>
+      request<any>(`/memory/${campaignId}/sessions/${sessionNumber}`),
+    search: (campaignId: string, q: string) =>
+      request<any[]>(`/memory/${campaignId}/search?q=${encodeURIComponent(q)}`),
+  },
+
+  worldState: {
+    get: (campaignId: string) =>
+      request<any>(`/world-state/${campaignId}`),
+    snapshots: (campaignId: string) =>
+      request<any>(`/world-state/${campaignId}/snapshots`),
+    getSnapshot: (campaignId: string, version: number) =>
+      request<any>(`/world-state/${campaignId}/snapshots/${version}`),
   },
 };

@@ -25,6 +25,7 @@ import NarrativeEngine from '@/pages/NarrativeEngine';
 import AgentPanel from '@/pages/AgentPanel';
 import TTSPanel from '@/pages/TTSPanel';
 import WorldStateView from '@/pages/WorldStateView';
+import MemoryView from '@/pages/MemoryView';
 
 function App() {
   return (
@@ -65,6 +66,7 @@ function App() {
         <Route path="/campaigns/:id/agents" element={<AgentPanel />} />
         <Route path="/campaigns/:id/tts" element={<TTSPanel />} />
         <Route path="/campaigns/:id/world-state" element={<WorldStateView />} />
+        <Route path="/campaigns/:id/memory" element={<MemoryView />} />
       </Route>
     </Routes>
   );
