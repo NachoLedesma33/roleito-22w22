@@ -1,11 +1,18 @@
 import logging
 import os
+import sys
+from pathlib import Path
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from database import init_db
+from core.events.bus import get_event_bus
+from core.events.handlers import register_default_handlers
 from routes import campaigns_router
 from character_routes import router as character_router
 from session_routes import router as session_router
@@ -21,6 +28,7 @@ from tts_routes import router as tts_router
 from world_routes import router as world_router
 from memory_routes import router as memory_router
 from orchestrator_routes import router as orchestrator_router
+from event_bus_routes import router as event_bus_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -33,6 +41,7 @@ logger = logging.getLogger("roleito")
 async def lifespan(_app: FastAPI):
     logger.info("Starting Roleito API...")
     await init_db()
+    register_default_handlers(get_event_bus())
     logger.info("Database initialized")
     yield
     logger.info("Shutting down Roleito API")
@@ -87,6 +96,7 @@ app.include_router(tts_router, prefix="/api")
 app.include_router(world_router, prefix="/api")
 app.include_router(memory_router, prefix="/api")
 app.include_router(orchestrator_router, prefix="/api")
+app.include_router(event_bus_router, prefix="/api")
 
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "assets")
 os.makedirs(ASSETS_DIR, exist_ok=True)
