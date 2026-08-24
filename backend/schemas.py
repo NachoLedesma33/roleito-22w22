@@ -75,6 +75,7 @@ class CharacterCreate(BaseModel):
     current_pm: Optional[int] = None
     inventory_json: list = []
     spells_json: list = []
+    player_notes: str = ""
 
 
 class CharacterUpdate(BaseModel):
@@ -98,6 +99,7 @@ class CharacterUpdate(BaseModel):
     current_pm: Optional[int] = None
     inventory_json: Optional[list] = None
     spells_json: Optional[list] = None
+    player_notes: Optional[str] = None
 
 
 class CharacterResponse(BaseModel):
@@ -124,6 +126,7 @@ class CharacterResponse(BaseModel):
     current_pm: Optional[int] = None
     inventory_json: list = []
     spells_json: list = []
+    player_notes: str = ""
 
     class Config:
         from_attributes = True

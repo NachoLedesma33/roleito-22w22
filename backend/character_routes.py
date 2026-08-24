@@ -48,6 +48,7 @@ def apply_vida_response(char: Character) -> dict:
         "current_pm": char.current_pm,
         "inventory_json": char.inventory_json or [],
         "spells_json": char.spells_json or [],
+        "player_notes": char.player_notes or "",
     }
 
 
@@ -108,6 +109,7 @@ async def create_character(
         defense=data.defense if data.defense is not None else DEFAULT_DEFENSE,
         current_pv=data.current_pv if data.current_pv is not None else max_pv,
         current_pm=data.current_pm if data.current_pm is not None else max_pm,
+        player_notes=data.player_notes,
     )
     db.add(char)
     await db.commit()

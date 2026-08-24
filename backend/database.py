@@ -30,6 +30,7 @@ MIGRATIONS = [
     ("characters", "updated_at", "ALTER TABLE characters ADD COLUMN updated_at TIMESTAMP"),
     ("npcs", "updated_at", "ALTER TABLE npcs ADD COLUMN updated_at TIMESTAMP"),
     ("scene_characters", "updated_at", "ALTER TABLE scene_characters ADD COLUMN updated_at TIMESTAMP"),
+    ("characters", "player_notes", "ALTER TABLE characters ADD COLUMN player_notes TEXT DEFAULT ''"),
 ]
 
 VIDA_ATTRS = ["vigor", "intelligence", "dexterity", "cunning"]

@@ -51,6 +51,14 @@ interface InventoryItem {
   [key: string]: unknown;
 }
 
+interface Spell {
+  id: string;
+  name: string;
+  description: string;
+  level: number;
+  cost_pm: number;
+}
+
 interface MyChar {
   id: string;
   name: string;
@@ -63,9 +71,16 @@ interface MyChar {
   cunning: string;
   max_pv: number;
   max_pm: number;
+  defense: number;
   current_pv: number | null;
   current_pm: number | null;
   inventory_json: InventoryItem[];
+  spells_json: Spell[];
+  player_notes: string;
+  knowledge_scope: string;
+  current_location_id: string | null;
+  status: string;
+  description: string;
 }
 
 type Choice = { kind: 'character'; id: string } | { kind: 'spectator' } | null;
@@ -118,8 +133,10 @@ export default function PlayerView() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [myChar, setMyChar] = useState<MyChar | null>(null);
   const [live, setLive] = useState(false);
-  const [invOpen, setInvOpen] = useState(false);
   const [fading, setFading] = useState<'in' | 'out' | null>(null);
+  const [sheetTab, setSheetTab] = useState<'stats' | 'inventory' | 'spells' | 'notes'>('stats');
+  const [notesDraft, setNotesDraft] = useState('');
+  const [notesSaving, setNotesSaving] = useState(false);
 
   const lastRevRef = useRef<string>('');
   const choiceRef = useRef<Choice>(null);
@@ -135,6 +152,10 @@ export default function PlayerView() {
     const res = await fetch(`${API_BASE}/campaigns/${campaignId}/characters/${charId}`);
     if (!res.ok) return null;
     return res.json() as Promise<MyChar>;
+  }, []);
+
+  const syncNotesDraft = useCallback((char: MyChar | null) => {
+    setNotesDraft(char?.player_notes ?? '');
   }, []);
 
   const applySnapshot = useCallback(
@@ -173,7 +194,12 @@ export default function PlayerView() {
           const c: Choice = { kind: 'character', id: stored };
           choiceRef.current = c;
           setChoice(c);
-          fetchMyChar(snap.campaign_id, stored).then(setMyChar);
+          fetchMyChar(snap.campaign_id, stored).then((ch) => {
+            if (ch) {
+              setMyChar(ch);
+              syncNotesDraft(ch);
+            }
+          });
         } else if (snap.player_characters.length > 0) {
           setPickerOpen(true);
         }
@@ -206,7 +232,10 @@ export default function PlayerView() {
           const c = choiceRef.current;
           if (c?.kind === 'character') {
             fetchMyChar(snap.campaign_id, c.id).then((ch) => {
-              if (ch) setMyChar(ch);
+              if (ch) {
+                setMyChar(ch);
+                syncNotesDraft(ch);
+              }
             });
           }
         }
@@ -231,9 +260,14 @@ export default function PlayerView() {
       choiceRef.current = c;
       setChoice(c);
       setPickerOpen(false);
-      fetchMyChar(data.campaign_id, id).then(setMyChar);
+      fetchMyChar(data.campaign_id, id).then((ch) => {
+        if (ch) {
+          setMyChar(ch);
+          syncNotesDraft(ch);
+        }
+      });
     },
-    [code, data, fetchMyChar]
+    [code, data, fetchMyChar, syncNotesDraft]
   );
 
   const chooseSpectator = useCallback(() => {
@@ -247,6 +281,84 @@ export default function PlayerView() {
   const changeCharacter = useCallback(() => {
     setPickerOpen(true);
   }, []);
+
+  const handleSaveNotes = useCallback(async () => {
+    if (!myChar || !data) return;
+    setNotesSaving(true);
+    try {
+      const res = await fetch(`${API_BASE}/campaigns/${data.campaign_id}/characters/${myChar.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ player_notes: notesDraft }),
+      });
+      if (res.ok) {
+        const updated = await res.json() as MyChar;
+        setMyChar(updated);
+        syncNotesDraft(updated);
+      }
+    } catch {
+      // keep local draft on failure
+    } finally {
+      setNotesSaving(false);
+    }
+  }, [myChar, data, notesDraft, syncNotesDraft]);
+
+  const handleExportMarkdown = useCallback(() => {
+    if (!myChar) return;
+    const lines: string[] = [];
+    lines.push(`# Ficha: ${myChar.name}`);
+    lines.push('');
+    lines.push(`- **Raza**: ${myChar.race}`);
+    lines.push(`- **Clase**: ${myChar.class_}`);
+    lines.push(`- **Estado**: ${myChar.status}`);
+    lines.push(`- **Conocimiento**: ${myChar.knowledge_scope}`);
+    if (myChar.current_location_id) lines.push(`- **Ubicación**: ${myChar.current_location_id}`);
+    lines.push('');
+    lines.push('## Atributos (VIDA)');
+    lines.push(`- Vigor: ${myChar.vigor}`);
+    lines.push(`- Inteligencia: ${myChar.intelligence}`);
+    lines.push(`- Destreza: ${myChar.dexterity}`);
+    lines.push(`- Astucia: ${myChar.cunning}`);
+    lines.push('');
+    lines.push('## Estadísticas Derivadas');
+    lines.push(`- PV Máx: ${myChar.max_pv}`);
+    lines.push(`- PM Máx: ${myChar.max_pm}`);
+    lines.push(`- Defensa: ${myChar.defense}`);
+    lines.push(`- PV Actual: ${myChar.current_pv ?? myChar.max_pv}`);
+    lines.push(`- PM Actual: ${myChar.current_pm ?? myChar.max_pm}`);
+    lines.push('');
+    lines.push('## Inventario');
+    if (myChar.inventory_json.length === 0) {
+      lines.push('- Vacío');
+    } else {
+      myChar.inventory_json.forEach((item) => {
+        const equipped = item.equipped ? ' (Equipado)' : '';
+        lines.push(`- ${item.name || 'Sin nombre'} x${item.quantity || 1}${equipped}`);
+      });
+    }
+    lines.push('');
+    lines.push('## Hechizos');
+    if (myChar.spells_json.length === 0) {
+      lines.push('- No hay hechizos');
+    } else {
+      myChar.spells_json.forEach((spell) => {
+        lines.push(`- ${spell.name} (Lv${spell.level}, ${spell.cost_pm} PM)`);
+      });
+    }
+    lines.push('');
+    lines.push('## Notas del Jugador');
+    lines.push(myChar.player_notes || '(Sin notas)');
+    lines.push('');
+
+    const content = lines.join('\n');
+    const blob = new Blob([content], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${myChar.name.replace(/\s+/g, '_')}-ficha.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [myChar]);
 
   const missingCode = !code;
 
@@ -357,67 +469,166 @@ export default function PlayerView() {
 
         {myChar && (
           <div
-            className="absolute bottom-4 left-4 z-10 w-64 bg-gray-900/85 backdrop-blur border border-gray-700/50 rounded-lg p-3 space-y-2"
+            className="absolute bottom-4 left-4 z-10 w-72 bg-gray-900/85 backdrop-blur border border-gray-700/50 rounded-lg shadow-xl"
             data-testid="player-sheet"
           >
-            <div className="flex items-center gap-2.5">
-              {myChar.portrait_path ? (
-                <img
-                  src={staticUrl(myChar.portrait_path)!}
-                  alt={myChar.name}
-                  className="w-11 h-11 rounded-full object-cover border border-gray-600"
-                />
-              ) : (
-                <div className="w-11 h-11 rounded-full bg-emerald-900/60 border border-emerald-700/50 flex items-center justify-center text-sm font-bold text-emerald-300">
-                  {myChar.name.slice(0, 2).toUpperCase()}
+            <div className="p-3 space-y-2">
+              <div className="flex items-center gap-2.5">
+                {myChar.portrait_path ? (
+                  <img
+                    src={staticUrl(myChar.portrait_path)!}
+                    alt={myChar.name}
+                    className="w-12 h-12 rounded-full object-cover border border-gray-600"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-emerald-900/60 border border-emerald-700/50 flex items-center justify-center text-sm font-bold text-emerald-300">
+                    {myChar.name.slice(0, 2).toUpperCase()}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-gray-100 truncate">{myChar.name}</p>
+                  <p className="text-[10px] text-gray-500 truncate">
+                    {[myChar.race, myChar.class_].filter(Boolean).join(' · ') || '\u00A0'}
+                  </p>
                 </div>
-              )}
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-gray-100 truncate">{myChar.name}</p>
-                <p className="text-[10px] text-gray-500 truncate">
-                  {[myChar.race, myChar.class_].filter(Boolean).join(' · ') || '\u00A0'}
-                </p>
-              </div>
-              <div className="ml-auto flex gap-1 shrink-0">
-                {Object.entries(VIDA_LABELS).map(([key, attrLabel]) => (
-                  <span
-                    key={key}
-                    title={attrLabel}
-                    className="w-5 h-5 rounded bg-black/50 border border-gray-700/60 flex items-center justify-center text-[11px] text-gray-300"
+                <div className="ml-auto flex gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleExportMarkdown}
+                    title="Exportar ficha como Markdown"
+                    className="w-5 h-5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-xs flex items-center justify-center transition-colors"
                   >
-                    {attrSymbol(myChar[key as keyof MyChar] as string)}
-                  </span>
+                    ↓
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    title="Imprimir ficha"
+                    className="w-5 h-5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-xs flex items-center justify-center transition-colors"
+                  >
+                    🖨
+                  </button>
+                  {Object.entries(VIDA_LABELS).map(([key, attrLabel]) => (
+                    <span
+                      key={key}
+                      title={attrLabel}
+                      className="w-5 h-5 rounded bg-black/50 border border-gray-700/60 flex items-center justify-center text-[11px] text-gray-300"
+                    >
+                      {attrSymbol(myChar[key as keyof MyChar] as string)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <StatBar label="PV" current={pv} max={myChar.max_pv} />
+              <StatBar label="PM" current={pm} max={myChar.max_pm} />
+
+              <div className="flex gap-0.5 bg-gray-800/50 rounded p-0.5 text-[10px]">
+                {(['stats', 'inventory', 'spells', 'notes'] as const).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setSheetTab(t)}
+                    className={`flex-1 py-1 rounded capitalize transition-colors ${
+                      sheetTab === t
+                        ? 'bg-emerald-700 text-white'
+                        : 'text-gray-400 hover:text-gray-200'
+                    }`}
+                  >
+                    {t === 'stats' ? 'Stats' : t === 'inventory' ? 'Inv' : t === 'spells' ? 'Hech' : 'Notas'}
+                  </button>
                 ))}
+              </div>
+
+              <div className="max-h-48 overflow-y-auto">
+                {sheetTab === 'stats' && (
+                  <div className="space-y-2 text-xs">
+                    <div className="grid grid-cols-4 gap-1">
+                      {[
+                        { label: 'Vigor', value: myChar.vigor },
+                        { label: 'Intel', value: myChar.intelligence },
+                        { label: 'Dest', value: myChar.dexterity },
+                        { label: 'Astuc', value: myChar.cunning },
+                      ].map((a) => (
+                        <div key={a.label} className="text-center bg-gray-800/50 rounded py-1">
+                          <p className="text-[9px] text-gray-500">{a.label}</p>
+                          <p className="font-bold text-gray-300">{a.value === '-' ? '−' : a.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-3 gap-1 text-center">
+                      <div className="bg-gray-800/50 rounded py-1">
+                        <p className="font-bold text-red-400">{myChar.max_pv}</p>
+                        <p className="text-[9px] text-gray-500">PV Max</p>
+                      </div>
+                      <div className="bg-gray-800/50 rounded py-1">
+                        <p className="font-bold text-blue-400">{myChar.max_pm}</p>
+                        <p className="text-[9px] text-gray-500">PM Max</p>
+                      </div>
+                      <div className="bg-gray-800/50 rounded py-1">
+                        <p className="font-bold text-green-400">{myChar.defense}</p>
+                        <p className="text-[9px] text-gray-500">Defensa</p>
+                      </div>
+                    </div>
+                    {myChar.description && (
+                      <p className="text-[10px] text-gray-400 whitespace-pre-wrap">{myChar.description}</p>
+                    )}
+                  </div>
+                )}
+
+                {sheetTab === 'inventory' && (
+                  <div className="space-y-1">
+                    {invItems.length === 0 ? (
+                      <p className="text-[10px] text-gray-600">Vacío</p>
+                    ) : (
+                      invItems.map((item, i) => (
+                        <div key={i} className="flex items-center gap-1.5">
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                              item.equipped ? 'bg-emerald-400' : 'bg-gray-600'
+                            }`}
+                          />
+                          <span className="text-[11px] text-gray-300">
+                            {item.name || 'Sin nombre'}{item.quantity ? ` x${Number(item.quantity)}` : ''}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+
+                {sheetTab === 'spells' && (
+                  <div className="space-y-1">
+                    {myChar.spells_json.length === 0 ? (
+                      <p className="text-[10px] text-gray-600">No hay hechizos</p>
+                    ) : (
+                      myChar.spells_json.map((spell) => (
+                        <div key={spell.id} className="text-[11px] text-gray-300">
+                          <span className="text-blue-400">Lv{spell.level}</span> {spell.name} ({spell.cost_pm} PM)
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+
+                {sheetTab === 'notes' && (
+                  <div className="space-y-2">
+                    <textarea
+                      value={notesDraft}
+                      onChange={(e) => setNotesDraft(e.target.value)}
+                      placeholder="Mis notas del personaje..."
+                      className="w-full h-24 text-[10px] bg-gray-800/50 border border-gray-700 rounded p-1.5 text-gray-200 resize-none focus:outline-none focus:border-emerald-600 transition-colors"
+                    />
+                    <button
+                      onClick={handleSaveNotes}
+                      disabled={notesSaving}
+                      className="w-full text-[10px] py-1 rounded bg-emerald-700 hover:bg-emerald-600 text-white disabled:opacity-50 transition-colors"
+                    >
+                      {notesSaving ? 'Guardando...' : 'Guardar notas'}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
-
-            <StatBar label="PV" current={pv} max={myChar.max_pv} />
-            <StatBar label="PM" current={pm} max={myChar.max_pm} />
-
-            <button
-              type="button"
-              onClick={() => setInvOpen((o) => !o)}
-              className="w-full text-left text-[10px] text-gray-400 hover:text-gray-200 flex items-center gap-1 pt-0.5"
-            >
-              <span className={`transition-transform inline-block ${invOpen ? 'rotate-90' : ''}`}>▸</span>
-              Inventario ({invItems.length})
-            </button>
-            {invOpen && (
-              <ul className="space-y-0.5 pl-3">
-                {invItems.length === 0 && (
-                  <li className="text-[10px] text-gray-600">Vacío</li>
-                )}
-                {invItems.map((item, i) => (
-                  <li key={i} className="text-[11px] text-gray-300 flex items-center gap-1.5">
-                    <span
-                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${item.equipped ? 'bg-emerald-400' : 'bg-gray-600'}`}
-                      title={item.equipped ? 'Equipado' : 'Guardado'}
-                    />
-                    {(item.name as string) ?? String(item)}
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
         )}
 

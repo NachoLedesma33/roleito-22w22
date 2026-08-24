@@ -73,6 +73,7 @@ class Character(Base):
     current_pm = Column(Integer, nullable=True)
     inventory_json = Column(JSON, default=list)
     spells_json = Column(JSON, default=list)
+    player_notes = Column(Text, default="")
 
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

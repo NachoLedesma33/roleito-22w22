@@ -66,6 +66,7 @@ export interface Character {
   current_pm: number | null;
   inventory_json: InventoryItem[];
   spells_json: Spell[];
+  player_notes: string;
 }
 
 export interface InventoryItem {
@@ -128,6 +129,7 @@ type CharacterCreateFields = {
   current_pm?: number;
   inventory_json?: InventoryItem[];
   spells_json?: Spell[];
+  player_notes?: string;
 };
 
 type CharacterUpdateFields = Partial<CharacterCreateFields>;
