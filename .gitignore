@@ -96,3 +96,7 @@ playwright-report/
 
 # AI provider config (local only)
 data/ai_config.json
+
+# Generated test data (regenerable)
+data/snapshots/
+data/canon/
