@@ -1,0 +1,53 @@
+{
+  "version": 0,
+  "campaign_id": "8de87ffe-c6ea-4229-be39-f3f7175a89e9",
+  "current_session_id": null,
+  "current_location_id": null,
+  "current_date": "2026-08-24T19:00:43.255200",
+  "characters": {
+    "ed031e95-2f14-45c0-acc7-4b699b6a23ca": {
+      "entity_id": "ed031e95-2f14-45c0-acc7-4b699b6a23ca",
+      "entity_type": "character",
+      "name": "TestHero",
+      "status": "alive",
+      "current_location_id": null,
+      "hp": 10,
+      "max_hp": 10,
+      "metadata": {
+        "class": "",
+        "race": "Human"
+      }
+    }
+  },
+  "npcs": {
+    "12350ba4-4cd6-4b23-9dda-7ccdd8f41a74": {
+      "entity_id": "12350ba4-4cd6-4b23-9dda-7ccdd8f41a74",
+      "entity_type": "npc",
+      "name": "TestNPC",
+      "status": "alive",
+      "current_location_id": null,
+      "hp": 10,
+      "max_hp": 10,
+      "metadata": {
+        "faction_id": null
+      }
+    }
+  },
+  "locations": {
+    "48e62310-bfc3-471b-a2a5-f8a6666c43e8": {
+      "entity_id": "48e62310-bfc3-471b-a2a5-f8a6666c43e8",
+      "entity_type": "location",
+      "name": "TestVillage",
+      "status": "ACTIVE",
+      "current_location_id": null,
+      "hp": null,
+      "max_hp": null,
+      "metadata": {}
+    }
+  },
+  "quests": {},
+  "active_threads": [],
+  "applied_events": [],
+  "created_at": "2026-08-24T19:00:43.255200",
+  "updated_at": "2026-08-24T19:00:43.255200"
+}

@@ -29,6 +29,7 @@ from world_routes import router as world_router
 from memory_routes import router as memory_router
 from orchestrator_routes import router as orchestrator_router
 from event_bus_routes import router as event_bus_router
+from canon_routes import router as canon_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -97,6 +98,7 @@ app.include_router(world_router, prefix="/api")
 app.include_router(memory_router, prefix="/api")
 app.include_router(orchestrator_router, prefix="/api")
 app.include_router(event_bus_router, prefix="/api")
+app.include_router(canon_router, prefix="/api")
 
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "assets")
 os.makedirs(ASSETS_DIR, exist_ok=True)

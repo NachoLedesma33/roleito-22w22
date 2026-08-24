@@ -1,0 +1,18 @@
+[
+  {
+    "entry_id": "canon-20260824185625",
+    "campaign_id": "f0fe120a-6c20-4301-b2ae-81c06b1a38ef",
+    "entity_type": "npc",
+    "entity_id": "varek",
+    "fact": "Varek is dead",
+    "source_event_id": null,
+    "status": "PROPOSED",
+    "confidence": 1.0,
+    "proposed_by": "system",
+    "reviewed_by": null,
+    "review_notes": "",
+    "contradictions": [],
+    "created_at": "2026-08-24T18:56:25.965788",
+    "updated_at": "2026-08-24T18:56:25.965788"
+  }
+]

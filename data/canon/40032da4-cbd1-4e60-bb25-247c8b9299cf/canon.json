@@ -1,0 +1,18 @@
+[
+  {
+    "entry_id": "canon-20260824185552",
+    "campaign_id": "40032da4-cbd1-4e60-bb25-247c8b9299cf",
+    "entity_type": "location",
+    "entity_id": "castle",
+    "fact": "Castle is destroyed",
+    "source_event_id": null,
+    "status": "REJECTED",
+    "confidence": 1.0,
+    "proposed_by": "system",
+    "reviewed_by": "dm",
+    "review_notes": "Not canon",
+    "contradictions": [],
+    "created_at": "2026-08-24T18:55:52.417860",
+    "updated_at": "2026-08-24T18:55:52.428068"
+  }
+]
