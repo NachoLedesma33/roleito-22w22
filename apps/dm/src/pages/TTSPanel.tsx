@@ -96,6 +96,29 @@ export default function TTSPanel() {
     }
   };
 
+  const VOICE_EXAMPLES: Record<string, { text: string; label: string }[]> = {
+    'es-AR-TomasNeural': [
+      {
+        label: 'Narrador',
+        text: 'La antorcha parpadea débilmente en la pared de la cueva. Un olor acre a humedad llena el aire. Al fondo, una sombra se mueve.',
+      },
+      {
+        label: 'Monstruo',
+        text: '¡No pasaréis! Esta tumba es mía desde que el mundo era joven. ¡Volved con vuestras vidas o quedad para siempre!',
+      },
+    ],
+    'es-AR-ElenaNeural': [
+      {
+        label: 'Hechicera',
+        text: 'Las estrellas me susurran secretos antiguos. El poder fluye entre mis dedos como agua viva. ¿Estás preparado para escuchar la verdad?',
+      },
+      {
+        label: 'Tabernera',
+        text: 'Bienvenidos, viajeros. Tengan cuidado con el ogro del bosque. El último que lo vio nunca volvió a contarlo. ¿Les sirvo una pinta?',
+      },
+    ],
+  };
+
   useEffect(() => {
     loadConfig();
     loadVoices();
@@ -154,6 +177,20 @@ export default function TTSPanel() {
             </div>
             <p className="text-xs text-[var(--text-secondary)]">es-AR-TomasNeural</p>
             <p className="text-xs text-[var(--text-secondary)] mt-1">Voz masculina argentina, tono amigable y natural.</p>
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {(VOICE_EXAMPLES['es-AR-TomasNeural'] || []).map((ex) => (
+                <button
+                  key={ex.label}
+                  onClick={() => {
+                    setText(ex.text);
+                    setConfig((c) => c ? { ...c, voice: 'es-AR-TomasNeural' } : c);
+                  }}
+                  className="text-xs px-2 py-1 rounded bg-blue-900/30 text-blue-300 hover:bg-blue-900/50 transition-colors"
+                >
+                  {ex.label}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="bg-[var(--bg-secondary)] rounded-lg p-3">
             <div className="flex items-center gap-2 mb-1">
@@ -162,10 +199,24 @@ export default function TTSPanel() {
             </div>
             <p className="text-xs text-[var(--text-secondary)]">es-AR-ElenaNeural</p>
             <p className="text-xs text-[var(--text-secondary)] mt-1">Voz femenina argentina, tono cálido y expresivo.</p>
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {(VOICE_EXAMPLES['es-AR-ElenaNeural'] || []).map((ex) => (
+                <button
+                  key={ex.label}
+                  onClick={() => {
+                    setText(ex.text);
+                    setConfig((c) => c ? { ...c, voice: 'es-AR-ElenaNeural' } : c);
+                  }}
+                  className="text-xs px-2 py-1 rounded bg-pink-900/30 text-pink-300 hover:bg-pink-900/50 transition-colors"
+                >
+                  {ex.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
         <p className="text-xs text-[var(--text-secondary)] mt-3">
-          Voces neurales de Microsoft Edge, gratuitas y sin límites. Acento rioplatense argentino.
+          Voces neurales de Microsoft Edge, gratuitas y sin límites. Acento rioplatense argentino. Clic en un ejemplo para cargar el texto y la voz; luego "Generate Speech".
         </p>
       </div>
 
