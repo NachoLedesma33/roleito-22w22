@@ -97,6 +97,10 @@ playwright-report/
 # AI provider config (local only)
 data/ai_config.json
 
+# Auth secrets (local only)
+data/pin_hash.txt
+data/vault.enc
+
 # Generated test data (regenerable)
 data/snapshots/
 data/canon/
