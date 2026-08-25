@@ -68,6 +68,99 @@ async def init_db():
     await _migrate()
 
 
+async def seed_demo():
+    from models import Campaign, Scene, Character, NPC, SceneCharacter
+    import shutil
+
+    async with async_session() as session:
+        result = await session.execute(text("SELECT COUNT(*) FROM campaigns"))
+        if result.scalar() > 0:
+            return
+
+        assets = Path(__file__).parent.parent / "tests" / "assets"
+        portraits_dir = assets / "portraits" / "velazquez_portraits"
+        maps_dir = assets / "maps"
+
+        campaign = Campaign(
+            name="Demo — La Taberna del Grifo Helado",
+            description="Campaña DEMO con assets reales. Para probar el VTT.",
+            invite_code="DEMO2024",
+        )
+        session.add(campaign)
+        await session.flush()
+
+        scenes = {}
+        for name in ["Taberna del Grifo Helado", "Bosque Salvaje", "Cripta Antigua"]:
+            scene = Scene(campaign_id=campaign.id, name=name, status="active" if name == "Taberna del Grifo Helado" else "inactive")
+            session.add(scene)
+            await session.flush()
+            scenes[name] = scene
+
+        bg_map = {
+            "Taberna del Grifo Helado": "tavern-1536.jpg",
+            "Bosque Salvaje": "forest-wilderness-1024.jpg",
+            "Cripta Antigua": "dungeon-crypt-1024.jpg",
+        }
+        data_dir = Path(__file__).parent.parent / "data"
+        for name, filename in bg_map.items():
+            src = maps_dir / filename
+            dst = data_dir / "assets" / f"{scenes[name].id}.jpg"
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            if src.exists():
+                shutil.copy2(src, dst)
+                scenes[name].background_path = f"assets/{scenes[name].id}.jpg"
+
+        party = [
+            dict(name="Aria", race="Elfa", class_="Exploradora", vigor="/", intelligence="-", dexterity="+", cunning="+", max_pv=12, max_pm=9, defense=6),
+            dict(name="Borin", race="Enano", class_="Guerrero", vigor="+", intelligence="-", dexterity="/", cunning="-", max_pv=18, max_pm=6, defense=5),
+            dict(name="Lyra", race="Humana", class_="Maga", vigor="-", intelligence="+", dexterity="/", cunning="/", max_pv=8, max_pm=16, defense=4),
+            dict(name="Tomás", race="Humano", class_="Clérigo", vigor="/", intelligence="+", dexterity="-", cunning="+", max_pv=14, max_pm=14, defense=5),
+        ]
+        chars = []
+        for i, c in enumerate(party):
+            char = Character(campaign_id=campaign.id, type="player", **c)
+            session.add(char)
+            await session.flush()
+            chars.append(char)
+            src = portraits_dir / ["female_01.png", "male_02.png", "female_03.png", "male_05.png"][i]
+            dst = data_dir / "assets" / f"{char.id}.png"
+            if src.exists():
+                shutil.copy2(src, dst)
+                char.portrait_path = f"assets/{char.id}.png"
+
+        for i, char in enumerate(chars):
+            sc = SceneCharacter(
+                scene_id=scenes["Taberna del Grifo Helado"].id,
+                entity_type="character", entity_id=char.id,
+                x=-2 + i * 1.4, y=0, z=1 if i % 2 == 0 else -1,
+                visible=True, order=i,
+            )
+            session.add(sc)
+
+        npc_data = [
+            ("Grimble el Tabernero", "Medioelfo rechoncho, siempre limpia la misma jarra.", "male_08.png"),
+            ("Capitán Dain", "Guardia retirado que bebe en la esquina. Ojos entrenados.", "male_12.png"),
+        ]
+        for name, desc, portrait_file in npc_data:
+            npc = NPC(campaign_id=campaign.id, name=name, description=desc, vigor="/", intelligence="/", dexterity="+", cunning="-", max_pv=10, max_pm=8, defense=5)
+            session.add(npc)
+            await session.flush()
+            src = portraits_dir / portrait_file
+            dst = data_dir / "assets" / f"{npc.id}.png"
+            if src.exists():
+                shutil.copy2(src, dst)
+                npc.portrait_path = f"assets/{npc.id}.png"
+            sc = SceneCharacter(
+                scene_id=scenes["Taberna del Grifo Helado"].id,
+                entity_type="npc", entity_id=npc.id,
+                x=3, y=0, z=0, visible=True, order=4,
+            )
+            session.add(sc)
+
+        await session.commit()
+        logger.info(f"Demo campaign seeded: {campaign.id}")
+
+
 async def get_session() -> AsyncSession:
     async with async_session() as session:
         yield session
