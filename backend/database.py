@@ -104,11 +104,12 @@ async def seed_demo():
         data_dir = Path(__file__).parent.parent / "data"
         for name, filename in bg_map.items():
             src = maps_dir / filename
-            dst = data_dir / "assets" / f"{scenes[name].id}.jpg"
-            dst.parent.mkdir(parents=True, exist_ok=True)
+            scene_assets_dir = data_dir / "assets" / campaign.id / "scenes" / scenes[name].id
+            scene_assets_dir.mkdir(parents=True, exist_ok=True)
+            dst = scene_assets_dir / f"background{Path(filename).suffix}"
             if src.exists():
                 shutil.copy2(src, dst)
-                scenes[name].background_path = f"assets/{scenes[name].id}.jpg"
+                scenes[name].background_path = str(dst)
 
         party = [
             dict(name="Aria", race="Elfa", class_="Exploradora", vigor="/", intelligence="-", dexterity="+", cunning="+", max_pv=12, max_pm=9, defense=6),
@@ -123,10 +124,12 @@ async def seed_demo():
             await session.flush()
             chars.append(char)
             src = portraits_dir / ["female_01.png", "male_02.png", "female_03.png", "male_05.png"][i]
-            dst = data_dir / "assets" / f"{char.id}.png"
+            portrait_dir = data_dir / "assets" / campaign.id / "characters" / char.id
+            portrait_dir.mkdir(parents=True, exist_ok=True)
+            dst = portrait_dir / "portrait.png"
             if src.exists():
                 shutil.copy2(src, dst)
-                char.portrait_path = f"assets/{char.id}.png"
+                char.portrait_path = str(dst)
 
         for i, char in enumerate(chars):
             sc = SceneCharacter(
@@ -146,10 +149,12 @@ async def seed_demo():
             session.add(npc)
             await session.flush()
             src = portraits_dir / portrait_file
-            dst = data_dir / "assets" / f"{npc.id}.png"
+            portrait_dir = data_dir / "assets" / campaign.id / "npcs" / npc.id
+            portrait_dir.mkdir(parents=True, exist_ok=True)
+            dst = portrait_dir / "portrait.png"
             if src.exists():
                 shutil.copy2(src, dst)
-                npc.portrait_path = f"assets/{npc.id}.png"
+                npc.portrait_path = str(dst)
             sc = SceneCharacter(
                 scene_id=scenes["Taberna del Grifo Helado"].id,
                 entity_type="npc", entity_id=npc.id,
