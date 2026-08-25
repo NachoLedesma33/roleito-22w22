@@ -3,11 +3,12 @@ import sys
 import time
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from infrastructure.ai import build_provider  # noqa: E402
+from auth import require_dm, Session  # noqa: E402
 
 from schemas import (  # noqa: E402
     AISettingsResponse,
@@ -44,18 +45,18 @@ def _save_settings(settings: AISettingsUpdate) -> None:
 
 
 @router.get("/ai/config", response_model=AISettingsResponse)
-async def get_ai_config():
+async def get_ai_config(_session: Session = Depends(require_dm)):
     return _load_settings()
 
 
 @router.put("/ai/config", response_model=AISettingsResponse)
-async def update_ai_config(data: AISettingsUpdate):
+async def update_ai_config(data: AISettingsUpdate, _session: Session = Depends(require_dm)):
     _save_settings(data)
     return data
 
 
 @router.post("/ai/test", response_model=AITestResponse)
-async def test_ai(data: AITestRequest):
+async def test_ai(data: AITestRequest, _session: Session = Depends(require_dm)):
     settings = _load_settings()
     provider = build_provider(
         settings.provider,

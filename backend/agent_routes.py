@@ -18,7 +18,9 @@ from models import Campaign, Session, Character, NPC, Location, Event
 from core.agents.session_processor import SessionProcessor
 from core.agents.lore_agent import LoreAgent
 from core.agents.narrator import NarratorAgent
+from core.agents.recap import RecapAgent
 from infrastructure.ai import build_provider
+from auth import require_dm, Session as AuthSession
 
 router = APIRouter(tags=["agents"])
 
@@ -36,6 +38,11 @@ class NarrateRequest(BaseModel):
     current_action: str = ""
     characters_present: list[str] | None = None
     mood_hint: str = ""
+
+
+class RecapRequest(BaseModel):
+    session_id: str
+    previous_recap: str = ""
 
 
 def _get_provider():
@@ -57,6 +64,7 @@ async def process_session(
     campaign_id: str,
     body: SessionProcessRequest,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
 ):
     """Process session notes into structured data."""
     campaign = (await db.execute(
@@ -101,6 +109,7 @@ async def query_lore(
     campaign_id: str,
     body: LoreQueryRequest,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
 ):
     """Query campaign lore."""
     campaign = (await db.execute(
@@ -156,6 +165,7 @@ async def narrate(
     campaign_id: str,
     body: NarrateRequest,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
 ):
     """Generate atmospheric narration for a scene."""
     campaign = (await db.execute(
@@ -182,6 +192,52 @@ async def narrate(
             "mood": result.data.mood if result.data else "",
             "environmental_cues": result.data.environmental_cues if result.data else [],
             "suggested_effects": result.data.suggested_effects if result.data else [],
+        } if result.data else None,
+        "error": result.error,
+    }
+
+
+@router.post("/campaigns/{campaign_id}/agents/recap")
+async def recap_session(
+    campaign_id: str,
+    body: RecapRequest,
+    db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+):
+    """Generate a session recap."""
+    campaign = (await db.execute(
+        select(Campaign).where(Campaign.id == campaign_id)
+    )).scalar_one_or_none()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    session = (await db.execute(
+        select(Session).where(
+            Session.id == body.session_id,
+            Session.campaign_id == campaign_id,
+        )
+    )).scalar_one_or_none()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    provider = _get_provider()
+    agent = RecapAgent(provider)
+
+    result = await agent.run(
+        session_notes=session.raw_notes or "",
+        session_summary=session.summary or "",
+        previous_recap=body.previous_recap,
+        campaign_context=campaign.description or "",
+    )
+
+    return {
+        "agent_id": result.agent_id,
+        "status": result.status,
+        "data": {
+            "recap": result.data.recap if result.data else "",
+            "highlights": result.data.highlights if result.data else [],
+            "cliffhanger": result.data.cliffhanger if result.data else "",
+            "next_session_hook": result.data.next_session_hook if result.data else "",
         } if result.data else None,
         "error": result.error,
     }

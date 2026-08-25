@@ -8,11 +8,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 from pydantic import BaseModel
 
 from infrastructure.tts import build_tts_provider
+from auth import require_dm, Session
 
 router = APIRouter(tags=["tts"])
 
@@ -70,12 +71,12 @@ class TTSVoiceResponse(BaseModel):
 
 
 @router.get("/tts/config", response_model=TTSConfigResponse)
-async def get_tts_config():
+async def get_tts_config(_session: Session = Depends(require_dm)):
     return _load_config()
 
 
 @router.put("/tts/config", response_model=TTSConfigResponse)
-async def update_tts_config(data: TTSConfigUpdate):
+async def update_tts_config(data: TTSConfigUpdate, _session: Session = Depends(require_dm)):
     config = _load_config()
     if data.provider is not None:
         config["provider"] = data.provider
@@ -90,7 +91,7 @@ async def update_tts_config(data: TTSConfigUpdate):
 
 
 @router.get("/tts/voices", response_model=list[TTSVoiceResponse])
-async def list_tts_voices():
+async def list_tts_voices(_session: Session = Depends(require_dm)):
     config = _load_config()
     provider = build_tts_provider(config["provider"])
     voices = await provider.list_voices(config.get("language", "es"))
