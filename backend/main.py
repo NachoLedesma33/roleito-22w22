@@ -3,7 +3,7 @@ import os
 import sys
 from pathlib import Path
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -30,6 +30,7 @@ from memory_routes import router as memory_router
 from orchestrator_routes import router as orchestrator_router
 from event_bus_routes import router as event_bus_router
 from canon_routes import router as canon_router
+from auth_routes import router as auth_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -67,6 +68,11 @@ app.add_middleware(
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    if isinstance(exc, HTTPException):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail},
+        )
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,
@@ -99,6 +105,7 @@ app.include_router(memory_router, prefix="/api")
 app.include_router(orchestrator_router, prefix="/api")
 app.include_router(event_bus_router, prefix="/api")
 app.include_router(canon_router, prefix="/api")
+app.include_router(auth_router, prefix="/api")
 
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "assets")
 os.makedirs(ASSETS_DIR, exist_ok=True)
