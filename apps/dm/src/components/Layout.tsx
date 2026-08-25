@@ -1,4 +1,5 @@
 import { Link, Outlet, useLocation, useParams } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 const campaignNav = [
   { to: '', label: 'VTT', icon: '◆' },
@@ -20,6 +21,7 @@ const campaignNav = [
 export default function Layout() {
   const location = useLocation();
   const { id: campaignId } = useParams<{ id: string }>();
+  const { logout } = useAuth();
   const isInCampaign = !!campaignId && location.pathname.startsWith(`/campaigns/${campaignId}`);
 
   if (!isInCampaign) {
@@ -89,8 +91,14 @@ export default function Layout() {
           ))}
         </nav>
 
-        <div className="px-4 py-3 border-t border-[var(--bg-tertiary)]">
+        <div className="px-4 py-3 border-t border-[var(--bg-tertiary)] flex items-center justify-between">
           <p className="text-[10px] text-[var(--text-secondary)] opacity-60">DM Dashboard</p>
+          <button
+            onClick={logout}
+            className="text-[10px] text-[var(--text-secondary)] hover:text-red-400 transition-colors"
+          >
+            Salir
+          </button>
         </div>
       </aside>
 

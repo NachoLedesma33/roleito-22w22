@@ -1,7 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-
-const API = 'http://localhost:8000/api';
+import { apiFetch } from '@/lib/api';
 
 interface TTSConfig {
   provider: string;
@@ -17,7 +15,6 @@ interface Voice {
 }
 
 export default function TTSPanel() {
-  const { id: campaignId } = useParams<{ id: string }>();
   const [text, setText] = useState('');
   const [config, setConfig] = useState<TTSConfig | null>(null);
   const [voices, setVoices] = useState<Voice[]>([]);
@@ -29,7 +26,7 @@ export default function TTSPanel() {
 
   const loadConfig = async () => {
     try {
-      const res = await fetch(`${API}/tts/config`);
+      const res = await apiFetch('/tts/config');
       const data = await res.json();
       setConfig(data);
     } catch (e: unknown) {
@@ -39,7 +36,7 @@ export default function TTSPanel() {
 
   const loadVoices = async () => {
     try {
-      const res = await fetch(`${API}/tts/voices`);
+      const res = await apiFetch('/tts/voices');
       const data = await res.json();
       setVoices(data);
     } catch (e: unknown) {
@@ -54,7 +51,7 @@ export default function TTSPanel() {
     setDuration(null);
 
     try {
-      const res = await fetch(`${API}/tts/generate`, {
+      const res = await apiFetch('/tts/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: text.trim() }),
@@ -86,7 +83,7 @@ export default function TTSPanel() {
   const handleConfigSave = async () => {
     if (!config) return;
     try {
-      await fetch(`${API}/tts/config`, {
+      await apiFetch('/tts/config', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config),

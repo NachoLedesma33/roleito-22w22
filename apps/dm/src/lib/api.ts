@@ -1,5 +1,13 @@
 const API_BASE = 'http://localhost:8000/api';
 
+function authHeaders(): Record<string, string> {
+  const token = sessionStorage.getItem('roleito:auth:token');
+  if (token) {
+    return { Authorization: `Bearer ${token}` };
+  }
+  return {};
+}
+
 export type VidaAttr = '+' | '/' | '-';
 
 export interface AISettings {
@@ -329,12 +337,32 @@ type EventUpdateFields = Partial<Omit<EventCreateFields, 'session_id'>> & { stat
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    headers: { 'Content-Type': 'application/json', ...authHeaders(), ...options?.headers },
     ...options,
   });
   if (!res.ok) {
     const body = await res.text();
     throw new Error(`${res.status}: ${body}`);
+  }
+  return res.json();
+}
+
+export async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
+  return fetch(`${API_BASE}${path}`, {
+    ...init,
+    headers: { ...authHeaders(), ...init?.headers },
+  });
+}
+
+export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
+  const res = await apiFetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Request failed' }));
+    throw new Error(err.detail || 'Request failed');
   }
   return res.json();
 }
@@ -370,6 +398,7 @@ export const api = {
       form.append('file', file);
       const res = await fetch(`${API_BASE}/campaigns/${campaignId}/characters/${characterId}/portrait`, {
         method: 'POST',
+        headers: authHeaders(),
         body: form,
       });
       if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
@@ -391,6 +420,7 @@ export const api = {
       form.append('file', file);
       const res = await fetch(`${API_BASE}/campaigns/${campaignId}/npcs/${npcId}/portrait`, {
         method: 'POST',
+        headers: authHeaders(),
         body: form,
       });
       if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
@@ -464,6 +494,7 @@ export const api = {
       form.append('file', file);
       const res = await fetch(`${API_BASE}/campaigns/${campaignId}/maps/${mapId}/upload`, {
         method: 'POST',
+        headers: authHeaders(),
         body: form,
       });
       if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
@@ -493,6 +524,7 @@ export const api = {
       if (name) form.append('name', name);
       const res = await fetch(`${API_BASE}/campaigns/${campaignId}/assets/upload`, {
         method: 'POST',
+        headers: authHeaders(),
         body: form,
       });
       if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
@@ -518,6 +550,7 @@ export const api = {
       form.append('file', file);
       const res = await fetch(`${API_BASE}/campaigns/${campaignId}/scenes/${sceneId}/upload-background`, {
         method: 'POST',
+        headers: authHeaders(),
         body: form,
       });
       if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);

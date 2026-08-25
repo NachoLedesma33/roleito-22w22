@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { api } from '@/lib/api';
+import { apiPost } from '@/lib/api';
 
 interface SessionProcessResult {
   summary: string;
@@ -54,13 +54,10 @@ export default function AgentPanel() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`http://localhost:8000/api/campaigns/${campaignId}/agents/process-session`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: sessionId.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Failed');
+      const data = await apiPost<AgentResponse>(
+        `/campaigns/${campaignId}/agents/process-session`,
+        { session_id: sessionId.trim() }
+      );
       setResult(data);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed');
@@ -74,13 +71,10 @@ export default function AgentPanel() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`http://localhost:8000/api/campaigns/${campaignId}/agents/lore`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: question.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Failed');
+      const data = await apiPost<AgentResponse>(
+        `/campaigns/${campaignId}/agents/lore`,
+        { question: question.trim() }
+      );
       setResult(data);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed');
@@ -94,17 +88,14 @@ export default function AgentPanel() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`http://localhost:8000/api/campaigns/${campaignId}/agents/narrate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const data = await apiPost<AgentResponse>(
+        `/campaigns/${campaignId}/agents/narrate`,
+        {
           scene_description: sceneDesc.trim() || undefined,
           current_action: currentAction.trim() || undefined,
           mood_hint: moodHint.trim() || undefined,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Failed');
+        }
+      );
       setResult(data);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed');
