@@ -26,6 +26,11 @@ export interface AITestResult {
   response: string | null;
   latency_ms: number | null;
   error: string | null;
+  usage: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  } | null;
 }
 
 export interface NarrativeEvent {

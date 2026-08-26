@@ -487,6 +487,12 @@ class AITestRequest(BaseModel):
     prompt: str = "Responde con OK si me estas leyendo."
 
 
+class TokenUsage(BaseModel):
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+
+
 class AITestResponse(BaseModel):
     ok: bool
     provider: str
@@ -494,6 +500,7 @@ class AITestResponse(BaseModel):
     response: Optional[str] = None
     latency_ms: Optional[int] = None
     error: Optional[str] = None
+    usage: Optional[TokenUsage] = None
 
 
 class DiceRollCreate(BaseModel):

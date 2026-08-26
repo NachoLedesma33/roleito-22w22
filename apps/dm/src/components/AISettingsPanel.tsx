@@ -12,11 +12,48 @@ const PROVIDER_LABELS: Record<AISettings['provider'], string> = {
   remote: 'Remoto — API OpenAI-compatible',
 };
 
+const REMOTE_MODELS = [
+  { group: 'Groq (gratis)', models: [
+    { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B Instant' },
+    { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B Versatile' },
+    { id: 'gemma2-9b-it', label: 'Gemma 2 9B' },
+    { id: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B' },
+  ]},
+  { group: 'OpenRouter (multi-provider)', models: [
+    { id: 'anthropic/claude-3.5-haiku', label: 'Claude 3.5 Haiku' },
+    { id: 'anthropic/claude-sonnet-4', label: 'Claude Sonnet 4' },
+    { id: 'openai/gpt-4o-mini', label: 'GPT-4o Mini' },
+    { id: 'openai/gpt-4o', label: 'GPT-4o' },
+    { id: 'google/gemini-2.0-flash-001', label: 'Gemini 2.0 Flash' },
+    { id: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B' },
+    { id: 'mistralai/mistral-small-3.1-24b-instruct', label: 'Mistral Small 3.1 24B' },
+  ]},
+  { group: 'OpenAI', models: [
+    { id: 'gpt-4o-mini', label: 'GPT-4o Mini' },
+    { id: 'gpt-4o', label: 'GPT-4o' },
+    { id: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+  ]},
+  { group: 'Ollama (local)', models: [
+    { id: 'gemma3:4b', label: 'Gemma 3 4B' },
+    { id: 'llama3', label: 'Llama 3' },
+    { id: 'mistral', label: 'Mistral 7B' },
+    { id: 'phi3', label: 'Phi-3 Mini' },
+  ]},
+];
+
+const LOCAL_MODELS = [
+  { id: 'gemma3:4b', label: 'Gemma 3 4B' },
+  { id: 'llama3', label: 'Llama 3' },
+  { id: 'mistral', label: 'Mistral 7B' },
+  { id: 'phi3', label: 'Phi-3 Mini' },
+  { id: 'qwen2.5:7b', label: 'Qwen 2.5 7B' },
+];
+
 export default function AISettingsPanel({ onClose }: AISettingsPanelProps) {
   const [settings, setSettings] = useState<AISettings | null>(null);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<{ ok: boolean; text: string } | null>(null);
+  const [testResult, setTestResult] = useState<{ ok: boolean; text: string; usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number } | null } | null>(null);
   const [saveError, setSaveError] = useState('');
   const [vaultStatus, setVaultStatus] = useState<Record<string, boolean>>({});
   const [apiKey, setApiKey] = useState('');
@@ -89,6 +126,7 @@ export default function AISettingsPanel({ onClose }: AISettingsPanelProps) {
         text: res.ok
           ? `OK (${res.latency_ms}ms): ${res.response}`
           : `Error: ${res.error}`,
+        usage: res.usage,
       });
     } catch {
       setTestResult({ ok: false, text: 'Error de red al contactar el backend' });
@@ -206,14 +244,36 @@ export default function AISettingsPanel({ onClose }: AISettingsPanelProps) {
         {settings.provider !== 'mock' && (
           <div>
             <label className="block text-[10px] uppercase tracking-wide text-[var(--text-secondary)] mb-1">
-              Modelo (vacío = default del provider)
+              Modelo
             </label>
+            <select
+              value={settings.model ?? ''}
+              onChange={(e) => update({ model: e.target.value || null })}
+              className="w-full text-xs bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-2 py-1.5 text-[var(--text-primary)]"
+              data-testid="ai-model-select"
+            >
+              <option value="">
+                {settings.provider === 'local' ? 'Default (Ollama decide)' : 'Default del provider'}
+              </option>
+              {settings.provider === 'local'
+                ? LOCAL_MODELS.map((m) => (
+                    <option key={m.id} value={m.id}>{m.label}</option>
+                  ))
+                : REMOTE_MODELS.map((group) => (
+                    <optgroup key={group.group} label={group.group}>
+                      {group.models.map((m) => (
+                        <option key={m.id} value={m.id}>{m.label}</option>
+                      ))}
+                    </optgroup>
+                  ))
+              }
+            </select>
             <input
               type="text"
               value={settings.model ?? ''}
               onChange={(e) => update({ model: e.target.value || null })}
-              className="w-full text-xs bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-2 py-1.5 text-[var(--text-primary)]"
-              placeholder={settings.provider === 'local' ? 'llama3' : 'llama-3.1-8b-instant'}
+              className="w-full text-xs mt-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-2 py-1.5 text-[var(--text-primary)]"
+              placeholder="o escribí un modelo manualmente"
             />
           </div>
         )}
@@ -255,6 +315,16 @@ export default function AISettingsPanel({ onClose }: AISettingsPanelProps) {
             role="status"
           >
             {testResult.text}
+            {testResult.ok && testResult.usage && (
+              <div className="mt-1 pt-1 border-t border-emerald-800/30 text-emerald-400/70">
+                ~{testResult.usage.total_tokens} tokens
+                {testResult.usage.prompt_tokens > 0 && (
+                  <span className="ml-1">
+                    ({testResult.usage.prompt_tokens} in / {testResult.usage.completion_tokens} out)
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

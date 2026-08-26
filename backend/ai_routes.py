@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from infrastructure.ai import build_provider  # noqa: E402
+from infrastructure.ai.remote import estimate_usage, get_usage_info  # noqa: E402
 from auth import require_dm, Session  # noqa: E402
 from vault import get_api_key  # noqa: E402
 
@@ -16,6 +17,7 @@ from schemas import (  # noqa: E402
     AISettingsUpdate,
     AITestRequest,
     AITestResponse,
+    TokenUsage,
 )
 
 router = APIRouter()
@@ -79,10 +81,19 @@ async def test_ai(data: AITestRequest, _session: Session = Depends(require_dm)):
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=f"Error inesperado del provider: {e}")
     latency_ms = int((time.perf_counter() - start) * 1000)
+
+    usage_raw = getattr(provider, "last_usage", None)
+    if usage_raw:
+        usage = TokenUsage(**usage_raw)
+    else:
+        est = estimate_usage(data.prompt, response)
+        usage = TokenUsage(**est)
+
     return AITestResponse(
         ok=True,
         provider=provider.name,
         model=settings.model,
         response=response,
         latency_ms=latency_ms,
+        usage=usage,
     )
