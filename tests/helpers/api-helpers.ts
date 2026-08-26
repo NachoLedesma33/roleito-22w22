@@ -396,3 +396,20 @@ export async function seedEvent(
   );
   return jsonOrThrow<TestEvent>(res, 'seedEvent');
 }
+
+const TEST_PIN = '1234';
+
+export async function setupAuth(request: APIRequestContext): Promise<string> {
+  const statusRes = await request.get(`${API_BASE}/auth/status`);
+  const { pin_set } = await statusRes.json();
+  if (!pin_set) {
+    await request.post(`${API_BASE}/auth/setup`, { data: { pin: TEST_PIN } });
+  }
+  const loginRes = await request.post(`${API_BASE}/auth/login`, { data: { pin: TEST_PIN } });
+  const login = await jsonOrThrow<{ token: string }>(loginRes, 'setupAuth login');
+  return login.token;
+}
+
+export function withAuth(token: string) {
+  return { Authorization: `Bearer ${token}` };
+}

@@ -1,4 +1,4 @@
-import { expect, test } from '../fixtures/campaign-fixture';
+import { expect, test } from '../fixtures/auth-fixture';
 import { createScene } from '../helpers/api-helpers';
 
 const API = 'http://localhost:8000/api';
@@ -12,18 +12,27 @@ const DEFAULT_CONFIG = {
   temperature: 0.7,
 };
 
-async function resetConfig(request: import('@playwright/test').APIRequestContext) {
-  const res = await request.put(`${API}/ai/config`, { data: DEFAULT_CONFIG });
+async function resetConfig(
+  request: import('@playwright/test').APIRequestContext,
+  authHeaders: { Authorization: string },
+) {
+  const res = await request.put(`${API}/ai/config`, {
+    headers: authHeaders,
+    data: DEFAULT_CONFIG,
+  });
   if (!res.ok()) throw new Error(`resetConfig failed: ${res.status()}`);
 }
 
 test.describe('AI Provider Layer', () => {
-  test.beforeEach(async ({ request }) => {
-    await resetConfig(request);
+  test.beforeEach(async ({ request, authHeaders }) => {
+    await resetConfig(request, authHeaders);
   });
 
-  test('AI1: config default es mock con URLs por defecto', async ({ request }) => {
-    const res = await request.get(`${API}/ai/config`);
+  test('AI1: config default es mock con URLs por defecto', async ({
+    request,
+    authHeaders,
+  }) => {
+    const res = await request.get(`${API}/ai/config`, { headers: authHeaders });
     expect(res.status()).toBe(200);
     const body = await res.json();
     expect(body.provider).toBe('mock');
@@ -31,8 +40,9 @@ test.describe('AI Provider Layer', () => {
     expect(body.remote_base_url).toContain('openai');
   });
 
-  test('AI2: PUT config persiste entre GETs', async ({ request }) => {
+  test('AI2: PUT config persiste entre GETs', async ({ request, authHeaders }) => {
     const put = await request.put(`${API}/ai/config`, {
+      headers: authHeaders,
       data: {
         provider: 'local',
         local_base_url: 'http://localhost:11500',
@@ -43,7 +53,7 @@ test.describe('AI Provider Layer', () => {
     });
     expect(put.status()).toBe(200);
 
-    const got = await request.get(`${API}/ai/config`);
+    const got = await request.get(`${API}/ai/config`, { headers: authHeaders });
     const body = await got.json();
     expect(body.provider).toBe('local');
     expect(body.local_base_url).toBe('http://localhost:11500');
@@ -52,8 +62,12 @@ test.describe('AI Provider Layer', () => {
     expect(body.temperature).toBe(0.3);
   });
 
-  test('AI3: test endpoint con mock responde OK determinista', async ({ request }) => {
+  test('AI3: test endpoint con mock responde OK determinista', async ({
+    request,
+    authHeaders,
+  }) => {
     const res = await request.post(`${API}/ai/test`, {
+      headers: authHeaders,
       data: { prompt: 'hola dm' },
     });
     expect(res.status()).toBe(200);
@@ -64,8 +78,9 @@ test.describe('AI Provider Layer', () => {
     expect(typeof body.latency_ms).toBe('number');
   });
 
-  test('AI4: provider inválido rechazado con 422', async ({ request }) => {
+  test('AI4: provider inválido rechazado con 422', async ({ request, authHeaders }) => {
     const res = await request.put(`${API}/ai/config`, {
+      headers: authHeaders,
       data: { provider: 'bogus' },
     });
     expect(res.status()).toBe(422);
@@ -73,11 +88,16 @@ test.describe('AI Provider Layer', () => {
 
   test('AI5: test con Ollama inaccesible devuelve ok:false y mensaje claro', async ({
     request,
+    authHeaders,
   }) => {
     await request.put(`${API}/ai/config`, {
+      headers: authHeaders,
       data: { provider: 'local', local_base_url: 'http://localhost:9' },
     });
-    const res = await request.post(`${API}/ai/test`, { data: {} });
+    const res = await request.post(`${API}/ai/test`, {
+      headers: authHeaders,
+      data: {},
+    });
     expect(res.status()).toBe(200);
     const body = await res.json();
     expect(body.ok).toBe(false);
@@ -88,8 +108,14 @@ test.describe('AI Provider Layer', () => {
     page,
     campaign,
     request,
+    dmToken,
+    authHeaders,
   }) => {
     const scene = await createScene(request, campaign.id, 'Escena AI');
+    await page.goto('/');
+    await page.evaluate((token) => {
+      sessionStorage.setItem('roleito:auth:token', token);
+    }, dmToken);
     await page.goto(`/campaigns/${campaign.id}`);
     await page.locator('header select').selectOption(scene.id);
 
@@ -110,7 +136,7 @@ test.describe('AI Provider Layer', () => {
       timeout: 10_000,
     });
 
-    const cfg = await request.get(`${API}/ai/config`);
+    const cfg = await request.get(`${API}/ai/config`, { headers: authHeaders });
     expect((await cfg.json()).provider).toBe('local');
   });
 });

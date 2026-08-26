@@ -71,6 +71,14 @@ class MockProvider(AIProvider):
             ]
             return json.dumps(events)
 
+        if "recap" in system.lower():
+            return json.dumps({
+                "recap": "You ventured into the dark cavern, torches held high. The air was thick with the scent of damp stone and old magic. After hours of careful exploration, you stumbled upon the dragon's lair.",
+                "highlights": ["Exploration of the cavern", "Discovery of the dragon's lair", "Tense standoff with the sleeping beast"],
+                "cliffhanger": "As you edged closer, a single eye snapped open — ancient, golden, and very much awake.",
+                "next_session_hook": "The dragon stirs. Combat or negotiation — the choice is yours.",
+            })
+
         if "session processor" in system.lower() or "session notes" in prompt.lower():
             return json.dumps({
                 "summary": "The party explored the dungeon and encountered enemies.",
