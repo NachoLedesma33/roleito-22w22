@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 
@@ -19,7 +18,7 @@ from core.agents.session_processor import SessionProcessor
 from core.agents.lore_agent import LoreAgent
 from core.agents.narrator import NarratorAgent
 from core.agents.recap import RecapAgent
-from infrastructure.ai import build_provider
+from core.agents.provider import get_provider_for_agent
 from auth import require_dm, Session as AuthSession
 
 router = APIRouter(tags=["agents"])
@@ -45,20 +44,6 @@ class RecapRequest(BaseModel):
     previous_recap: str = ""
 
 
-def _get_provider():
-    config_path = Path("data/ai_config.json")
-    if config_path.exists():
-        config = json.loads(config_path.read_text())
-    else:
-        config = {"provider": "mock"}
-
-    return build_provider(
-        config.get("provider", "mock"),
-        local_base_url=config.get("local_base_url"),
-        remote_base_url=config.get("remote_base_url"),
-    )
-
-
 @router.post("/campaigns/{campaign_id}/agents/process-session")
 async def process_session(
     campaign_id: str,
@@ -82,7 +67,7 @@ async def process_session(
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    provider = _get_provider()
+    provider = get_provider_for_agent()
     agent = SessionProcessor(provider)
 
     result = await agent.run(
@@ -134,7 +119,7 @@ async def query_lore(
         select(Event).where(Event.campaign_id == campaign_id).order_by(Event.id.desc()).limit(20)
     )).scalars().all()
 
-    provider = _get_provider()
+    provider = get_provider_for_agent()
     agent = LoreAgent(provider)
 
     result = await agent.run(
@@ -174,7 +159,7 @@ async def narrate(
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
 
-    provider = _get_provider()
+    provider = get_provider_for_agent()
     agent = NarratorAgent(provider)
 
     result = await agent.run(
@@ -220,7 +205,7 @@ async def recap_session(
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    provider = _get_provider()
+    provider = get_provider_for_agent()
     agent = RecapAgent(provider)
 
     result = await agent.run(

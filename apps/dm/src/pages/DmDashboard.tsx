@@ -12,6 +12,7 @@ import InitiativeTracker from '@/components/InitiativeTracker';
 import MapViewer from '@/components/MapViewer';
 import DMNotebookHud from '@/components/DMNotebookHud';
 import AISettingsPanel from '@/components/AISettingsPanel';
+import DMAssistant from '@/components/DMAssistant';
 import ContextMenu, { ContextMenuItem } from '@/components/ContextMenu';
 import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastContainer';
 
@@ -43,6 +44,7 @@ export default function DmDashboard() {
   const [transitioning, setTransitioning] = useState<'idle' | 'in' | 'out'>('idle');
   const [showNotebook, setShowNotebook] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
+  const [showAssistant, setShowAssistant] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
   const [toastQueue, setToastQueue] = useState<ToastRoll[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -313,6 +315,8 @@ export default function DmDashboard() {
             setShowRecap(false);
           } else if (showNotebook) {
             setShowNotebook(false);
+          } else if (showAssistant) {
+            setShowAssistant(false);
           } else if (showQuickActions) {
             setShowQuickActions(false);
           } else if (showSessionLog) {
@@ -340,6 +344,9 @@ export default function DmDashboard() {
         case 'n':
           setShowNotebook((p) => !p);
           break;
+        case 'a':
+          setShowAssistant((p) => !p);
+          break;
         case 'ArrowLeft': {
           if (scenes.length === 0) return;
           const idx = activeScene ? scenes.findIndex((s) => s.id === activeScene.id) : -1;
@@ -365,7 +372,7 @@ export default function DmDashboard() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [scenes, activeScene, selectedTokenId, showQuickActions, showSessionLog, showSceneNotes, showDiceRoller, showRecap, showNotebook, viewingMap, handleRemoveFromScene, setContextMenu]);
+  }, [scenes, activeScene, selectedTokenId, showQuickActions, showSessionLog, showSceneNotes, showDiceRoller, showRecap, showNotebook, showAssistant, viewingMap, handleRemoveFromScene, setContextMenu]);
 
   const selectedEntity = selectedTokenId
     ? sceneChars.find((sc) => sc.id === selectedTokenId)
@@ -566,6 +573,15 @@ export default function DmDashboard() {
           data-testid="ai-panel-button"
         >
           🤖
+        </button>
+
+        <button
+          onClick={() => setShowAssistant(!showAssistant)}
+          className={`text-xs px-2 py-1 rounded transition-colors ${showAssistant ? 'bg-violet-700 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+          title="DM Assistant"
+          data-testid="dm-assistant-button"
+        >
+          💬
         </button>
 
         {/* Map Button */}
@@ -923,6 +939,12 @@ export default function DmDashboard() {
             />
           )}
           {showAIPanel && <AISettingsPanel onClose={() => setShowAIPanel(false)} />}
+          {showAssistant && campaignId && (
+            <DMAssistant
+              campaignId={campaignId}
+              onClose={() => setShowAssistant(false)}
+            />
+          )}
           {viewingMap && (
             <MapViewer
               map={viewingMap}

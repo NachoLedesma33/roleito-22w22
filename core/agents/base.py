@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
@@ -48,3 +49,15 @@ class BaseAgent(ABC):
             agent_id=self.agent_id,
             version=self.version,
         )
+
+    def _parse_json_response(self, raw: str) -> dict | None:
+        """Strip markdown fences and parse JSON from LLM response. Returns None on failure."""
+        cleaned = raw.strip()
+        if cleaned.startswith("```"):
+            lines = cleaned.split("\n")
+            lines = [l for l in lines if not l.strip().startswith("```")]
+            cleaned = "\n".join(lines)
+        try:
+            return json.loads(cleaned)
+        except json.JSONDecodeError:
+            return None

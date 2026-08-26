@@ -3,6 +3,7 @@
 from core.agents.base import AgentResult, BaseAgent
 from core.agents.lore_agent import LoreAgent, LoreResult
 from core.agents.narrator import NarratorAgent, NarrationResult
+from core.agents.recap import RecapAgent, RecapResult
 from core.agents.session_processor import SessionProcessor, SessionProcessingResult
 
 __all__ = [
@@ -14,4 +15,6 @@ __all__ = [
     "LoreResult",
     "NarratorAgent",
     "NarrationResult",
+    "RecapAgent",
+    "RecapResult",
 ]

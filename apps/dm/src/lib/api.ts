@@ -621,6 +621,24 @@ export const api = {
       apiPost<{ status: string; deleted: boolean }>('/vault/delete', { provider }),
   },
 
+  agents: {
+    recap: (campaignId: string, sessionId: string, previousRecap?: string) =>
+      apiPost<{ agent_id: string; status: string; data: { recap: string; highlights: string[]; cliffhanger: string; next_session_hook: string } | null; error: string | null }>(
+        `/campaigns/${campaignId}/agents/recap`,
+        { session_id: sessionId, previous_recap: previousRecap || '' },
+      ),
+    lore: (campaignId: string, question: string) =>
+      apiPost<{ agent_id: string; status: string; data: { answer: string; entities_mentioned: string[]; confidence: number; related_topics: string[]; source_hint: string } | null; error: string | null }>(
+        `/campaigns/${campaignId}/agents/lore`,
+        { question },
+      ),
+    narrate: (campaignId: string, data: { scene_description: string; current_action?: string; characters_present?: string[]; mood_hint?: string }) =>
+      apiPost<{ agent_id: string; status: string; data: { narration: string; mood: string; environmental_cues: string[]; suggested_effects: string[] } | null; error: string | null }>(
+        `/campaigns/${campaignId}/agents/narrate`,
+        data,
+      ),
+  },
+
   narrative: {
     parse: (campaignId: string, data: { text: string; session_id: string; scene_name?: string }) =>
       request<ParseResponse>(`/campaigns/${campaignId}/narrative/parse`, {

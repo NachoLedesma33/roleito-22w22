@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from pathlib import Path
 
-from infrastructure.ai import AIProvider, build_provider
+from infrastructure.ai import AIProvider
 from core.agents.session_processor import SessionProcessor
 from core.agents.lore_agent import LoreAgent
 from core.agents.narrator import NarratorAgent
+from core.agents.recap import RecapAgent
+from core.agents.provider import get_provider_for_agent
 
 
 class TaskType(str, Enum):
@@ -32,19 +32,6 @@ class OrchestratorResult:
     execution_time_ms: int = 0
 
 
-def _get_provider() -> AIProvider:
-    config_path = Path("data/ai_config.json")
-    if config_path.exists():
-        config = json.loads(config_path.read_text())
-    else:
-        config = {"provider": "mock"}
-    return build_provider(
-        config.get("provider", "mock"),
-        local_base_url=config.get("local_base_url"),
-        remote_base_url=config.get("remote_base_url"),
-    )
-
-
 class OrchestratorAgent:
     """Coordinates specialized agents for complex multi-step tasks.
 
@@ -53,10 +40,11 @@ class OrchestratorAgent:
     """
 
     def __init__(self):
-        provider = _get_provider()
+        provider = get_provider_for_agent()
         self.session_processor = SessionProcessor(provider)
         self.lore_agent = LoreAgent(provider)
         self.narrator = NarratorAgent(provider)
+        self.recap_agent = RecapAgent(provider)
 
     async def execute(self, task_type: TaskType, campaign_id: str, **kwargs) -> OrchestratorResult:
         start = datetime.utcnow()

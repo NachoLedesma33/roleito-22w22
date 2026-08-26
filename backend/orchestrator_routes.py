@@ -1,9 +1,15 @@
 """Orchestrator API endpoint."""
 
-from fastapi import APIRouter, HTTPException
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from core.agents.orchestrator import OrchestratorAgent, TaskType
+from auth import require_dm, Session as AuthSession
 
 router = APIRouter(prefix="/orchestrator", tags=["orchestrator"])
 
@@ -28,7 +34,11 @@ class AgentResultResponse(BaseModel):
 
 
 @router.post("/{campaign_id}/execute", response_model=AgentResultResponse)
-async def execute_task(campaign_id: str, req: OrchestratorRequest):
+async def execute_task(
+    campaign_id: str,
+    req: OrchestratorRequest,
+    _auth: AuthSession = Depends(require_dm),
+):
     try:
         task_type = TaskType(req.task_type)
     except ValueError:

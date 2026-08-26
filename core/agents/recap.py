@@ -65,15 +65,8 @@ class RecapAgent(BaseAgent):
         return self._parse_response(raw)
 
     def _parse_response(self, raw: str) -> AgentResult:
-        cleaned = raw.strip()
-        if cleaned.startswith("```"):
-            lines = cleaned.split("\n")
-            lines = [l for l in lines if not l.strip().startswith("```")]
-            cleaned = "\n".join(lines)
-
-        try:
-            data = json.loads(cleaned)
-        except json.JSONDecodeError:
+        data = self._parse_json_response(raw)
+        if data is None:
             return self._error("Failed to parse AI response")
 
         result = RecapResult(
