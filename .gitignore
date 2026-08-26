@@ -31,9 +31,10 @@ build/
 data/*.db
 data/**/*.db
 
-# IDE
+# IDE / AI tools
 .vscode/
 .idea/
+.kombai/
 *.swp
 *.swo
 *~
