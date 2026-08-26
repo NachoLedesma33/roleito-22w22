@@ -1,31 +1,40 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures/campaign-fixture';
+import { setupAuth, withAuth } from '../helpers/api-helpers';
 
 const API = 'http://localhost:8000/api';
 
 let campaignId = '';
 let sessionId = '';
+let dmToken = '';
 
 test.describe('Memory System', () => {
   test.beforeAll(async ({ request }) => {
+    dmToken = await setupAuth(request);
+
     const res = await request.post(`${API}/campaigns`, {
+      headers: withAuth(dmToken),
       data: { name: 'Memory Test Campaign', description: 'Testing memory system' },
     });
     const data = await res.json();
     campaignId = data.id;
 
     const sessRes = await request.post(`${API}/campaigns/${campaignId}/sessions`, {
+      headers: withAuth(dmToken),
       data: { number: 1, date: '2026-01-01', title: 'First Session', raw_notes: 'Party explored the dungeon' },
     });
     const sessData = await sessRes.json();
     sessionId = sessData.id;
 
     await request.post(`${API}/campaigns/${campaignId}/locations`, {
+      headers: withAuth(dmToken),
       data: { name: 'Dark Dungeon', type: 'dungeon' },
     });
   });
 
   test.afterAll(async ({ request }) => {
-    if (campaignId) await request.delete(`${API}/campaigns/${campaignId}`);
+    if (campaignId) await request.delete(`${API}/campaigns/${campaignId}`, {
+      headers: withAuth(dmToken),
+    });
   });
 
   test('MEM1: GET campaign memory returns valid structure', async ({ request }) => {

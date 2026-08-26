@@ -93,11 +93,11 @@ test.describe('Recap System', () => {
     await page.keyboard.press('r');
     const panel = recapPanel(page);
 
-    await panel.getByRole('button', { name: 'Edit Summary' }).click();
+    await panel.getByRole('button', { name: 'Edit' }).click();
     await panel
       .locator('textarea')
       .fill('Resumen editado por el DM durante el test');
-    await panel.getByRole('button', { name: 'Save Summary' }).click();
+    await panel.getByRole('button', { name: 'Save' }).click();
 
     await expect(
       panel.getByText('Resumen editado por el DM durante el test'),
@@ -119,7 +119,7 @@ test.describe('Recap System', () => {
     await expect(panel.getByRole('heading', { name: 'Session Recap' })).toBeVisible();
 
     const downloadPromise = page.waitForEvent('download');
-    await panel.getByRole('button', { name: 'Export .md' }).click();
+    await panel.getByRole('button', { name: 'Export' }).click();
     const download = await downloadPromise;
 
     expect(download.suggestedFilename()).toBe('session-3-recap.md');

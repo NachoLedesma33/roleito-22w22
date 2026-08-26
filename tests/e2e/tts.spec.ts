@@ -2,9 +2,15 @@ import { expect, test } from '../fixtures/campaign-fixture';
 
 const API = 'http://localhost:8000/api';
 
+const DEFAULT_TTS = { provider: 'mock', voice: 'mock-voice-1', speed: 1.0, language: 'es' };
+
 test.describe('TTS System', () => {
-  test('TTS1: config default is mock', async ({ request }) => {
-    const res = await request.get(`${API}/tts/config`);
+  test.beforeEach(async ({ request, authHeaders }) => {
+    await request.put(`${API}/tts/config`, { headers: authHeaders, data: DEFAULT_TTS });
+  });
+
+  test('TTS1: config default is mock', async ({ request, authHeaders }) => {
+    const res = await request.get(`${API}/tts/config`, { headers: authHeaders });
     expect(res.status()).toBe(200);
     const body = await res.json();
     expect(body.provider).toBe('mock');
@@ -13,25 +19,27 @@ test.describe('TTS System', () => {
     expect(body.language).toBeTruthy();
   });
 
-  test('TTS2: PUT config persists', async ({ request }) => {
+  test('TTS2: PUT config persists', async ({ request, authHeaders }) => {
     const put = await request.put(`${API}/tts/config`, {
+      headers: authHeaders,
       data: { provider: 'mock', voice: 'mock-voice-2', speed: 1.5, language: 'en' },
     });
     expect(put.status()).toBe(200);
 
-    const get = await request.get(`${API}/tts/config`);
+    const get = await request.get(`${API}/tts/config`, { headers: authHeaders });
     const body = await get.json();
     expect(body.voice).toBe('mock-voice-2');
     expect(body.speed).toBe(1.5);
     expect(body.language).toBe('en');
 
     await request.put(`${API}/tts/config`, {
+      headers: authHeaders,
       data: { voice: 'mock-voice-1', speed: 1.0, language: 'es' },
     });
   });
 
-  test('TTS3: list voices returns array', async ({ request }) => {
-    const res = await request.get(`${API}/tts/voices`);
+  test('TTS3: list voices returns array', async ({ request, authHeaders }) => {
+    const res = await request.get(`${API}/tts/voices`, { headers: authHeaders });
     expect(res.status()).toBe(200);
     const body = await res.json();
     expect(Array.isArray(body)).toBe(true);
@@ -40,8 +48,9 @@ test.describe('TTS System', () => {
     expect(body[0].name).toBeTruthy();
   });
 
-  test('TTS4: generate returns audio bytes', async ({ request }) => {
+  test('TTS4: generate returns audio bytes', async ({ request, authHeaders }) => {
     const res = await request.post(`${API}/tts/generate`, {
+      headers: authHeaders,
       data: { text: 'Hola mundo' },
     });
     expect(res.status()).toBe(200);
@@ -50,15 +59,17 @@ test.describe('TTS System', () => {
     expect(body.byteLength).toBeGreaterThan(0);
   });
 
-  test('TTS5: generate with empty text returns 400', async ({ request }) => {
+  test('TTS5: generate with empty text returns 400', async ({ request, authHeaders }) => {
     const res = await request.post(`${API}/tts/generate`, {
+      headers: authHeaders,
       data: { text: '' },
     });
     expect(res.status()).toBe(400);
   });
 
-  test('TTS6: generate includes duration header', async ({ request }) => {
+  test('TTS6: generate includes duration header', async ({ request, authHeaders }) => {
     const res = await request.post(`${API}/tts/generate`, {
+      headers: authHeaders,
       data: { text: 'Test narration' },
     });
     expect(res.status()).toBe(200);
