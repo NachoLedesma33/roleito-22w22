@@ -608,6 +608,14 @@ export const api = {
       }),
   },
 
+  vault: {
+    status: () => request<Record<string, boolean>>('/vault/status'),
+    store: (provider: string, apiKey: string) =>
+      apiPost<{ status: string; provider: string }>('/vault/store', { provider, api_key: apiKey }),
+    delete: (provider: string) =>
+      apiPost<{ status: string; deleted: boolean }>('/vault/delete', { provider }),
+  },
+
   narrative: {
     parse: (campaignId: string, data: { text: string; session_id: string; scene_name?: string }) =>
       request<ParseResponse>(`/campaigns/${campaignId}/narrative/parse`, {

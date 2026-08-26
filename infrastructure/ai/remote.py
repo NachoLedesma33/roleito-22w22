@@ -1,4 +1,6 @@
 import os
+import sys
+from pathlib import Path
 
 import httpx
 
@@ -9,18 +11,30 @@ DEFAULT_REMOTE_MODEL = "llama-3.1-8b-instant"
 REQUEST_TIMEOUT = 60.0
 
 
+def _get_vault_key(provider: str = "remote") -> str:
+    """Try vault first, then env var fallback."""
+    try:
+        sys.path.insert(0, str(Path(__file__).parent.parent.parent / "backend"))
+        from vault import get_api_key
+        key = get_api_key(provider)
+        if key:
+            return key
+    except Exception:
+        pass
+    return os.environ.get("REMOTE_API_KEY", "")
+
+
 class RemoteProvider(AIProvider):
     """OpenAI-compatible chat API (Groq, OpenRouter, OpenAI, LM Studio, etc.).
 
-    The API key is read from the REMOTE_API_KEY environment variable; it is
-    never persisted to disk by this app.
+    API key priority: constructor arg > vault > REMOTE_API_KEY env var.
     """
 
     name = "remote"
 
     def __init__(self, base_url: str = DEFAULT_REMOTE_BASE_URL, api_key: str | None = None):
         self.base_url = (base_url or DEFAULT_REMOTE_BASE_URL).rstrip("/")
-        self.api_key = api_key if api_key is not None else os.environ.get("REMOTE_API_KEY", "")
+        self.api_key = api_key if api_key is not None else _get_vault_key()
 
     async def complete(
         self,
@@ -33,7 +47,7 @@ class RemoteProvider(AIProvider):
     ) -> str:
         if not self.api_key:
             raise RuntimeError(
-                "REMOTE_API_KEY no configurada (definila en backend/.env)"
+                "API key no configurada (guardala en Vault o define REMOTE_API_KEY en .env)"
             )
 
         messages = []

@@ -18,11 +18,16 @@ export default function AISettingsPanel({ onClose }: AISettingsPanelProps) {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; text: string } | null>(null);
   const [saveError, setSaveError] = useState('');
+  const [vaultStatus, setVaultStatus] = useState<Record<string, boolean>>({});
+  const [apiKey, setApiKey] = useState('');
+  const [keySaved, setKeySaved] = useState(false);
 
   useEffect(() => {
-    api.ai
-      .getConfig()
-      .then(setSettings)
+    Promise.all([api.ai.getConfig(), api.vault.status()])
+      .then(([cfg, vs]) => {
+        setSettings(cfg);
+        setVaultStatus(vs);
+      })
       .catch(() => setSaveError('No se pudo cargar la configuración'));
   }, []);
 
@@ -37,6 +42,29 @@ export default function AISettingsPanel({ onClose }: AISettingsPanelProps) {
   }
 
   const update = (patch: Partial<AISettings>) => setSettings({ ...settings, ...patch });
+  const hasRemoteKey = vaultStatus.remote === true;
+
+  const handleSaveKey = async () => {
+    if (!apiKey.trim()) return;
+    try {
+      await api.vault.store('remote', apiKey.trim());
+      setVaultStatus({ ...vaultStatus, remote: true });
+      setKeySaved(true);
+      setApiKey('');
+      setTimeout(() => setKeySaved(false), 2000);
+    } catch {
+      setSaveError('Error al guardar API key');
+    }
+  };
+
+  const handleDeleteKey = async () => {
+    try {
+      await api.vault.delete('remote');
+      setVaultStatus({ ...vaultStatus, remote: false });
+    } catch {
+      setSaveError('Error al eliminar API key');
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -116,9 +144,62 @@ export default function AISettingsPanel({ onClose }: AISettingsPanelProps) {
               className="w-full text-xs bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-2 py-1.5 text-[var(--text-primary)]"
               placeholder="https://api.groq.com/openai/v1"
             />
-            <p className="text-[10px] text-[var(--text-secondary)] mt-1">
-              La API key se lee de <code>REMOTE_API_KEY</code> en backend/.env — nunca se guarda acá.
-            </p>
+
+            <div className="mt-2 p-2 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)]">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="text-[10px] uppercase tracking-wide text-[var(--text-secondary)]">
+                  API Key
+                </span>
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded ${
+                    hasRemoteKey
+                      ? 'bg-emerald-900/50 text-emerald-400'
+                      : 'bg-zinc-800 text-zinc-500'
+                  }`}
+                >
+                  {hasRemoteKey ? 'Guardada en Vault' : 'No configurada'}
+                </span>
+              </div>
+
+              {hasRemoteKey ? (
+                <div className="flex gap-1.5">
+                  <input
+                    type="password"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    className="flex-1 text-xs bg-[var(--bg-tertiary)] border border-[var(--bg-tertiary)] rounded px-2 py-1 text-[var(--text-primary)]"
+                    placeholder="••••••••"
+                    data-testid="api-key-input"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleDeleteKey}
+                    className="text-[10px] px-2 py-1 rounded border border-red-800/50 text-red-400 hover:bg-red-950/50 transition-colors"
+                  >
+                    Borrar
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-1.5">
+                  <input
+                    type="password"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    className="flex-1 text-xs bg-[var(--bg-tertiary)] border border-[var(--bg-tertiary)] rounded px-2 py-1 text-[var(--text-primary)]"
+                    placeholder="sk-..."
+                    data-testid="api-key-input"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSaveKey}
+                    disabled={!apiKey.trim()}
+                    className="text-[10px] px-2 py-1 rounded bg-emerald-800/50 text-emerald-300 hover:bg-emerald-800 transition-colors disabled:opacity-40"
+                  >
+                    {keySaved ? 'Guardada' : 'Guardar'}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

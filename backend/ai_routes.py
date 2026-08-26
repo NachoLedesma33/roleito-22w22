@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from infrastructure.ai import build_provider  # noqa: E402
 from auth import require_dm, Session  # noqa: E402
+from vault import get_api_key  # noqa: E402
 
 from schemas import (  # noqa: E402
     AISettingsResponse,
@@ -58,10 +59,12 @@ async def update_ai_config(data: AISettingsUpdate, _session: Session = Depends(r
 @router.post("/ai/test", response_model=AITestResponse)
 async def test_ai(data: AITestRequest, _session: Session = Depends(require_dm)):
     settings = _load_settings()
+    api_key = get_api_key("remote") if settings.provider == "remote" else None
     provider = build_provider(
         settings.provider,
         local_base_url=settings.local_base_url,
         remote_base_url=settings.remote_base_url,
+        api_key=api_key,
     )
     start = time.perf_counter()
     try:
