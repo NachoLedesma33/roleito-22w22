@@ -13,6 +13,7 @@ import MapViewer from '@/components/MapViewer';
 import DMNotebookHud from '@/components/DMNotebookHud';
 import AISettingsPanel from '@/components/AISettingsPanel';
 import ContextMenu, { ContextMenuItem } from '@/components/ContextMenu';
+import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastContainer';
 
 function staticUrl(path: string | null): string | null {
   if (!path) return null;
@@ -43,7 +44,9 @@ export default function DmDashboard() {
   const [showNotebook, setShowNotebook] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
+  const [toastQueue, setToastQueue] = useState<ToastRoll[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
+  const lastRollTsRef = useRef<number>(0);
 
   useEffect(() => {
     if (!campaignId) return;
@@ -72,6 +75,35 @@ export default function DmDashboard() {
       .then(setSceneChars)
       .catch(() => setSceneChars([]));
   }, [campaignId, activeScene]);
+
+  useEffect(() => {
+    if (!campaignId) return;
+    let cancelled = false;
+    let timer: number;
+
+    const pollRolls = async () => {
+      try {
+        const newRolls = await api.rolls.recent(campaignId, lastRollTsRef.current);
+        if (cancelled) return;
+        if (newRolls.length > 0) {
+          lastRollTsRef.current = Date.now();
+          setToastQueue((prev) => {
+            const updated = [...prev, ...newRolls.map(rollToToast)];
+            return updated.slice(-5);
+          });
+        }
+      } catch {
+        // best-effort
+      }
+      if (!cancelled) timer = window.setTimeout(pollRolls, 1000);
+    };
+
+    timer = window.setTimeout(pollRolls, 1000);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [campaignId]);
 
   const handleSceneSwitch = useCallback(async (sceneId: string) => {
     const scene = scenes.find((s) => s.id === sceneId);
@@ -872,6 +904,8 @@ export default function DmDashboard() {
               onClose={() => setShowDiceRoller(false)}
               characters={characters}
               npcs={npcs}
+              campaignId={campaignId}
+              rollerName="DM"
             />
           )}
           {showInitiative && (
@@ -919,6 +953,11 @@ export default function DmDashboard() {
           onClose={() => setContextMenu(null)}
         />
       )}
+
+      <ToastContainer
+        toasts={toastQueue}
+        onDismiss={(id) => setToastQueue((prev) => prev.filter((t) => t.id !== id))}
+      />
     </div>
   );
 }

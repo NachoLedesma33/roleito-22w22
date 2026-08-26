@@ -282,6 +282,21 @@ export interface DMNotebookVersion {
   created_at: string;
 }
 
+export interface DiceRollResponse {
+  id: string;
+  campaign_id: string;
+  entity_type: string | null;
+  entity_id: string | null;
+  entity_name: string | null;
+  roller_name: string;
+  dice_type: number;
+  count: number;
+  results: number[];
+  total: number;
+  label: string | null;
+  created_at: string;
+}
+
 export interface Asset {
   id: string;
   campaign_id: string;
@@ -617,5 +632,28 @@ export const api = {
       request<any>(`/world-state/${campaignId}/snapshots`),
     getSnapshot: (campaignId: string, version: number) =>
       request<any>(`/world-state/${campaignId}/snapshots/${version}`),
+  },
+
+  rolls: {
+    create: (campaignId: string, data: {
+      entity_type?: string;
+      entity_id?: string;
+      entity_name?: string;
+      roller_name: string;
+      dice_type: number;
+      count: number;
+      results: number[];
+      total: number;
+      label?: string;
+    }) => request<DiceRollResponse>(`/campaigns/${campaignId}/rolls`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+    recent: (campaignId: string, since: number) =>
+      request<DiceRollResponse[]>(`/campaigns/${campaignId}/rolls/recent?since=${since}`),
+    recentAll: (campaignId: string) =>
+      request<DiceRollResponse[]>(`/campaigns/${campaignId}/rolls/recent/all`),
+    history: (campaignId: string, entityId: string) =>
+      request<DiceRollResponse[]>(`/campaigns/${campaignId}/rolls/history/${entityId}`),
   },
 };

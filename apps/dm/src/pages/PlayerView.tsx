@@ -1,6 +1,9 @@
 import { useEffect, useState, useRef, useCallback, Suspense } from 'react';
 import { useParams } from 'react-router-dom';
 import SceneRenderer from '@/components/SceneRenderer';
+import DiceRoller from '@/components/DiceRoller';
+import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastContainer';
+import { api } from '@/lib/api';
 
 const API_BASE = 'http://localhost:8000/api';
 const POLL_MS = 1000;
@@ -137,10 +140,13 @@ export default function PlayerView() {
   const [sheetTab, setSheetTab] = useState<'stats' | 'inventory' | 'spells' | 'notes'>('stats');
   const [notesDraft, setNotesDraft] = useState('');
   const [notesSaving, setNotesSaving] = useState(false);
+  const [showDiceRoller, setShowDiceRoller] = useState(false);
+  const [toastQueue, setToastQueue] = useState<ToastRoll[]>([]);
 
   const lastRevRef = useRef<string>('');
   const choiceRef = useRef<Choice>(null);
   const sceneIdRef = useRef<string | null>(null);
+  const lastRollTsRef = useRef<number>(0);
 
   const fetchSnapshot = useCallback(async (): Promise<JoinData> => {
     const res = await fetch(`${API_BASE}/campaigns/invite/${code}`);
@@ -238,6 +244,7 @@ export default function PlayerView() {
               }
             });
           }
+
         }
       } catch {
         if (!cancelled) setLive(false);
@@ -251,6 +258,35 @@ export default function PlayerView() {
       clearTimeout(timer);
     };
   }, [code, data, fetchSnapshot, applySnapshot, fetchMyChar]);
+
+  useEffect(() => {
+    if (!code || !data) return;
+    let cancelled = false;
+    let timer: number;
+
+    const pollRolls = async () => {
+      try {
+        const newRolls = await api.rolls.recent(data.campaign_id, lastRollTsRef.current);
+        if (cancelled) return;
+        if (newRolls.length > 0) {
+          lastRollTsRef.current = Date.now();
+          setToastQueue((prev) => {
+            const updated = [...prev, ...newRolls.map(rollToToast)];
+            return updated.slice(-5);
+          });
+        }
+      } catch {
+        // best-effort
+      }
+      if (!cancelled) timer = window.setTimeout(pollRolls, 1000);
+    };
+
+    timer = window.setTimeout(pollRolls, 1000);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [code, data]);
 
   const chooseCharacter = useCallback(
     (id: string) => {
@@ -401,6 +437,20 @@ export default function PlayerView() {
             className="text-[10px] px-2 py-1 rounded border border-gray-700 text-gray-400 hover:text-gray-200 hover:border-gray-500 transition-colors"
           >
             Cambiar
+          </button>
+        )}
+        {choice?.kind === 'character' && (
+          <button
+            type="button"
+            onClick={() => setShowDiceRoller(!showDiceRoller)}
+            className={`text-xs px-2 py-1 rounded transition-colors ${
+              showDiceRoller
+                ? 'bg-emerald-600 text-white'
+                : 'bg-gray-800 text-gray-400 hover:text-gray-200 hover:bg-gray-700'
+            }`}
+            title="Tirar dados"
+          >
+            🎲
           </button>
         )}
         <span
@@ -684,6 +734,26 @@ export default function PlayerView() {
           <div className={`scene-transition-overlay ${fading === 'out' ? 'scene-transition-overlay--out' : ''}`} />
         )}
       </div>
+
+      {showDiceRoller && data && myChar && (
+        <DiceRoller
+          onClose={() => setShowDiceRoller(false)}
+          campaignId={data.campaign_id}
+          rollerName={myChar.name}
+          fixedEntityKey={`char:${myChar.id}`}
+          characters={[]}
+          npcs={[]}
+          onRollCreated={(response) => {
+            lastRollTsRef.current = Date.now();
+            setToastQueue((prev) => [...prev, rollToToast(response)].slice(-5));
+          }}
+        />
+      )}
+
+      <ToastContainer
+        toasts={toastQueue}
+        onDismiss={(id) => setToastQueue((prev) => prev.filter((t) => t.id !== id))}
+      />
     </div>
   );
 }

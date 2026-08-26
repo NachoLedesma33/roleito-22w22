@@ -42,3 +42,25 @@ body {
   to { opacity: 0; }
 }
 
+.toast-slide {
+  will-change: transform, opacity;
+}
+
+.toast-slide-in {
+  animation: toast-in 300ms ease forwards;
+}
+
+.toast-slide-out {
+  animation: toast-out 300ms ease forwards;
+}
+
+@keyframes toast-in {
+  from { transform: translateX(110%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes toast-out {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(110%); opacity: 0; }
+}
+

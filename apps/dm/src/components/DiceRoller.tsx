@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import HudPanel from './HudPanel';
-import type { Character, NPC, VidaAttr } from '@/lib/api';
+import { api, type Character, type NPC, type VidaAttr, type DiceRollResponse } from '@/lib/api';
 
 export interface DiceRoll {
   id: string;
@@ -10,6 +10,7 @@ export interface DiceRoll {
   total: number;
   timestamp: number;
   label?: string;
+  rollerName?: string;
 }
 
 interface RollerEntity {
@@ -26,6 +27,10 @@ interface DiceRollerProps {
   onRoll?: (roll: DiceRoll) => void;
   characters?: Character[];
   npcs?: NPC[];
+  campaignId?: string;
+  rollerName: string;
+  fixedEntityKey?: string;
+  onRollCreated?: (response: DiceRollResponse) => void;
 }
 
 const DICE_TYPES = [4, 6, 8, 10, 12, 20];
@@ -63,14 +68,39 @@ function formatTime(ts: number): string {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
-export default function DiceRoller({ onClose, onRoll, characters = [], npcs = [] }: DiceRollerProps) {
+function responseToRoll(r: DiceRollResponse): DiceRoll {
+  return {
+    id: r.id,
+    diceType: r.dice_type,
+    count: r.count,
+    results: r.results,
+    total: r.total,
+    timestamp: new Date(r.created_at).getTime(),
+    label: r.label ?? undefined,
+    rollerName: r.roller_name,
+  };
+}
+
+const HISTORY_POLL_MS = 1000;
+
+export default function DiceRoller({
+  onClose,
+  onRoll,
+  characters = [],
+  npcs = [],
+  campaignId,
+  rollerName,
+  fixedEntityKey,
+  onRollCreated,
+}: DiceRollerProps) {
   const [diceType, setDiceType] = useState(6);
   const [count, setCount] = useState(1);
-  const [entityKey, setEntityKey] = useState('');
+  const [entityKey, setEntityKey] = useState(fixedEntityKey ?? '');
   const [skill, setSkill] = useState('');
   const [lastRoll, setLastRoll] = useState<DiceRoll | null>(null);
   const [history, setHistory] = useState<DiceRoll[]>([]);
   const [rolling, setRolling] = useState(false);
+  const [historyEntityKey, setHistoryEntityKey] = useState<string>(fixedEntityKey ?? '');
   const rollTimeout = useRef<ReturnType<typeof setTimeout>>();
 
   const entities: RollerEntity[] = [
@@ -93,11 +123,77 @@ export default function DiceRoller({ onClose, onRoll, characters = [], npcs = []
   ];
   const selected = entities.find((e) => e.key === entityKey) ?? null;
 
+  const isDmMode = !fixedEntityKey;
+
+  useEffect(() => {
+    if (isDmMode && entityKey && historyEntityKey !== entityKey) {
+      setHistoryEntityKey(entityKey);
+    }
+  }, [entityKey, isDmMode]);
+
+  useEffect(() => {
+    if (!campaignId) return;
+    let cancelled = false;
+
+    const fetchHistory = async () => {
+      try {
+        let rolls: DiceRollResponse[];
+        if (historyEntityKey === 'all') {
+          rolls = await api.rolls.recentAll(campaignId);
+        } else {
+          const entityId = historyEntityKey.split(':')[1];
+          if (!entityId) return;
+          rolls = await api.rolls.history(campaignId, entityId);
+        }
+        if (!cancelled) {
+          setHistory(rolls.map(responseToRoll));
+        }
+      } catch {
+        // best-effort
+      }
+    };
+
+    fetchHistory();
+    const timer = window.setInterval(fetchHistory, HISTORY_POLL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [campaignId, historyEntityKey]);
+
   const handleRoll = useCallback(() => {
     setRolling(true);
-    rollTimeout.current = setTimeout(() => {
+    rollTimeout.current = setTimeout(async () => {
       const { results, total } = rollDice(diceType, count);
       const label = [skill.trim(), selected?.name].filter(Boolean).join(' — ') || undefined;
+
+      if (campaignId) {
+        try {
+          const entityType = selected?.key.split(':')[0];
+          const entityId = selected?.key.split(':')[1];
+          const response = await api.rolls.create(campaignId, {
+            entity_type: entityType,
+            entity_id: entityId,
+            entity_name: selected?.name,
+            roller_name: rollerName,
+            dice_type: diceType,
+            count,
+            results,
+            total,
+            label,
+          });
+          const roll = responseToRoll(response);
+          setLastRoll(roll);
+          setHistory((prev) => [roll, ...prev].slice(0, 20));
+          setRolling(false);
+          onRoll?.(roll);
+          onRollCreated?.(response);
+          return;
+        } catch {
+          // fall through to local-only roll
+        }
+      }
+
       const roll: DiceRoll = {
         id: crypto.randomUUID(),
         diceType,
@@ -108,11 +204,11 @@ export default function DiceRoller({ onClose, onRoll, characters = [], npcs = []
         label,
       };
       setLastRoll(roll);
-      setHistory((prev) => [roll, ...prev].slice(0, 50));
+      setHistory((prev) => [roll, ...prev].slice(0, 20));
       setRolling(false);
       onRoll?.(roll);
     }, 300);
-  }, [diceType, count, skill, selected, onRoll]);
+  }, [diceType, count, skill, selected, campaignId, rollerName, onRoll, onRollCreated]);
 
   useEffect(() => {
     return () => {
@@ -129,7 +225,6 @@ export default function DiceRoller({ onClose, onRoll, characters = [], npcs = []
       width={280}
     >
       <div className="space-y-3">
-        {/* Dice Type Selector */}
         <div>
           <p className="text-[10px] text-[var(--text-secondary)] mb-1 uppercase tracking-wide">Die Type</p>
           <div className="flex gap-1">
@@ -149,7 +244,6 @@ export default function DiceRoller({ onClose, onRoll, characters = [], npcs = []
           </div>
         </div>
 
-        {/* Count Selector */}
         <div>
           <p className="text-[10px] text-[var(--text-secondary)] mb-1 uppercase tracking-wide">Count</p>
           <div className="flex items-center gap-2">
@@ -169,51 +263,60 @@ export default function DiceRoller({ onClose, onRoll, characters = [], npcs = []
           </div>
         </div>
 
-        {/* Roller Context (optional) */}
-        <div>
-          <p className="text-[10px] text-[var(--text-secondary)] mb-1 uppercase tracking-wide">Roller Para</p>
-          <select
-            aria-label="Roller Para"
-            value={entityKey}
-            onChange={(e) => setEntityKey(e.target.value)}
-            className="w-full bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-xs rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
-          >
-            <option value="">— Sin personaje —</option>
-            {characters.length > 0 && (
-              <optgroup label="Personajes">
-                {characters.map((c) => (
-                  <option key={c.id} value={`char:${c.id}`}>{c.name}</option>
-                ))}
-              </optgroup>
+        {!fixedEntityKey && (
+          <div>
+            <p className="text-[10px] text-[var(--text-secondary)] mb-1 uppercase tracking-wide">Roller Para</p>
+            <select
+              aria-label="Roller Para"
+              value={entityKey}
+              onChange={(e) => setEntityKey(e.target.value)}
+              className="w-full bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-xs rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+            >
+              <option value="">— Sin personaje —</option>
+              {characters.length > 0 && (
+                <optgroup label="Personajes">
+                  {characters.map((c) => (
+                    <option key={c.id} value={`char:${c.id}`}>{c.name}</option>
+                  ))}
+                </optgroup>
+              )}
+              {npcs.length > 0 && (
+                <optgroup label="NPCs">
+                  {npcs.map((n) => (
+                    <option key={n.id} value={`npc:${n.id}`}>{n.name}</option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
+
+            {selected && (
+              <div className="grid grid-cols-4 gap-1 mt-2">
+                <AttrChip name="Vigor" value={selected.vigor} color="text-red-400" />
+                <AttrChip name="Inteligencia" value={selected.intelligence} color="text-blue-400" />
+                <AttrChip name="Destreza" value={selected.dexterity} color="text-green-400" />
+                <AttrChip name="Astucia" value={selected.cunning} color="text-yellow-400" />
+              </div>
             )}
-            {npcs.length > 0 && (
-              <optgroup label="NPCs">
-                {npcs.map((n) => (
-                  <option key={n.id} value={`npc:${n.id}`}>{n.name}</option>
-                ))}
-              </optgroup>
-            )}
-          </select>
 
-          {selected && (
-            <div className="grid grid-cols-4 gap-1 mt-2">
-              <AttrChip name="Vigor" value={selected.vigor} color="text-red-400" />
-              <AttrChip name="Inteligencia" value={selected.intelligence} color="text-blue-400" />
-              <AttrChip name="Destreza" value={selected.dexterity} color="text-green-400" />
-              <AttrChip name="Astucia" value={selected.cunning} color="text-yellow-400" />
-            </div>
-          )}
+            <input
+              type="text"
+              value={skill}
+              onChange={(e) => setSkill(e.target.value)}
+              placeholder="Habilidad (ej: Sigilo) — opcional"
+              className="w-full mt-2 bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-xs rounded px-2 py-1.5 placeholder:text-[var(--text-secondary)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+            />
+          </div>
+        )}
 
-          <input
-            type="text"
-            value={skill}
-            onChange={(e) => setSkill(e.target.value)}
-            placeholder="Habilidad (ej: Sigilo) — opcional"
-            className="w-full mt-2 bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-xs rounded px-2 py-1.5 placeholder:text-[var(--text-secondary)]/50 focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
-          />
-        </div>
+        {fixedEntityKey && selected && (
+          <div className="grid grid-cols-4 gap-1">
+            <AttrChip name="Vigor" value={selected.vigor} color="text-red-400" />
+            <AttrChip name="Inteligencia" value={selected.intelligence} color="text-blue-400" />
+            <AttrChip name="Destreza" value={selected.dexterity} color="text-green-400" />
+            <AttrChip name="Astucia" value={selected.cunning} color="text-yellow-400" />
+          </div>
+        )}
 
-        {/* Roll Button */}
         <button
           onClick={handleRoll}
           disabled={rolling}
@@ -226,7 +329,6 @@ export default function DiceRoller({ onClose, onRoll, characters = [], npcs = []
           {rolling ? 'Rolling...' : `Roll ${count}d${diceType}`}
         </button>
 
-        {/* Last Roll Result */}
         {lastRoll && (
           <div className="bg-[var(--bg-tertiary)]/50 rounded-lg p-3">
             {lastRoll.label && (
@@ -252,20 +354,41 @@ export default function DiceRoller({ onClose, onRoll, characters = [], npcs = []
                 </span>
               ))}
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-[var(--text-secondary)]">Total</span>
-              <span className="text-lg font-bold font-mono text-[var(--text-primary)]">
-                {lastRoll.total}
-              </span>
-            </div>
           </div>
         )}
 
-        {/* History */}
+        {isDmMode && (
+          <div>
+            <p className="text-[10px] text-[var(--text-secondary)] mb-1 uppercase tracking-wide">History for</p>
+            <select
+              aria-label="History entity"
+              value={historyEntityKey}
+              onChange={(e) => setHistoryEntityKey(e.target.value)}
+              className="w-full bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-xs rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+            >
+              <option value="all">All rolls</option>
+              {characters.length > 0 && (
+                <optgroup label="Personajes">
+                  {characters.map((c) => (
+                    <option key={c.id} value={`char:${c.id}`}>{c.name}</option>
+                  ))}
+                </optgroup>
+              )}
+              {npcs.length > 0 && (
+                <optgroup label="NPCs">
+                  {npcs.map((n) => (
+                    <option key={n.id} value={`npc:${n.id}`}>{n.name}</option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
+          </div>
+        )}
+
         {history.length > 0 && (
           <div>
-            <p className="text-[10px] text-[var(--text-secondary)] mb-1 uppercase tracking-wide">History</p>
-            <div className="space-y-0.5 max-h-32 overflow-y-auto">
+            <p className="text-[10px] text-[var(--text-secondary)] mb-1 uppercase tracking-wide">History (max 20)</p>
+            <div className="space-y-0.5 max-h-40 overflow-y-auto">
               {history.map((r) => (
                 <div
                   key={r.id}
@@ -281,11 +404,13 @@ export default function DiceRoller({ onClose, onRoll, characters = [], npcs = []
                     <span className="text-[var(--text-secondary)] shrink-0">
                       {r.count}d{r.diceType}
                     </span>
+                    {r.rollerName && (
+                      <span className="text-[var(--text-secondary)]/70 shrink-0 truncate max-w-[60px]">
+                        {r.rollerName}
+                      </span>
+                    )}
                     <span className="flex-1 truncate text-[var(--text-secondary)]">
                       {r.results.join(' + ')}
-                    </span>
-                    <span className="font-bold font-mono text-[var(--text-primary)]">
-                      {r.total}
                     </span>
                   </div>
                 </div>

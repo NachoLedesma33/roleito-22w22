@@ -188,25 +188,44 @@ Percepción: como cualquier tirada — el DM define tipo y cantidad
 # 9. Log de Tiradas
 
 ```text
-Cada tirada se registra:
-- Usuario
-- Tipo de dado
-- Cantidad
-- Resultados individuales
-- Suma total
-- Timestamp
-- Contexto (opcional)
+Cada tirada se persiste en la tabla dice_rolls (SQLite):
+- entity_type: "character" | "npc" | null
+- entity_id: id del personaje/NPC
+- entity_name: nombre para display
+- roller_name: "DM" | nombre del jugador
+- dice_type: 4|6|8|10|12|20
+- count: 1-10
+- results: [4, 6, 2] (JSON)
+- total: 12
+- label: "Sigilo — Aria" (opcional)
+- created_at: timestamp
 
-Ejemplo:
-{
-  "user": "Jugador 1",
-  "dice_type": "d6",
-  "count": 3,
-  "results": [4, 6, 2],
-  "total": 12,
-  "timestamp": "2026-08-18T20:45:00",
-  "context": "Ataque contra guardia"
-}
+Límite: máx 20 tiradas por entity_id (trim automático al crear).
+```
+
+## 9.1 Sync en Tiempo Real
+
+```text
+Las tiradas se sincronizan entre DM y todos los jugadores
+usando el mismo mecanismo de polling que ya existe (1s).
+
+Flujo:
+1. Jugador/DM tira dados → POST /campaigns/{id}/rolls
+2. Backend guarda en DB + incluye hash del último roll en la revisión
+3. Polling del cliente detecta cambio en revisión
+4. GET /campaigns/{id}/rolls/recent?since={timestamp}
+5. Toast notification en todos los clientes conectados
+
+Cola de toasts:
+- Se muestra hasta la siguiente tirada (se reemplaza)
+- Máx 5 toasts visibles en cola
+- Cada toast se desliza desde la derecha con animación
+- Desaparece tras 6 segundos o con la siguiente tirada
+
+Endpoints:
+- POST /api/campaigns/{id}/rolls — crear tirada
+- GET /api/campaigns/{id}/rolls/recent?since={ts} — rolls nuevos
+- GET /api/campaigns/{id}/rolls/history/{entity_id} — historial (máx 20)
 ```
 
 ---
@@ -249,16 +268,15 @@ Lista de últimas tiradas:
 
 ```text
 Jugador:
-  □ Puede tirar dados
-  □ Puede ver sus tiradas
-  □ Puede ver historial propio
-  □ NO puede ver tiradas de otros (opcional)
+  ✓ Puede tirar dados por su personaje asignado
+  ✓ Ve toast de todas las tiradas (suyo y de otros)
+  ✓ Ve historial propio en el panel de dados
 
 DM:
-  □ Puede tirar dados
-  □ Puede ver todas las tiradas
-  □ Puede ver historial completo
-  □ Puede definir dados personalizados
+  ✓ Puede tirar dados por cualquier personaje/NPC
+  ✓ Ve toast de todas las tiradas
+  ✓ Ve historial completo de todos los personajes
+  ✓ Selecciona libremente personaje/NPC en el roller
 ```
 
 ---
@@ -266,8 +284,8 @@ DM:
 # 12. Notas Pendientes
 
 ```text
-□ ¿Las tiradas son públicas o privadas?
-□ ¿El DM ve todas las tiradas de jugadores?
+✓ ¿Las tiradas son públicas o privadas? → PÚBLICAS: todos ven todo
+✓ ¿El DM ve todas las tiradas de jugadores? → SÍ, vía toast + historial
 ✓ ¿Hay modificadores por atributo? → NO (2026-08-22): sin modificadores ni
   mapping fijo; atributo = guía visual para el DM (ver §8)
 □ ¿Cómo se integra con el sistema de combate?
@@ -433,7 +451,11 @@ DM:
 - El d6 es el dado principal del grupo
 - El usuario selecciona tipo y cantidad
 - Ejemplo: 3d6 = 3 dados de 6 caras
-- Las tiradas se registran para historial
+- Las tiradas se persisten en DB (dice_rolls) con trim a 20 por entity_id
+- Sync en tiempo real vía polling (mismo mecanismo de revisión existente)
+- Toast notifications: se muestran hasta la siguiente tirada
+- DM puede tirar por cualquier personaje; jugadores por el suyo
+- NO se muestra la sumatoria — solo los resultados individuales de cada dado
 - La integración con combate es posterior al MVP
 - Iniciativa: DM annuncia, jugadores tiran, DM tira por enemigos
 - DM controla el orden de turnos

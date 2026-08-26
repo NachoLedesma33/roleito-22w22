@@ -27,6 +27,7 @@ class Campaign(Base):
 
     sessions = relationship("Session", back_populates="campaign")
     characters = relationship("Character", back_populates="campaign")
+    dice_rolls = relationship("DiceRoll", back_populates="campaign", order_by="DiceRoll.created_at.desc()")
 
 
 class Session(Base):
@@ -263,3 +264,22 @@ class DMNotebookVersion(Base):
     content = Column(Text, default="")
     version_number = Column(Integer, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class DiceRoll(Base):
+    __tablename__ = "dice_rolls"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    campaign_id = Column(String, ForeignKey("campaigns.id"), nullable=False)
+    entity_type = Column(String, nullable=True)
+    entity_id = Column(String, nullable=True)
+    entity_name = Column(String, nullable=True)
+    roller_name = Column(String, nullable=False)
+    dice_type = Column(Integer, nullable=False)
+    count = Column(Integer, nullable=False)
+    results = Column(JSON, nullable=False)
+    total = Column(Integer, nullable=False)
+    label = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    campaign = relationship("Campaign", back_populates="dice_rolls")

@@ -19,6 +19,7 @@ from models import (
     MapMarker,
     DMNotebook,
     DMNotebookVersion,
+    DiceRoll,
 )
 from schemas import (
     CampaignCreate,
@@ -72,6 +73,16 @@ async def compute_player_revision(db: AsyncSession, campaign_id: str) -> str:
         .order_by(SceneCharacter.id)
     )
     parts.extend(repr(tuple(r)) for r in sc_r.all())
+
+    rolls_r = await db.execute(
+        select(DiceRoll.id, DiceRoll.created_at)
+        .where(DiceRoll.campaign_id == campaign_id)
+        .order_by(DiceRoll.created_at.desc())
+        .limit(1)
+    )
+    last_roll = rolls_r.first()
+    if last_roll:
+        parts.append(repr(tuple(last_roll)))
 
     return hashlib.sha1("|".join(parts).encode()).hexdigest()[:16]
 

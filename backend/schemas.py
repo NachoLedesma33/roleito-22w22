@@ -494,3 +494,33 @@ class AITestResponse(BaseModel):
     response: Optional[str] = None
     latency_ms: Optional[int] = None
     error: Optional[str] = None
+
+
+class DiceRollCreate(BaseModel):
+    entity_type: Optional[str] = None
+    entity_id: Optional[str] = None
+    entity_name: Optional[str] = None
+    roller_name: str
+    dice_type: int = Field(ge=4, le=20)
+    count: int = Field(ge=1, le=10)
+    results: list[int]
+    total: int
+    label: Optional[str] = None
+
+
+class DiceRollResponse(BaseModel):
+    id: str
+    campaign_id: str
+    entity_type: Optional[str] = None
+    entity_id: Optional[str] = None
+    entity_name: Optional[str] = None
+    roller_name: str
+    dice_type: int
+    count: int
+    results: list[int]
+    total: int
+    label: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
