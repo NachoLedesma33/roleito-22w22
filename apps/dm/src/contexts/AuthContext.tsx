@@ -17,6 +17,7 @@ interface AuthContextType {
   pinSet: boolean;
   login: (pin: string) => Promise<void>;
   setupPin: (pin: string) => Promise<void>;
+  changePin: (currentPin: string | undefined, newPin: string) => Promise<void>;
   logout: () => Promise<void>;
   getToken: () => string | null;
 }
@@ -95,6 +96,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setPinSet(true);
   }, []);
 
+  const changePin = useCallback(async (currentPin: string | undefined, newPin: string) => {
+    const body: Record<string, string> = { new_pin: newPin };
+    if (currentPin) body.current_pin = currentPin;
+    const res = await fetch(`${API_BASE}/auth/change-pin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Change PIN failed' }));
+      throw new Error(err.detail || 'Change PIN failed');
+    }
+    const data = await res.json();
+    sessionStorage.setItem('roleito:auth:token', data.token);
+    const meRes = await fetch(`${API_BASE}/auth/me`, {
+      headers: { Authorization: `Bearer ${data.token}` },
+    });
+    const me = await meRes.json();
+    setSession({ ...me, token: data.token });
+    setPinSet(true);
+  }, []);
+
   const logout = useCallback(async () => {
     const token = sessionStorage.getItem('roleito:auth:token');
     if (token) {
@@ -112,7 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ session, loading, pinSet, login, setupPin, logout, getToken }}>
+    <AuthContext.Provider value={{ session, loading, pinSet, login, setupPin, changePin, logout, getToken }}>
       {children}
     </AuthContext.Provider>
   );

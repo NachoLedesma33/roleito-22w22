@@ -33,6 +33,11 @@ class PinLoginRequest(BaseModel):
     pin: str = Field(..., min_length=4, max_length=8, pattern=r"^\d+$")
 
 
+class PinChangeRequest(BaseModel):
+    current_pin: str | None = None
+    new_pin: str = Field(..., min_length=4, max_length=8, pattern=r"^\d+$")
+
+
 class SessionInfo(BaseModel):
     token: str
     role: str
@@ -91,6 +96,32 @@ async def login(body: PinLoginRequest, request: Request):
         record_failed_attempt(ip)
         raise HTTPException(status_code=401, detail="Invalid PIN.")
 
+    clear_failed_attempts(ip)
+    session = create_session(role="dm")
+
+    return LoginResponse(
+        token=session.token,
+        role=session.role,
+        pin_set=True,
+    )
+
+
+@router.post("/change-pin", response_model=LoginResponse)
+async def change_pin(body: PinChangeRequest, request: Request):
+    """Change PIN. Optional current_pin — if provided, must match."""
+    ip = request.client.host if request.client else "unknown"
+
+    if check_lockout(ip):
+        raise HTTPException(status_code=429, detail="Too many attempts. Try later.")
+
+    stored_hash = get_pin_hash()
+    if stored_hash and body.current_pin is not None:
+        if not verify_pin(body.current_pin, stored_hash):
+            record_failed_attempt(ip)
+            raise HTTPException(status_code=401, detail="Invalid current PIN.")
+
+    hashed = hash_pin(body.new_pin)
+    save_pin_hash(hashed)
     clear_failed_attempts(ip)
     session = create_session(role="dm")
 

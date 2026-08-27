@@ -402,6 +402,21 @@ export const api = {
       request<Campaign>('/campaigns/import', { method: 'POST', body: JSON.stringify(data) }),
     generateInviteCode: (id: string) =>
       request<Campaign>(`/campaigns/${id}/invite-code`, { method: 'POST' }),
+    bulkDelete: (ids: string[]) =>
+      request<{ deleted: string[] }>('/campaigns/bulk-delete', {
+        method: 'POST',
+        body: JSON.stringify({ ids }),
+      }),
+    bulkUpdate: (ids: string[], data: { name?: string; description?: string }) =>
+      request<{ updated: string[] }>('/campaigns/bulk-update', {
+        method: 'POST',
+        body: JSON.stringify({ ids, ...data }),
+      }),
+    bulkExport: (ids: string[]) =>
+      request<{ campaigns: CampaignExport[] }>('/campaigns/bulk-export', {
+        method: 'POST',
+        body: JSON.stringify({ ids }),
+      }),
   },
 
   characters: {

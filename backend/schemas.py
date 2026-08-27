@@ -531,3 +531,17 @@ class DiceRollResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class BulkDeleteRequest(BaseModel):
+    ids: list[str] = Field(..., min_length=1)
+
+
+class BulkUpdateRequest(BaseModel):
+    ids: list[str] = Field(..., min_length=1)
+    name: Optional[str] = None
+    description: Optional[str] = None
+
+
+class BulkExportRequest(BaseModel):
+    ids: list[str] = Field(..., min_length=1)

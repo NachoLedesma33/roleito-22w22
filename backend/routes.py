@@ -22,6 +22,9 @@ from models import (
     DiceRoll,
 )
 from schemas import (
+    BulkDeleteRequest,
+    BulkExportRequest,
+    BulkUpdateRequest,
     CampaignCreate,
     CampaignUpdate,
     CampaignResponse,
@@ -189,7 +192,7 @@ async def delete_campaign(
             await db.delete(marker)
         await db.delete(map_)
 
-    for model in (Event, Relationship, Location, NPC, Character, Player, Session, Asset):
+    for model in (Event, Relationship, Location, NPC, Character, Player, Session, Asset, DiceRoll):
         rows_r = await db.execute(
             select(model).where(model.campaign_id == campaign_id)
         )
@@ -199,6 +202,132 @@ async def delete_campaign(
     await db.delete(campaign)
     await db.commit()
     return {"status": "deleted", "id": campaign_id}
+
+
+@campaigns_router.post("/campaigns/bulk-delete")
+async def bulk_delete_campaigns(
+    body: BulkDeleteRequest,
+    db: AsyncSession = Depends(get_session),
+):
+    deleted = []
+    for cid in body.ids:
+        result = await db.execute(
+            select(Campaign).where(Campaign.id == cid)
+        )
+        campaign = result.scalar_one_or_none()
+        if not campaign:
+            continue
+
+        notebooks_r = await db.execute(
+            select(DMNotebook).where(DMNotebook.campaign_id == cid)
+        )
+        for nb in notebooks_r.scalars().all():
+            versions_r = await db.execute(
+                select(DMNotebookVersion).where(DMNotebookVersion.notebook_id == nb.id)
+            )
+            for version in versions_r.scalars().all():
+                await db.delete(version)
+            await db.delete(nb)
+
+        scenes_r = await db.execute(select(Scene).where(Scene.campaign_id == cid))
+        for scene in scenes_r.scalars().all():
+            scene_chars_r = await db.execute(
+                select(SceneCharacter).where(SceneCharacter.scene_id == scene.id)
+            )
+            for scene_char in scene_chars_r.scalars().all():
+                await db.delete(scene_char)
+            await db.delete(scene)
+
+        maps_r = await db.execute(select(Map).where(Map.campaign_id == cid))
+        for map_ in maps_r.scalars().all():
+            markers_r = await db.execute(
+                select(MapMarker).where(MapMarker.map_id == map_.id)
+            )
+            for marker in markers_r.scalars().all():
+                await db.delete(marker)
+            await db.delete(map_)
+
+        for model in (Event, Relationship, Location, NPC, Character, Player, Session, Asset, DiceRoll):
+            rows_r = await db.execute(
+                select(model).where(model.campaign_id == cid)
+            )
+            for row in rows_r.scalars().all():
+                await db.delete(row)
+
+        await db.delete(campaign)
+        deleted.append(cid)
+
+    await db.commit()
+    return {"deleted": deleted}
+
+
+@campaigns_router.post("/campaigns/bulk-update")
+async def bulk_update_campaigns(
+    body: BulkUpdateRequest,
+    db: AsyncSession = Depends(get_session),
+):
+    updated = []
+    for cid in body.ids:
+        result = await db.execute(
+            select(Campaign).where(Campaign.id == cid)
+        )
+        campaign = result.scalar_one_or_none()
+        if not campaign:
+            continue
+        if body.name is not None:
+            campaign.name = body.name
+        if body.description is not None:
+            campaign.description = body.description
+        updated.append(cid)
+
+    await db.commit()
+    return {"updated": updated}
+
+
+@campaigns_router.post("/campaigns/bulk-export")
+async def bulk_export_campaigns(
+    body: BulkExportRequest,
+    db: AsyncSession = Depends(get_session),
+):
+    exports = []
+    for cid in body.ids:
+        result = await db.execute(
+            select(Campaign).where(Campaign.id == cid)
+        )
+        campaign = result.scalar_one_or_none()
+        if not campaign:
+            continue
+
+        sessions_r = await db.execute(
+            select(Session).where(Session.campaign_id == cid)
+        )
+        characters_r = await db.execute(
+            select(Character).where(Character.campaign_id == cid)
+        )
+        npcs_r = await db.execute(
+            select(NPC).where(NPC.campaign_id == cid)
+        )
+        locations_r = await db.execute(
+            select(Location).where(Location.campaign_id == cid)
+        )
+        events_r = await db.execute(
+            select(Event).where(Event.campaign_id == cid)
+        )
+        relationships_r = await db.execute(
+            select(Relationship).where(Relationship.campaign_id == cid)
+        )
+
+        exports.append({
+            "campaign": CampaignResponse.model_validate(campaign).model_dump(mode="json"),
+            "sessions": [dict(r._mapping) for r in sessions_r.all()],
+            "characters": [dict(r._mapping) for r in characters_r.all()],
+            "npcs": [dict(r._mapping) for r in npcs_r.all()],
+            "locations": [dict(r._mapping) for r in locations_r.all()],
+            "events": [dict(r._mapping) for r in events_r.all()],
+            "relationships": [dict(r._mapping) for r in relationships_r.all()],
+        })
+
+    return {"campaigns": exports}
 
 
 @campaigns_router.get("/campaigns/{campaign_id}/export")
