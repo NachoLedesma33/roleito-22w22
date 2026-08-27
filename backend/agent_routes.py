@@ -19,7 +19,7 @@ from core.agents.lore_agent import LoreAgent
 from core.agents.narrator import NarratorAgent
 from core.agents.recap import RecapAgent
 from core.agents.provider import get_provider_for_agent
-from auth import require_dm, Session as AuthSession
+from auth import require_dm, AuthSession
 
 router = APIRouter(tags=["agents"])
 

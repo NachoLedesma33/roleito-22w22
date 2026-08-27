@@ -13,7 +13,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel
 
 from infrastructure.tts import build_tts_provider
-from auth import require_dm, Session
+from auth import require_dm, AuthSession
 
 router = APIRouter(tags=["tts"])
 
@@ -71,12 +71,12 @@ class TTSVoiceResponse(BaseModel):
 
 
 @router.get("/tts/config", response_model=TTSConfigResponse)
-async def get_tts_config(_session: Session = Depends(require_dm)):
+async def get_tts_config(_session: AuthSession = Depends(require_dm)):
     return _load_config()
 
 
 @router.put("/tts/config", response_model=TTSConfigResponse)
-async def update_tts_config(data: TTSConfigUpdate, _session: Session = Depends(require_dm)):
+async def update_tts_config(data: TTSConfigUpdate, _session: AuthSession = Depends(require_dm)):
     config = _load_config()
     if data.provider is not None:
         config["provider"] = data.provider
@@ -91,7 +91,7 @@ async def update_tts_config(data: TTSConfigUpdate, _session: Session = Depends(r
 
 
 @router.get("/tts/voices", response_model=list[TTSVoiceResponse])
-async def list_tts_voices(_session: Session = Depends(require_dm)):
+async def list_tts_voices(_session: AuthSession = Depends(require_dm)):
     config = _load_config()
     provider = build_tts_provider(config["provider"])
     voices = await provider.list_voices(config.get("language", "es"))

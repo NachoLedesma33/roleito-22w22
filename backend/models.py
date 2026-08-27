@@ -283,3 +283,24 @@ class DiceRoll(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     campaign = relationship("Campaign", back_populates="dice_rolls")
+
+
+class DM(Base):
+    __tablename__ = "dms"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    name = Column(String, nullable=False)
+    pin_hash = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class AuthSession(Base):
+    __tablename__ = "auth_sessions"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    token = Column(String, nullable=False, unique=True)
+    dm_id = Column(String, ForeignKey("dms.id"), nullable=False)
+    role = Column(String, default="dm")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_seen = Column(DateTime, default=datetime.utcnow)
+    campaign_id = Column(String, nullable=True)

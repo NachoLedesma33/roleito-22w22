@@ -2,24 +2,32 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 
 const API_BASE = 'http://localhost:8000/api';
 
+interface DMBrief {
+  id: string;
+  name: string;
+  created_at: string;
+}
+
 interface Session {
   token: string;
   role: string;
   created_at: number;
   last_seen: number;
   campaign_id: string | null;
-  pin_set: boolean;
+  dm_id: string;
+  dm_name: string;
 }
 
 interface AuthContextType {
   session: Session | null;
   loading: boolean;
-  pinSet: boolean;
-  login: (pin: string) => Promise<void>;
-  setupPin: (pin: string) => Promise<void>;
+  dms: DMBrief[];
+  login: (dmId: string, pin: string) => Promise<void>;
+  registerDm: (name: string, pin: string) => Promise<void>;
   changePin: (currentPin: string | undefined, newPin: string) => Promise<void>;
   logout: () => Promise<void>;
   getToken: () => string | null;
+  refreshDms: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -27,7 +35,14 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [pinSet, setPinSet] = useState(false);
+  const [dms, setDms] = useState<DMBrief[]>([]);
+
+  const refreshDms = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/dms`);
+      if (res.ok) setDms(await res.json());
+    } catch {}
+  }, []);
 
   useEffect(() => {
     const stored = sessionStorage.getItem('roleito:auth:token');
@@ -41,26 +56,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         })
         .then((data: Session) => {
           setSession({ ...data, token: stored });
-          setPinSet(data.pin_set);
         })
         .catch(() => {
           sessionStorage.removeItem('roleito:auth:token');
         })
-        .finally(() => setLoading(false));
+        .finally(() => {
+          refreshDms();
+          setLoading(false);
+        });
     } else {
-      fetch(`${API_BASE}/auth/status`)
-        .then((res) => res.json())
-        .then((data: { pin_set: boolean }) => setPinSet(data.pin_set))
-        .catch(() => {})
-        .finally(() => setLoading(false));
+      refreshDms().finally(() => setLoading(false));
     }
-  }, []);
+  }, [refreshDms]);
 
-  const login = useCallback(async (pin: string) => {
+  const login = useCallback(async (dmId: string, pin: string) => {
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pin }),
+      body: JSON.stringify({ dm_id: dmId, pin }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: 'Login failed' }));
@@ -73,18 +86,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     const me = await meRes.json();
     setSession({ ...me, token: data.token });
-    setPinSet(true);
   }, []);
 
-  const setupPin = useCallback(async (pin: string) => {
-    const res = await fetch(`${API_BASE}/auth/setup`, {
+  const registerDm = useCallback(async (name: string, pin: string) => {
+    const res = await fetch(`${API_BASE}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pin }),
+      body: JSON.stringify({ name, pin }),
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: 'Setup failed' }));
-      throw new Error(err.detail || 'Setup failed');
+      const err = await res.json().catch(() => ({ detail: 'Registration failed' }));
+      throw new Error(err.detail || 'Registration failed');
     }
     const data = await res.json();
     sessionStorage.setItem('roleito:auth:token', data.token);
@@ -93,15 +105,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     const me = await meRes.json();
     setSession({ ...me, token: data.token });
-    setPinSet(true);
-  }, []);
+    refreshDms();
+  }, [refreshDms]);
 
   const changePin = useCallback(async (currentPin: string | undefined, newPin: string) => {
     const body: Record<string, string> = { new_pin: newPin };
     if (currentPin) body.current_pin = currentPin;
     const res = await fetch(`${API_BASE}/auth/change-pin`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${sessionStorage.getItem('roleito:auth:token')}`,
+      },
       body: JSON.stringify(body),
     });
     if (!res.ok) {
@@ -115,7 +130,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     const me = await meRes.json();
     setSession({ ...me, token: data.token });
-    setPinSet(true);
   }, []);
 
   const logout = useCallback(async () => {
@@ -135,7 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ session, loading, pinSet, login, setupPin, changePin, logout, getToken }}>
+    <AuthContext.Provider value={{ session, loading, dms, login, registerDm, changePin, logout, getToken, refreshDms }}>
       {children}
     </AuthContext.Provider>
   );

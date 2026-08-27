@@ -21,7 +21,7 @@ const campaignNav = [
 export default function Layout() {
   const location = useLocation();
   const { id: campaignId } = useParams<{ id: string }>();
-  const { logout } = useAuth();
+  const { logout, session } = useAuth();
   const isInCampaign = !!campaignId && location.pathname.startsWith(`/campaigns/${campaignId}`);
 
   if (!isInCampaign) {
@@ -43,6 +43,17 @@ export default function Layout() {
               Campaigns
             </Link>
           </nav>
+          <div className="ml-auto flex items-center gap-4">
+            {session?.dm_name && (
+              <span className="text-sm text-[var(--text-secondary)]">{session.dm_name}</span>
+            )}
+            <button
+              onClick={logout}
+              className="text-sm text-[var(--text-secondary)] hover:text-red-400 transition-colors"
+            >
+              Salir
+            </button>
+          </div>
         </header>
         <main className="flex-1 p-6">
           <Outlet />
@@ -91,13 +102,15 @@ export default function Layout() {
           ))}
         </nav>
 
-        <div className="px-4 py-3 border-t border-[var(--bg-tertiary)] flex items-center justify-between">
-          <p className="text-[10px] text-[var(--text-secondary)] opacity-60">DM Dashboard</p>
+        <div className="px-4 py-3 border-t border-[var(--bg-tertiary)]">
+          {session?.dm_name && (
+            <p className="text-xs text-[var(--text-secondary)] mb-2">{session.dm_name}</p>
+          )}
           <button
             onClick={logout}
-            className="text-[10px] text-[var(--text-secondary)] hover:text-red-400 transition-colors"
+            className="w-full text-left text-sm text-[var(--text-secondary)] hover:text-red-400 transition-colors"
           >
-            Salir
+            ← Salir
           </button>
         </div>
       </aside>

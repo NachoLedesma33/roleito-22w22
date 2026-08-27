@@ -1,34 +1,26 @@
-"""Auth module — PIN-based session management + DM role enforcement."""
+"""Auth module — Multi-DM PIN-based sessions backed by SQLite."""
 
 from __future__ import annotations
 
 import secrets
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
 from fastapi import Depends, Header, HTTPException, Request
+from sqlalchemy import select, delete
+from sqlalchemy.ext.asyncio import AsyncSession
 import bcrypt
 
-PIN_HASH_PATH = Path(__file__).parent.parent / "data" / "pin_hash.txt"
+from database import async_session
+from models import DM, AuthSession
+
 SESSION_TTL = 86400  # 24 hours
 MAX_FAILED_ATTEMPTS = 5
 LOCKOUT_SECONDS = 300  # 5 minutes
 
-
-@dataclass
-class Session:
-    token: str
-    role: str
-    created_at: float
-    last_seen: float
-    campaign_id: Optional[str] = None
-    failed_attempts: int = 0
-    locked_until: float = 0.0
-
-
-_store: dict[str, Session] = {}
 _failed_attempts: dict[str, int] = {}
 _locked_until: dict[str, float] = {}
 
@@ -39,21 +31,6 @@ def hash_pin(pin: str) -> str:
 
 def verify_pin(pin: str, hashed: str) -> bool:
     return bcrypt.checkpw(pin.encode(), hashed.encode())
-
-
-def get_pin_hash() -> Optional[str]:
-    if PIN_HASH_PATH.exists():
-        return PIN_HASH_PATH.read_text().strip()
-    return None
-
-
-def save_pin_hash(hashed: str):
-    PIN_HASH_PATH.parent.mkdir(parents=True, exist_ok=True)
-    PIN_HASH_PATH.write_text(hashed)
-
-
-def is_pin_set() -> bool:
-    return get_pin_hash() is not None
 
 
 def check_lockout(ip: str) -> bool:
@@ -78,33 +55,145 @@ def clear_failed_attempts(ip: str):
     _failed_attempts.pop(ip, None)
 
 
-def create_session(role: str = "dm", campaign_id: Optional[str] = None) -> Session:
+async def is_any_dm_set() -> bool:
+    async with async_session() as db:
+        result = await db.execute(select(DM).limit(1))
+        return result.scalar_one_or_none() is not None
+
+
+async def get_dm_by_id(dm_id: str) -> Optional[DM]:
+    async with async_session() as db:
+        result = await db.execute(select(DM).where(DM.id == dm_id))
+        return result.scalar_one_or_none()
+
+
+async def create_dm(name: str, pin: str) -> DM:
+    async with async_session() as db:
+        dm = DM(name=name, pin_hash=hash_pin(pin))
+        db.add(dm)
+        await db.commit()
+        await db.refresh(dm)
+        return dm
+
+
+async def list_dms() -> list[DM]:
+    async with async_session() as db:
+        result = await db.execute(select(DM).order_by(DM.created_at))
+        return list(result.scalars().all())
+
+
+async def change_dm_pin(dm_id: str, new_pin: str) -> bool:
+    async with async_session() as db:
+        result = await db.execute(select(DM).where(DM.id == dm_id))
+        dm = result.scalar_one_or_none()
+        if not dm:
+            return False
+        dm.pin_hash = hash_pin(new_pin)
+        await db.execute(delete(AuthSession).where(AuthSession.dm_id == dm_id))
+        await db.commit()
+        return True
+
+
+async def delete_dm(dm_id: str) -> bool:
+    async with async_session() as db:
+        result = await db.execute(select(DM).where(DM.id == dm_id))
+        dm = result.scalar_one_or_none()
+        if not dm:
+            return False
+        await db.execute(delete(AuthSession).where(AuthSession.dm_id == dm_id))
+        await db.delete(dm)
+        await db.commit()
+        return True
+
+
+async def verify_dm_pin(dm_id: str, pin: str) -> bool:
+    dm = await get_dm_by_id(dm_id)
+    if not dm:
+        return False
+    return verify_pin(pin, dm.pin_hash)
+
+
+async def create_session(dm_id: str, role: str = "dm", campaign_id: Optional[str] = None) -> AuthSession:
     token = secrets.token_urlsafe(32)
-    now = time.time()
-    session = Session(
-        token=token,
-        role=role,
-        created_at=now,
-        last_seen=now,
-        campaign_id=campaign_id,
-    )
-    _store[token] = session
-    return session
+    now = datetime.utcnow()
+    async with async_session() as db:
+        session = AuthSession(
+            token=token,
+            dm_id=dm_id,
+            role=role,
+            created_at=now,
+            last_seen=now,
+            campaign_id=campaign_id,
+        )
+        db.add(session)
+        await db.commit()
+        await db.refresh(session)
+        return session
 
 
-def get_session(token: str) -> Optional[Session]:
-    session = _store.get(token)
-    if not session:
-        return None
-    if time.time() - session.created_at > SESSION_TTL:
-        _store.pop(token, None)
-        return None
-    session.last_seen = time.time()
-    return session
+async def get_session(token: str) -> Optional[AuthSession]:
+    async with async_session() as db:
+        result = await db.execute(
+            select(AuthSession).where(AuthSession.token == token)
+        )
+        session = result.scalar_one_or_none()
+        if not session:
+            return None
+        if datetime.utcnow() - session.created_at > timedelta(seconds=SESSION_TTL):
+            await db.delete(session)
+            await db.commit()
+            return None
+        session.last_seen = datetime.utcnow()
+        await db.commit()
+        return session
 
 
-def delete_session(token: str):
-    _store.pop(token, None)
+async def delete_session(token: str):
+    async with async_session() as db:
+        await db.execute(delete(AuthSession).where(AuthSession.token == token))
+        await db.commit()
+
+
+async def invalidate_all_dm_sessions(dm_id: str):
+    async with async_session() as db:
+        await db.execute(delete(AuthSession).where(AuthSession.dm_id == dm_id))
+        await db.commit()
+
+
+async def get_active_sessions() -> list[dict]:
+    async with async_session() as db:
+        result = await db.execute(select(AuthSession))
+        sessions = result.scalars().all()
+        now = datetime.utcnow()
+        active = []
+        for s in sessions:
+            if now - s.created_at <= timedelta(seconds=SESSION_TTL):
+                dm_result = await db.execute(select(DM).where(DM.id == s.dm_id))
+                dm = dm_result.scalar_one_or_none()
+                active.append({
+                    "id": s.id,
+                    "token": s.token[:8] + "...",
+                    "dm_id": s.dm_id,
+                    "dm_name": dm.name if dm else "Unknown",
+                    "role": s.role,
+                    "created_at": s.created_at.isoformat(),
+                    "last_seen": s.last_seen.isoformat(),
+                })
+            else:
+                await db.delete(s)
+        await db.commit()
+        return active
+
+
+async def kill_session(session_id: str) -> bool:
+    async with async_session() as db:
+        result = await db.execute(select(AuthSession).where(AuthSession.id == session_id))
+        session = result.scalar_one_or_none()
+        if not session:
+            return False
+        await db.delete(session)
+        await db.commit()
+        return True
 
 
 def extract_token(authorization: Optional[str] = Header(None)) -> Optional[str]:
@@ -116,16 +205,16 @@ def extract_token(authorization: Optional[str] = Header(None)) -> Optional[str]:
     return None
 
 
-def get_current_session(token: Optional[str] = Depends(extract_token)) -> Session:
+async def get_current_session(token: Optional[str] = Depends(extract_token)) -> AuthSession:
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    session = get_session(token)
+    session = await get_session(token)
     if not session:
         raise HTTPException(status_code=401, detail="Invalid or expired session")
     return session
 
 
-def require_dm(session: Session = Depends(get_current_session)) -> Session:
+async def require_dm(session: AuthSession = Depends(get_current_session)) -> AuthSession:
     if session.role != "dm":
         raise HTTPException(status_code=403, detail="DM access required")
     return session

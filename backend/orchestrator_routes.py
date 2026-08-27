@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from core.agents.orchestrator import OrchestratorAgent, TaskType
-from auth import require_dm, Session as AuthSession
+from auth import require_dm, AuthSession
 
 router = APIRouter(prefix="/orchestrator", tags=["orchestrator"])
 
