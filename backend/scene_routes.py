@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from database import get_session
@@ -199,6 +200,7 @@ async def update_scene_characters(
             z=ch.z,
             visible=1 if ch.visible else 0,
             order=ch.order,
+            rotation=ch.rotation,
         )
         db.add(sc)
         created.append(sc)
@@ -228,3 +230,48 @@ async def get_scene_characters(
         select(SceneCharacter).where(SceneCharacter.scene_id == scene_id)
     )
     return chars_r.scalars().all()
+
+
+# ── Player Movement ────────────────────────────────────────
+
+
+class PlayerMoveRequest(BaseModel):
+    character_id: str
+    x: float
+    z: float
+    rotation: float = 0.0
+
+
+@router.patch("/campaigns/{campaign_id}/scenes/{scene_id}/move")
+async def player_move_character(
+    campaign_id: str,
+    scene_id: str,
+    data: PlayerMoveRequest,
+    db: AsyncSession = Depends(get_session),
+):
+    result = await db.execute(
+        select(Scene).where(
+            Scene.id == scene_id,
+            Scene.campaign_id == campaign_id,
+        )
+    )
+    if not result.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Scene not found")
+
+    sc_r = await db.execute(
+        select(SceneCharacter).where(
+            SceneCharacter.scene_id == scene_id,
+            SceneCharacter.entity_id == data.character_id,
+            SceneCharacter.entity_type == "character",
+        )
+    )
+    sc = sc_r.scalar_one_or_none()
+    if not sc:
+        raise HTTPException(status_code=404, detail="Character not on this scene")
+
+    sc.x = data.x
+    sc.z = data.z
+    sc.rotation = data.rotation
+    await db.commit()
+    await db.refresh(sc)
+    return SceneCharacterResponse.model_validate(sc)

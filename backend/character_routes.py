@@ -37,6 +37,7 @@ def apply_vida_response(char: Character) -> dict:
         "visual_config_json": char.visual_config_json or {},
         "knowledge_scope": char.knowledge_scope,
         "portrait_path": char.portrait_path,
+        "model_path": char.model_path,
         "vigor": char.vigor,
         "intelligence": char.intelligence,
         "dexterity": char.dexterity,
@@ -64,6 +65,7 @@ def apply_npc_vida_response(npc: NPC) -> dict:
         "knowledge_scope": npc.knowledge_scope,
         "visual_config_json": npc.visual_config_json or {},
         "portrait_path": npc.portrait_path,
+        "model_path": npc.model_path,
         "vigor": npc.vigor,
         "intelligence": npc.intelligence,
         "dexterity": npc.dexterity,
@@ -375,6 +377,75 @@ async def upload_npc_portrait(
         f.write(content)
 
     npc.portrait_path = file_path
+    await db.commit()
+    await db.refresh(npc)
+    return apply_npc_vida_response(npc)
+
+
+# ── 3D Model Upload ────────────────────────────────────────
+
+
+@router.post("/campaigns/{campaign_id}/characters/{character_id}/model")
+async def upload_character_model(
+    campaign_id: str,
+    character_id: str,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_session),
+):
+    result = await db.execute(
+        select(Character).where(
+            Character.id == character_id,
+            Character.campaign_id == campaign_id,
+        )
+    )
+    char = result.scalar_one_or_none()
+    if not char:
+        raise HTTPException(status_code=404, detail="Character not found")
+
+    filename = file.filename or "model.glb"
+    ext = os.path.splitext(filename)[1] or ".glb"
+    model_dir = os.path.join(ASSETS_DIR, campaign_id, "characters", character_id)
+    os.makedirs(model_dir, exist_ok=True)
+    file_path = os.path.join(model_dir, f"model{ext}")
+
+    content = await file.read()
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    char.model_path = file_path
+    await db.commit()
+    await db.refresh(char)
+    return apply_vida_response(char)
+
+
+@router.post("/campaigns/{campaign_id}/npcs/{npc_id}/model")
+async def upload_npc_model(
+    campaign_id: str,
+    npc_id: str,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_session),
+):
+    result = await db.execute(
+        select(NPC).where(
+            NPC.id == npc_id,
+            NPC.campaign_id == campaign_id,
+        )
+    )
+    npc = result.scalar_one_or_none()
+    if not npc:
+        raise HTTPException(status_code=404, detail="NPC not found")
+
+    filename = file.filename or "model.glb"
+    ext = os.path.splitext(filename)[1] or ".glb"
+    model_dir = os.path.join(ASSETS_DIR, campaign_id, "npcs", npc_id)
+    os.makedirs(model_dir, exist_ok=True)
+    file_path = os.path.join(model_dir, f"model{ext}")
+
+    content = await file.read()
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    npc.model_path = file_path
     await db.commit()
     await db.refresh(npc)
     return apply_npc_vida_response(npc)

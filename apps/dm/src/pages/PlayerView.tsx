@@ -1,5 +1,8 @@
 import { useEffect, useState, useRef, useCallback, Suspense } from 'react';
 import { useParams } from 'react-router-dom';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { useGLTF } from '@react-three/drei';
+import * as THREE from 'three';
 import SceneRenderer from '@/components/SceneRenderer';
 import DiceRoller from '@/components/DiceRoller';
 import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastContainer';
@@ -21,12 +24,15 @@ function staticUrl(path: string | null): string | null {
 
 interface PlayerToken {
   id: string;
+  entity_id: string;
   name: string;
   type: string;
   x: number;
   y: number;
   z: number;
+  rotation: number;
   portrait_path: string | null;
+  model_path: string | null;
 }
 
 interface PlayerCharOption {
@@ -35,6 +41,7 @@ interface PlayerCharOption {
   race: string;
   class_name: string;
   portrait_path: string | null;
+  model_path: string | null;
 }
 
 interface JoinData {
@@ -87,6 +94,23 @@ interface MyChar {
 }
 
 type Choice = { kind: 'character'; id: string } | { kind: 'spectator' } | null;
+
+function MiniModelPreview({ url }: { url: string }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const { scene } = useGLTF(url);
+
+  useFrame(({ clock }) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y = clock.elapsedTime * 0.8;
+    }
+  });
+
+  return (
+    <group ref={groupRef} position={[0, -0.3, 0]} scale={[0.8, 0.8, 0.8]}>
+      <primitive object={scene.clone()} />
+    </group>
+  );
+}
 
 function attrSymbol(v: string): string {
   if (v === '+') return '+';
@@ -142,11 +166,16 @@ export default function PlayerView() {
   const [notesSaving, setNotesSaving] = useState(false);
   const [showDiceRoller, setShowDiceRoller] = useState(false);
   const [toastQueue, setToastQueue] = useState<ToastRoll[]>([]);
+  const [myPosition, setMyPosition] = useState<{ x: number; z: number; rotation: number } | null>(null);
+  const myCharRef = useRef<MyChar | null>(null);
+  const mySceneCharRef = useRef<PlayerToken | null>(null);
 
   const lastRevRef = useRef<string>('');
   const choiceRef = useRef<Choice>(null);
   const sceneIdRef = useRef<string | null>(null);
   const lastRollTsRef = useRef<number>(0);
+  const dataRef = useRef<typeof data>(null);
+  const myPositionRef = useRef<{ x: number; z: number; rotation: number } | null>(null);
 
   const fetchSnapshot = useCallback(async (): Promise<JoinData> => {
     const res = await fetch(`${API_BASE}/campaigns/invite/${code}`);
@@ -287,6 +316,113 @@ export default function PlayerView() {
       clearTimeout(timer);
     };
   }, [code, data]);
+
+  // Keep refs in sync
+  useEffect(() => { myCharRef.current = myChar; }, [myChar]);
+  useEffect(() => { dataRef.current = data; }, [data]);
+  useEffect(() => { myPositionRef.current = myPosition; }, [myPosition]);
+
+  useEffect(() => {
+    if (!data || !myChar || choice?.kind !== 'character') return;
+    const sceneChar = data.characters.find(
+      (c) => c.type === 'character' && data.player_characters.some((p) => p.id === c.entity_id && p.id === choice.id)
+    );
+    mySceneCharRef.current = sceneChar ?? null;
+    if (sceneChar && myPosition === null) {
+      setMyPosition({ x: sceneChar.x, z: sceneChar.z, rotation: sceneChar.rotation ?? 0 });
+    }
+  }, [data, myChar, choice, myPosition]);
+
+  // WASD/QE keyboard movement for player's own character
+  useEffect(() => {
+    if (choice?.kind !== 'character') return;
+
+    const MOVE_SPEED = 0.15;
+    const ROTATE_SPEED = Math.PI / 8;
+    const keysPressed = new Set<string>();
+    let moveTimer: number;
+
+    const applyMovement = () => {
+      const currentData = dataRef.current;
+      const currentPos = myPositionRef.current;
+      if (!currentData || choice.kind !== 'character') return;
+
+      const sc = currentData.characters.find(
+        (c: any) => c.type === 'character' && currentData.player_characters.some((p: any) => p.id === c.entity_id && p.id === choice.id)
+      );
+      if (!sc) return;
+
+      const pos = currentPos ?? { x: sc.x, z: sc.z, rotation: sc.rotation ?? 0 };
+      let { x, z, rotation } = pos;
+      let moved = false;
+
+      if (keysPressed.has('w') || keysPressed.has('arrowup')) {
+        x += Math.sin(rotation) * -MOVE_SPEED;
+        z += Math.cos(rotation) * -MOVE_SPEED;
+        moved = true;
+      }
+      if (keysPressed.has('s') || keysPressed.has('arrowdown')) {
+        x += Math.sin(rotation) * MOVE_SPEED;
+        z += Math.cos(rotation) * MOVE_SPEED;
+        moved = true;
+      }
+      if (keysPressed.has('a') || keysPressed.has('arrowleft')) {
+        x += Math.sin(rotation - Math.PI / 2) * -MOVE_SPEED;
+        z += Math.cos(rotation - Math.PI / 2) * -MOVE_SPEED;
+        moved = true;
+      }
+      if (keysPressed.has('d') || keysPressed.has('arrowright')) {
+        x += Math.sin(rotation + Math.PI / 2) * -MOVE_SPEED;
+        z += Math.cos(rotation + Math.PI / 2) * -MOVE_SPEED;
+        moved = true;
+      }
+      if (keysPressed.has('q')) {
+        rotation -= ROTATE_SPEED;
+        moved = true;
+      }
+      if (keysPressed.has('e')) {
+        rotation += ROTATE_SPEED;
+        moved = true;
+      }
+
+      if (moved) {
+        myPositionRef.current = { x, z, rotation };
+        setMyPosition({ x, z, rotation });
+        api.scenes.moveCharacter(currentData.campaign_id, currentData.scene_id!, {
+          character_id: choice.id,
+          x, z, rotation,
+        }).catch(() => {});
+      }
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      const key = e.key.toLowerCase();
+      if (['w', 'a', 's', 'd', 'q', 'e', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
+        e.preventDefault();
+        keysPressed.add(key);
+      }
+    };
+
+    const onKeyUp = (e: KeyboardEvent) => {
+      keysPressed.delete(e.key.toLowerCase());
+    };
+
+    const gameLoop = () => {
+      if (keysPressed.size > 0) applyMovement();
+      moveTimer = window.setTimeout(gameLoop, 50);
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    moveTimer = window.setTimeout(gameLoop, 50);
+
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      clearTimeout(moveTimer);
+    };
+  }, [choice?.kind]);
 
   const chooseCharacter = useCallback(
     (id: string) => {
@@ -477,19 +613,58 @@ export default function PlayerView() {
           >
             <SceneRenderer
               backgroundUrl={staticUrl(data.background_path)!}
-              characters={data.characters.map((c) => ({
-                id: c.id,
-                sceneCharId: c.id,
-                name: c.name,
-                type: c.type,
-                x: c.x,
-                y: c.y,
-                z: c.z,
-                visible: true,
-                portraitUrl: staticUrl(c.portrait_path),
-              }))}
+              characters={data.characters.map((c) => {
+                const mySceneCharId = choice?.kind === 'character'
+                  ? data.characters.find(
+                      (ch) => ch.type === 'character' && data.player_characters.some((p) => p.id === ch.entity_id && p.id === choice.id)
+                    )?.id
+                  : null;
+                const isMyChar = c.id === mySceneCharId;
+                const pos = isMyChar && myPosition ? myPosition : { x: c.x, z: c.z, rotation: c.rotation ?? 0 };
+                return {
+                  id: c.id,
+                  sceneCharId: c.id,
+                  name: c.name,
+                  type: c.type,
+                  x: pos.x,
+                  y: c.y,
+                  z: pos.z,
+                  visible: true,
+                  portraitUrl: staticUrl(c.portrait_path),
+                  modelUrl: staticUrl(c.model_path),
+                  rotation: pos.rotation,
+                };
+              })}
               lighting={data.lighting}
-              readOnly
+              selectedTokenId={
+                choice?.kind === 'character'
+                  ? data.characters.find(
+                      (ch) => ch.type === 'character' && data.player_characters.some((p) => p.id === ch.entity_id && p.id === choice.id)
+                    )?.id ?? null
+                  : null
+              }
+              movableEntityIds={
+                choice?.kind === 'character'
+                  ? (() => {
+                      const sc = data.characters.find(
+                        (ch) => ch.type === 'character' && data.player_characters.some((p) => p.id === ch.entity_id && p.id === choice.id)
+                      );
+                      return sc ? [sc.id] : [];
+                    })()
+                  : undefined
+              }
+              onTokenDrop={
+                choice?.kind === 'character'
+                  ? (_sceneCharId, x, z) => {
+                      api.scenes.moveCharacter(data.campaign_id, data.scene_id!, {
+                        character_id: choice.id,
+                        x, z,
+                        rotation: myPosition?.rotation ?? 0,
+                      }).catch(() => {});
+                      setMyPosition((prev) => ({ x, z, rotation: prev?.rotation ?? 0 }));
+                    }
+                  : undefined
+              }
             />
           </Suspense>
         ) : (
@@ -699,7 +874,19 @@ export default function PlayerView() {
                     onClick={() => chooseCharacter(p.id)}
                     className="flex items-center gap-2.5 p-3 rounded-lg border border-gray-700/60 hover:border-emerald-500/70 hover:bg-emerald-950/30 transition-colors text-left"
                   >
-                    {p.portrait_path ? (
+                    {p.model_path ? (
+                      <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-600 bg-gray-800 shrink-0">
+                        <Suspense fallback={
+                          <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500">3D</div>
+                        }>
+                          <Canvas camera={{ position: [0, 0.5, 2], fov: 35 }}>
+                            <ambientLight intensity={1.2} />
+                            <directionalLight position={[2, 2, 1]} intensity={1.2} />
+                            <MiniModelPreview url={staticUrl(p.model_path)!} />
+                          </Canvas>
+                        </Suspense>
+                      </div>
+                    ) : p.portrait_path ? (
                       <img
                         src={staticUrl(p.portrait_path)!}
                         alt={p.name}

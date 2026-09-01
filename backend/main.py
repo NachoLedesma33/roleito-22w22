@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from database import init_db, seed_demo
+from database import init_db
 from core.events.bus import get_event_bus
 from core.events.handlers import register_default_handlers
 from routes import campaigns_router
@@ -45,7 +45,6 @@ logger = logging.getLogger("roleito")
 async def lifespan(_app: FastAPI):
     logger.info("Starting Roleito API...")
     await init_db()
-    await seed_demo()
     register_default_handlers(get_event_bus())
     logger.info("Database initialized")
     yield

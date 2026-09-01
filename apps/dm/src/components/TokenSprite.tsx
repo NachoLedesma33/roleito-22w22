@@ -46,7 +46,7 @@ export default function TokenSprite({
 
   useFrame(({ clock }) => {
     if (groupRef.current && !isDragging) {
-      groupRef.current.position.y = position[1] + Math.sin(clock.elapsedTime * 2 + position[0]) * 0.05;
+      groupRef.current.position.y = position[1] + 0.6 + Math.sin(clock.elapsedTime * 2 + position[0]) * 0.04;
     }
   });
 

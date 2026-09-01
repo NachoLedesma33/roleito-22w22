@@ -1,8 +1,28 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, Suspense } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { useGLTF, OrbitControls } from '@react-three/drei';
+import * as THREE from 'three';
 import { api } from '@/lib/api';
 import type { VidaAttr } from '@/lib/api';
 import { VidaAttrsInput, NumberInput } from '@/components/VidaInputs';
+
+function ModelPreview({ url }: { url: string }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const { scene } = useGLTF(url);
+
+  useFrame(({ clock }) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y = clock.elapsedTime * 0.5;
+    }
+  });
+
+  return (
+    <group ref={groupRef}>
+      <primitive object={scene.clone()} />
+    </group>
+  );
+}
 
 export default function CharacterForm() {
   const { id: campaignId, characterId } = useParams<{ id: string; characterId: string }>();
@@ -24,6 +44,9 @@ export default function CharacterForm() {
   const [defense, setDefense] = useState(5);
   const [portraitFile, setPortraitFile] = useState<File | null>(null);
   const [portraitPreview, setPortraitPreview] = useState<string | null>(null);
+  const [modelFile, setModelFile] = useState<File | null>(null);
+  const [modelPreviewUrl, setModelPreviewUrl] = useState<string | null>(null);
+  const modelFileInput = useRef<HTMLInputElement>(null);
 
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(!!isEdit);
@@ -79,11 +102,17 @@ export default function CharacterForm() {
         if (portraitFile) {
           await api.characters.uploadPortrait(campaignId, characterId!, portraitFile);
         }
+        if (modelFile) {
+          await api.characters.uploadModel(campaignId, characterId!, modelFile);
+        }
         navigate(`/campaigns/${campaignId}/characters/${characterId}`);
       } else {
         const char = await api.characters.create(campaignId, data);
         if (portraitFile) {
           await api.characters.uploadPortrait(campaignId, char.id, portraitFile);
+        }
+        if (modelFile) {
+          await api.characters.uploadModel(campaignId, char.id, modelFile);
         }
         navigate(`/campaigns/${campaignId}/characters/${char.id}`);
       }
@@ -194,6 +223,59 @@ export default function CharacterForm() {
             <div className="text-xs text-[var(--text-secondary)]">
               <p>{portraitFile ? portraitFile.name : 'No file selected'}</p>
               <p className="mt-1">Optional. Upload a portrait for this character.</p>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm text-[var(--text-secondary)] mb-1">3D Model (.glb)</label>
+          <div className="flex items-start gap-4">
+            <button
+              type="button"
+              onClick={() => modelFileInput.current?.click()}
+              className="w-20 h-20 rounded-lg bg-[var(--bg-tertiary)] flex items-center justify-center overflow-hidden shrink-0 border-2 border-dashed border-[var(--bg-tertiary)] hover:border-[var(--accent)] transition-all"
+            >
+              {modelPreviewUrl ? (
+                <div className="w-full h-full">
+                  <Suspense fallback={<div className="w-full h-full flex items-center justify-center text-[10px] text-[var(--text-secondary)]">Loading...</div>}>
+                    <Canvas camera={{ position: [0, 1, 2.5], fov: 40 }}>
+                      <ambientLight intensity={1.2} />
+                      <directionalLight position={[2, 3, 1]} intensity={1.5} />
+                      <ModelPreview url={modelPreviewUrl} />
+                      <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={0} />
+                    </Canvas>
+                  </Suspense>
+                </div>
+              ) : (
+                <span className="text-2xl">🧊</span>
+              )}
+            </button>
+            <input
+              ref={modelFileInput}
+              type="file"
+              accept=".glb,.gltf"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setModelFile(file);
+                  setModelPreviewUrl(URL.createObjectURL(file));
+                }
+                e.target.value = '';
+              }}
+            />
+            <div className="text-xs text-[var(--text-secondary)]">
+              <p>{modelFile ? modelFile.name : 'No file selected'}</p>
+              <p className="mt-1">Optional. Upload a .glb 3D model. If set, renders as 3D token in scene.</p>
+              {modelPreviewUrl && (
+                <button
+                  type="button"
+                  onClick={() => { setModelFile(null); setModelPreviewUrl(null); }}
+                  className="mt-1 text-red-400 hover:text-red-300"
+                >
+                  Remove model
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -1,8 +1,9 @@
 import { Suspense, useMemo, useRef, useCallback, useEffect } from 'react';
-import { Canvas, useThree, useFrame } from '@react-three/fiber';
+import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import TokenSprite from './TokenSprite';
+import TokenModel from './TokenModel';
 
 interface SceneEntity {
   id: string;
@@ -14,6 +15,8 @@ interface SceneEntity {
   z: number;
   visible: boolean;
   portraitUrl?: string | null;
+  modelUrl?: string | null;
+  rotation?: number;
 }
 
 interface SceneRendererProps {
@@ -22,6 +25,7 @@ interface SceneRendererProps {
   lighting?: string;
   selectedTokenId?: string | null;
   readOnly?: boolean;
+  movableEntityIds?: string[];
   onTokenClick?: (sceneCharId: string) => void;
   onTokenDrop?: (sceneCharId: string, x: number, z: number) => void;
   onTokenContextMenu?: (sceneCharId: string, clientX: number, clientY: number) => void;
@@ -57,37 +61,42 @@ function SceneLighting({ mode }: { mode: string }) {
     case 'dark':
       return (
         <>
-          <ambientLight intensity={0.15} />
-          <pointLight position={[0, 5, 0]} intensity={0.4} color="#ff9944" />
+          <ambientLight intensity={0.3} />
+          <pointLight position={[0, 5, 0]} intensity={0.6} color="#ff9944" />
+          <directionalLight position={[3, 8, 3]} intensity={0.5} />
         </>
       );
     case 'dim':
       return (
         <>
-          <ambientLight intensity={0.6} />
-          <pointLight position={[0, 5, 0]} intensity={1.0} color="#ffcc77" />
+          <ambientLight intensity={0.7} />
+          <pointLight position={[0, 5, 0]} intensity={1.2} color="#ffcc77" />
+          <directionalLight position={[3, 8, 3]} intensity={0.8} />
         </>
       );
     case 'bright':
       return (
         <>
-          <ambientLight intensity={1.2} />
-          <directionalLight position={[5, 10, 5]} intensity={1.5} />
+          <ambientLight intensity={1.5} />
+          <directionalLight position={[5, 10, 5]} intensity={2.0} />
+          <directionalLight position={[-5, 8, -3]} intensity={0.8} />
         </>
       );
     case 'torchlight':
       return (
         <>
-          <ambientLight intensity={0.5} />
-          <pointLight position={[-3, 3, 0]} intensity={1.2} color="#ff6600" distance={14} />
-          <pointLight position={[3, 3, 0]} intensity={1.2} color="#ff6600" distance={14} />
+          <ambientLight intensity={0.6} />
+          <pointLight position={[-3, 3, 0]} intensity={1.5} color="#ff6600" distance={14} />
+          <pointLight position={[3, 3, 0]} intensity={1.5} color="#ff6600" distance={14} />
+          <pointLight position={[0, 4, -2]} intensity={0.8} color="#ffaa44" distance={10} />
         </>
       );
     default:
       return (
         <>
-          <ambientLight intensity={1.0} />
-          <directionalLight position={[5, 10, 5]} intensity={1.2} />
+          <ambientLight intensity={1.2} />
+          <directionalLight position={[5, 10, 5]} intensity={1.5} />
+          <directionalLight position={[-3, 6, -3]} intensity={0.6} />
         </>
       );
   }
@@ -271,11 +280,11 @@ function DraggableToken({
 }) {
   const groupRef = useRef<THREE.Group>(null);
 
-  useFrame(() => {
+  useEffect(() => {
     if (groupRef.current) {
       groupRef.current.userData.sceneCharId = entity.sceneCharId;
     }
-  });
+  }, [entity.sceneCharId]);
 
   const handlePointerDown = useCallback(
     (e: THREE.Event) => {
@@ -301,19 +310,36 @@ function DraggableToken({
 
   return (
     <group ref={groupRef} position={[entity.x, entity.y, entity.z]}>
-      <TokenSprite
-        id={entity.sceneCharId}
-        name={entity.name}
-        type={entity.type}
-        position={[0, 0, 0]}
-        portraitUrl={entity.portraitUrl}
-        isSelected={isSelected}
-        onPointerDown={handlePointerDown}
-        onContextMenu={(e) => {
-          const domEvent = e as unknown as PointerEvent;
-          onContextMenu?.(entity.sceneCharId, domEvent.clientX, domEvent.clientY);
-        }}
-      />
+      {entity.modelUrl ? (
+        <TokenModel
+          id={entity.sceneCharId}
+          name={entity.name}
+          type={entity.type}
+          position={[0, 0, 0]}
+          modelUrl={entity.modelUrl}
+          rotation={entity.rotation ?? 0}
+          isSelected={isSelected}
+          onPointerDown={handlePointerDown}
+          onContextMenu={(e) => {
+            const domEvent = e as unknown as PointerEvent;
+            onContextMenu?.(entity.sceneCharId, domEvent.clientX, domEvent.clientY);
+          }}
+        />
+      ) : (
+        <TokenSprite
+          id={entity.sceneCharId}
+          name={entity.name}
+          type={entity.type}
+          position={[0, 0, 0]}
+          portraitUrl={entity.portraitUrl}
+          isSelected={isSelected}
+          onPointerDown={handlePointerDown}
+          onContextMenu={(e) => {
+            const domEvent = e as unknown as PointerEvent;
+            onContextMenu?.(entity.sceneCharId, domEvent.clientX, domEvent.clientY);
+          }}
+        />
+      )}
     </group>
   );
 }
@@ -324,11 +350,13 @@ export default function SceneRenderer({
   lighting = 'neutral',
   selectedTokenId,
   readOnly = false,
+  movableEntityIds,
   onTokenClick,
   onTokenDrop,
   onTokenContextMenu,
 }: SceneRendererProps) {
   const visibleChars = useMemo(() => characters.filter((c) => c.visible), [characters]);
+  const hasDrag = !readOnly || (movableEntityIds && movableEntityIds.length > 0);
 
   return (
     <Canvas
@@ -340,16 +368,21 @@ export default function SceneRenderer({
       <Suspense fallback={null}>
         <SceneBackground url={backgroundUrl} />
       </Suspense>
-      {!readOnly && <DragController onTokenDrop={onTokenDrop} />}
-      {visibleChars.map((ch) => (
-        <DraggableToken
-          key={ch.sceneCharId}
-          entity={ch}
-          isSelected={!readOnly && selectedTokenId === ch.sceneCharId}
-          onClick={readOnly ? undefined : onTokenClick}
-          onContextMenu={readOnly ? undefined : onTokenContextMenu}
-        />
-      ))}
+      {hasDrag && <DragController onTokenDrop={onTokenDrop} />}
+      {visibleChars.map((ch) => {
+        const isMovable = movableEntityIds
+          ? movableEntityIds.includes(ch.sceneCharId)
+          : !readOnly;
+        return (
+          <DraggableToken
+            key={ch.sceneCharId}
+            entity={ch}
+            isSelected={isMovable && selectedTokenId === ch.sceneCharId}
+            onClick={isMovable ? onTokenClick : undefined}
+            onContextMenu={isMovable ? onTokenContextMenu : undefined}
+          />
+        );
+      })}
       <OrbitControls
         makeDefault
         enablePan={true}

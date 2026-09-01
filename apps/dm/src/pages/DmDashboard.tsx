@@ -774,6 +774,8 @@ export default function DmDashboard() {
                     z: sc.z,
                     visible: !!sc.visible,
                     portraitUrl: staticUrl(ent?.portrait_path ?? null),
+                    modelUrl: staticUrl(ent?.model_path ?? null),
+                    rotation: sc.rotation ?? 0,
                   };
                 })}
                 lighting={activeScene.lighting}

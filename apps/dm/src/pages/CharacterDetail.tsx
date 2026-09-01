@@ -1,5 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, Suspense } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { useGLTF, OrbitControls } from '@react-three/drei';
+import * as THREE from 'three';
 import { api, Character } from '@/lib/api';
 import type { VidaAttr } from '@/lib/api';
 import { VidaBar, VidaAttrs, VidaDerived } from '@/components/VidaDisplay';
@@ -15,6 +18,23 @@ function portraitUrl(path: string | null): string | null {
   return `http://localhost:8000/api/static/${path.replace(/\\/g, '/').split('/assets/')[1]}`;
 }
 
+function ModelPreview({ url }: { url: string }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const { scene } = useGLTF(url);
+
+  useFrame(({ clock }) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y = clock.elapsedTime * 0.5;
+    }
+  });
+
+  return (
+    <group ref={groupRef}>
+      <primitive object={scene.clone()} />
+    </group>
+  );
+}
+
 export default function CharacterDetail() {
   const { id: campaignId, characterId } = useParams<{ id: string; characterId: string }>();
   const navigate = useNavigate();
@@ -22,6 +42,7 @@ export default function CharacterDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const modelFileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!campaignId || !characterId) return;
@@ -49,11 +70,24 @@ export default function CharacterDetail() {
     e.target.value = '';
   };
 
+  const handleModelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !campaignId || !characterId) return;
+    try {
+      const updated = await api.characters.uploadModel(campaignId, characterId, file);
+      setCharacter(updated);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Upload failed');
+    }
+    e.target.value = '';
+  };
+
   if (loading) return <p className="text-[var(--text-secondary)]">Loading...</p>;
   if (error) return <p className="text-red-400">Error: {error}</p>;
   if (!character) return <p className="text-[var(--text-secondary)]">Character not found</p>;
 
   const pUrl = portraitUrl(character.portrait_path);
+  const mUrl = portraitUrl(character.model_path);
 
   return (
     <div className="max-w-2xl">
@@ -121,6 +155,36 @@ export default function CharacterDetail() {
       {character.description && (
         <p className="text-[var(--text-secondary)] mb-6">{character.description}</p>
       )}
+
+      {/* 3D Model Section */}
+      <div className="mb-6 border border-[var(--bg-tertiary)] rounded-lg p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold">3D Model</h2>
+          <button
+            onClick={() => modelFileInput.current?.click()}
+            className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+          >
+            {mUrl ? 'Replace .glb' : 'Upload .glb'}
+          </button>
+          <input ref={modelFileInput} type="file" accept=".glb,.gltf" className="hidden" onChange={handleModelUpload} />
+        </div>
+        {mUrl ? (
+          <div className="w-full h-48 rounded bg-[var(--bg-secondary)]">
+            <Suspense fallback={<div className="w-full h-full flex items-center justify-center text-[var(--text-secondary)] text-sm">Loading 3D model...</div>}>
+              <Canvas camera={{ position: [0, 1.2, 3], fov: 40 }}>
+                <ambientLight intensity={1.2} />
+                <directionalLight position={[2, 3, 1]} intensity={1.5} />
+                <ModelPreview url={mUrl} />
+                <OrbitControls enableZoom={true} enablePan={false} autoRotate autoRotateSpeed={2} />
+              </Canvas>
+            </Suspense>
+          </div>
+        ) : (
+          <div className="w-full h-48 rounded bg-[var(--bg-secondary)] flex items-center justify-center text-[var(--text-secondary)] text-sm">
+            No 3D model uploaded. Token will render as 2D sprite in scene.
+          </div>
+        )}
+      </div>
 
       <div className="space-y-6">
         <section>

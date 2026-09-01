@@ -70,6 +70,7 @@ async def compute_player_revision(db: AsyncSession, campaign_id: str) -> str:
             SceneCharacter.id, SceneCharacter.scene_id, SceneCharacter.entity_type,
             SceneCharacter.entity_id, SceneCharacter.x, SceneCharacter.y,
             SceneCharacter.z, SceneCharacter.visible, SceneCharacter.order,
+            SceneCharacter.rotation,
         )
         .join(Scene, Scene.id == SceneCharacter.scene_id)
         .where(Scene.campaign_id == campaign_id)
@@ -582,6 +583,7 @@ async def join_by_invite_code(
             "race": c.race,
             "class_name": c.class_,
             "portrait_path": c.portrait_path,
+            "model_path": c.model_path,
         }
         for c in all_chars
         if c.type == "player"
@@ -606,12 +608,15 @@ async def join_by_invite_code(
             if ent:
                 scene_chars.append({
                     "id": sc.id,
+                    "entity_id": sc.entity_id,
                     "name": ent.name,
                     "type": "character" if isinstance(ent, Character) else "npc",
                     "x": sc.x,
                     "y": sc.y,
                     "z": sc.z,
+                    "rotation": getattr(sc, 'rotation', 0.0),
                     "portrait_path": ent.portrait_path,
+                    "model_path": getattr(ent, 'model_path', None),
                 })
 
     return {

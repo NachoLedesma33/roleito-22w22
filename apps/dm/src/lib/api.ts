@@ -86,6 +86,7 @@ export interface Character {
   visual_config_json: Record<string, unknown>;
   knowledge_scope: string;
   portrait_path: string | null;
+  model_path: string | null;
   vigor: VidaAttr;
   intelligence: VidaAttr;
   dexterity: VidaAttr;
@@ -128,6 +129,7 @@ export interface NPC {
   knowledge_scope: string;
   visual_config_json: Record<string, unknown>;
   portrait_path: string | null;
+  model_path: string | null;
   vigor: VidaAttr;
   intelligence: VidaAttr;
   dexterity: VidaAttr;
@@ -340,6 +342,7 @@ export interface SceneCharacter {
   z: number;
   visible: boolean;
   order: number;
+  rotation: number;
 }
 
 type EventCreateFields = {
@@ -439,6 +442,17 @@ export const api = {
       if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
       return res.json() as Promise<Character>;
     },
+    uploadModel: async (campaignId: string, characterId: string, file: File) => {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${API_BASE}/campaigns/${campaignId}/characters/${characterId}/model`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: form,
+      });
+      if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+      return res.json() as Promise<Character>;
+    },
   },
 
   npcs: {
@@ -454,6 +468,17 @@ export const api = {
       const form = new FormData();
       form.append('file', file);
       const res = await fetch(`${API_BASE}/campaigns/${campaignId}/npcs/${npcId}/portrait`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: form,
+      });
+      if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+      return res.json() as Promise<NPC>;
+    },
+    uploadModel: async (campaignId: string, npcId: string, file: File) => {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${API_BASE}/campaigns/${campaignId}/npcs/${npcId}/model`, {
         method: 'POST',
         headers: authHeaders(),
         body: form,
@@ -593,10 +618,15 @@ export const api = {
     },
     getCharacters: (campaignId: string, sceneId: string) =>
       request<SceneCharacter[]>(`/campaigns/${campaignId}/scenes/${sceneId}/characters`),
-    updateCharacters: (campaignId: string, sceneId: string, characters: { entity_type: string; entity_id: string; x: number; y: number; z: number; visible: boolean; order: number }[]) =>
+    updateCharacters: (campaignId: string, sceneId: string, characters: { entity_type: string; entity_id: string; x: number; y: number; z: number; visible: boolean; order: number; rotation?: number }[]) =>
       request<SceneCharacter[]>(`/campaigns/${campaignId}/scenes/${sceneId}/characters`, {
         method: 'PUT',
         body: JSON.stringify(characters),
+      }),
+    moveCharacter: (campaignId: string, sceneId: string, data: { character_id: string; x: number; z: number; rotation: number }) =>
+      request<SceneCharacter>(`/campaigns/${campaignId}/scenes/${sceneId}/move`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
       }),
   },
 

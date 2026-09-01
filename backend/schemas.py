@@ -115,6 +115,7 @@ class CharacterResponse(BaseModel):
     visual_config_json: dict
     knowledge_scope: str
     portrait_path: Optional[str] = None
+    model_path: Optional[str] = None
     vigor: VidaAttr
     intelligence: VidaAttr
     dexterity: VidaAttr
@@ -185,6 +186,7 @@ class NPCResponse(BaseModel):
     knowledge_scope: str
     visual_config_json: dict
     portrait_path: Optional[str] = None
+    model_path: Optional[str] = None
     vigor: VidaAttr
     intelligence: VidaAttr
     dexterity: VidaAttr
@@ -358,6 +360,7 @@ class SceneCharacterPosition(BaseModel):
     z: float = 0.0
     visible: bool = True
     order: int = 0
+    rotation: float = 0.0
 
 
 class SceneResponse(BaseModel):
@@ -390,6 +393,7 @@ class SceneCharacterResponse(BaseModel):
     z: float
     visible: bool
     order: int
+    rotation: float = 0.0
 
     class Config:
         from_attributes = True

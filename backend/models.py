@@ -62,6 +62,7 @@ class Character(Base):
     visual_config_json = Column(JSON, default=dict)
     knowledge_scope = Column(String, default="PARTY_KNOWN")
     portrait_path = Column(String, nullable=True)
+    model_path = Column(String, nullable=True)
 
     vigor = Column(String, default="/")
     intelligence = Column(String, default="/")
@@ -94,6 +95,7 @@ class NPC(Base):
     knowledge_scope = Column(String, default="PARTY_KNOWN")
     visual_config_json = Column(JSON, default=dict)
     portrait_path = Column(String, nullable=True)
+    model_path = Column(String, nullable=True)
 
     vigor = Column(String, default="/")
     intelligence = Column(String, default="/")
@@ -224,6 +226,7 @@ class SceneCharacter(Base):
     z = Column(Float, default=0.0)
     visible = Column(Integer, default=1)
     order = Column(Integer, default=0)
+    rotation = Column(Float, default=0.0)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 

@@ -31,6 +31,9 @@ MIGRATIONS = [
     ("npcs", "updated_at", "ALTER TABLE npcs ADD COLUMN updated_at TIMESTAMP"),
     ("scene_characters", "updated_at", "ALTER TABLE scene_characters ADD COLUMN updated_at TIMESTAMP"),
     ("characters", "player_notes", "ALTER TABLE characters ADD COLUMN player_notes TEXT DEFAULT ''"),
+    ("characters", "model_path", "ALTER TABLE characters ADD COLUMN model_path TEXT"),
+    ("npcs", "model_path", "ALTER TABLE npcs ADD COLUMN model_path TEXT"),
+    ("scene_characters", "rotation", "ALTER TABLE scene_characters ADD COLUMN rotation FLOAT DEFAULT 0.0"),
 ]
 
 VIDA_ATTRS = ["vigor", "intelligence", "dexterity", "cunning"]
@@ -66,6 +69,8 @@ async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     await _migrate()
+    await seed_demo()
+    await seed_demo_2()
 
 
 async def seed_demo():
@@ -73,7 +78,7 @@ async def seed_demo():
     import shutil
 
     async with async_session() as session:
-        result = await session.execute(text("SELECT COUNT(*) FROM campaigns"))
+        result = await session.execute(text("SELECT COUNT(*) FROM campaigns WHERE name LIKE :pattern"), {"pattern": "%Taberna del Grifo%"})
         if result.scalar() > 0:
             return
 
@@ -164,6 +169,56 @@ async def seed_demo():
 
         await session.commit()
         logger.info(f"Demo campaign seeded: {campaign.id}")
+
+
+async def seed_demo_2():
+    from models import Campaign, Scene
+    import shutil
+
+    async with async_session() as session:
+        result = await session.execute(
+            text("SELECT COUNT(*) FROM campaigns WHERE name LIKE :pattern"),
+            {"pattern": "%Sandbox de Pruebas%"},
+        )
+        if result.scalar() > 0:
+            return
+
+        assets = Path(__file__).parent.parent / "tests" / "assets"
+        maps_dir = assets / "maps"
+        data_dir = Path(__file__).parent.parent / "data"
+
+        campaign = Campaign(
+            name="Demo 2 — Sandbox de Pruebas",
+            description="Campaña DEMO vacía para probar creación de personajes y modelos 3D.",
+            invite_code="DEMO2025",
+        )
+        session.add(campaign)
+        await session.flush()
+
+        bg_map = {
+            "Taberna del Grifo Helado": "tavern-1536.jpg",
+            "Bosque Salvaje": "forest-wilderness-1024.jpg",
+            "Cripta Antigua": "dungeon-crypt-1024.jpg",
+        }
+        for i, (name, filename) in enumerate(bg_map.items()):
+            scene = Scene(
+                campaign_id=campaign.id,
+                name=name,
+                status="active" if i == 0 else "inactive",
+            )
+            session.add(scene)
+            await session.flush()
+
+            src = maps_dir / filename
+            scene_assets_dir = data_dir / "assets" / campaign.id / "scenes" / scene.id
+            scene_assets_dir.mkdir(parents=True, exist_ok=True)
+            dst = scene_assets_dir / f"background{Path(filename).suffix}"
+            if src.exists():
+                shutil.copy2(src, dst)
+                scene.background_path = str(dst)
+
+        await session.commit()
+        logger.info(f"Demo 2 campaign seeded: {campaign.id}")
 
 
 async def get_session() -> AsyncSession:
