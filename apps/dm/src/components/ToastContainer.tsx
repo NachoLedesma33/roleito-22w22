@@ -112,7 +112,7 @@ export default function ToastContainer({ toasts, onDismiss }: ToastContainerProp
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed top-16 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+    <div className="fixed top-16 right-4 sm:right-4 left-4 sm:left-auto z-50 flex flex-col gap-2 pointer-events-none">
       {toasts.slice(-3).map((t) => (
         <SingleToast key={t.id} toast={t} onDismiss={handleDismiss(t.id)} />
       ))}
