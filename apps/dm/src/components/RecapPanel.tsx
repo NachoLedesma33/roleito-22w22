@@ -164,14 +164,14 @@ export default function RecapPanel({ campaignId, onClose }: RecapPanelProps) {
 
   if (loading) {
     return (
-      <HudPanel title="Session Recap" onClose={onClose} defaultX={200} defaultY={120} width={400}>
+      <HudPanel title="Session Recap" panelId="recap" onClose={onClose} defaultX={200} defaultY={120} defaultWidth={400}>
         <p className="text-xs text-[var(--text-secondary)]">Loading...</p>
       </HudPanel>
     );
   }
 
   return (
-    <HudPanel title="Session Recap" onClose={onClose} defaultX={200} defaultY={120} width={440}>
+    <HudPanel title="Session Recap" panelId="recap" onClose={onClose} defaultX={200} defaultY={120} defaultWidth={440}>
       <div className="space-y-3">
         <div>
           <p className="text-[10px] text-[var(--text-secondary)] mb-1 uppercase tracking-wide">Session</p>

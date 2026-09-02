@@ -39,10 +39,11 @@ export default function SceneNotesHud({
   return (
     <HudPanel
       title={`Scene Notes${sceneName ? ` — ${sceneName}` : ''}`}
+      panelId="scene-notes"
       onClose={onClose}
       defaultX={window.innerWidth - 340}
       defaultY={300}
-      width={320}
+      defaultWidth={320}
     >
       {!sceneId && (
         <p className="text-[10px] text-[var(--text-secondary)] italic">

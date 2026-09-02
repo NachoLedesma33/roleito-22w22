@@ -10,10 +10,11 @@ export default function QuickActionsHud({ campaignId, onClose }: QuickActionsHud
   return (
     <HudPanel
       title="Quick Actions"
+      panelId="quick-actions"
       onClose={onClose}
       defaultX={20}
       defaultY={80}
-      width={200}
+      defaultWidth={200}
     >
       <div className="space-y-1">
         <Link

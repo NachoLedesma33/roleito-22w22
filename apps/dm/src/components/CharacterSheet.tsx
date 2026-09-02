@@ -141,10 +141,11 @@ export default function CharacterSheet({
   return (
     <HudPanel
       title={`${entity.name} — Sheet`}
+      panelId={`char-${entity.id}`}
       onClose={onClose}
       defaultX={120}
       defaultY={60}
-      width={380}
+      defaultWidth={380}
     >
       <div className="space-y-3">
         <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={handlePortraitUpload} />

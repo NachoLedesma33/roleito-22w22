@@ -36,10 +36,11 @@ export default function SessionLogHud({ sessionId, sessionTitle, onClose }: Sess
   return (
     <HudPanel
       title={`Session Log${sessionTitle ? ` — ${sessionTitle}` : ''}`}
+      panelId="session-log"
       onClose={onClose}
       defaultX={window.innerWidth - 340}
       defaultY={80}
-      width={320}
+      defaultWidth={320}
     >
       {!sessionId && (
         <p className="text-[10px] text-[var(--text-secondary)] mb-2 italic">

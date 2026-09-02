@@ -80,10 +80,11 @@ export default function InitiativeTracker({
   return (
     <HudPanel
       title={`Initiative — Round ${round}`}
+      panelId="initiative"
       onClose={onClose}
       defaultX={window.innerWidth - 360}
       defaultY={160}
-      width={340}
+      defaultWidth={340}
     >
       <div className="space-y-2">
         {!started && (

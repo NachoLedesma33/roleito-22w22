@@ -123,14 +123,14 @@ export default function DMNotebookHud({ campaignId, onClose }: DMNotebookHudProp
 
   if (loading) {
     return (
-      <HudPanel title="DM Notebook" onClose={onClose} defaultX={100} defaultY={80} width={420}>
+      <HudPanel title="DM Notebook" panelId="notebook" onClose={onClose} defaultX={100} defaultY={80} defaultWidth={420}>
         <p className="text-xs text-[var(--text-secondary)]">Loading...</p>
       </HudPanel>
     );
   }
 
   return (
-    <HudPanel title="DM Notebook" onClose={onClose} defaultX={100} defaultY={80} width={440}>
+    <HudPanel title="DM Notebook" panelId="notebook" onClose={onClose} defaultX={100} defaultY={80} defaultWidth={440}>
       <div className="space-y-3">
         {/* Category Filter */}
         <div className="flex items-center gap-1 flex-wrap">

@@ -219,10 +219,11 @@ export default function DiceRoller({
   return (
     <HudPanel
       title="Dice Roller"
+      panelId="dice-roller"
       onClose={onClose}
       defaultX={80}
       defaultY={80}
-      width={280}
+      defaultWidth={280}
     >
       <div className="space-y-3">
         <div>
