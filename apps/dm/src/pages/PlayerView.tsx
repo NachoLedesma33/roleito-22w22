@@ -568,13 +568,13 @@ export default function PlayerView() {
             ? `Viendo como ${myChar?.name ?? '...'}`
             : 'Espectador'}
         </span>
-        {choice?.kind === 'character' && (
+        {choice && (
           <button
             type="button"
             onClick={changeCharacter}
             className="text-[10px] px-2 py-1 rounded border border-gray-700 text-gray-400 hover:text-gray-200 hover:border-gray-500 transition-colors shrink-0"
           >
-            Cambiar
+            {choice.kind === 'character' ? 'Cambiar' : 'Elegir personaje'}
           </button>
         )}
         {choice?.kind === 'character' && (
