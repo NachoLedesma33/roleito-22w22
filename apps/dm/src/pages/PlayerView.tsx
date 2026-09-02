@@ -5,6 +5,7 @@ import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import SceneRenderer from '@/components/SceneRenderer';
 import DiceRoller from '@/components/DiceRoller';
+import TopBar from '@/components/TopBar';
 import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastContainer';
 import { api } from '@/lib/api';
 
@@ -556,12 +557,12 @@ export default function PlayerView() {
 
   return (
     <div className="h-screen flex flex-col bg-black overflow-hidden select-none">
-      <header className="relative z-10 flex items-center gap-3 px-4 py-2 bg-gray-900/90 border-b border-gray-700/50 shrink-0">
-        <span className="text-sm font-bold text-emerald-400">{data.campaign_name}</span>
-        <div className="w-px h-4 bg-gray-700" />
-        <span className="text-xs text-gray-400">{data.scene_name}</span>
-        <div className="flex-1" />
-        <span className="text-xs text-gray-400" data-testid="player-role">
+      <TopBar
+        title={data.campaign_name}
+        subtitle={data.scene_name}
+        className="!bg-gray-900/90 !border-gray-700/50"
+      >
+        <span className="text-xs text-gray-400 shrink-0" data-testid="player-role">
           {choice?.kind === 'character'
             ? `Viendo como ${myChar?.name ?? '...'}`
             : 'Espectador'}
@@ -570,7 +571,7 @@ export default function PlayerView() {
           <button
             type="button"
             onClick={changeCharacter}
-            className="text-[10px] px-2 py-1 rounded border border-gray-700 text-gray-400 hover:text-gray-200 hover:border-gray-500 transition-colors"
+            className="text-[10px] px-2 py-1 rounded border border-gray-700 text-gray-400 hover:text-gray-200 hover:border-gray-500 transition-colors shrink-0"
           >
             Cambiar
           </button>
@@ -579,7 +580,7 @@ export default function PlayerView() {
           <button
             type="button"
             onClick={() => setShowDiceRoller(!showDiceRoller)}
-            className={`text-xs px-2 py-1 rounded transition-colors ${
+            className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${
               showDiceRoller
                 ? 'bg-emerald-600 text-white'
                 : 'bg-gray-800 text-gray-400 hover:text-gray-200 hover:bg-gray-700'
@@ -590,7 +591,7 @@ export default function PlayerView() {
           </button>
         )}
         <span
-          className="flex items-center gap-1.5 text-[10px]"
+          className="flex items-center gap-1.5 text-[10px] shrink-0"
           title={live ? 'Sincronizado' : 'Reconectando...'}
         >
           <span
@@ -600,7 +601,7 @@ export default function PlayerView() {
             {live ? 'Live' : 'Reconnecting'}
           </span>
         </span>
-      </header>
+      </TopBar>
 
       <div className="flex-1 relative">
         {data.background_path ? (
@@ -674,7 +675,7 @@ export default function PlayerView() {
         )}
 
         {data.characters.length > 0 && (
-          <div className="absolute bottom-4 right-4 z-10 bg-gray-900/80 backdrop-blur border border-gray-700/50 rounded-lg p-2" data-testid="on-scene-list">
+          <div className="absolute bottom-4 right-4 z-10 bg-gray-900/80 backdrop-blur border border-gray-700/50 rounded-lg p-2 max-sm:bottom-auto max-sm:top-16 max-sm:right-2 max-sm:max-w-[140px]" data-testid="on-scene-list">
             <p className="text-[10px] text-gray-500 mb-1 px-1">On Scene ({data.characters.length})</p>
             <div className="space-y-0.5">
               {data.characters.map((c) => (
@@ -694,7 +695,7 @@ export default function PlayerView() {
 
         {myChar && (
           <div
-            className="absolute bottom-4 left-4 z-10 w-72 bg-gray-900/85 backdrop-blur border border-gray-700/50 rounded-lg shadow-xl"
+            className="absolute bottom-4 left-4 z-10 w-72 max-sm:left-0 max-sm:right-0 max-sm:bottom-0 max-sm:w-auto max-sm:rounded-b-none bg-gray-900/85 backdrop-blur border border-gray-700/50 rounded-lg shadow-xl"
             data-testid="player-sheet"
           >
             <div className="p-3 space-y-2">
@@ -858,8 +859,8 @@ export default function PlayerView() {
         )}
 
         {pickerOpen && (
-          <div className="absolute inset-0 z-20 bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
-            <div className="bg-gray-900 border border-gray-700/60 rounded-xl p-6 w-full max-w-md space-y-4">
+          <div className="absolute inset-0 z-20 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6">
+            <div className="bg-gray-900 border border-gray-700/60 rounded-xl p-4 sm:p-6 w-full max-w-md space-y-4">
               <div>
                 <h2 className="text-lg font-bold text-gray-100">¿Quién sos?</h2>
                 <p className="text-xs text-gray-500 mt-0.5">

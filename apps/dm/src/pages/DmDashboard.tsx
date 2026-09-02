@@ -15,6 +15,7 @@ import AISettingsPanel from '@/components/AISettingsPanel';
 import DMAssistant from '@/components/DMAssistant';
 import ContextMenu, { ContextMenuItem } from '@/components/ContextMenu';
 import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastContainer';
+import TopBar from '@/components/TopBar';
 
 function staticUrl(path: string | null): string | null {
   if (!path) return null;
@@ -452,57 +453,49 @@ export default function DmDashboard() {
 
   return (
     <div className="h-screen flex flex-col bg-black overflow-hidden select-none">
-      {/* TopBar */}
-      <header className="relative z-10 flex items-center gap-3 px-4 py-2 bg-[var(--bg-primary)] border-b border-[var(--bg-tertiary)] shrink-0">
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-1.5 rounded hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-          title="Toggle sidebar"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M3 12h18M3 6h18M3 18h18" />
-          </svg>
-        </button>
-
-        <Link to="/" className="text-sm font-bold text-[var(--accent)] hover:text-[var(--accent-hover)] shrink-0">
-          {campaign.name}
-        </Link>
-
-        <div className="w-px h-5 bg-[var(--bg-tertiary)]" />
-
-        {/* Scene Selector */}
-        <div className="flex items-center gap-2">
-          <select
-            value={activeScene?.id || ''}
-            onChange={(e) => handleSceneSwitch(e.target.value)}
-            className="text-sm bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-2 py-1 text-[var(--text-primary)] cursor-pointer"
-          >
-            {scenes.length === 0 && <option value="">No scenes</option>}
-            {scenes.map((s, i) => (
-              <option key={s.id} value={s.id}>
-                {s.name || `Scene ${i + 1}`} {s.status === 'active' ? '(active)' : ''}
-              </option>
-            ))}
-          </select>
-          <span className="text-xs text-[var(--text-secondary)]">
-            {sceneIndex}/{scenes.length}
-          </span>
-        </div>
-
-        <div className="flex-1" />
-
-        {/* Actions */}
+      <TopBar
+        title={campaign.name}
+        titleTo="/"
+        left={
+          <>
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-1.5 rounded hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0"
+              title="Toggle sidebar"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 12h18M3 6h18M3 18h18" />
+              </svg>
+            </button>
+            <div className="w-px h-5 bg-[var(--bg-tertiary)] shrink-0" />
+            <select
+              value={activeScene?.id || ''}
+              onChange={(e) => handleSceneSwitch(e.target.value)}
+              className="text-sm bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-2 py-1 text-[var(--text-primary)] cursor-pointer shrink-0"
+            >
+              {scenes.length === 0 && <option value="">No scenes</option>}
+              {scenes.map((s, i) => (
+                <option key={s.id} value={s.id}>
+                  {s.name || `Scene ${i + 1}`} {s.status === 'active' ? '(active)' : ''}
+                </option>
+              ))}
+            </select>
+            <span className="text-xs text-[var(--text-secondary)] shrink-0">
+              {sceneIndex}/{scenes.length}
+            </span>
+          </>
+        }
+      >
         <button
           onClick={() => fileInput.current?.click()}
-          className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+          className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0"
           title="Upload map background"
         >
           Upload BG
         </button>
         <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={handleUploadBg} />
 
-        {/* Lighting Dropdown */}
-        <div className="relative group">
+        <div className="relative group shrink-0">
           <button className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
             {activeScene?.lighting || 'neutral'} ▾
           </button>
@@ -521,10 +514,9 @@ export default function DmDashboard() {
           </div>
         </div>
 
-        {/* Invite Code */}
         <button
           onClick={handleInviteCode}
-          className={`text-xs px-2 py-1 rounded transition-colors ${
+          className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${
             copiedInvite
               ? 'bg-emerald-600 text-white'
               : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -536,7 +528,7 @@ export default function DmDashboard() {
 
         <button
           onClick={() => setShowInitiative(!showInitiative)}
-          className={`text-xs px-2 py-1 rounded transition-colors ${showInitiative ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+          className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showInitiative ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
           title="Initiative Tracker"
         >
           ⚔
@@ -544,7 +536,7 @@ export default function DmDashboard() {
 
         <button
           onClick={() => setShowDiceRoller(!showDiceRoller)}
-          className={`text-xs px-2 py-1 rounded transition-colors ${showDiceRoller ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+          className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showDiceRoller ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
           title="Roll dice (D)"
         >
           🎲
@@ -552,7 +544,7 @@ export default function DmDashboard() {
 
         <button
           onClick={() => setShowRecap(!showRecap)}
-          className={`text-xs px-2 py-1 rounded transition-colors ${showRecap ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+          className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showRecap ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
           title="Session Recap (R)"
         >
           📋
@@ -560,7 +552,7 @@ export default function DmDashboard() {
 
         <button
           onClick={() => setShowNotebook(!showNotebook)}
-          className={`text-xs px-2 py-1 rounded transition-colors ${showNotebook ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+          className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showNotebook ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
           title="DM Notebook (N)"
         >
           📓
@@ -568,7 +560,7 @@ export default function DmDashboard() {
 
         <button
           onClick={() => setShowAIPanel(!showAIPanel)}
-          className={`text-xs px-2 py-1 rounded transition-colors ${showAIPanel ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+          className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showAIPanel ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
           title="AI Settings"
           data-testid="ai-panel-button"
         >
@@ -577,30 +569,28 @@ export default function DmDashboard() {
 
         <button
           onClick={() => setShowAssistant(!showAssistant)}
-          className={`text-xs px-2 py-1 rounded transition-colors ${showAssistant ? 'bg-violet-700 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+          className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showAssistant ? 'bg-violet-700 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
           title="DM Assistant"
           data-testid="dm-assistant-button"
         >
           💬
         </button>
 
-        {/* Map Button */}
         {activeScene?.map_id && (
           <button
             onClick={() => {
               const m = maps.find((m) => m.id === activeScene.map_id);
               if (m) setViewingMap(m);
             }}
-            className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+            className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0"
             title="Open map"
           >
             🗺
           </button>
         )}
 
-        {/* Map Assign Dropdown */}
         {maps.length > 0 && (
-          <div className="relative group">
+          <div className="relative group shrink-0">
             <button className="text-[10px] px-1.5 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
               Map ▾
             </button>
@@ -638,24 +628,23 @@ export default function DmDashboard() {
           </div>
         )}
 
-        {/* HUD Toggle Buttons */}
         <button
           onClick={() => setShowQuickActions(!showQuickActions)}
-          className={`text-xs px-2 py-1 rounded transition-colors ${showQuickActions ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+          className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showQuickActions ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
           title="Quick Actions"
         >
           ⚡
         </button>
         <button
           onClick={() => setShowSessionLog(!showSessionLog)}
-          className={`text-xs px-2 py-1 rounded transition-colors ${showSessionLog ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+          className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showSessionLog ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
           title="Session Log"
         >
           📋
         </button>
         <button
           onClick={() => setShowSceneNotes(!showSceneNotes)}
-          className={`text-xs px-2 py-1 rounded transition-colors ${showSceneNotes ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+          className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showSceneNotes ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
           title="Scene Notes"
         >
           📝
@@ -663,22 +652,22 @@ export default function DmDashboard() {
 
         <Link
           to={`/campaigns/${campaignId}/scenes`}
-          className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+          className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0"
           title="Scene management"
         >
           ⚙
         </Link>
-      </header>
+      </TopBar>
 
       <div className="flex-1 flex overflow-hidden relative">
-        {/* Collapsible Sidebar */}
+        {/* Sidebar — lg+: permanent toggle, md/sm: overlay */}
         {sidebarOpen && (
           <>
             <div
               className="absolute inset-0 bg-black/50 z-20 lg:hidden"
               onClick={() => setSidebarOpen(false)}
             />
-            <aside className="relative z-30 w-56 bg-[var(--bg-primary)] border-r border-[var(--bg-tertiary)] flex flex-col shrink-0">
+            <aside className="relative z-30 w-56 bg-[var(--bg-primary)] border-r border-[var(--bg-tertiary)] flex flex-col shrink-0 max-lg:absolute max-lg:inset-y-0 max-lg:left-0">
               <nav className="flex-1 py-3 px-2 space-y-1">
                 <Link
                   to={`/campaigns/${campaignId}`}
@@ -798,8 +787,8 @@ export default function DmDashboard() {
             </div>
           )}
 
-          {/* Token Tray — bottom left */}
-          <div className="absolute bottom-4 left-4 z-10 bg-[var(--bg-primary)]/90 backdrop-blur border border-[var(--bg-tertiary)] rounded-lg p-2 max-h-64 overflow-y-auto w-52">
+          {/* Token Tray — bottom left, responsive */}
+          <div className="absolute bottom-4 left-4 z-10 bg-[var(--bg-primary)]/90 backdrop-blur border border-[var(--bg-tertiary)] rounded-lg p-2 max-h-64 overflow-y-auto w-44 md:w-52">
             <p className="text-[10px] text-[var(--text-secondary)] mb-1 px-1">On Scene ({sceneChars.length})</p>
             {sceneChars.length > 0 ? (
               <div className="space-y-0.5 mb-2">
@@ -877,9 +866,9 @@ export default function DmDashboard() {
             )}
           </div>
 
-          {/* Character Sheet HUD — bottom right, on token click */}
+          {/* Character Sheet HUD — bottom right on desktop, bottom sheet on mobile */}
           {selectedChar && selectedEntity && campaignId && (
-            <div className="absolute bottom-4 right-4 z-10">
+            <div className="absolute bottom-4 right-4 z-10 max-sm:left-4 max-sm:right-4 max-sm:bottom-0 max-sm:rounded-b-none">
               <CharacterSheet
                 entity={selectedChar}
                 entityType={selectedEntity.entity_type as 'character' | 'npc'}
