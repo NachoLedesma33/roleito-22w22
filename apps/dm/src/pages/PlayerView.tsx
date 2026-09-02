@@ -604,7 +604,7 @@ export default function PlayerView() {
         </span>
       </TopBar>
 
-      <div className="flex-1 relative min-h-0">
+      <div className="flex-1 relative min-h-0 min-w-0">
         {data.background_path ? (
           <Suspense
             fallback={

@@ -660,7 +660,7 @@ export default function DmDashboard() {
         </Link>
       </TopBar>
 
-      <div className="flex-1 flex overflow-hidden relative">
+      <div className="flex-1 flex overflow-hidden relative min-w-0">
         {/* Sidebar — lg+: permanent toggle, md/sm: overlay */}
         {sidebarOpen && (
           <>
@@ -743,7 +743,7 @@ export default function DmDashboard() {
         )}
 
         {/* 3D Scene Canvas */}
-        <div className="flex-1 relative min-h-0">
+        <div className="flex-1 relative min-h-0 min-w-0">
           {activeScene?.background_path ? (
             <Suspense fallback={
               <div className="w-full h-full flex items-center justify-center text-[var(--text-secondary)]">
