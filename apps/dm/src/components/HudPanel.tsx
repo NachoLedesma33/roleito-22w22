@@ -1,4 +1,4 @@
-import { useRef, useCallback, useState, useEffect } from 'react';
+import { useRef, useCallback, useState, useEffect, createContext, useContext } from 'react';
 
 interface HudPanelProps {
   title: string;
@@ -21,8 +21,13 @@ const BASE_Z = 20;
 let nextZ = BASE_Z;
 const STORAGE_PREFIX = 'roleito:hud:';
 const EDGE = 6;
+const SNAP = 20;
 
 type ResizeEdge = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
+
+function snap(v: number): number {
+  return Math.round(v / SNAP) * SNAP;
+}
 
 function loadSize(panelId: string): { width: number; height: number } | null {
   try {
@@ -67,6 +72,37 @@ const CURSORS: Record<ResizeEdge, string> = {
   sw: 'nesw-resize',
 };
 
+// Global minimize registry
+type MinimizedEntry = { panelId: string; title: string; onRestore: () => void };
+let minimizedListeners: Array<() => void> = [];
+let minimizedMap = new Map<string, MinimizedEntry>();
+
+function emitMinimizedChange() {
+  minimizedListeners.forEach((l) => l());
+}
+
+export function useMinimizedPanels(): MinimizedEntry[] {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const listener = () => setTick((t) => t + 1);
+    minimizedListeners.push(listener);
+    return () => {
+      minimizedListeners = minimizedListeners.filter((l) => l !== listener);
+    };
+  }, []);
+  return Array.from(minimizedMap.values());
+}
+
+function registerMinimized(entry: MinimizedEntry) {
+  minimizedMap.set(entry.panelId, entry);
+  emitMinimizedChange();
+}
+
+function unregisterMinimized(panelId: string) {
+  minimizedMap.delete(panelId);
+  emitMinimizedChange();
+}
+
 export default function HudPanel({
   title,
   panelId,
@@ -95,6 +131,7 @@ export default function HudPanel({
   const [isDragging, setIsDragging] = useState(false);
   const [resizeEdge, setResizeEdge] = useState<ResizeEdge | null>(null);
   const [zIndex, setZIndex] = useState(BASE_Z);
+  const [minimized, setMinimized] = useState(false);
   const dragOffset = useRef({ x: 0, y: 0 });
   const resizeStart = useRef({ x: 0, y: 0, w: 0, h: 0, px: 0, py: 0 });
 
@@ -110,6 +147,21 @@ export default function HudPanel({
   useEffect(() => {
     savePosition(panelId, pos.x, pos.y);
   }, [panelId, pos.x, pos.y]);
+
+  const handleMinimize = useCallback(() => {
+    setMinimized(true);
+    registerMinimized({
+      panelId,
+      title,
+      onRestore: () => setMinimized(false),
+    });
+  }, [panelId, title]);
+
+  useEffect(() => {
+    if (!minimized) {
+      unregisterMinimized(panelId);
+    }
+  }, [minimized, panelId]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -139,8 +191,11 @@ export default function HudPanel({
   );
 
   const handlePointerUp = useCallback(() => {
+    if (isDragging) {
+      setPos((p) => ({ x: snap(p.x), y: snap(p.y) }));
+    }
     setIsDragging(false);
-  }, []);
+  }, [isDragging]);
 
   const handleResizeDown = useCallback(
     (edge: ResizeEdge) => (e: React.PointerEvent) => {
@@ -193,6 +248,8 @@ export default function HudPanel({
     setResizeEdge(null);
   }, []);
 
+  if (minimized) return null;
+
   const edges: ResizeEdge[] = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
 
   return (
@@ -216,7 +273,14 @@ export default function HudPanel({
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
       >
-        <div className="absolute right-1 top-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="absolute right-1 top-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+          <button
+            onClick={handleMinimize}
+            className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs leading-none px-1"
+            title="Minimize"
+          >
+            –
+          </button>
           <button
             onClick={onClose}
             className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs leading-none px-1"

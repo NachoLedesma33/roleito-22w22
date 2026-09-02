@@ -16,6 +16,7 @@ import DMAssistant from '@/components/DMAssistant';
 import ContextMenu, { ContextMenuItem } from '@/components/ContextMenu';
 import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastContainer';
 import TopBar from '@/components/TopBar';
+import MinimizedBar from '@/components/MinimizedBar';
 
 function staticUrl(path: string | null): string | null {
   if (!path) return null;
@@ -966,6 +967,8 @@ export default function DmDashboard() {
           onClose={() => setContextMenu(null)}
         />
       )}
+
+      <MinimizedBar />
 
       <ToastContainer
         toasts={toastQueue}

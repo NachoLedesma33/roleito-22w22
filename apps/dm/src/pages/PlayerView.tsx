@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import SceneRenderer from '@/components/SceneRenderer';
 import DiceRoller from '@/components/DiceRoller';
 import TopBar from '@/components/TopBar';
+import MinimizedBar from '@/components/MinimizedBar';
 import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastContainer';
 import { api } from '@/lib/api';
 
@@ -937,6 +938,8 @@ export default function PlayerView() {
           }}
         />
       )}
+
+      <MinimizedBar />
 
       <ToastContainer
         toasts={toastQueue}
