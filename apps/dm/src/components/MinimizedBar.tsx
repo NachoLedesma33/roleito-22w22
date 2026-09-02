@@ -11,7 +11,7 @@ export default function MinimizedBar() {
         <button
           key={p.panelId}
           onClick={p.onRestore}
-          className="px-3 py-1.5 bg-[var(--bg-primary)]/85 [backdrop-filter:blur(2px)] border border-[var(--bg-tertiary)] rounded-full text-[10px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] transition-colors shadow-lg"
+          className="px-3 py-1.5 bg-[var(--bg-primary)]/92 [backdrop-filter:blur(2px)] border border-[var(--bg-tertiary)] rounded-full text-[10px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] transition-colors shadow-lg"
         >
           {p.title}
         </button>
