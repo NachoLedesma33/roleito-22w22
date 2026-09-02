@@ -743,7 +743,7 @@ export default function DmDashboard() {
         )}
 
         {/* 3D Scene Canvas */}
-        <div className="flex-1 relative">
+        <div className="flex-1 relative min-h-0">
           {activeScene?.background_path ? (
             <Suspense fallback={
               <div className="w-full h-full flex items-center justify-center text-[var(--text-secondary)]">
