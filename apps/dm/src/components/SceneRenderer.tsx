@@ -94,9 +94,9 @@ function SceneLighting({ mode }: { mode: string }) {
     default:
       return (
         <>
-          <ambientLight intensity={1.8} />
-          <directionalLight position={[5, 10, 5]} intensity={2.2} />
-          <directionalLight position={[-3, 6, -3]} intensity={0.9} />
+          <ambientLight intensity={2.2} />
+          <directionalLight position={[5, 10, 5]} intensity={2.8} />
+          <directionalLight position={[-3, 6, -3]} intensity={1.2} />
         </>
       );
   }
