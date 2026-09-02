@@ -69,8 +69,23 @@ async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     await _migrate()
+    await seed_test_dm()
     await seed_demo()
     await seed_demo_2()
+
+
+async def seed_test_dm():
+    from models import DM
+    from auth import hash_pin
+
+    async with async_session() as session:
+        result = await session.execute(text("SELECT COUNT(*) FROM dms"))
+        if result.scalar() > 0:
+            return
+        dm = DM(name="Test DM", pin_hash=hash_pin("123456"))
+        session.add(dm)
+        await session.commit()
+        logger.info("Test DM seeded (PIN: 123456)")
 
 
 async def seed_demo():
