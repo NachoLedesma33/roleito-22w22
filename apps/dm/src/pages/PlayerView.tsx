@@ -140,14 +140,14 @@ function StatBar({
   const pct = max > 0 ? Math.min(100, Math.max(0, (current / max) * 100)) : 0;
   return (
     <div className="flex items-center gap-2">
-      <span className="w-5 text-[10px] text-gray-500 shrink-0">{label}</span>
-      <div className="flex-1 h-2 rounded bg-black/60 overflow-hidden border border-gray-700/50">
+      <span className="w-5 text-[10px] text-[var(--text-secondary)] shrink-0">{label}</span>
+      <div className="flex-1 h-2 rounded bg-black/60 overflow-hidden border border-[var(--bg-tertiary)]">
         <div
           className="h-full rounded transition-all duration-500"
           style={{ width: `${pct}%`, backgroundColor: label === 'PV' ? pvColor(current, max) : '#60a5fa' }}
         />
       </div>
-      <span className="text-[11px] text-gray-300 tabular-nums w-14 text-right shrink-0">
+      <span className="text-[11px] text-[var(--text-primary)] tabular-nums w-14 text-right shrink-0">
         {current}/{max} {label}
       </span>
     </div>
@@ -710,7 +710,7 @@ export default function PlayerView() {
                   <img
                     src={staticUrl(myChar.portrait_path)!}
                     alt={myChar.name}
-                    className="w-12 h-12 rounded-full object-cover border border-gray-600"
+                    className="w-12 h-12 rounded-full object-cover border border-[var(--bg-tertiary)]"
                   />
                 ) : (
                   <div className="w-12 h-12 rounded-full bg-emerald-900/60 border border-emerald-700/50 flex items-center justify-center text-sm font-bold text-emerald-300">
@@ -728,7 +728,7 @@ export default function PlayerView() {
                     type="button"
                     onClick={handleExportMarkdown}
                     title="Exportar ficha como Markdown"
-                    className="w-5 h-5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-xs flex items-center justify-center transition-colors"
+                    className="w-5 h-5 rounded bg-gray-800 hover:bg-gray-700 text-[var(--text-primary)] hover:text-white text-xs flex items-center justify-center transition-colors"
                   >
                     ↓
                   </button>
@@ -736,7 +736,7 @@ export default function PlayerView() {
                     type="button"
                     onClick={() => window.print()}
                     title="Imprimir ficha"
-                    className="w-5 h-5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-xs flex items-center justify-center transition-colors"
+                    className="w-5 h-5 rounded bg-gray-800 hover:bg-gray-700 text-[var(--text-primary)] hover:text-white text-xs flex items-center justify-center transition-colors"
                   >
                     🖨
                   </button>
@@ -744,7 +744,7 @@ export default function PlayerView() {
                     <span
                       key={key}
                       title={attrLabel}
-                      className="w-5 h-5 rounded bg-black/50 border border-gray-700/60 flex items-center justify-center text-[11px] text-gray-300"
+                      className="w-5 h-5 rounded bg-black/50 border border-[var(--bg-tertiary)] flex items-center justify-center text-[11px] text-[var(--text-primary)]"
                     >
                       {attrSymbol(myChar[key as keyof MyChar] as string)}
                     </span>
@@ -755,7 +755,7 @@ export default function PlayerView() {
               <StatBar label="PV" current={pv} max={myChar.max_pv} />
               <StatBar label="PM" current={pm} max={myChar.max_pm} />
 
-              <div className="flex gap-0.5 bg-gray-800/50 rounded p-0.5 text-[10px]">
+              <div className="flex gap-0.5 bg-[var(--bg-tertiary)]/50 rounded p-0.5 text-[10px]">
                 {(['stats', 'inventory', 'spells', 'notes'] as const).map((t) => (
                   <button
                     key={t}
@@ -763,7 +763,7 @@ export default function PlayerView() {
                     className={`flex-1 py-1 rounded capitalize transition-colors ${
                       sheetTab === t
                         ? 'bg-emerald-700 text-white'
-                        : 'text-gray-400 hover:text-gray-200'
+                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
                   >
                     {t === 'stats' ? 'Stats' : t === 'inventory' ? 'Inv' : t === 'spells' ? 'Hech' : 'Notas'}
@@ -781,28 +781,28 @@ export default function PlayerView() {
                         { label: 'Dest', value: myChar.dexterity },
                         { label: 'Astuc', value: myChar.cunning },
                       ].map((a) => (
-                        <div key={a.label} className="text-center bg-gray-800/50 rounded py-1">
-                          <p className="text-[9px] text-gray-500">{a.label}</p>
-                          <p className="font-bold text-gray-300">{a.value === '-' ? '−' : a.value}</p>
+                        <div key={a.label} className="text-center bg-[var(--bg-tertiary)]/50 rounded py-1">
+                          <p className="text-[9px] text-[var(--text-secondary)]">{a.label}</p>
+                          <p className="font-bold text-[var(--text-primary)]">{a.value === '-' ? '−' : a.value}</p>
                         </div>
                       ))}
                     </div>
                     <div className="grid grid-cols-3 gap-1 text-center">
-                      <div className="bg-gray-800/50 rounded py-1">
+                      <div className="bg-[var(--bg-tertiary)]/50 rounded py-1">
                         <p className="font-bold text-red-400">{myChar.max_pv}</p>
-                        <p className="text-[9px] text-gray-500">PV Max</p>
+                        <p className="text-[9px] text-[var(--text-secondary)]">PV Max</p>
                       </div>
-                      <div className="bg-gray-800/50 rounded py-1">
+                      <div className="bg-[var(--bg-tertiary)]/50 rounded py-1">
                         <p className="font-bold text-blue-400">{myChar.max_pm}</p>
-                        <p className="text-[9px] text-gray-500">PM Max</p>
+                        <p className="text-[9px] text-[var(--text-secondary)]">PM Max</p>
                       </div>
-                      <div className="bg-gray-800/50 rounded py-1">
+                      <div className="bg-[var(--bg-tertiary)]/50 rounded py-1">
                         <p className="font-bold text-green-400">{myChar.defense}</p>
-                        <p className="text-[9px] text-gray-500">Defensa</p>
+                        <p className="text-[9px] text-[var(--text-secondary)]">Defensa</p>
                       </div>
                     </div>
                     {myChar.description && (
-                      <p className="text-[10px] text-gray-400 whitespace-pre-wrap">{myChar.description}</p>
+                      <p className="text-[10px] text-[var(--text-secondary)] whitespace-pre-wrap">{myChar.description}</p>
                     )}
                   </div>
                 )}
@@ -810,7 +810,7 @@ export default function PlayerView() {
                 {sheetTab === 'inventory' && (
                   <div className="space-y-1">
                     {invItems.length === 0 ? (
-                      <p className="text-[10px] text-gray-600">Vacío</p>
+                      <p className="text-[10px] text-[var(--text-secondary)]">Vacío</p>
                     ) : (
                       invItems.map((item, i) => (
                         <div key={i} className="flex items-center gap-1.5">
@@ -819,7 +819,7 @@ export default function PlayerView() {
                               item.equipped ? 'bg-emerald-400' : 'bg-gray-600'
                             }`}
                           />
-                          <span className="text-[11px] text-gray-300">
+                          <span className="text-[11px] text-[var(--text-primary)]">
                             {item.name || 'Sin nombre'}{item.quantity ? ` x${Number(item.quantity)}` : ''}
                           </span>
                         </div>
@@ -831,10 +831,10 @@ export default function PlayerView() {
                 {sheetTab === 'spells' && (
                   <div className="space-y-1">
                     {myChar.spells_json.length === 0 ? (
-                      <p className="text-[10px] text-gray-600">No hay hechizos</p>
+                      <p className="text-[10px] text-[var(--text-secondary)]">No hay hechizos</p>
                     ) : (
                       myChar.spells_json.map((spell) => (
-                        <div key={spell.id} className="text-[11px] text-gray-300">
+                        <div key={spell.id} className="text-[11px] text-[var(--text-primary)]">
                           <span className="text-blue-400">Lv{spell.level}</span> {spell.name} ({spell.cost_pm} PM)
                         </div>
                       ))
@@ -848,12 +848,12 @@ export default function PlayerView() {
                       value={notesDraft}
                       onChange={(e) => setNotesDraft(e.target.value)}
                       placeholder="Mis notas del personaje..."
-                      className="w-full h-24 text-[10px] bg-gray-800/50 border border-gray-700 rounded p-1.5 text-gray-200 resize-none focus:outline-none focus:border-emerald-600 transition-colors"
+                      className="w-full h-24 text-[10px] bg-[var(--bg-tertiary)]/50 border border-[var(--bg-tertiary)] rounded p-1.5 text-[var(--text-primary)] resize-none focus:outline-none focus:border-[var(--accent)] transition-colors"
                     />
                     <button
                       onClick={handleSaveNotes}
                       disabled={notesSaving}
-                      className="w-full text-[10px] py-1 rounded bg-emerald-700 hover:bg-emerald-600 text-white disabled:opacity-50 transition-colors"
+                      className="w-full text-[10px] py-1 rounded bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white disabled:opacity-50 transition-colors"
                     >
                       {notesSaving ? 'Guardando...' : 'Guardar notas'}
                     </button>
@@ -906,7 +906,7 @@ export default function PlayerView() {
                     )}
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-gray-100 truncate">{p.name}</p>
-                      <p className="text-[10px] text-gray-500 truncate">
+                  <p className="text-[10px] text-[var(--text-secondary)] truncate">
                         {[p.race, p.class_name].filter(Boolean).join(' · ')}
                       </p>
                     </div>
