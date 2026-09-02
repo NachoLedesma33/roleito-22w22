@@ -255,7 +255,7 @@ export default function HudPanel({
   return (
     <div
       ref={panelRef}
-      className={`fixed bg-[var(--bg-primary)]/95 backdrop-blur border border-[var(--bg-tertiary)] rounded-lg shadow-lg flex flex-col ${className}`}
+      className={`fixed bg-[var(--bg-primary)] backdrop-blur-sm border border-[var(--bg-tertiary)] rounded-lg shadow-lg flex flex-col ${className}`}
       style={{
         left: pos.x,
         top: pos.y,
