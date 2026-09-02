@@ -5,6 +5,7 @@ import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import SceneRenderer from '@/components/SceneRenderer';
 import DiceRoller from '@/components/DiceRoller';
+import HudPanel from '@/components/HudPanel';
 import TopBar from '@/components/TopBar';
 import MinimizedBar from '@/components/MinimizedBar';
 import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastContainer';
@@ -695,9 +696,13 @@ export default function PlayerView() {
         )}
 
         {myChar && (
-          <div
-            className="absolute bottom-4 left-4 z-10 w-72 max-sm:left-0 max-sm:right-0 max-sm:bottom-0 max-sm:w-auto max-sm:rounded-b-none bg-gray-900/85 backdrop-blur border border-gray-700/50 rounded-lg shadow-xl"
-            data-testid="player-sheet"
+          <HudPanel
+            title={myChar.name}
+            panelId="player-sheet"
+            onClose={() => {}}
+            defaultX={16}
+            defaultY={-16}
+            defaultWidth={288}
           >
             <div className="p-3 space-y-2">
               <div className="flex items-center gap-2.5">
@@ -856,7 +861,7 @@ export default function PlayerView() {
                 )}
               </div>
             </div>
-          </div>
+          </HudPanel>
         )}
 
         {pickerOpen && (
