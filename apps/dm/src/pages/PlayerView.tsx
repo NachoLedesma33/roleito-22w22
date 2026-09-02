@@ -379,11 +379,11 @@ export default function PlayerView() {
         moved = true;
       }
       if (keysPressed.has('q')) {
-        rotation -= ROTATE_SPEED;
+        rotation += ROTATE_SPEED;
         moved = true;
       }
       if (keysPressed.has('e')) {
-        rotation += ROTATE_SPEED;
+        rotation -= ROTATE_SPEED;
         moved = true;
       }
 
