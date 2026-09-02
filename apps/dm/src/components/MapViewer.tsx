@@ -301,7 +301,7 @@ export default function MapViewer({ map, onClose, scenes, currentSceneId, onTran
                 </div>
                 {(isSelected || isEditing) && (
                   <div
-                    className="absolute top-6 left-1/2 -translate-x-1/2 bg-[var(--bg-primary)]/85 backdrop-blur-sm border border-[var(--bg-tertiary)] rounded p-2 shadow-lg min-w-[140px]"
+                    className="absolute top-6 left-1/2 -translate-x-1/2 bg-[var(--bg-primary)]/85 [backdrop-filter:blur(2px)] border border-[var(--bg-tertiary)] rounded p-2 shadow-lg min-w-[140px]"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {isEditing ? (
