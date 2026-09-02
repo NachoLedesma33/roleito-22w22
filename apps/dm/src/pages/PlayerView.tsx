@@ -359,23 +359,23 @@ export default function PlayerView() {
       let moved = false;
 
       if (keysPressed.has('w') || keysPressed.has('arrowup')) {
-        x += Math.sin(rotation) * -MOVE_SPEED;
-        z += Math.cos(rotation) * -MOVE_SPEED;
-        moved = true;
-      }
-      if (keysPressed.has('s') || keysPressed.has('arrowdown')) {
         x += Math.sin(rotation) * MOVE_SPEED;
         z += Math.cos(rotation) * MOVE_SPEED;
         moved = true;
       }
+      if (keysPressed.has('s') || keysPressed.has('arrowdown')) {
+        x -= Math.sin(rotation) * MOVE_SPEED;
+        z -= Math.cos(rotation) * MOVE_SPEED;
+        moved = true;
+      }
       if (keysPressed.has('a') || keysPressed.has('arrowleft')) {
-        x += Math.sin(rotation - Math.PI / 2) * -MOVE_SPEED;
-        z += Math.cos(rotation - Math.PI / 2) * -MOVE_SPEED;
+        x += Math.cos(rotation) * -MOVE_SPEED;
+        z += Math.sin(rotation) * MOVE_SPEED;
         moved = true;
       }
       if (keysPressed.has('d') || keysPressed.has('arrowright')) {
-        x += Math.sin(rotation + Math.PI / 2) * -MOVE_SPEED;
-        z += Math.cos(rotation + Math.PI / 2) * -MOVE_SPEED;
+        x += Math.cos(rotation) * MOVE_SPEED;
+        z -= Math.sin(rotation) * MOVE_SPEED;
         moved = true;
       }
       if (keysPressed.has('q')) {
