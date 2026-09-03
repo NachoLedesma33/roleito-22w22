@@ -617,6 +617,8 @@ async def join_by_invite_code(
                     "rotation": getattr(sc, 'rotation', 0.0),
                     "portrait_path": ent.portrait_path,
                     "model_path": getattr(ent, 'model_path', None),
+                    "move_speed": getattr(sc, 'move_speed', 1.0),
+                    "token_scale": getattr(sc, 'token_scale', 1.0),
                 })
 
     return {
@@ -626,6 +628,9 @@ async def join_by_invite_code(
         "scene_name": scene_name,
         "background_path": background_path,
         "lighting": lighting,
+        "map_scale": getattr(active_scene, 'map_scale', 1.0) if active_scene else 1.0,
+        "grid_size": getattr(active_scene, 'grid_size', 0.0) if active_scene else 0.0,
+        "grid_snap": bool(getattr(active_scene, 'grid_snap', 0)) if active_scene else False,
         "characters": scene_chars,
         "player_characters": player_characters,
     }

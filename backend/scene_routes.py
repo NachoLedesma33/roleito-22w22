@@ -189,18 +189,32 @@ async def update_scene_characters(
     for sc in existing.scalars().all():
         await db.delete(sc)
 
+    # Get scene for boundary clamping
+    scene_result = await db.execute(
+        select(Scene).where(Scene.id == scene_id, Scene.campaign_id == campaign_id)
+    )
+    scene = scene_result.scalar_one_or_none()
+    map_scale = getattr(scene, 'map_scale', 1.0) if scene else 1.0
+    map_h = 10 * (map_scale or 1.0)
+    map_w = map_h * 4
+    token_radius = 0.4
+
     created = []
     for ch in characters:
+        x = max(-map_w / 2 + token_radius, min(map_w / 2 - token_radius, ch.x))
+        z = max(-map_h / 2 + token_radius, min(map_h / 2 - token_radius, ch.z))
         sc = SceneCharacter(
             scene_id=scene_id,
             entity_type=ch.entity_type,
             entity_id=ch.entity_id,
-            x=ch.x,
+            x=x,
             y=ch.y,
-            z=ch.z,
+            z=z,
             visible=1 if ch.visible else 0,
             order=ch.order,
             rotation=ch.rotation,
+            token_scale=ch.token_scale,
+            move_speed=ch.move_speed,
         )
         db.add(sc)
         created.append(sc)
@@ -255,7 +269,8 @@ async def player_move_character(
             Scene.campaign_id == campaign_id,
         )
     )
-    if not result.scalar_one_or_none():
+    scene = result.scalar_one_or_none()
+    if not scene:
         raise HTTPException(status_code=404, detail="Scene not found")
 
     sc_r = await db.execute(
@@ -272,6 +287,22 @@ async def player_move_character(
     sc.x = data.x
     sc.z = data.z
     sc.rotation = data.rotation
+
+    # Boundary collision: clamp to map bounds
+    map_scale = getattr(scene, 'map_scale', 1.0) or 1.0
+    map_h = 10 * map_scale
+    map_w = map_h * 4
+    token_radius = 0.4
+    sc.x = max(-map_w / 2 + token_radius, min(map_w / 2 - token_radius, sc.x))
+    sc.z = max(-map_h / 2 + token_radius, min(map_h / 2 - token_radius, sc.z))
+
+    # Grid snap
+    grid_size = getattr(scene, 'grid_size', 0.0) or 0.0
+    grid_snap = getattr(scene, 'grid_snap', 0)
+    if grid_snap and grid_size > 0:
+        sc.x = round(sc.x / grid_size) * grid_size
+        sc.z = round(sc.z / grid_size) * grid_size
+
     await db.commit()
     await db.refresh(sc)
     return SceneCharacterResponse.model_validate(sc)

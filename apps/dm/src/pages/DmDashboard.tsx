@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, Suspense, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { api, Campaign, Scene, SceneCharacter, Character, NPC, Map } from '@/lib/api';
+import { api, Campaign, Scene, SceneCharacter, Character, NPC, Map as GameMap } from '@/lib/api';
 import SceneRenderer from '@/components/SceneRenderer';
 import SessionLogHud from '@/components/SessionLogHud';
 import SceneNotesHud from '@/components/SceneNotesHud';
@@ -13,6 +13,7 @@ import MapViewer from '@/components/MapViewer';
 import DMNotebookHud from '@/components/DMNotebookHud';
 import AISettingsPanel from '@/components/AISettingsPanel';
 import DMAssistant from '@/components/DMAssistant';
+import SceneSettingsHud from '@/components/SceneSettingsHud';
 import ContextMenu, { ContextMenuItem } from '@/components/ContextMenu';
 import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastContainer';
 import TopBar from '@/components/TopBar';
@@ -41,16 +42,22 @@ export default function DmDashboard() {
   const [showDiceRoller, setShowDiceRoller] = useState(false);
   const [showInitiative, setShowInitiative] = useState(false);
   const [showRecap, setShowRecap] = useState(false);
-  const [viewingMap, setViewingMap] = useState<Map | null>(null);
-  const [maps, setMaps] = useState<Map[]>([]);
+  const [viewingMap, setViewingMap] = useState<GameMap | null>(null);
+  const [maps, setMaps] = useState<GameMap[]>([]);
   const [transitioning, setTransitioning] = useState<'idle' | 'in' | 'out'>('idle');
   const [showNotebook, setShowNotebook] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [showAssistant, setShowAssistant] = useState(false);
+  const [showSceneSettings, setShowSceneSettings] = useState(false);
+  const [distanceFrom, setDistanceFrom] = useState<string | null>(null);
+  const [distanceTo, setDistanceTo] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
   const [toastQueue, setToastQueue] = useState<ToastRoll[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
   const lastRollTsRef = useRef<number>(0);
+  const serverPosRef = useRef<Map<string, { x: number; z: number; rotation: number }>>(new Map());
+  const renderedPosRef = useRef<Map<string, { x: number; z: number; rotation: number }>>(new Map());
+  const rafRef = useRef<number>(0);
 
   useEffect(() => {
     if (!campaignId) return;
@@ -79,6 +86,54 @@ export default function DmDashboard() {
       .then(setSceneChars)
       .catch(() => setSceneChars([]));
   }, [campaignId, activeScene]);
+
+  useEffect(() => {
+    if (!campaignId || !activeScene) return;
+    let cancelled = false;
+    let timer: number;
+    const poll = async () => {
+      try {
+        const sc = await api.scenes.getCharacters(campaignId, activeScene.id);
+        if (!cancelled) setSceneChars(sc);
+      } catch {}
+      if (!cancelled) timer = window.setTimeout(poll, 100);
+    };
+    timer = window.setTimeout(poll, 100);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [campaignId, activeScene]);
+
+  useEffect(() => {
+    for (const sc of sceneChars) {
+      serverPosRef.current.set(sc.id, { x: sc.x, z: sc.z, rotation: sc.rotation ?? 0 });
+    }
+    for (const id of serverPosRef.current.keys()) {
+      if (!sceneChars.find((sc) => sc.id === id)) {
+        serverPosRef.current.delete(id);
+        renderedPosRef.current.delete(id);
+      }
+    }
+  }, [sceneChars]);
+
+  useEffect(() => {
+    let running = true;
+    const tick = () => {
+      if (!running) return;
+      for (const [id, target] of serverPosRef.current.entries()) {
+        const prev = renderedPosRef.current.get(id);
+        if (!prev) {
+          renderedPosRef.current.set(id, { ...target });
+        } else {
+          const lerpFactor = 1 - Math.pow(0.00001, 1 / 16);
+          prev.x += (target.x - prev.x) * lerpFactor;
+          prev.z += (target.z - prev.z) * lerpFactor;
+          prev.rotation += (target.rotation - prev.rotation) * lerpFactor;
+        }
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => { running = false; cancelAnimationFrame(rafRef.current); };
+  }, []);
 
   useEffect(() => {
     if (!campaignId) return;
@@ -154,8 +209,29 @@ export default function DmDashboard() {
   };
 
   const handleTokenClick = useCallback((tokenId: string) => {
+    if (!tokenId) {
+      setSelectedTokenId(null);
+      setDistanceFrom(null);
+      setDistanceTo(null);
+      return;
+    }
+    // Shift+click for distance measurement
+    if (window.event && (window.event as KeyboardEvent).shiftKey) {
+      if (!distanceFrom) {
+        setDistanceFrom(tokenId);
+        setDistanceTo(null);
+      } else if (distanceFrom !== tokenId) {
+        setDistanceTo(tokenId);
+      } else {
+        setDistanceFrom(null);
+        setDistanceTo(null);
+      }
+      return;
+    }
+    setDistanceFrom(null);
+    setDistanceTo(null);
     setSelectedTokenId((prev) => prev === tokenId ? null : tokenId);
-  }, []);
+  }, [distanceFrom]);
 
   const handleTokenDrop = useCallback(async (sceneCharId: string, x: number, z: number) => {
     if (!campaignId || !activeScene) return;
@@ -166,8 +242,8 @@ export default function DmDashboard() {
     // Persist to backend
     const updated = sceneChars.map((sc) =>
       sc.id === sceneCharId
-        ? { entity_type: sc.entity_type, entity_id: sc.entity_id, x, y: sc.y, z, visible: !!sc.visible, order: sc.order }
-        : { entity_type: sc.entity_type, entity_id: sc.entity_id, x: sc.x, y: sc.y, z: sc.z, visible: !!sc.visible, order: sc.order }
+        ? { entity_type: sc.entity_type, entity_id: sc.entity_id, x, y: sc.y, z, visible: !!sc.visible, order: sc.order, token_scale: sc.token_scale ?? 1, move_speed: sc.move_speed ?? 1 }
+        : { entity_type: sc.entity_type, entity_id: sc.entity_id, x: sc.x, y: sc.y, z: sc.z, visible: !!sc.visible, order: sc.order, token_scale: sc.token_scale ?? 1, move_speed: sc.move_speed ?? 1 }
     );
     try {
       await api.scenes.updateCharacters(campaignId, activeScene.id, updated);
@@ -178,14 +254,18 @@ export default function DmDashboard() {
 
   const handleAddToScene = useCallback(async (entityType: string, entityId: string) => {
     if (!campaignId || !activeScene) return;
+    const scale = activeScene.map_scale ?? 1;
+    const range = 2 * scale;
     const newChars = [...sceneChars, {
       entity_type: entityType,
       entity_id: entityId,
-      x: Math.random() * 4 - 2,
+      x: Math.random() * range * 2 - range,
       y: 0,
-      z: Math.random() * 4 - 2,
+      z: Math.random() * range * 2 - range,
       visible: true,
       order: sceneChars.length,
+      token_scale: 1,
+      move_speed: 1,
     }];
     try {
       const result = await api.scenes.updateCharacters(campaignId, activeScene.id, newChars);
@@ -211,8 +291,8 @@ export default function DmDashboard() {
     if (!campaignId || !activeScene) return;
     const updated = sceneChars.map((sc) =>
       sc.id === sceneCharId
-        ? { entity_type: sc.entity_type, entity_id: sc.entity_id, x: sc.x, y: sc.y, z: sc.z, visible: !sc.visible, order: sc.order }
-        : { entity_type: sc.entity_type, entity_id: sc.entity_id, x: sc.x, y: sc.y, z: sc.z, visible: !!sc.visible, order: sc.order }
+        ? { entity_type: sc.entity_type, entity_id: sc.entity_id, x: sc.x, y: sc.y, z: sc.z, visible: !sc.visible, order: sc.order, token_scale: sc.token_scale ?? 1, move_speed: sc.move_speed ?? 1 }
+        : { entity_type: sc.entity_type, entity_id: sc.entity_id, x: sc.x, y: sc.y, z: sc.z, visible: !!sc.visible, order: sc.order, token_scale: sc.token_scale ?? 1, move_speed: sc.move_speed ?? 1 }
     );
     try {
       const result = await api.scenes.updateCharacters(campaignId, activeScene.id, updated);
@@ -516,6 +596,14 @@ export default function DmDashboard() {
         </div>
 
         <button
+          onClick={() => setShowSceneSettings(!showSceneSettings)}
+          className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showSceneSettings ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+          title="Scene Settings"
+        >
+          ⚙ Scene
+        </button>
+
+        <button
           onClick={handleInviteCode}
           className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${
             copiedInvite
@@ -754,22 +842,27 @@ export default function DmDashboard() {
                 backgroundUrl={staticUrl(activeScene.background_path)!}
                 characters={sceneChars.map((sc) => {
                   const ent = allEntities.find((e) => e.id === sc.entity_id);
+                  const interpolated = renderedPosRef.current.get(sc.id);
                   return {
                     id: sc.id,
                     sceneCharId: sc.id,
                     name: ent?.name || 'Unknown',
                     type: sc.entity_type,
-                    x: sc.x,
+                    x: interpolated ? interpolated.x : sc.x,
                     y: sc.y,
-                    z: sc.z,
+                    z: interpolated ? interpolated.z : sc.z,
                     visible: !!sc.visible,
                     portraitUrl: staticUrl(ent?.portrait_path ?? null),
                     modelUrl: staticUrl(ent?.model_path ?? null),
-                    rotation: sc.rotation ?? 0,
+                    rotation: interpolated ? interpolated.rotation : (sc.rotation ?? 0),
+                    tokenScale: sc.token_scale ?? 1,
                   };
                 })}
                 lighting={activeScene.lighting}
                 selectedTokenId={selectedTokenId}
+                mapScale={activeScene.map_scale ?? 1}
+                gridSize={activeScene.grid_size ?? 0}
+                gridSnap={activeScene.grid_snap ?? false}
                 onTokenClick={handleTokenClick}
                 onTokenDrop={handleTokenDrop}
                 onTokenContextMenu={handleTokenContextMenu}
@@ -790,6 +883,27 @@ export default function DmDashboard() {
 
           {/* Token Tray — bottom left, responsive */}
           <div className="absolute bottom-4 left-4 z-10 bg-[var(--bg-primary)]/90 backdrop-blur border border-[var(--bg-tertiary)] rounded-lg p-2 max-h-64 overflow-y-auto w-44 md:w-52">
+            {/* Distance measurement overlay */}
+            {distanceFrom && distanceTo && (() => {
+              const from = sceneChars.find((s) => s.id === distanceFrom);
+              const to = sceneChars.find((s) => s.id === distanceTo);
+              if (!from || !to) return null;
+              const dx = to.x - from.x;
+              const dz = to.z - from.z;
+              const dist = Math.sqrt(dx * dx + dz * dz);
+              const gridSize = activeScene?.grid_size ?? 0;
+              const squares = gridSize > 0 ? ` (${(dist / gridSize).toFixed(1)} squares)` : '';
+              return (
+                <div className="mb-2 px-2 py-1 bg-[var(--accent)]/20 rounded text-[10px] text-[var(--accent)] text-center">
+                  Distance: {dist.toFixed(2)} units{squares}
+                </div>
+              );
+            })()}
+            {distanceFrom && !distanceTo && (
+              <div className="mb-2 px-2 py-1 bg-[var(--bg-tertiary)] rounded text-[10px] text-[var(--text-secondary)] text-center">
+                Shift+click another token to measure
+              </div>
+            )}
             <p className="text-[10px] text-[var(--text-secondary)] mb-1 px-1">On Scene ({sceneChars.length})</p>
             {sceneChars.length > 0 ? (
               <div className="space-y-0.5 mb-2">
@@ -865,6 +979,47 @@ export default function DmDashboard() {
                 </div>
               </>
             )}
+
+            {/* Token Scale slider when selected */}
+            {selectedTokenId && (() => {
+              const sc = sceneChars.find((s) => s.id === selectedTokenId);
+              if (!sc) return null;
+              const ent = allEntities.find((e) => e.id === sc.entity_id);
+              return (
+                <div className="mt-2 pt-2 border-t border-[var(--bg-tertiary)]">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] text-[var(--text-secondary)]">Size</span>
+                    <span className="text-[10px] text-[var(--accent)] font-mono">{(sc.token_scale ?? 1).toFixed(1)}x</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0.5}
+                    max={3}
+                    step={0.1}
+                    value={sc.token_scale ?? 1}
+                    onChange={(e) => {
+                      const v = parseFloat(e.target.value);
+                      setSceneChars((prev) => prev.map((s) => s.id === selectedTokenId ? { ...s, token_scale: v } : s));
+                    }}
+                    onMouseUp={async () => {
+                      if (!campaignId || !activeScene) return;
+                      const updated = sceneChars.map((s) =>
+                        s.id === selectedTokenId
+                          ? { entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1 }
+                          : { entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1 }
+                      );
+                      try {
+                        await api.scenes.updateCharacters(campaignId, activeScene.id, updated);
+                      } catch (err) {
+                        console.error('Failed to persist token scale:', err);
+                      }
+                    }}
+                    className="w-full h-1 accent-[var(--accent)]"
+                  />
+                  <p className="text-[9px] text-[var(--text-secondary)] mt-0.5 truncate">{ent?.name || 'Unknown'}</p>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Character Sheet HUD — bottom right on desktop, bottom sheet on mobile */}
@@ -953,6 +1108,17 @@ export default function DmDashboard() {
             <DMNotebookHud
               campaignId={campaignId}
               onClose={() => setShowNotebook(false)}
+            />
+          )}
+          {showSceneSettings && activeScene && campaignId && (
+            <SceneSettingsHud
+              scene={activeScene}
+              onUpdate={async (updates: Partial<Pick<Scene, 'map_scale' | 'grid_size' | 'grid_snap'>>) => {
+                const updated = await api.scenes.update(campaignId, activeScene.id, updates);
+                setActiveScene(updated);
+                setScenes((prev) => prev.map((s) => s.id === updated.id ? updated : s));
+              }}
+              onClose={() => setShowSceneSettings(false)}
             />
           )}
         </div>

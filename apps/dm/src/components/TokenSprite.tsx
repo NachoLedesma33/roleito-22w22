@@ -17,6 +17,7 @@ interface TokenSpriteProps {
   portraitUrl?: string | null;
   isSelected?: boolean;
   isDragging?: boolean;
+  tokenScale?: number;
   onPointerDown?: (e: THREE.Event, id: string) => void;
   onContextMenu?: (e: THREE.Event) => void;
 }
@@ -29,12 +30,16 @@ export default function TokenSprite({
   portraitUrl,
   isSelected,
   isDragging,
+  tokenScale = 1,
   onPointerDown,
   onContextMenu,
 }: TokenSpriteProps) {
   const groupRef = useRef<THREE.Group>(null);
   const color = TOKEN_COLORS[type] || '#94a3b8';
   const initials = name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2);
+  const radius = 0.4 * tokenScale;
+  const fontSize = 0.3 * tokenScale;
+  const nameFontSize = 0.15 * tokenScale;
 
   const texture = useMemo(() => {
     if (!portraitUrl) return null;
@@ -46,7 +51,7 @@ export default function TokenSprite({
 
   useFrame(({ clock }) => {
     if (groupRef.current && !isDragging) {
-      groupRef.current.position.y = position[1] + 0.6 + Math.sin(clock.elapsedTime * 2 + position[0]) * 0.04;
+      groupRef.current.position.y = position[1] + 0.6 * tokenScale + Math.sin(clock.elapsedTime * 2 + position[0]) * 0.04 * tokenScale;
     }
   });
 
@@ -67,20 +72,20 @@ export default function TokenSprite({
           onPointerOut={() => { document.body.style.cursor = 'auto'; }}
         >
           {texture ? (
-            <mesh position={[0, 0.6, 0]}>
-              <circleGeometry args={[0.4, 32]} />
+            <mesh position={[0, 0.6 * tokenScale, 0]}>
+              <circleGeometry args={[radius, 32]} />
               <meshStandardMaterial map={texture} emissiveMap={texture} emissive={new THREE.Color(0xffffff)} emissiveIntensity={0.3} />
             </mesh>
           ) : (
-            <mesh position={[0, 0.6, 0]}>
-              <circleGeometry args={[0.4, 32]} />
+            <mesh position={[0, 0.6 * tokenScale, 0]}>
+              <circleGeometry args={[radius, 32]} />
               <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.4} />
             </mesh>
           )}
           {!texture && (
             <Text
-              position={[0, 0.6, 0.01]}
-              fontSize={0.3}
+              position={[0, 0.6 * tokenScale, 0.01]}
+              fontSize={fontSize}
               color="#000000"
               anchorX="center"
               anchorY="middle"
@@ -92,18 +97,18 @@ export default function TokenSprite({
         </group>
         <Text
           position={[0, 0.05, 0]}
-          fontSize={0.15}
+          fontSize={nameFontSize}
           color="#ffffff"
           anchorX="center"
           anchorY="middle"
-          outlineWidth={0.02}
+          outlineWidth={0.02 * tokenScale}
           outlineColor="#000000"
         >
           {name}
         </Text>
         {isSelected && (
-          <mesh position={[0, 0.6, -0.01]}>
-            <ringGeometry args={[0.42, 0.48, 32]} />
+          <mesh position={[0, 0.6 * tokenScale, -0.01]}>
+            <ringGeometry args={[radius + 0.02, radius + 0.08, 32]} />
             <meshBasicMaterial color="#60a5fa" />
           </mesh>
         )}

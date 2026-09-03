@@ -34,6 +34,11 @@ MIGRATIONS = [
     ("characters", "model_path", "ALTER TABLE characters ADD COLUMN model_path TEXT"),
     ("npcs", "model_path", "ALTER TABLE npcs ADD COLUMN model_path TEXT"),
     ("scene_characters", "rotation", "ALTER TABLE scene_characters ADD COLUMN rotation FLOAT DEFAULT 0.0"),
+    ("scenes", "map_scale", "ALTER TABLE scenes ADD COLUMN map_scale FLOAT DEFAULT 1.0"),
+    ("scenes", "grid_size", "ALTER TABLE scenes ADD COLUMN grid_size FLOAT DEFAULT 0.0"),
+    ("scenes", "grid_snap", "ALTER TABLE scenes ADD COLUMN grid_snap INTEGER DEFAULT 0"),
+    ("scene_characters", "token_scale", "ALTER TABLE scene_characters ADD COLUMN token_scale FLOAT DEFAULT 1.0"),
+    ("scene_characters", "move_speed", "ALTER TABLE scene_characters ADD COLUMN move_speed FLOAT DEFAULT 1.0"),
 ]
 
 VIDA_ATTRS = ["vigor", "intelligence", "dexterity", "cunning"]

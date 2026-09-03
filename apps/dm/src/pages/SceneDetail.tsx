@@ -50,6 +50,21 @@ export default function SceneDetail() {
       .finally(() => setLoading(false));
   }, [campaignId, sceneId]);
 
+  useEffect(() => {
+    if (!campaignId || !sceneId) return;
+    let cancelled = false;
+    let timer: number;
+    const poll = async () => {
+      try {
+        const sc = await api.scenes.getCharacters(campaignId, sceneId);
+        if (!cancelled) setSceneChars(sc);
+      } catch {}
+      if (!cancelled) timer = window.setTimeout(poll, 100);
+    };
+    timer = window.setTimeout(poll, 100);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [campaignId, sceneId]);
+
   const handleSave = async () => {
     if (!campaignId || !sceneId) return;
     const updated = await api.scenes.update(campaignId, sceneId, { name, description: desc, lighting, notes });
@@ -191,6 +206,9 @@ export default function SceneDetail() {
                   };
                 })}
                 lighting={scene.lighting}
+                mapScale={scene.map_scale ?? 1}
+                gridSize={scene.grid_size ?? 0}
+                gridSnap={scene.grid_snap ?? false}
               />
             </Suspense>
           ) : (

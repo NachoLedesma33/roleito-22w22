@@ -350,6 +350,9 @@ class SceneUpdate(BaseModel):
     entrance_x: Optional[float] = None
     entrance_z: Optional[float] = None
     map_id: Optional[str] = None
+    map_scale: Optional[float] = None
+    grid_size: Optional[float] = None
+    grid_snap: Optional[bool] = None
 
 
 class SceneCharacterPosition(BaseModel):
@@ -361,6 +364,8 @@ class SceneCharacterPosition(BaseModel):
     visible: bool = True
     order: int = 0
     rotation: float = 0.0
+    token_scale: float = 1.0
+    move_speed: float = 1.0
 
 
 class SceneResponse(BaseModel):
@@ -376,6 +381,9 @@ class SceneResponse(BaseModel):
     notes: str = ""
     entrance_x: float = 0.0
     entrance_z: float = 0.0
+    map_scale: float = 1.0
+    grid_size: float = 0.0
+    grid_snap: bool = False
     created_at: datetime
     updated_at: datetime
 
@@ -394,6 +402,8 @@ class SceneCharacterResponse(BaseModel):
     visible: bool
     order: int
     rotation: float = 0.0
+    token_scale: float = 1.0
+    move_speed: float = 1.0
 
     class Config:
         from_attributes = True

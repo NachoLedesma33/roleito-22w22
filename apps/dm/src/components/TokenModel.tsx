@@ -10,6 +10,7 @@ interface TokenModelProps {
   modelUrl: string;
   rotation?: number;
   isSelected?: boolean;
+  tokenScale?: number;
   onPointerDown?: (e: THREE.Event, id: string) => void;
   onContextMenu?: (e: THREE.Event) => void;
 }
@@ -21,6 +22,7 @@ const TokenModel = memo(function TokenModel({
   modelUrl,
   rotation = 0,
   isSelected,
+  tokenScale = 1,
   onPointerDown,
   onContextMenu,
 }: TokenModelProps) {
@@ -51,25 +53,25 @@ const TokenModel = memo(function TokenModel({
         onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = 'grab'; }}
         onPointerOut={() => { document.body.style.cursor = 'auto'; }}
       >
-        <group rotation={[0, rotation, 0]} scale={[1, 1, 1]}>
+        <group rotation={[0, rotation, 0]} scale={[tokenScale, tokenScale, tokenScale]}>
           <primitive object={cloneRef.current} />
         </group>
 
         {isSelected && (
-          <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-            <ringGeometry args={[0.35, 0.42, 32]} />
+          <mesh position={[0, 0.02 * tokenScale, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[0.35 * tokenScale, 0.42 * tokenScale, 32]} />
             <meshBasicMaterial color="#60a5fa" />
           </mesh>
         )}
       </group>
 
       <Text
-        position={[0, -0.2, 0]}
-        fontSize={0.15}
+        position={[0, -0.2 * tokenScale, 0]}
+        fontSize={0.15 * tokenScale}
         color="#ffffff"
         anchorX="center"
         anchorY="middle"
-        outlineWidth={0.02}
+        outlineWidth={0.02 * tokenScale}
         outlineColor="#000000"
       >
         {name}

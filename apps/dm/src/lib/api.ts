@@ -328,6 +328,9 @@ export interface Scene {
   notes: string;
   entrance_x: number;
   entrance_z: number;
+  map_scale: number;
+  grid_size: number;
+  grid_snap: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -343,6 +346,8 @@ export interface SceneCharacter {
   visible: boolean;
   order: number;
   rotation: number;
+  token_scale: number;
+  move_speed: number;
 }
 
 type EventCreateFields = {
@@ -601,7 +606,7 @@ export const api = {
       request<Scene>(`/campaigns/${campaignId}/scenes/${id}`),
     create: (campaignId: string, data: { name: string; description?: string; lighting?: string }) =>
       request<Scene>(`/campaigns/${campaignId}/scenes`, { method: 'POST', body: JSON.stringify(data) }),
-    update: (campaignId: string, id: string, data: { name?: string; description?: string; lighting?: string; status?: string; notes?: string; entrance_x?: number; entrance_z?: number; map_id?: string | null }) =>
+    update: (campaignId: string, id: string, data: { name?: string; description?: string; lighting?: string; status?: string; notes?: string; entrance_x?: number; entrance_z?: number; map_id?: string | null; map_scale?: number; grid_size?: number; grid_snap?: boolean }) =>
       request<Scene>(`/campaigns/${campaignId}/scenes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (campaignId: string, id: string) =>
       request<{ status: string; id: string }>(`/campaigns/${campaignId}/scenes/${id}`, { method: 'DELETE' }),
@@ -618,7 +623,7 @@ export const api = {
     },
     getCharacters: (campaignId: string, sceneId: string) =>
       request<SceneCharacter[]>(`/campaigns/${campaignId}/scenes/${sceneId}/characters`),
-    updateCharacters: (campaignId: string, sceneId: string, characters: { entity_type: string; entity_id: string; x: number; y: number; z: number; visible: boolean; order: number; rotation?: number }[]) =>
+    updateCharacters: (campaignId: string, sceneId: string, characters: { entity_type: string; entity_id: string; x: number; y: number; z: number; visible: boolean; order: number; rotation?: number; token_scale?: number; move_speed?: number }[]) =>
       request<SceneCharacter[]>(`/campaigns/${campaignId}/scenes/${sceneId}/characters`, {
         method: 'PUT',
         body: JSON.stringify(characters),
