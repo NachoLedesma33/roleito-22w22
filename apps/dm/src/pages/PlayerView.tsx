@@ -12,7 +12,7 @@ import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastC
 import { api } from '@/lib/api';
 
 const API_BASE = 'http://localhost:8000/api';
-const POLL_MS = 1000;
+const POLL_MS = 100;
 const VIDA_LABELS: Record<string, string> = {
   vigor: 'V',
   intelligence: 'I',
@@ -36,6 +36,8 @@ interface PlayerToken {
   rotation: number;
   portrait_path: string | null;
   model_path: string | null;
+  move_speed: number;
+  token_scale: number;
 }
 
 interface PlayerCharOption {
@@ -54,6 +56,9 @@ interface JoinData {
   scene_name: string;
   background_path: string | null;
   lighting: string;
+  map_scale: number;
+  grid_size: number;
+  grid_snap: boolean;
   characters: PlayerToken[];
   player_characters: PlayerCharOption[];
 }
@@ -169,7 +174,7 @@ export default function PlayerView() {
   const [notesSaving, setNotesSaving] = useState(false);
   const [showDiceRoller, setShowDiceRoller] = useState(false);
   const [toastQueue, setToastQueue] = useState<ToastRoll[]>([]);
-  const [myPosition, setMyPosition] = useState<{ x: number; z: number; rotation: number } | null>(null);
+  const [wasdTarget, setWasdTarget] = useState<{ x: number; z: number; rotation: number } | null>(null);
   const myCharRef = useRef<MyChar | null>(null);
   const mySceneCharRef = useRef<PlayerToken | null>(null);
 
@@ -178,7 +183,10 @@ export default function PlayerView() {
   const sceneIdRef = useRef<string | null>(null);
   const lastRollTsRef = useRef<number>(0);
   const dataRef = useRef<typeof data>(null);
-  const myPositionRef = useRef<{ x: number; z: number; rotation: number } | null>(null);
+  const wasdTargetRef = useRef<{ x: number; z: number; rotation: number } | null>(null);
+  const serverPosRef = useRef<Map<string, { x: number; z: number; rotation: number }>>(new Map());
+  const renderedPosRef = useRef<Map<string, { x: number; z: number; rotation: number }>>(new Map());
+  const rafRef = useRef<number>(0);
 
   const fetchSnapshot = useCallback(async (): Promise<JoinData> => {
     const res = await fetch(`${API_BASE}/campaigns/invite/${code}`);
@@ -203,6 +211,8 @@ export default function PlayerView() {
         window.setTimeout(() => {
           sceneIdRef.current = snap.scene_id;
           setData(snap);
+          wasdTargetRef.current = null;
+          setWasdTarget(null);
           setFading('out');
           window.setTimeout(() => setFading(null), 320);
         }, 380);
@@ -323,7 +333,7 @@ export default function PlayerView() {
   // Keep refs in sync
   useEffect(() => { myCharRef.current = myChar; }, [myChar]);
   useEffect(() => { dataRef.current = data; }, [data]);
-  useEffect(() => { myPositionRef.current = myPosition; }, [myPosition]);
+  useEffect(() => { wasdTargetRef.current = wasdTarget; }, [wasdTarget]);
 
   useEffect(() => {
     if (!data || !myChar || choice?.kind !== 'character') return;
@@ -331,52 +341,100 @@ export default function PlayerView() {
       (c) => c.type === 'character' && data.player_characters.some((p) => p.id === c.entity_id && p.id === choice.id)
     );
     mySceneCharRef.current = sceneChar ?? null;
-    if (sceneChar && myPosition === null) {
-      setMyPosition({ x: sceneChar.x, z: sceneChar.z, rotation: sceneChar.rotation ?? 0 });
+  }, [data, myChar, choice]);
+
+  // Smooth interpolation for other characters' positions
+  useEffect(() => {
+    if (!data) return;
+    const myId = choice?.kind === 'character'
+      ? data.characters.find(
+          (ch) => ch.type === 'character' && data.player_characters.some((p) => p.id === ch.entity_id && p.id === choice.id)
+        )?.id
+      : null;
+    for (const c of data.characters) {
+      if (c.id === myId) continue;
+      serverPosRef.current.set(c.id, { x: c.x, z: c.z, rotation: c.rotation ?? 0 });
     }
-  }, [data, myChar, choice, myPosition]);
+    for (const id of serverPosRef.current.keys()) {
+      if (!data.characters.find((c) => c.id === id)) {
+        serverPosRef.current.delete(id);
+        renderedPosRef.current.delete(id);
+      }
+    }
+  }, [data, choice]);
+
+  useEffect(() => {
+    let running = true;
+    const myId = choice?.kind === 'character'
+      ? data?.characters.find(
+          (ch) => ch.type === 'character' && data?.player_characters.some((p) => p.id === ch.entity_id && p.id === choice.id)
+        )?.id
+      : null;
+    const tick = () => {
+      if (!running) return;
+      for (const [id, target] of serverPosRef.current.entries()) {
+        if (id === myId) continue;
+        const prev = renderedPosRef.current.get(id);
+        if (!prev) {
+          renderedPosRef.current.set(id, { ...target });
+        } else {
+          const lerpFactor = 1 - Math.pow(0.00001, 1 / 16);
+          prev.x += (target.x - prev.x) * lerpFactor;
+          prev.z += (target.z - prev.z) * lerpFactor;
+          prev.rotation += (target.rotation - prev.rotation) * lerpFactor;
+        }
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => { running = false; cancelAnimationFrame(rafRef.current); };
+  }, [choice, data]);
 
   // WASD/QE keyboard movement for player's own character
   useEffect(() => {
-    if (choice?.kind !== 'character') return;
+    const c = choiceRef.current;
+    if (!c || c.kind !== 'character') return;
 
-    const MOVE_SPEED = 0.15;
     const ROTATE_SPEED = Math.PI / 8;
     const keysPressed = new Set<string>();
     let moveTimer: number;
 
     const applyMovement = () => {
       const currentData = dataRef.current;
-      const currentPos = myPositionRef.current;
-      if (!currentData || choice.kind !== 'character') return;
+      const cur = choiceRef.current;
+      if (!currentData || !cur || cur.kind !== 'character') return;
 
       const sc = currentData.characters.find(
-        (c: any) => c.type === 'character' && currentData.player_characters.some((p: any) => p.id === c.entity_id && p.id === choice.id)
+        (ch: any) => ch.type === 'character' && currentData.player_characters.some((p: any) => p.id === ch.entity_id && p.id === cur.id)
       );
       if (!sc) return;
 
-      const pos = currentPos ?? { x: sc.x, z: sc.z, rotation: sc.rotation ?? 0 };
-      let { x, z, rotation } = pos;
+      const prev = wasdTargetRef.current;
+      let x = prev ? prev.x : sc.x;
+      let z = prev ? prev.z : sc.z;
+      let rotation = prev ? prev.rotation : (sc.rotation ?? 0);
       let moved = false;
 
+      const moveSpeed = 0.15 * (sc.move_speed ?? 1);
+
       if (keysPressed.has('w') || keysPressed.has('arrowup')) {
-        x += Math.sin(rotation) * MOVE_SPEED;
-        z += Math.cos(rotation) * MOVE_SPEED;
+        x += Math.sin(rotation) * moveSpeed;
+        z += Math.cos(rotation) * moveSpeed;
         moved = true;
       }
       if (keysPressed.has('s') || keysPressed.has('arrowdown')) {
-        x -= Math.sin(rotation) * MOVE_SPEED;
-        z -= Math.cos(rotation) * MOVE_SPEED;
+        x -= Math.sin(rotation) * moveSpeed;
+        z -= Math.cos(rotation) * moveSpeed;
         moved = true;
       }
       if (keysPressed.has('a') || keysPressed.has('arrowleft')) {
-        x += Math.cos(rotation) * -MOVE_SPEED;
-        z += Math.sin(rotation) * MOVE_SPEED;
+        x += Math.cos(rotation) * -moveSpeed;
+        z += Math.sin(rotation) * moveSpeed;
         moved = true;
       }
       if (keysPressed.has('d') || keysPressed.has('arrowright')) {
-        x += Math.cos(rotation) * MOVE_SPEED;
-        z -= Math.sin(rotation) * MOVE_SPEED;
+        x += Math.cos(rotation) * moveSpeed;
+        z -= Math.sin(rotation) * moveSpeed;
         moved = true;
       }
       if (keysPressed.has('q')) {
@@ -389,10 +447,21 @@ export default function PlayerView() {
       }
 
       if (moved) {
-        myPositionRef.current = { x, z, rotation };
-        setMyPosition({ x, z, rotation });
+        const mapScale = currentData.map_scale ?? 1;
+        const mapH = 10 * mapScale;
+        const mapW = mapH * 4;
+        const tokenRadius = 0.4;
+        x = Math.max(-mapW / 2 + tokenRadius, Math.min(mapW / 2 - tokenRadius, x));
+        z = Math.max(-mapH / 2 + tokenRadius, Math.min(mapH / 2 - tokenRadius, z));
+        if (currentData.grid_snap && currentData.grid_size > 0) {
+          x = Math.round(x / currentData.grid_size) * currentData.grid_size;
+          z = Math.round(z / currentData.grid_size) * currentData.grid_size;
+        }
+        const target = { x, z, rotation };
+        wasdTargetRef.current = target;
+        setWasdTarget(target);
         api.scenes.moveCharacter(currentData.campaign_id, currentData.scene_id!, {
-          character_id: choice.id,
+          character_id: cur.id,
           x, z, rotation,
         }).catch(() => {});
       }
@@ -425,7 +494,7 @@ export default function PlayerView() {
       window.removeEventListener('keyup', onKeyUp);
       clearTimeout(moveTimer);
     };
-  }, [choice?.kind]);
+  }, [choice?.kind, choice?.kind === 'character' ? (choice as { kind: 'character'; id: string }).id : null]);
 
   const chooseCharacter = useCallback(
     (id: string) => {
@@ -435,6 +504,14 @@ export default function PlayerView() {
       choiceRef.current = c;
       setChoice(c);
       setPickerOpen(false);
+      const sc = data.characters.find(
+        (ch) => ch.type === 'character' && data.player_characters.some((p) => p.id === ch.entity_id && p.id === id)
+      );
+      if (sc) {
+        const initTarget = { x: sc.x, z: sc.z, rotation: sc.rotation ?? 0 };
+        wasdTargetRef.current = initTarget;
+        setWasdTarget(initTarget);
+      }
       fetchMyChar(data.campaign_id, id).then((ch) => {
         if (ch) {
           setMyChar(ch);
@@ -623,22 +700,31 @@ export default function PlayerView() {
                     )?.id
                   : null;
                 const isMyChar = c.id === mySceneCharId;
-                const pos = isMyChar && myPosition ? myPosition : { x: c.x, z: c.z, rotation: c.rotation ?? 0 };
+                if (isMyChar && wasdTarget) {
+                  return {
+                    id: c.id, sceneCharId: c.id, name: c.name, type: c.type,
+                    x: wasdTarget.x, y: c.y, z: wasdTarget.z,
+                    visible: true, portraitUrl: staticUrl(c.portrait_path),
+                    modelUrl: staticUrl(c.model_path), rotation: wasdTarget.rotation,
+                    tokenScale: c.token_scale ?? 1,
+                  };
+                }
+                const interpolated = renderedPosRef.current.get(c.id);
                 return {
-                  id: c.id,
-                  sceneCharId: c.id,
-                  name: c.name,
-                  type: c.type,
-                  x: pos.x,
+                  id: c.id, sceneCharId: c.id, name: c.name, type: c.type,
+                  x: interpolated ? interpolated.x : c.x,
                   y: c.y,
-                  z: pos.z,
-                  visible: true,
-                  portraitUrl: staticUrl(c.portrait_path),
+                  z: interpolated ? interpolated.z : c.z,
+                  visible: true, portraitUrl: staticUrl(c.portrait_path),
                   modelUrl: staticUrl(c.model_path),
-                  rotation: pos.rotation,
+                  rotation: interpolated ? interpolated.rotation : (c.rotation ?? 0),
+                  tokenScale: c.token_scale ?? 1,
                 };
               })}
               lighting={data.lighting}
+              mapScale={data.map_scale ?? 1}
+              gridSize={data.grid_size ?? 0}
+              gridSnap={data.grid_snap ?? false}
               selectedTokenId={
                 choice?.kind === 'character'
                   ? data.characters.find(
@@ -659,12 +745,17 @@ export default function PlayerView() {
               onTokenDrop={
                 choice?.kind === 'character'
                   ? (_sceneCharId, x, z) => {
+                      const sc = data.characters.find(
+                        (ch) => ch.type === 'character' && data.player_characters.some((p) => p.id === ch.entity_id && p.id === choice.id)
+                      );
+                      const target = { x, z, rotation: wasdTarget?.rotation ?? (sc?.rotation ?? 0) };
+                      wasdTargetRef.current = target;
+                      setWasdTarget(target);
                       api.scenes.moveCharacter(data.campaign_id, data.scene_id!, {
                         character_id: choice.id,
                         x, z,
-                        rotation: myPosition?.rotation ?? 0,
+                        rotation: target.rotation,
                       }).catch(() => {});
-                      setMyPosition((prev) => ({ x, z, rotation: prev?.rotation ?? 0 }));
                     }
                   : undefined
               }
