@@ -856,6 +856,7 @@ export default function DmDashboard() {
                     modelUrl: staticUrl(ent?.model_path ?? null),
                     rotation: interpolated ? interpolated.rotation : (sc.rotation ?? 0),
                     tokenScale: sc.token_scale ?? 1,
+                    brightness: sc.brightness ?? 0,
                   };
                 })}
                 lighting={activeScene.lighting}

@@ -232,6 +232,7 @@ class SceneCharacter(Base):
     rotation = Column(Float, default=0.0)
     token_scale = Column(Float, default=1.0)
     move_speed = Column(Float, default=1.0)
+    brightness = Column(Float, default=0.0)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 

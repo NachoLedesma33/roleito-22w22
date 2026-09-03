@@ -18,6 +18,7 @@ interface SceneEntity {
   modelUrl?: string | null;
   rotation?: number;
   tokenScale?: number;
+  brightness?: number;
 }
 
 interface SceneRendererProps {
@@ -66,42 +67,42 @@ function SceneLighting({ mode }: { mode: string }) {
     case 'dark':
       return (
         <>
-          <ambientLight intensity={0.5} />
-          <pointLight position={[0, 5, 0]} intensity={0.9} color="#ff9944" />
-          <directionalLight position={[3, 8, 3]} intensity={0.8} />
+          <ambientLight intensity={1.2} />
+          <pointLight position={[0, 5, 0]} intensity={1.5} color="#ff9944" />
+          <directionalLight position={[3, 8, 3]} intensity={1.4} />
         </>
       );
     case 'dim':
       return (
         <>
-          <ambientLight intensity={1.0} />
-          <pointLight position={[0, 5, 0]} intensity={1.6} color="#ffcc77" />
-          <directionalLight position={[3, 8, 3]} intensity={1.2} />
+          <ambientLight intensity={2.0} />
+          <pointLight position={[0, 5, 0]} intensity={2.4} color="#ffcc77" />
+          <directionalLight position={[3, 8, 3]} intensity={2.0} />
         </>
       );
     case 'bright':
       return (
         <>
-          <ambientLight intensity={2.0} />
-          <directionalLight position={[5, 10, 5]} intensity={2.5} />
-          <directionalLight position={[-5, 8, -3]} intensity={1.2} />
+          <ambientLight intensity={3.5} />
+          <directionalLight position={[5, 10, 5]} intensity={3.5} />
+          <directionalLight position={[-5, 8, -3]} intensity={2.0} />
         </>
       );
     case 'torchlight':
       return (
         <>
-          <ambientLight intensity={0.9} />
-          <pointLight position={[-3, 3, 0]} intensity={2.0} color="#ff6600" distance={14} />
-          <pointLight position={[3, 3, 0]} intensity={2.0} color="#ff6600" distance={14} />
-          <pointLight position={[0, 4, -2]} intensity={1.2} color="#ffaa44" distance={10} />
+          <ambientLight intensity={1.8} />
+          <pointLight position={[-3, 3, 0]} intensity={3.0} color="#ff6600" distance={14} />
+          <pointLight position={[3, 3, 0]} intensity={3.0} color="#ff6600" distance={14} />
+          <pointLight position={[0, 4, -2]} intensity={2.0} color="#ffaa44" distance={10} />
         </>
       );
     default:
       return (
         <>
-          <ambientLight intensity={2.2} />
-          <directionalLight position={[5, 10, 5]} intensity={2.8} />
-          <directionalLight position={[-3, 6, -3]} intensity={1.2} />
+          <ambientLight intensity={4.0} />
+          <directionalLight position={[5, 10, 5]} intensity={4.0} />
+          <directionalLight position={[-3, 6, -3]} intensity={2.0} />
         </>
       );
   }
@@ -385,6 +386,7 @@ function DraggableToken({
           rotation={entity.rotation ?? 0}
           isSelected={isSelected}
           tokenScale={entity.tokenScale ?? 1}
+          brightness={entity.brightness ?? 0}
           onPointerDown={handlePointerDown}
           onContextMenu={(e) => {
             const domEvent = e as unknown as PointerEvent;

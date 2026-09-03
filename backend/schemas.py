@@ -366,6 +366,7 @@ class SceneCharacterPosition(BaseModel):
     rotation: float = 0.0
     token_scale: float = 1.0
     move_speed: float = 1.0
+    brightness: float = 0.0
 
 
 class SceneResponse(BaseModel):
@@ -404,6 +405,7 @@ class SceneCharacterResponse(BaseModel):
     rotation: float = 0.0
     token_scale: float = 1.0
     move_speed: float = 1.0
+    brightness: float = 0.0
 
     class Config:
         from_attributes = True

@@ -215,6 +215,7 @@ async def update_scene_characters(
             rotation=ch.rotation,
             token_scale=ch.token_scale,
             move_speed=ch.move_speed,
+            brightness=ch.brightness,
         )
         db.add(sc)
         created.append(sc)

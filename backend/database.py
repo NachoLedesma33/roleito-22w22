@@ -39,6 +39,7 @@ MIGRATIONS = [
     ("scenes", "grid_snap", "ALTER TABLE scenes ADD COLUMN grid_snap INTEGER DEFAULT 0"),
     ("scene_characters", "token_scale", "ALTER TABLE scene_characters ADD COLUMN token_scale FLOAT DEFAULT 1.0"),
     ("scene_characters", "move_speed", "ALTER TABLE scene_characters ADD COLUMN move_speed FLOAT DEFAULT 1.0"),
+    ("scene_characters", "brightness", "ALTER TABLE scene_characters ADD COLUMN brightness FLOAT DEFAULT 0.0"),
 ]
 
 VIDA_ATTRS = ["vigor", "intelligence", "dexterity", "cunning"]

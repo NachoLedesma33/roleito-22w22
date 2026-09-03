@@ -11,6 +11,7 @@ interface TokenModelProps {
   rotation?: number;
   isSelected?: boolean;
   tokenScale?: number;
+  brightness?: number;
   onPointerDown?: (e: THREE.Event, id: string) => void;
   onContextMenu?: (e: THREE.Event) => void;
 }
@@ -23,6 +24,7 @@ const TokenModel = memo(function TokenModel({
   rotation = 0,
   isSelected,
   tokenScale = 1,
+  brightness = 0,
   onPointerDown,
   onContextMenu,
 }: TokenModelProps) {
@@ -35,7 +37,22 @@ const TokenModel = memo(function TokenModel({
     const clone = scene.clone(true);
     const box = new THREE.Box3().setFromObject(clone);
     clone.position.y = -box.min.y;
+    clone.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.material = child.material.clone();
+        child.material.emissive = new THREE.Color(1, 1, 1);
+        child.material.emissiveIntensity = brightness;
+      }
+    });
     cloneRef.current = clone;
+  }
+
+  if (brightness > 0 && cloneRef.current) {
+    cloneRef.current.traverse((child) => {
+      if (child instanceof THREE.Mesh && child.material instanceof THREE.Material) {
+        (child.material as THREE.MeshStandardMaterial).emissiveIntensity = brightness;
+      }
+    });
   }
 
   const handlePointerDown = useCallback(

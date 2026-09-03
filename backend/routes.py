@@ -619,6 +619,7 @@ async def join_by_invite_code(
                     "model_path": getattr(ent, 'model_path', None),
                     "move_speed": getattr(sc, 'move_speed', 1.0),
                     "token_scale": getattr(sc, 'token_scale', 1.0),
+                    "brightness": getattr(sc, 'brightness', 0.0),
                 })
 
     return {

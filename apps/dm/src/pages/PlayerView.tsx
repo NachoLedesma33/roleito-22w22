@@ -38,6 +38,7 @@ interface PlayerToken {
   model_path: string | null;
   move_speed: number;
   token_scale: number;
+  brightness: number;
 }
 
 interface PlayerCharOption {
@@ -707,6 +708,7 @@ export default function PlayerView() {
                     visible: true, portraitUrl: staticUrl(c.portrait_path),
                     modelUrl: staticUrl(c.model_path), rotation: wasdTarget.rotation,
                     tokenScale: c.token_scale ?? 1,
+                    brightness: c.brightness ?? 0,
                   };
                 }
                 const interpolated = renderedPosRef.current.get(c.id);
@@ -719,6 +721,7 @@ export default function PlayerView() {
                   modelUrl: staticUrl(c.model_path),
                   rotation: interpolated ? interpolated.rotation : (c.rotation ?? 0),
                   tokenScale: c.token_scale ?? 1,
+                  brightness: c.brightness ?? 0,
                 };
               })}
               lighting={data.lighting}
