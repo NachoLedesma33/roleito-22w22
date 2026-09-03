@@ -57,7 +57,7 @@ function SceneBackground({ url, mapScale = 1 }: { url: string; mapScale?: number
       position={[0, -0.01, 0]}
     >
       <planeGeometry args={[width, height]} />
-      <meshStandardMaterial map={texture} emissiveMap={texture} emissive={new THREE.Color(0xffffff)} emissiveIntensity={0.3} />
+      <meshStandardMaterial map={texture} />
     </mesh>
   );
 }
@@ -67,42 +67,42 @@ function SceneLighting({ mode }: { mode: string }) {
     case 'dark':
       return (
         <>
-          <ambientLight intensity={4.0} />
-          <pointLight position={[0, 5, 0]} intensity={4.0} color="#ff9944" />
-          <directionalLight position={[3, 8, 3]} intensity={4.0} />
+          <ambientLight intensity={0.8} />
+          <pointLight position={[0, 5, 0]} intensity={1.0} color="#ff9944" />
+          <directionalLight position={[3, 8, 3]} intensity={0.9} />
         </>
       );
     case 'dim':
       return (
         <>
-          <ambientLight intensity={5.5} />
-          <pointLight position={[0, 5, 0]} intensity={5.0} color="#ffcc77" />
-          <directionalLight position={[3, 8, 3]} intensity={5.0} />
+          <ambientLight intensity={1.4} />
+          <pointLight position={[0, 5, 0]} intensity={1.8} color="#ffcc77" />
+          <directionalLight position={[3, 8, 3]} intensity={1.4} />
         </>
       );
     case 'bright':
       return (
         <>
-          <ambientLight intensity={8.0} />
-          <directionalLight position={[5, 10, 5]} intensity={8.0} />
-          <directionalLight position={[-5, 8, -3]} intensity={5.0} />
+          <ambientLight intensity={2.5} />
+          <directionalLight position={[5, 10, 5]} intensity={3.0} />
+          <directionalLight position={[-5, 8, -3]} intensity={1.5} />
         </>
       );
     case 'torchlight':
       return (
         <>
-          <ambientLight intensity={5.0} />
-          <pointLight position={[-3, 3, 0]} intensity={7.0} color="#ff6600" distance={14} />
-          <pointLight position={[3, 3, 0]} intensity={7.0} color="#ff6600" distance={14} />
-          <pointLight position={[0, 4, -2]} intensity={5.0} color="#ffaa44" distance={10} />
+          <ambientLight intensity={1.2} />
+          <pointLight position={[-3, 3, 0]} intensity={2.2} color="#ff6600" distance={14} />
+          <pointLight position={[3, 3, 0]} intensity={2.2} color="#ff6600" distance={14} />
+          <pointLight position={[0, 4, -2]} intensity={1.8} color="#ffaa44" distance={10} />
         </>
       );
     default:
       return (
         <>
-          <ambientLight intensity={10.0} />
-          <directionalLight position={[5, 10, 5]} intensity={10.0} />
-          <directionalLight position={[-3, 6, -3]} intensity={5.0} />
+          <ambientLight intensity={2.8} />
+          <directionalLight position={[5, 10, 5]} intensity={3.2} />
+          <directionalLight position={[-3, 6, -3]} intensity={1.5} />
         </>
       );
   }
