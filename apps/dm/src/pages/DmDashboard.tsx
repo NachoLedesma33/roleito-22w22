@@ -883,7 +883,7 @@ export default function DmDashboard() {
           )}
 
           {/* Token Tray — bottom left, responsive */}
-          <div className="absolute bottom-4 left-4 z-10 bg-[var(--bg-primary)]/90 backdrop-blur border border-[var(--bg-tertiary)] rounded-lg p-2 max-h-64 overflow-y-auto w-44 md:w-52">
+          <div onPointerDown={(e) => e.stopPropagation()} className="absolute bottom-4 left-4 z-10 bg-[var(--bg-primary)]/90 backdrop-blur border border-[var(--bg-tertiary)] rounded-lg p-2 max-h-64 overflow-y-auto w-44 md:w-52">
             {/* Distance measurement overlay */}
             {distanceFrom && distanceTo && (() => {
               const from = sceneChars.find((s) => s.id === distanceFrom);
@@ -1025,7 +1025,7 @@ export default function DmDashboard() {
 
           {/* Character Sheet HUD — bottom right on desktop, bottom sheet on mobile */}
           {selectedChar && selectedEntity && campaignId && (
-            <div className="absolute bottom-4 right-4 z-10 max-sm:left-4 max-sm:right-4 max-sm:bottom-0 max-sm:rounded-b-none">
+            <div onPointerDown={(e) => e.stopPropagation()} className="absolute bottom-4 right-4 z-10 max-sm:left-4 max-sm:right-4 max-sm:bottom-0 max-sm:rounded-b-none">
               <CharacterSheet
                 entity={selectedChar}
                 entityType={selectedEntity.entity_type as 'character' | 'npc'}
