@@ -58,6 +58,8 @@ export default function DmDashboard() {
   const serverPosRef = useRef<Map<string, { x: number; z: number; rotation: number }>>(new Map());
   const renderedPosRef = useRef<Map<string, { x: number; z: number; rotation: number }>>(new Map());
   const rafRef = useRef<number>(0);
+  const sceneCharsRef = useRef(sceneChars);
+  sceneCharsRef.current = sceneChars;
 
   useEffect(() => {
     if (!campaignId) return;
@@ -235,12 +237,11 @@ export default function DmDashboard() {
 
   const handleTokenDrop = useCallback(async (sceneCharId: string, x: number, z: number) => {
     if (!campaignId || !activeScene) return;
-    // Update local state immediately
     setSceneChars((prev) =>
       prev.map((sc) => sc.id === sceneCharId ? { ...sc, x, z } : sc)
     );
-    // Persist to backend
-    const updated = sceneChars.map((sc) =>
+    const current = sceneCharsRef.current;
+    const updated = current.map((sc) =>
       sc.id === sceneCharId
         ? { entity_type: sc.entity_type, entity_id: sc.entity_id, x, y: sc.y, z, visible: !!sc.visible, order: sc.order, token_scale: sc.token_scale ?? 1, move_speed: sc.move_speed ?? 1 }
         : { entity_type: sc.entity_type, entity_id: sc.entity_id, x: sc.x, y: sc.y, z: sc.z, visible: !!sc.visible, order: sc.order, token_scale: sc.token_scale ?? 1, move_speed: sc.move_speed ?? 1 }
@@ -250,7 +251,7 @@ export default function DmDashboard() {
     } catch (err) {
       console.error('Failed to persist token position:', err);
     }
-  }, [campaignId, activeScene, sceneChars]);
+  }, [campaignId, activeScene]);
 
   const handleAddToScene = useCallback(async (entityType: string, entityId: string) => {
     if (!campaignId || !activeScene) return;
@@ -1004,7 +1005,8 @@ export default function DmDashboard() {
                     }}
                     onMouseUp={async () => {
                       if (!campaignId || !activeScene) return;
-                      const updated = sceneChars.map((s) =>
+                      const current = sceneCharsRef.current;
+                      const updated = current.map((s) =>
                         s.id === selectedTokenId
                           ? { entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1 }
                           : { entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1 }
