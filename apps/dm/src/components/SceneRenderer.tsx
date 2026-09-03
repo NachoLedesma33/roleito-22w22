@@ -152,10 +152,13 @@ function DragController({
   const controls = useThree((s) => s.controls) as { enabled: boolean } | null;
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
   const dragState = useRef<{
+    pending: boolean;
     active: boolean;
     sceneCharId: string;
     offsetX: number;
     offsetZ: number;
+    startClientX: number;
+    startClientY: number;
     captured: boolean;
   } | null>(null);
 
@@ -209,7 +212,14 @@ function DragController({
 
     const onPointerMove = (e: PointerEvent) => {
       const st = dragState.current;
-      if (!st?.active) return;
+      if (!st) return;
+
+      if (!st.active) {
+        const dx = e.clientX - st.startClientX;
+        const dy = e.clientY - st.startClientY;
+        if (dx * dx + dy * dy < 25) return;
+        st.active = true;
+      }
 
       if (!st.captured) {
         try {
@@ -223,14 +233,12 @@ function DragController({
       const newPos = applyDragPosition(e);
       if (!newPos) return;
 
-      // Update token group position via userData
       scene.traverse((child: THREE.Object3D) => {
         if (
           child.userData?.sceneCharId === dragState.current?.sceneCharId &&
           child instanceof THREE.Group &&
           child.children.length > 0
         ) {
-          // Move the group (which contains the Billboard/TokenSprite)
           child.position.x = newPos.x;
           child.position.z = newPos.z;
         }
@@ -245,7 +253,12 @@ function DragController({
 
     const onPointerUp = (e: PointerEvent) => {
       const st = dragState.current;
-      if (!st?.active) return;
+      if (!st) return;
+
+      if (!st.active) {
+        releaseDrag();
+        return;
+      }
 
       let newPos = applyDragPosition(e);
       if (newPos) {
@@ -253,7 +266,6 @@ function DragController({
           newPos.x = Math.round(newPos.x / gridSize) * gridSize;
           newPos.z = Math.round(newPos.z / gridSize) * gridSize;
         }
-        // Token-Token collision: push away from overlapping tokens
         if (otherTokens) {
           const myRadius = 0.4;
           for (const other of otherTokens) {
@@ -279,7 +291,7 @@ function DragController({
     };
 
     const onPointerCancel = () => {
-      if (!dragState.current?.active) return;
+      if (!dragState.current) return;
       releaseDrag();
     };
 
@@ -311,10 +323,13 @@ function DragController({
         }
       }
       dragState.current = {
-        active: true,
+        pending: true,
+        active: false,
         sceneCharId,
         offsetX,
         offsetZ,
+        startClientX: clientX ?? 0,
+        startClientY: clientY ?? 0,
         captured: false,
       };
       if (controls) controls.enabled = false;
