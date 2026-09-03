@@ -432,12 +432,27 @@ export default function SceneRenderer({
   const mapHeight = 10 * mapScale;
   const mapWidth = mapHeight * 4;
   const maxDistance = Math.max(25, mapScale * 15);
+  const justSelectedRef = useRef(false);
+
+  const handleCanvasPointerMissed = useCallback(() => {
+    if (justSelectedRef.current) {
+      justSelectedRef.current = false;
+      return;
+    }
+    onTokenClick?.('');
+  }, [onTokenClick]);
+
+  const handleTokenClickWrap = useCallback((id: string) => {
+    justSelectedRef.current = true;
+    setTimeout(() => { justSelectedRef.current = false; }, 0);
+    onTokenClick?.(id);
+  }, [onTokenClick]);
 
   return (
     <Canvas
       camera={{ position: [0, 8, 8], fov: 50 }}
       style={{ width: '100%', height: '100%' }}
-      onPointerMissed={() => onTokenClick?.('')}
+      onPointerMissed={handleCanvasPointerMissed}
     >
       <SceneLighting mode={lighting} />
       <Suspense fallback={null}>
@@ -467,7 +482,7 @@ export default function SceneRenderer({
             entity={ch}
             isSelected={isMovable && selectedTokenId === ch.sceneCharId}
             isMovable={isMovable}
-            onClick={isMovable ? onTokenClick : undefined}
+            onClick={isMovable ? handleTokenClickWrap : undefined}
             onContextMenu={isMovable ? onTokenContextMenu : undefined}
           />
         );
