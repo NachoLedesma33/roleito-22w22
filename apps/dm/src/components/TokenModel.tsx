@@ -37,7 +37,7 @@ const TokenModel = memo(function TokenModel({
     const clone = scene.clone(true);
     const box = new THREE.Box3().setFromObject(clone);
     clone.position.y = -box.min.y;
-    const baseBrightness = Math.max(0.3, brightness);
+    const baseBrightness = Math.max(0.8, brightness);
     clone.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         child.material = child.material.clone();
@@ -49,7 +49,7 @@ const TokenModel = memo(function TokenModel({
   }
 
   if (cloneRef.current) {
-    const intensity = Math.max(0.3, brightness);
+    const intensity = Math.max(0.8, brightness);
     cloneRef.current.traverse((child) => {
       if (child instanceof THREE.Mesh && child.material instanceof THREE.Material) {
         (child.material as THREE.MeshStandardMaterial).emissiveIntensity = intensity;
