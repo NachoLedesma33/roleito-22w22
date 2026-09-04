@@ -163,3 +163,129 @@ export type RelationshipType =
   | 'KNOWS' | 'FRIEND_OF' | 'ENEMY_OF' | 'ALLY_OF' | 'MEMBER_OF'
   | 'OWNS' | 'LOCATED_AT' | 'WORKS_FOR' | 'HATES' | 'LOVES'
   | 'SUSPECTS' | 'DISCOVERED' | 'KILLED' | 'STOLE_FROM' | 'QUEST_FOR'
+
+// ─── Scene Graph Types ───────────────────────────────────────────
+
+export enum SceneLayer {
+  TERRAIN = 0,
+  MAP = 1,
+  EFFECTS_BELOW = 2,
+  TOKENS = 3,
+  EFFECTS_ABOVE = 4,
+  OVERLAY = 5,
+  FOG = 6,
+}
+
+export interface SceneItem {
+  id: string
+  name: string
+
+  // Transform
+  x: number
+  y: number
+  rotation: number
+  scale: number
+
+  // Dimensions
+  width: number
+  height: number
+
+  // Visual
+  image?: string
+  tint?: string
+  opacity?: number
+
+  // Sorting
+  layer: SceneLayer
+  zIndex: number
+
+  // State
+  visible: boolean
+  locked: boolean
+
+  // Hit testing
+  disableHit: boolean
+
+  // Z-index management
+  disableAutoZIndex: boolean
+
+  // Attachments
+  attachmentIds: string[]
+  disableAttachmentBehavior: AttachmentBehavior[]
+
+  // Metadata
+  metadata: ItemMetadata
+
+  // Shape (for non-image items)
+  shape?: ItemShape
+}
+
+export type AttachmentBehavior = 'position' | 'rotation' | 'scale'
+
+export type ItemShape =
+  | { type: 'rectangle'; fill: string; stroke?: string; strokeWidth?: number }
+  | { type: 'ellipse'; fill: string; stroke?: string; strokeWidth?: number }
+  | { type: 'polygon'; points: number[]; fill: string; stroke?: string }
+  | { type: 'line'; points: number[]; stroke: string; strokeWidth: number }
+  | { type: 'text'; text: string; fontSize: number; fontFamily: string; color: string }
+
+export type ItemMetadata =
+  | TokenMetadata
+  | WallMetadata
+  | DoorMetadata
+  | TerrainMetadata
+  | EffectMetadata
+  | LabelMetadata
+  | FogMetadata
+  | RoomMetadata
+
+export interface TokenMetadata {
+  type: 'token'
+  characterId: string
+  ownerId: string
+}
+
+export interface WallMetadata {
+  type: 'wall'
+  wallType: 'solid' | 'door' | 'window'
+  material: string
+  height: number
+}
+
+export interface DoorMetadata {
+  type: 'door'
+  state: 'open' | 'closed' | 'locked'
+  keyId?: string
+}
+
+export interface TerrainMetadata {
+  type: 'terrain'
+  terrainType: string
+  movementCost: number
+}
+
+export interface EffectMetadata {
+  type: 'effect'
+  effectType: string
+  duration?: number
+}
+
+export interface LabelMetadata {
+  type: 'label'
+  text: string
+  fontSize: number
+  color: string
+}
+
+export interface FogMetadata {
+  type: 'fog'
+  fogType: 'static' | 'dynamic'
+  cutMask?: string
+}
+
+export interface RoomMetadata {
+  type: 'room'
+  roomId: string
+  name: string
+  description: string
+}

@@ -4,6 +4,8 @@ import { OrbitControls, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import TokenSprite from './TokenSprite';
 import TokenModel from './TokenModel';
+import ItemRenderer from './ItemRenderer';
+import { SceneItem } from '@core/domain/types';
 
 interface SceneEntity {
   id: string;
@@ -24,14 +26,18 @@ interface SceneEntity {
 interface SceneRendererProps {
   backgroundUrl: string;
   characters: SceneEntity[];
+  items?: SceneItem[];
   lighting?: string;
   selectedTokenId?: string | null;
+  selectedItemIds?: string[];
   readOnly?: boolean;
   movableEntityIds?: string[];
   mapScale?: number;
   gridSize?: number;
   gridSnap?: boolean;
   onTokenClick?: (sceneCharId: string) => void;
+  onItemClick?: (itemId: string) => void;
+  onItemContextMenu?: (itemId: string, clientX: number, clientY: number) => void;
   onTokenDrop?: (sceneCharId: string, x: number, z: number) => void;
   onTokenContextMenu?: (sceneCharId: string, clientX: number, clientY: number) => void;
 }
@@ -431,18 +437,30 @@ function DraggableToken({
 export default function SceneRenderer({
   backgroundUrl,
   characters,
+  items = [],
   lighting = 'neutral',
   selectedTokenId,
+  selectedItemIds = [],
   readOnly = false,
   movableEntityIds,
   mapScale = 1,
   gridSize = 0,
   gridSnap = false,
   onTokenClick,
+  onItemClick,
+  onItemContextMenu,
   onTokenDrop,
   onTokenContextMenu,
 }: SceneRendererProps) {
   const visibleChars = useMemo(() => characters.filter((c) => c.visible), [characters]);
+  const renderItems = useMemo(() => {
+    return items
+      .filter((i) => i.visible)
+      .sort((a, b) => {
+        if (a.layer !== b.layer) return a.layer - b.layer
+        return a.zIndex - b.zIndex
+      })
+  }, [items]);
   const hasDrag = !readOnly || (movableEntityIds && movableEntityIds.length > 0);
   const mapHeight = 10 * mapScale;
   const mapWidth = mapHeight * 4;
@@ -502,6 +520,15 @@ export default function SceneRenderer({
           />
         );
       })}
+      {renderItems.map((item) => (
+        <ItemRenderer
+          key={item.id}
+          item={item}
+          isSelected={selectedItemIds.includes(item.id)}
+          onClick={onItemClick ? () => onItemClick(item.id) : undefined}
+          onContextMenu={onItemContextMenu ? (e) => onItemContextMenu(item.id, e.clientX, e.clientY) : undefined}
+        />
+      ))}
       <OrbitControls
         makeDefault
         enablePan={true}
