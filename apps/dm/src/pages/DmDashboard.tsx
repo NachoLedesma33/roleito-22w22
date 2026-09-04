@@ -738,6 +738,72 @@ export default function DmDashboard() {
             <span className="text-xs text-[var(--text-secondary)] shrink-0">
               {sceneIndex}/{scenes.length}
             </span>
+            <div className="w-px h-5 bg-[var(--bg-tertiary)] shrink-0" />
+            <div ref={buildMenuRef} className="relative shrink-0">
+              <button
+                onClick={() => setBuildMenuOpen(!buildMenuOpen)}
+                className={`text-xs px-2 py-1 rounded transition-colors ${drawState ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+              >
+                🧱 Build ▾
+              </button>
+              {buildMenuOpen && (
+                <div className="absolute left-0 top-full mt-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg z-50 min-w-[180px]">
+                  <button
+                    onClick={() => startDrawMode('wall')}
+                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawState?.mode === 'wall' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
+                  >
+                    🧱 Draw Wall
+                  </button>
+                  <button
+                    onClick={() => startDrawMode('door')}
+                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawState?.mode === 'door' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
+                  >
+                    🚪 Place Door
+                  </button>
+                  <button
+                    onClick={handleAutoDetect}
+                    disabled={detectingWalls}
+                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${detectingWalls ? 'text-amber-400 animate-pulse' : 'text-[var(--text-secondary)]'}`}
+                  >
+                    {detectingWalls ? '⏳ Detecting...' : '🔍 Auto-detect walls'}
+                  </button>
+                  <div className="border-t border-[var(--bg-tertiary)] my-1" />
+                  <div className="px-3 py-1">
+                    <p className="text-[10px] text-[var(--text-secondary)] mb-1">Wall material</p>
+                    <div className="flex gap-1">
+                      {(['stone', 'wood', 'metal', 'glass', 'magic'] as const).map((m) => (
+                        <button
+                          key={m}
+                          onClick={() => setWallMaterial(m)}
+                          className={`w-5 h-5 rounded text-[9px] ${wallMaterial === m ? 'ring-2 ring-amber-400' : ''}`}
+                          style={{ backgroundColor: m === 'stone' ? '#6b7280' : m === 'wood' ? '#92400e' : m === 'metal' ? '#64748b' : m === 'glass' ? '#93c5fd' : '#a855f7' }}
+                          title={m}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="px-3 py-1">
+                    <p className="text-[10px] text-[var(--text-secondary)] mb-1">Door material</p>
+                    <div className="flex gap-1">
+                      {(['wood', 'metal', 'glass', 'magic'] as const).map((m) => (
+                        <button
+                          key={m}
+                          onClick={() => setDoorMaterial(m)}
+                          className={`w-5 h-5 rounded text-[9px] ${doorMaterial === m ? 'ring-2 ring-amber-400' : ''}`}
+                          style={{ backgroundColor: m === 'wood' ? '#b45309' : m === 'metal' ? '#475569' : m === 'glass' ? '#60a5fa' : '#c084fc' }}
+                          title={m}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            {drawState && (
+              <span className="text-[10px] text-amber-400 shrink-0">
+                {drawState.mode === 'wall' ? '🧱 Click-drag to draw wall' : '🚪 Click-drag to place door'} · ESC to cancel
+              </span>
+            )}
           </>
         }
       >
@@ -768,73 +834,6 @@ export default function DmDashboard() {
             ))}
           </div>
         </div>
-
-        <div ref={buildMenuRef} className="relative shrink-0">
-          <button
-            onClick={() => setBuildMenuOpen(!buildMenuOpen)}
-            className={`text-xs px-2 py-1 rounded transition-colors ${drawState ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
-          >
-            🧱 Build ▾
-          </button>
-          {buildMenuOpen && (
-            <div className="absolute left-0 top-full mt-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg z-50 min-w-[180px]">
-              <button
-                onClick={() => startDrawMode('wall')}
-                className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawState?.mode === 'wall' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
-              >
-                🧱 Draw Wall
-              </button>
-              <button
-                onClick={() => startDrawMode('door')}
-                className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawState?.mode === 'door' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
-              >
-                🚪 Place Door
-              </button>
-              <button
-                onClick={handleAutoDetect}
-                disabled={detectingWalls}
-                className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${detectingWalls ? 'text-amber-400 animate-pulse' : 'text-[var(--text-secondary)]'}`}
-              >
-                {detectingWalls ? '⏳ Detecting...' : '🔍 Auto-detect walls'}
-              </button>
-              <div className="border-t border-[var(--bg-tertiary)] my-1" />
-              <div className="px-3 py-1">
-                <p className="text-[10px] text-[var(--text-secondary)] mb-1">Wall material</p>
-                <div className="flex gap-1">
-                  {(['stone', 'wood', 'metal', 'glass', 'magic'] as const).map((m) => (
-                    <button
-                      key={m}
-                      onClick={() => setWallMaterial(m)}
-                      className={`w-5 h-5 rounded text-[9px] ${wallMaterial === m ? 'ring-2 ring-amber-400' : ''}`}
-                      style={{ backgroundColor: m === 'stone' ? '#6b7280' : m === 'wood' ? '#92400e' : m === 'metal' ? '#64748b' : m === 'glass' ? '#93c5fd' : '#a855f7' }}
-                      title={m}
-                    />
-                  ))}
-                </div>
-              </div>
-              <div className="px-3 py-1">
-                <p className="text-[10px] text-[var(--text-secondary)] mb-1">Door material</p>
-                <div className="flex gap-1">
-                  {(['wood', 'metal', 'glass', 'magic'] as const).map((m) => (
-                    <button
-                      key={m}
-                      onClick={() => setDoorMaterial(m)}
-                      className={`w-5 h-5 rounded text-[9px] ${doorMaterial === m ? 'ring-2 ring-amber-400' : ''}`}
-                      style={{ backgroundColor: m === 'wood' ? '#b45309' : m === 'metal' ? '#475569' : m === 'glass' ? '#60a5fa' : '#c084fc' }}
-                      title={m}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {drawState && (
-          <span className="text-[10px] text-amber-400 shrink-0">
-            {drawState.mode === 'wall' ? '🧱 Click-drag to draw wall' : '🚪 Click-drag to place door'} · ESC to cancel
-          </span>
-        )}
 
         <button
           onClick={() => setShowSceneSettings(!showSceneSettings)}
