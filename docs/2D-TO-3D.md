@@ -1112,7 +1112,14 @@ dmDashboard.on('preview-3d', (sceneId: string) => {
 
 ---
 
-## 13. File Structure
+## 13. See Also
+
+> See also: `SCENE-GRAPH.md` for Item system definition and scene graph structure consumed by 3D renderer.
+> See also: `LIGHTING-SYSTEM.md` for light source types and Three.js mapping used by `createLight()`.
+
+---
+
+## 14. File Structure
 
 ```
 /apps/renderer/
@@ -1149,7 +1156,7 @@ dmDashboard.on('preview-3d', (sceneId: string) => {
 
 ---
 
-## 14. Roadmap
+## 15. Roadmap
 
 | Phase | Deliverable | Status |
 |-------|-------------|--------|
@@ -1168,7 +1175,7 @@ dmDashboard.on('preview-3d', (sceneId: string) => {
 
 ---
 
-## 15. Open Questions
+## 16. Open Questions
 
 1. **Model format**: GLB vs GLTF vs custom? GLB is single-file, good for distribution. GLTF is easier to inspect.
 2. **Animation format**: Skeletal (bone-based) vs morph targets? Skeletal is standard for characters.

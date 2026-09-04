@@ -705,7 +705,15 @@ CREATE INDEX idx_walls_doors ON walls(door_state) WHERE wall_type = 'door';
 
 ---
 
-## 16. Future Considerations
+## 16. See Also
+
+> See also: `SCENE-GRAPH.md` for Item system definition and wall entity storage.
+> See also: `FOG-AND-VISIBILITY.md` for fog rendering pipeline and visibility mask consumption.
+> See also: `LIGHTING-SYSTEM.md` for light propagation with wall occlusion.
+
+---
+
+## 17. Future Considerations
 
 - **Vertical LoS**: 3D awareness for multi-story buildings
 - **Destructible walls**: walls that can be damaged/destroyed

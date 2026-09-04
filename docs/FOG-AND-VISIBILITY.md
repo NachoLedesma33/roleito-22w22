@@ -406,14 +406,16 @@ interface PlayerFogSyncMessage {
 Fog occupies `SceneLayer.FOG` (value 6), rendered last in the scene layer stack:
 
 ```
-0: TERRAIN
-1: MAP
-2: ITEMS
-3: TOKENS
-4: EFFECTS
-5: UI
-6: FOG
+0: TERRAIN        — ground textures, water, lava
+1: MAP            — static map image elements
+2: EFFECTS_BELOW  — effects rendered below tokens
+3: TOKENS         — character/creature tokens
+4: EFFECTS_ABOVE  — effects rendered above tokens
+5: OVERLAY        — UI overlays, labels, annotations
+6: FOG            — fog of war (rendered last, masks everything below)
 ```
+
+> Canonical source: `SCENE-GRAPH.md` §3.
 
 ### Item Dependencies
 
@@ -488,3 +490,33 @@ interface FogConfig {
 - Keyboard shortcuts for all DM fog tools
 - Reduced motion option disables fade animations
 - Colorblind mode uses patterns instead of colors for dim/bright distinction
+
+---
+
+## 17. Current Implementation Status
+
+Fog of War is **not yet implemented**. The current codebase has no fog system:
+
+| Existing Code | Fog System Equivalent | Notes |
+|---------------|----------------------|-------|
+| `SceneCharacter.visible` (boolean) | Per-item visibility | Current: simple show/hide. New: per-player fog state. |
+| `SceneRenderer` (SceneRenderer.tsx) | SceneCanvas | No fog layer exists. |
+| `Scene.lighting` (string) | Lighting affects fog zones | Current: 5 presets. New: data-driven light sources. |
+
+### What Does NOT Exist Yet
+
+- `FogState`, `StaticFogData`, `DynamicFogData` — no fog data model
+- `FogRegion` — no fog region geometry
+- `VisionConfig` — no character vision types
+- Fog rendering — no fog layer in SceneRenderer
+- DM fog tools — no paint/erase/flood fill
+- Per-player fog state — no per-player explored/visible tracking
+- GPU fog masking — no stencil buffer or fog shader
+- Line of Sight raycasting — see `WALLS-AND-LINE-OF-SIGHT.md`
+
+### Dependency Chain
+
+Fog of War requires:
+1. **Scene Graph** (SCENE-GRAPH.md) — fog is a SceneLayer
+2. **Walls & Doors** (WALLS-AND-LINE-OF-SIGHT.md) — walls block LoS for dynamic fog
+3. **Lighting** (LIGHTING-SYSTEM.md) — light zones affect visibility

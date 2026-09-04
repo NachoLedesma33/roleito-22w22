@@ -286,18 +286,13 @@ Provider selection depends on availability and configured preferences. Local gen
 
 Scene items reference assets by ID. When a map item is placed, its `assetId` field points to a character token, prop model, or environment texture. The scene graph resolves the ID through the asset pipeline at render time.
 
+Scene items use the canonical `Item` interface from `SCENE-GRAPH.md`. Assets are referenced via the `image` field (2D) or `metadata` (3D model path). The `layer` field uses `SceneLayer` enum values:
+
 ```typescript
-interface SceneItem {
-  id: string;
-  type: 'token' | 'prop' | 'decoration' | 'fx';
-  assetId: string;
-  position: { x: number; y: number; z: number };
-  rotation: number;
-  scale: number;
-  visible: boolean;
-  opacity: number;
-  layer: 'ground' | 'items' | 'tokens' | 'effects' | 'overlay';
-}
+// Canonical types from SCENE-GRAPH.md — do not duplicate here
+// Item.image → 2D asset reference
+// Item.metadata.type === 'token' → character/NPC token
+// Item.metadata.type === 'terrain' → environment texture
 ```
 
 Asset resolution happens at render time, not at placement time. This means swapping a shared token with a campaign override updates all instances without scene graph changes.

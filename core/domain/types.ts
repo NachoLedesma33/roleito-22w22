@@ -98,7 +98,7 @@ export interface Faction {
   status: string
 }
 
-export interface Item {
+export interface InventoryItem {
   id: string
   campaign_id: string
   name: string

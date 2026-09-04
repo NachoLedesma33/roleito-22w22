@@ -783,3 +783,34 @@ This enables:
 - Lazy-load full analysis — show basic map immediately, refine in background
 - Incremental DM updates — don't re-run full analysis on each manual edit
 - Thumbnail generation during ingestion for instant UI feedback
+
+---
+
+## 17. See Also
+
+> See also: `FOG-AND-VISIBILITY.md` for fog rendering pipeline that consumes wall and room data from this analysis.
+
+---
+
+## 18. Current Implementation Status
+
+Map Analysis is **not yet implemented**. The current codebase handles maps as simple image uploads:
+
+| Existing Code | Map Analysis Equivalent | Notes |
+|---------------|------------------------|-------|
+| `Map` model (backend/models.py:172) | `MapMetadata` | Current: just file_path, name. New: grid, rooms, walls, doors. |
+| `MapMarker` model (backend/models.py:239) | `RoomMetadata` or overlay markers | Current: simple POIs. New: semantic room regions. |
+| `uploadBackground` (scene_routes.py:128) | Stage 1: Image Ingestion | Current: just saves file. New: normalize + analyze. |
+| Grid detection | **Not implemented** | Current: manual `grid_size` setting. New: auto-detect from image. |
+| Feature detection | **Not implemented** | No wall/door/room detection exists. |
+| DM map authoring tools | **Not implemented** | No brush tools for walls/doors. |
+
+### Integration Point
+
+When Map Analysis is implemented, it will:
+1. Generate `Item` entities (from `SCENE-GRAPH.md`) for detected walls, doors, rooms
+2. Store analysis results in `MapMetadata`
+3. Feed into Fog of War system for room-based flood fill
+4. Feed into Wall/LoS system for raycasting
+5. Feed into 3D Renderer for wall geometry generation
+6. Feed into `FOG-AND-VISIBILITY.md` for fog mask computation

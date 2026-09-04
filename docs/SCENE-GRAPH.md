@@ -979,4 +979,42 @@ CREATE TABLE scene_items (
 
 ---
 
+## 13. Current Implementation Status
+
+This section maps the Scene Graph design to the existing codebase. The Scene Graph is **not yet implemented** — the current code uses a simpler model.
+
+### Existing Code → Scene Graph Mapping
+
+| Existing Code | Scene Graph Equivalent | Notes |
+|---------------|----------------------|-------|
+| `SceneCharacter` (backend/models.py:220) | `Item` with `metadata.type === 'token'` | SceneCharacter has x,y,z; Item uses x,y. SceneCharacter has `order`; Item uses `zIndex` + `layer`. |
+| `SceneCharacter.entity_type` | `Item.metadata.type` | `'character'`/`'npc'` → `'token'` |
+| `SceneCharacter.token_scale` | `Item.scale` | Different field name |
+| `SceneCharacter.brightness` | `Item.metadata.brightness` | Move to metadata |
+| `Scene.lighting` (string) | Multiple `LightSource` entities | Current: 5 hardcoded modes. New: data-driven light sources. |
+| `SceneBackground` (SceneRenderer.tsx:47) | `Item` with `layer === SceneLayer.MAP` | Background becomes a MAP layer Item |
+| `GridOverlay` (SceneRenderer.tsx:111) | `Item` with `layer === SceneLayer.TERRAIN` | Grid becomes a TERRAIN layer Item |
+| `TokenSprite` (TokenSprite.tsx) | `ItemRenderer` for token Items | Billboard + circle → Item with image or shape |
+| `TokenModel` (TokenModel.tsx) | `ItemRenderer` for token Items with 3D | GLB model from asset system |
+| `SceneRenderer` (SceneRenderer.tsx:431) | `SceneCanvas` | Renamed to avoid confusion |
+| `DragController` (SceneRenderer.tsx:140) | Built into `SceneCanvas` | Selection + drag logic |
+
+### Naming Collision
+
+`core/domain/types.ts` defines `InventoryItem` (renamed from `Item` to avoid collision). The Scene Graph `Item` is a **different entity** — it represents a renderable scene object, not an inventory item.
+
+### What Does NOT Exist Yet
+
+- `enum SceneLayer` — no layer system in code
+- `Item` interface (scene) — only `SceneCharacter` exists
+- `ItemMetadata` types — no discriminated union metadata
+- `ItemShape` types — no vector shape rendering
+- Attachment system — no parent-child relationships
+- `zIndex` system — render order is array order only
+- Wall/Door entities — not implemented
+- Fog system — not implemented
+- Dynamic lighting — only hardcoded presets
+
+---
+
 *This document is the authoritative definition of the Scene Graph system. All implementations must conform to the interfaces, constraints, and behaviors described here.*

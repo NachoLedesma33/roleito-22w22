@@ -1101,7 +1101,14 @@ DM Action
 
 ---
 
-# 20. Roadmap
+# 20. See Also
+
+> See also: `SCENE-GRAPH.md` for Item system definition and light source storage.
+> See also: `WALLS-AND-LINE-OF-SIGHT.md` for wall intersection detection and raycasting used by light propagation.
+
+---
+
+# 21. Roadmap
 
 ### Phase 1 (MVP)
 
