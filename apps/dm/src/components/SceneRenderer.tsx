@@ -1,4 +1,4 @@
-import { Suspense, useMemo, useRef, useCallback, useEffect } from 'react';
+import { Suspense, useMemo, useRef, useCallback, useEffect, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
@@ -472,10 +472,20 @@ export default function SceneRenderer({
       })
   }, [items]);
   const hasDrag = !readOnly || (movableEntityIds && movableEntityIds.length > 0);
-  const mapHeight = 10 * mapScale;
-  const mapWidth = mapHeight * 4;
-  const maxDistance = Math.max(25, mapScale * 15);
   const justSelectedRef = useRef(false);
+  const [imageAspect, setImageAspect] = useState(1);
+  const mapHeight = 10 * mapScale;
+  const mapWidth = mapHeight * imageAspect;
+  const maxDistance = Math.max(25, mapScale * 15);
+
+  useEffect(() => {
+    if (!backgroundUrl) return;
+    const img = new Image();
+    img.onload = () => {
+      if (img.width && img.height) setImageAspect(img.width / img.height);
+    };
+    img.src = backgroundUrl;
+  }, [backgroundUrl]);
 
   const handleCanvasPointerMissed = useCallback(() => {
     if (justSelectedRef.current) {
@@ -537,6 +547,8 @@ export default function SceneRenderer({
           isSelected={selectedItemIds.includes(item.id)}
           onClick={onItemClick ? () => onItemClick(item.id) : undefined}
           onContextMenu={onItemContextMenu ? (e) => onItemContextMenu(item.id, e.clientX, e.clientY) : undefined}
+          mapScale={mapScale}
+          imageAspect={imageAspect}
         />
       ))}
       {drawState && onDrawStart && onDrawMove && onDrawEnd && (

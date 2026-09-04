@@ -68,6 +68,7 @@ export default function DmDashboard() {
   const [wallContextMenu, setWallContextMenu] = useState<{ x: number; y: number; itemId: string } | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [buildMenuOpen, setBuildMenuOpen] = useState(false);
+  const [detectingWalls, setDetectingWalls] = useState(false);
   const buildMenuRef = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const lastRollTsRef = useRef<number>(0);
@@ -155,14 +156,17 @@ export default function DmDashboard() {
   const handleDrawEnd = useCallback(() => {
     setDrawState((prev) => {
       if (!prev || !prev.startPoint || !prev.currentPoint) return null
-      const item = createWallItem(prev, campaignId ?? '')
+      const mScale = activeScene?.map_scale ?? 1
+      const mapH = 10 * mScale
+      const mapW = mapH
+      const item = createWallItem(prev, campaignId ?? '', mapW, mapH)
       if (item) {
         graphRef.addItem(item)
         handleItemsChange(graphRef.getItems())
       }
       return null
     })
-  }, [graphRef, handleItemsChange, campaignId])
+  }, [graphRef, handleItemsChange, campaignId, activeScene])
 
   const startDrawMode = useCallback((mode: 'wall' | 'door') => {
     setDrawState((prev) => {
@@ -171,6 +175,55 @@ export default function DmDashboard() {
     })
     setBuildMenuOpen(false)
   }, [wallMaterial, doorMaterial])
+
+  const handleAutoDetect = useCallback(async () => {
+    if (!campaignId || !activeScene) return
+    setBuildMenuOpen(false)
+    setDetectingWalls(true)
+    try {
+      const result = await api.scenes.detectWalls(campaignId, activeScene.id)
+      if (result.items && result.items.length > 0) {
+        for (const item of result.items) {
+          graphRef.addItem(item as SceneItem)
+        }
+        handleItemsChange(graphRef.getItems())
+        setToastQueue((prev) => [...prev.slice(-4), {
+          id: `detect-${Date.now()}`,
+          rollerName: 'Auto-Detect',
+          diceType: 20,
+          count: 1,
+          results: [result.wall_count],
+          total: result.wall_count,
+          label: `walls + ${result.door_count} doors detected`,
+          timestamp: Date.now(),
+        }])
+      } else {
+        setToastQueue((prev) => [...prev.slice(-4), {
+          id: `detect-${Date.now()}`,
+          rollerName: 'Auto-Detect',
+          diceType: 1,
+          count: 1,
+          results: [1],
+          total: 1,
+          label: 'No walls detected — try adjusting the image',
+          timestamp: Date.now(),
+        }])
+      }
+    } catch (err) {
+      setToastQueue((prev) => [...prev.slice(-4), {
+        id: `detect-err-${Date.now()}`,
+        rollerName: 'Auto-Detect',
+        diceType: 1,
+        count: 1,
+        results: [1],
+        total: 1,
+        label: 'Detection failed — check backend',
+        timestamp: Date.now(),
+      }])
+    } finally {
+      setDetectingWalls(false)
+    }
+  }, [campaignId, activeScene, graphRef, handleItemsChange])
 
   const handleDeleteItem = useCallback((itemId: string) => {
     graphRef.removeItem(itemId)
@@ -736,6 +789,13 @@ export default function DmDashboard() {
                 className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawState?.mode === 'door' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
               >
                 🚪 Place Door
+              </button>
+              <button
+                onClick={handleAutoDetect}
+                disabled={detectingWalls}
+                className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${detectingWalls ? 'text-amber-400 animate-pulse' : 'text-[var(--text-secondary)]'}`}
+              >
+                {detectingWalls ? '⏳ Detecting...' : '🔍 Auto-detect walls'}
               </button>
               <div className="border-t border-[var(--bg-tertiary)] my-1" />
               <div className="px-3 py-1">

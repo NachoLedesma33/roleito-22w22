@@ -1425,6 +1425,117 @@ PERSISTENT STATE          TRANSIENT STATE          EPHEMERAL STATE
 
 ---
 
+# 27B. Wall Detection Service
+
+Automatically detect walls and doors from battle map images using computer vision.
+
+## Overview
+
+```text
+DM uploads map image
+        │
+        ▼
+  POST /scenes/{id}/detect-walls
+        │
+        ▼
+┌─────────────────────────┐
+│  OpenCV Processing      │
+│  1. Grayscale           │
+│  2. Gaussian Blur       │
+│  3. Canny Edge Det.     │
+│  4. findContours        │
+│  5. Filter by area      │
+│  6. approxPolyDP        │
+│  7. Merge segments      │
+│  8. Gap detection       │
+└─────────────────────────┘
+        │
+        ▼
+  SceneItem[] (walls + doors)
+  in normalized 0-1 coords
+        │
+        ▼
+  Added to SceneGraph
+  Saved to SQLite
+```
+
+## Coordinate System
+
+Wall coordinates are stored **normalized (0-1)** relative to image dimensions:
+- `(0, 0)` = top-left of image
+- `(1, 1)` = bottom-right of image
+- `(0.5, 0.5)` = center of image
+
+At render time, coordinates are converted to 3D world space:
+```
+worldX = (normalizedX - 0.5) * mapWidth
+worldZ = (normalizedY - 0.5) * mapHeight
+```
+where `mapHeight = 10 * mapScale` and `mapWidth = mapHeight * imageAspect`.
+
+This ensures walls scale correctly when `mapScale` changes.
+
+## Detection Algorithm
+
+Based on [Auto-Wall](https://github.com/ThreeHats/auto-wall):
+
+1. **Preprocessing**: Load image → grayscale → Gaussian blur (reduces noise)
+2. **Edge Detection**: Canny algorithm (configurable thresholds)
+3. **Morphological Close**: Close gaps in edge map
+4. **Contour Finding**: `findContours` with `RETR_EXTERNAL`
+5. **Filtering**: Remove contours below `min_area` threshold
+6. **Simplification**: `approxPolyDP` reduces vertex count
+7. **Segment Extraction**: Convert polygon edges to wall line segments
+8. **Merging**: Combine nearby/collinear segments
+9. **Door Detection**: Find gaps between wall endpoints within door-width range
+
+## Configuration
+
+`WallDetectionConfig` parameters:
+- `canny_low / canny_high`: Edge detection thresholds
+- `blur_size`: Gaussian kernel size
+- `min_area`: Minimum contour area to consider
+- `approx_epsilon`: Polygon simplification tolerance
+- `min_wall_length`: Minimum wall segment length
+- `min_door_width / max_door_width`: Door gap size range
+- `merge_distance`: Distance threshold for merging segments
+
+## Wall Visibility
+
+Walls are rendered with `opacity: 0.0` (fully transparent) by default. They are:
+- **Invisible** to players — don't obstruct map view
+- **Still interactive** — clickable, selectable, right-clickable
+- **Selection wireframe** appears when selected (blue wireframe overlay)
+
+The `opacity` field in `WallMetadata` allows per-wall visibility override for debugging.
+
+## Backend Dependencies
+
+```
+opencv-python-headless >= 5.0.0
+numpy (included with opencv)
+```
+
+## API Endpoint
+
+```http
+POST /campaigns/{campaign_id}/scenes/{scene_id}/detect-walls
+```
+
+Response:
+```json
+{
+  "items": [SceneItem...],
+  "wall_count": 42,
+  "door_count": 5,
+  "image_size": { "width": 2048, "height": 1536 }
+}
+```
+
+Items are appended to existing scene items (non-destructive).
+
+---
+
 # 28. Architecture Principles
 
 ```text

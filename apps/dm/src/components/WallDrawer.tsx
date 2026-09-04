@@ -22,12 +22,17 @@ export function createEmptyDrawState(mode: 'wall' | 'door', material: WallMetada
   }
 }
 
-export function createWallItem(state: DrawState, _campaignId: string): SceneItem | null {
+export function createWallItem(state: DrawState, _campaignId: string, mapWidth: number = 10, mapHeight: number = 10): SceneItem | null {
   if (!state.startPoint || !state.currentPoint) return null
 
   const dx = state.currentPoint.x - state.startPoint.x
   const dy = state.currentPoint.y - state.startPoint.y
   if (Math.hypot(dx, dy) < 0.1) return null
+
+  const nsx = (state.startPoint.x / mapWidth) + 0.5
+  const nsy = (state.startPoint.y / mapHeight) + 0.5
+  const nex = (state.currentPoint.x / mapWidth) + 0.5
+  const ney = (state.currentPoint.y / mapHeight) + 0.5
 
   const id = `${state.mode}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
   const metadata: WallMetadata | DoorMetadata = state.mode === 'wall'
@@ -37,7 +42,7 @@ export function createWallItem(state: DrawState, _campaignId: string): SceneItem
         material: state.material,
         height: state.wallHeight,
         thickness: state.wallThickness,
-        opacity: 1.0,
+        opacity: 0.0,
         lineOfSight: true,
         movement: true,
         soundOcclusion: 0.8,
@@ -69,7 +74,7 @@ export function createWallItem(state: DrawState, _campaignId: string): SceneItem
     disableAttachmentBehavior: [],
     shape: {
       type: 'line',
-      points: [state.startPoint.x, state.startPoint.y, state.currentPoint.x, state.currentPoint.y],
+      points: [nsx, nsy, nex, ney],
       stroke: state.mode === 'wall' ? '#6b7280' : '#b45309',
       strokeWidth: 3,
     },

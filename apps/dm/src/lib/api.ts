@@ -642,6 +642,11 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify({ items }),
       }),
+    detectWalls: (campaignId: string, sceneId: string) =>
+      request<{ items: any[]; wall_count: number; door_count: number; image_size: { width: number; height: number } }>(
+        `/campaigns/${campaignId}/scenes/${sceneId}/detect-walls`,
+        { method: 'POST' }
+      ),
   },
 
   notebooks: {

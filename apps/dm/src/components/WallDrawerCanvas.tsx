@@ -56,8 +56,8 @@ export default function WallDrawerCanvas({
 
   const previewPoints = drawState.startPoint && drawState.currentPoint
     ? [
-        new THREE.Vector3(drawState.startPoint.x, 0.06, drawState.startPoint.y),
-        new THREE.Vector3(drawState.currentPoint.x, 0.06, drawState.currentPoint.y),
+        new THREE.Vector3(drawState.startPoint.x, 0.08, drawState.startPoint.y),
+        new THREE.Vector3(drawState.currentPoint.x, 0.08, drawState.currentPoint.y),
       ]
     : []
 

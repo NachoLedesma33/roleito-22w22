@@ -170,6 +170,47 @@ async def get_scene_items(
     return {"items": items}
 
 
+@router.post("/campaigns/{campaign_id}/scenes/{scene_id}/detect-walls")
+async def detect_walls(
+    campaign_id: str,
+    scene_id: str,
+    db: AsyncSession = Depends(get_session),
+):
+    result = await db.execute(
+        select(Scene).where(
+            Scene.id == scene_id,
+            Scene.campaign_id == campaign_id,
+        )
+    )
+    scene = result.scalar_one_or_none()
+    if not scene:
+        raise HTTPException(status_code=404, detail="Scene not found")
+    if not scene.background_path or not os.path.exists(scene.background_path):
+        raise HTTPException(status_code=400, detail="No background image to analyze")
+
+    from wall_detection import detect_walls_from_image, scene_items_from_detection
+
+    try:
+        detection = detect_walls_from_image(scene.background_path)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Detection failed: {str(e)}")
+
+    new_items = scene_items_from_detection(detection, campaign_id)
+
+    existing_items = json.loads(scene.items_json) if scene.items_json else []
+    all_items = existing_items + new_items
+    scene.items_json = json.dumps(all_items)
+    await db.commit()
+    await db.refresh(scene)
+
+    return {
+        "items": new_items,
+        "wall_count": detection["wall_count"],
+        "door_count": detection["door_count"],
+        "image_size": detection["image_size"],
+    }
+
+
 @router.post("/campaigns/{campaign_id}/scenes/{scene_id}/upload-background", response_model=SceneResponse)
 async def upload_scene_background(
     campaign_id: str,

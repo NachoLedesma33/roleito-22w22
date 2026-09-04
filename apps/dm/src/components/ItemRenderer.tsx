@@ -15,9 +15,11 @@ interface ItemRendererProps {
   isSelected?: boolean
   onClick?: () => void
   onContextMenu?: (e: MouseEvent) => void
+  mapScale?: number
+  imageAspect?: number
 }
 
-export default function ItemRenderer({ item, isSelected, onClick, onContextMenu }: ItemRendererProps) {
+export default function ItemRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, imageAspect = 1 }: ItemRendererProps) {
   const groupRef = useRef<THREE.Group>(null)
 
   useFrame((state) => {
@@ -28,7 +30,7 @@ export default function ItemRenderer({ item, isSelected, onClick, onContextMenu 
   })
 
   if (item.metadata.type === 'wall' && item.shape?.type === 'line') {
-    return <WallRenderer item={item} isSelected={isSelected} onClick={onClick} />
+    return <WallRenderer item={item} isSelected={isSelected} onClick={onClick} mapScale={mapScale} imageAspect={imageAspect} />
   }
 
   if (item.metadata.type === 'door' && item.shape?.type === 'line') {
@@ -115,13 +117,21 @@ const WALL_MATERIAL_COLORS: Record<string, string> = {
   magic: '#a855f7',
 }
 
-function WallRenderer({ item, isSelected, onClick }: ItemRendererProps) {
+function WallRenderer({ item, isSelected, onClick, mapScale = 1, imageAspect = 1 }: ItemRendererProps) {
   const shape = item.shape as import('@core/domain/types').ItemShape & { type: 'line'; points: number[] }
   const meta = item.metadata as import('@core/domain/types').WallMetadata
   const color = WALL_MATERIAL_COLORS[meta.material] ?? '#6b7280'
 
-  const start = new THREE.Vector3(shape.points[0], 0.05, shape.points[1])
-  const end = new THREE.Vector3(shape.points[2], 0.05, shape.points[3])
+  const mapHeight = 10 * mapScale
+  const mapWidth = mapHeight * imageAspect
+
+  const sx = (shape.points[0] - 0.5) * mapWidth
+  const sy = (shape.points[1] - 0.5) * mapHeight
+  const ex = (shape.points[2] - 0.5) * mapWidth
+  const ey = (shape.points[3] - 0.5) * mapHeight
+
+  const start = new THREE.Vector3(sx, 0.05, sy)
+  const end = new THREE.Vector3(ex, 0.05, ey)
   const dir = new THREE.Vector3().subVectors(end, start)
   const length = dir.length()
   const center = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5)
@@ -140,7 +150,7 @@ function WallRenderer({ item, isSelected, onClick }: ItemRendererProps) {
         <meshStandardMaterial
           color={color}
           transparent
-          opacity={0.25}
+          opacity={0.0}
           side={THREE.DoubleSide}
         />
       </mesh>

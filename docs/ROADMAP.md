@@ -2210,28 +2210,37 @@ A9. Scene persistence: save/load to SQLite
 
 ## PHASE B — Walls & Doors
 
-**Goal**: Walls and doors as Items with collision.
+**Goal**: Walls and doors as Items with collision, auto-detection from maps.
 
 ### Tasks
 
 ```text
 B1. WallItem definition (shape='line', metadata.type='wall')
 B2. DoorItem definition (metadata.type='door', states)
-B3. Wall drawing tool: click-click to place wall segments
-B4. Door drawing tool: click-click to place doors
-B5. Wall rendering: stroke lines with thickness
-B6. Door rendering: open/closed visual states
+B3. Wall drawing tool: click-drag to place wall segments
+B4. Door drawing tool: click-drag to place doors
+B5. Wall rendering: 3D box geometry with material colors
+B6. Door rendering: open/closed/locked visual states
 B7. Movement blocking: walls prevent token movement
 B8. Door interaction: open/close/lock toggle
+B9. Wall auto-detection from map images (OpenCV Canny)
+B10. Wall coordinates normalized (0-1) for map scaling
+B11. Walls fully invisible (opacity=0) by default
+B12. Walls/doors scale with map_scale changes
 ```
 
 ### Done when
 
-- [ ] DM can draw wall segments
-- [ ] DM can place doors on walls
-- [ ] Walls block token movement
-- [ ] Doors can be opened/closed
-- [ ] Closed doors block movement, open doors pass
+- [x] DM can draw wall segments (click-drag)
+- [x] DM can place doors on walls
+- [x] Walls render as invisible 3D geometry (opacity=0)
+- [x] Selection wireframe visible when clicking walls/doors
+- [x] Right-click context menu: toggle/lock/delete doors and walls
+- [x] Delete key removes selected items
+- [x] Auto-detect walls from map background (🔍 button in Build menu)
+- [x] Wall coordinates normalized so they scale with map
+- [ ] Walls block token movement (Phase D)
+- [ ] Doors can be opened/closed (partially done — UI works, movement blocking in Phase D)
 
 ---
 
