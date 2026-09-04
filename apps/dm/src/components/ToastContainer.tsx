@@ -37,16 +37,18 @@ function rollToToast(roll: DiceRollResponse): ToastRoll {
 
 export { rollToToast };
 
-function SingleToast({ toast, onDismiss }: { toast: ToastRoll; onDismiss: () => void }) {
+function SingleToast({ toast, onDismiss }: { toast: ToastRoll; onDismiss: (id: string) => void }) {
   const [exiting, setExiting] = useState(false);
+  const dismissRef = useRef(onDismiss);
+  dismissRef.current = onDismiss;
 
   useEffect(() => {
     const t = setTimeout(() => {
       setExiting(true);
-      setTimeout(onDismiss, 300);
+      setTimeout(() => dismissRef.current(toast.id), 300);
     }, 6000);
     return () => clearTimeout(t);
-  }, [onDismiss]);
+  }, [toast.id]);
 
   const nat20 = toast.results.some((r) => r === toast.diceType);
   const nat1 = toast.results.some((r) => r === 1);
@@ -108,7 +110,7 @@ export default function ToastContainer({ toasts, onDismiss }: ToastContainerProp
   dismissRef.current = onDismiss;
 
   const handleDismiss = useCallback(
-    (id: string) => () => dismissRef.current(id),
+    (id: string) => dismissRef.current(id),
     []
   );
 
@@ -117,7 +119,7 @@ export default function ToastContainer({ toasts, onDismiss }: ToastContainerProp
   return (
     <div className="fixed top-16 right-4 sm:right-4 left-4 sm:left-auto z-50 flex flex-col gap-2 pointer-events-none">
       {toasts.slice(-3).map((t) => (
-        <SingleToast key={t.id} toast={t} onDismiss={handleDismiss(t.id)} />
+        <SingleToast key={t.id} toast={t} onDismiss={handleDismiss} />
       ))}
     </div>
   );

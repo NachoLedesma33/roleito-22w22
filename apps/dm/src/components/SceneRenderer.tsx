@@ -549,9 +549,10 @@ export default function SceneRenderer({
       )}
       <OrbitControls
         makeDefault
-        enablePan={true}
-        enableZoom={true}
-        enableRotate={true}
+        enabled={!drawState}
+        enablePan={!drawState}
+        enableZoom={!drawState}
+        enableRotate={!drawState}
         maxPolarAngle={Math.PI / 2.2}
         minDistance={3}
         maxDistance={maxDistance}

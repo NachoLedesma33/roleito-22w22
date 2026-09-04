@@ -140,7 +140,7 @@ function WallRenderer({ item, isSelected, onClick }: ItemRendererProps) {
         <meshStandardMaterial
           color={color}
           transparent
-          opacity={meta.opacity}
+          opacity={0.25}
           side={THREE.DoubleSide}
         />
       </mesh>
