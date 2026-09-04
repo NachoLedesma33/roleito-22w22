@@ -3,9 +3,9 @@ Wall Detection Service
 Automatically detect walls and doors from battle map images using OpenCV.
 
 Algorithm based on Auto-Wall (github.com/ThreeHats/auto-wall):
-1. Grayscale → Gaussian Blur → Canny Edge Detection
-2. findContours → filter by area → approxPolyDP simplification
-3. Contour segments → wall line segments
+1. Grayscale → CLAHE contrast → Gaussian Blur → Canny Edge Detection
+2. Morphological close → findContours → filter by area + aspect ratio
+3. approxPolyDP simplification → wall line segments
 4. Gap detection in wall runs → door candidates
 """
 
@@ -18,15 +18,15 @@ from typing import Optional
 class WallDetectionConfig:
     def __init__(
         self,
-        canny_low: int = 50,
-        canny_high: int = 150,
-        blur_size: int = 5,
-        min_area: int = 500,
+        canny_low: int = 80,
+        canny_high: int = 160,
+        blur_size: int = 9,
+        min_area: int = 2000,
         approx_epsilon: float = 0.02,
-        min_wall_length: float = 5.0,
+        min_wall_length: float = 10.0,
         max_door_width: float = 80.0,
         min_door_width: float = 15.0,
-        merge_distance: float = 10.0,
+        merge_distance: float = 15.0,
     ):
         self.canny_low = canny_low
         self.canny_high = canny_high
@@ -64,13 +64,19 @@ def detect_walls_from_image(
 
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    gray = clahe.apply(gray)
+
     blur_k = max(3, config.blur_size | 1)
     blurred = cv2.GaussianBlur(gray, (blur_k, blur_k), 0)
 
     edges = cv2.Canny(blurred, config.canny_low, config.canny_high)
 
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
     edges = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
+
+    kernel_open = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    edges = cv2.morphologyEx(edges, cv2.MORPH_OPEN, kernel_open)
 
     contours, hierarchy = cv2.findContours(
         edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
@@ -80,6 +86,19 @@ def detect_walls_from_image(
     for contour in contours:
         area = cv2.contourArea(contour)
         if area < config.min_area:
+            continue
+
+        x_rect, y_rect, w_rect, h_rect = cv2.boundingRect(contour)
+        aspect = max(w_rect, h_rect) / (min(w_rect, h_rect) + 1)
+        if aspect < 1.5:
+            continue
+
+        hull = cv2.convexHull(contour)
+        hull_area = cv2.contourArea(hull)
+        if hull_area < 1e-6:
+            continue
+        solidity = area / hull_area
+        if solidity < 0.3:
             continue
 
         perimeter = cv2.arcLength(contour, True)

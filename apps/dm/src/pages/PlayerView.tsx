@@ -62,6 +62,7 @@ interface JoinData {
   grid_snap: boolean;
   characters: PlayerToken[];
   player_characters: PlayerCharOption[];
+  items: any[];
 }
 
 interface InventoryItem {
@@ -400,7 +401,7 @@ export default function PlayerView() {
     const keysPressed = new Set<string>();
     let moveTimer: number;
 
-    const applyMovement = () => {
+    const applyMovement = async () => {
       const currentData = dataRef.current;
       const cur = choiceRef.current;
       if (!currentData || !cur || cur.kind !== 'character') return;
@@ -450,10 +451,24 @@ export default function PlayerView() {
       if (moved) {
         const mapScale = currentData.map_scale ?? 1;
         const mapH = 10 * mapScale;
-        const mapW = mapH * 4;
+        const mapW = mapH;
         const tokenRadius = 0.4;
         x = Math.max(-mapW / 2 + tokenRadius, Math.min(mapW / 2 - tokenRadius, x));
         z = Math.max(-mapH / 2 + tokenRadius, Math.min(mapH / 2 - tokenRadius, z));
+
+        const normX = (x / mapW) + 0.5;
+        const normZ = (z / mapH) + 0.5;
+        const walls = (currentData.items ?? [])
+          .filter((item: any) => item.metadata?.type === 'wall' && item.shape?.type === 'line')
+          .map((item: any) => {
+            const pts = item.shape.points;
+            return [pts[0], pts[1], pts[2], pts[3]] as [number, number, number, number];
+          });
+        const { checkWallCollision } = await import('@/lib/wall-collision');
+        if (checkWallCollision(normX, normZ, walls, 0.03)) {
+          return;
+        }
+
         if (currentData.grid_snap && currentData.grid_size > 0) {
           x = Math.round(x / currentData.grid_size) * currentData.grid_size;
           z = Math.round(z / currentData.grid_size) * currentData.grid_size;
@@ -726,6 +741,7 @@ export default function PlayerView() {
               })}
               lighting={data.lighting}
               mapScale={data.map_scale ?? 1}
+              items={data.items ?? []}
               gridSize={data.grid_size ?? 0}
               gridSnap={data.grid_snap ?? false}
               selectedTokenId={
@@ -747,7 +763,25 @@ export default function PlayerView() {
               }
               onTokenDrop={
                 choice?.kind === 'character'
-                  ? (_sceneCharId, x, z) => {
+                  ? async (_sceneCharId, x, z) => {
+                      const mScale = data.map_scale ?? 1;
+                      const mapH = 10 * mScale;
+                      const mapW = mapH;
+                      const normX = (x / mapW) + 0.5;
+                      const normZ = (z / mapH) + 0.5;
+
+                      const walls = (data.items ?? [])
+                        .filter((item: any) => item.metadata?.type === 'wall' && item.shape?.type === 'line')
+                        .map((item: any) => {
+                          const pts = item.shape.points;
+                          return [pts[0], pts[1], pts[2], pts[3]] as [number, number, number, number];
+                        });
+
+                      const { checkWallCollision } = await import('@/lib/wall-collision');
+                      if (checkWallCollision(normX, normZ, walls, 0.03)) {
+                        return;
+                      }
+
                       const sc = data.characters.find(
                         (ch) => ch.type === 'character' && data.player_characters.some((p) => p.id === ch.entity_id && p.id === choice.id)
                       );

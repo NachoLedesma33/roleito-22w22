@@ -37,6 +37,7 @@ from schemas import (
 )
 import secrets
 import hashlib
+import json
 
 campaigns_router = APIRouter(tags=["campaigns"])
 
@@ -634,6 +635,7 @@ async def join_by_invite_code(
         "grid_snap": bool(getattr(active_scene, 'grid_snap', 0)) if active_scene else False,
         "characters": scene_chars,
         "player_characters": player_characters,
+        "items": json.loads(active_scene.items_json) if active_scene and active_scene.items_json else [],
     }
 
 
