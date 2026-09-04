@@ -66,6 +66,7 @@ export default function DmDashboard() {
   const [doorMaterial, setDoorMaterial] = useState<'wood' | 'metal' | 'glass' | 'magic'>('wood');
   const [doorContextMenu, setDoorContextMenu] = useState<{ x: number; y: number; itemId: string; state: string } | null>(null);
   const [wallContextMenu, setWallContextMenu] = useState<{ x: number; y: number; itemId: string } | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [buildMenuOpen, setBuildMenuOpen] = useState(false);
   const buildMenuRef = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -171,17 +172,16 @@ export default function DmDashboard() {
     setBuildMenuOpen(false)
   }, [wallMaterial, doorMaterial])
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && drawState) setDrawState(null)
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [drawState])
+  const handleDeleteItem = useCallback((itemId: string) => {
+    graphRef.removeItem(itemId)
+    handleItemsChange(graphRef.getItems())
+  }, [graphRef, handleItemsChange])
 
   const handleDoorItemClick = useCallback((itemId: string) => {
-    toggleDoor(itemId)
-  }, [toggleDoor])
+    setSelectedItemId(itemId)
+    const item = graphRef.getItem(itemId)
+    if (item?.metadata.type === 'door') toggleDoor(itemId)
+  }, [toggleDoor, graphRef])
 
   const handleDoorContextMenu = useCallback((itemId: string, clientX: number, clientY: number) => {
     const item = graphRef.getItem(itemId)
@@ -197,10 +197,21 @@ export default function DmDashboard() {
     }
   }, [graphRef])
 
-  const handleDeleteItem = useCallback((itemId: string) => {
-    graphRef.removeItem(itemId)
-    handleItemsChange(graphRef.getItems())
-  }, [graphRef, handleItemsChange])
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (drawState) setDrawState(null)
+        else setSelectedItemId(null)
+      }
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedItemId) {
+        e.preventDefault()
+        handleDeleteItem(selectedItemId)
+        setSelectedItemId(null)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [drawState, selectedItemId, handleDeleteItem])
 
   useEffect(() => {
     for (const sc of sceneChars) {
@@ -321,6 +332,7 @@ export default function DmDashboard() {
   const handleTokenClick = useCallback((tokenId: string) => {
     if (!tokenId) {
       setSelectedTokenId(null);
+      setSelectedItemId(null);
       setDistanceFrom(null);
       setDistanceTo(null);
       return;
@@ -704,6 +716,66 @@ export default function DmDashboard() {
           </div>
         </div>
 
+        <div ref={buildMenuRef} className="relative shrink-0">
+          <button
+            onClick={() => setBuildMenuOpen(!buildMenuOpen)}
+            className={`text-xs px-2 py-1 rounded transition-colors ${drawState ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+          >
+            🧱 Build ▾
+          </button>
+          {buildMenuOpen && (
+            <div className="absolute left-0 top-full mt-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg z-50 min-w-[180px]">
+              <button
+                onClick={() => startDrawMode('wall')}
+                className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawState?.mode === 'wall' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
+              >
+                🧱 Draw Wall
+              </button>
+              <button
+                onClick={() => startDrawMode('door')}
+                className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawState?.mode === 'door' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
+              >
+                🚪 Place Door
+              </button>
+              <div className="border-t border-[var(--bg-tertiary)] my-1" />
+              <div className="px-3 py-1">
+                <p className="text-[10px] text-[var(--text-secondary)] mb-1">Wall material</p>
+                <div className="flex gap-1">
+                  {(['stone', 'wood', 'metal', 'glass', 'magic'] as const).map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => setWallMaterial(m)}
+                      className={`w-5 h-5 rounded text-[9px] ${wallMaterial === m ? 'ring-2 ring-amber-400' : ''}`}
+                      style={{ backgroundColor: m === 'stone' ? '#6b7280' : m === 'wood' ? '#92400e' : m === 'metal' ? '#64748b' : m === 'glass' ? '#93c5fd' : '#a855f7' }}
+                      title={m}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="px-3 py-1">
+                <p className="text-[10px] text-[var(--text-secondary)] mb-1">Door material</p>
+                <div className="flex gap-1">
+                  {(['wood', 'metal', 'glass', 'magic'] as const).map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => setDoorMaterial(m)}
+                      className={`w-5 h-5 rounded text-[9px] ${doorMaterial === m ? 'ring-2 ring-amber-400' : ''}`}
+                      style={{ backgroundColor: m === 'wood' ? '#b45309' : m === 'metal' ? '#475569' : m === 'glass' ? '#60a5fa' : '#c084fc' }}
+                      title={m}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {drawState && (
+          <span className="text-[10px] text-amber-400 shrink-0">
+            {drawState.mode === 'wall' ? '🧱 Click-drag to draw wall' : '🚪 Click-drag to place door'} · ESC to cancel
+          </span>
+        )}
+
         <button
           onClick={() => setShowSceneSettings(!showSceneSettings)}
           className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showSceneSettings ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
@@ -857,68 +929,6 @@ export default function DmDashboard() {
         </Link>
       </TopBar>
 
-      {/* Build toolbar — outside TopBar to avoid overflow-x-auto clipping */}
-      <div className="flex items-center gap-1.5 px-4 py-1 bg-[var(--bg-primary)] border-b border-[var(--bg-tertiary)] shrink-0">
-        <div ref={buildMenuRef} className="relative shrink-0">
-          <button
-            onClick={() => setBuildMenuOpen(!buildMenuOpen)}
-            className={`text-xs px-2 py-1 rounded transition-colors ${drawState ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
-          >
-            🧱 Build ▾
-          </button>
-          {buildMenuOpen && (
-            <div className="absolute left-0 top-full mt-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg z-50 min-w-[180px]">
-              <button
-                onClick={() => startDrawMode('wall')}
-                className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawState?.mode === 'wall' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
-              >
-                🧱 Draw Wall
-              </button>
-              <button
-                onClick={() => startDrawMode('door')}
-                className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawState?.mode === 'door' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
-              >
-                🚪 Place Door
-              </button>
-              <div className="border-t border-[var(--bg-tertiary)] my-1" />
-              <div className="px-3 py-1">
-                <p className="text-[10px] text-[var(--text-secondary)] mb-1">Wall material</p>
-                <div className="flex gap-1">
-                  {(['stone', 'wood', 'metal', 'glass', 'magic'] as const).map((m) => (
-                    <button
-                      key={m}
-                      onClick={() => setWallMaterial(m)}
-                      className={`w-5 h-5 rounded text-[9px] ${wallMaterial === m ? 'ring-2 ring-amber-400' : ''}`}
-                      style={{ backgroundColor: m === 'stone' ? '#6b7280' : m === 'wood' ? '#92400e' : m === 'metal' ? '#64748b' : m === 'glass' ? '#93c5fd' : '#a855f7' }}
-                      title={m}
-                    />
-                  ))}
-                </div>
-              </div>
-              <div className="px-3 py-1">
-                <p className="text-[10px] text-[var(--text-secondary)] mb-1">Door material</p>
-                <div className="flex gap-1">
-                  {(['wood', 'metal', 'glass', 'magic'] as const).map((m) => (
-                    <button
-                      key={m}
-                      onClick={() => setDoorMaterial(m)}
-                      className={`w-5 h-5 rounded text-[9px] ${doorMaterial === m ? 'ring-2 ring-amber-400' : ''}`}
-                      style={{ backgroundColor: m === 'wood' ? '#b45309' : m === 'metal' ? '#475569' : m === 'glass' ? '#60a5fa' : '#c084fc' }}
-                      title={m}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-        {drawState && (
-          <span className="text-[10px] text-amber-400">
-            {drawState.mode === 'wall' ? '🧱 Click-drag to draw wall' : '🚪 Click-drag to place door'} · ESC to cancel
-          </span>
-        )}
-      </div>
-
       <div className="flex-1 flex overflow-hidden relative min-w-0">
         {/* Sidebar — lg+: permanent toggle, md/sm: overlay */}
         {sidebarOpen && (
@@ -1033,6 +1043,7 @@ export default function DmDashboard() {
                 items={sceneItems}
                 lighting={activeScene.lighting}
                 selectedTokenId={selectedTokenId}
+                selectedItemIds={selectedItemId ? [selectedItemId] : []}
                 mapScale={activeScene.map_scale ?? 1}
                 gridSize={activeScene.grid_size ?? 0}
                 gridSnap={activeScene.grid_snap ?? false}
