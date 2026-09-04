@@ -1,7 +1,13 @@
 import { useEffect, useState, useRef, Suspense, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api, Campaign, Scene, SceneCharacter, Character, NPC, Map as GameMap } from '@/lib/api';
+import { SceneItem } from '@core/domain/types';
+import { SceneGraph } from '@core/scene/scene-graph';
+import { useDoorInteraction } from '@core/scene/door-interaction';
 import SceneRenderer from '@/components/SceneRenderer';
+import WallDrawer from '@/components/WallDrawer';
+import DoorContextMenu from '@/components/DoorContextMenu';
+import WallContextMenu from '@/components/WallContextMenu';
 import SessionLogHud from '@/components/SessionLogHud';
 import SceneNotesHud from '@/components/SceneNotesHud';
 import QuickActionsHud from '@/components/QuickActionsHud';
@@ -53,6 +59,13 @@ export default function DmDashboard() {
   const [distanceTo, setDistanceTo] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
   const [toastQueue, setToastQueue] = useState<ToastRoll[]>([]);
+  const [sceneItems, setSceneItems] = useState<SceneItem[]>([]);
+  const [graphRef] = useState(() => new SceneGraph());
+  const [drawMode, setDrawMode] = useState<'none' | 'wall' | 'door'>('none');
+  const [wallMaterial, setWallMaterial] = useState<'stone' | 'wood' | 'metal' | 'glass' | 'magic'>('stone');
+  const [doorMaterial, setDoorMaterial] = useState<'wood' | 'metal' | 'glass' | 'magic'>('wood');
+  const [doorContextMenu, setDoorContextMenu] = useState<{ x: number; y: number; itemId: string; state: string } | null>(null);
+  const [wallContextMenu, setWallContextMenu] = useState<{ x: number; y: number; itemId: string } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const lastRollTsRef = useRef<number>(0);
   const serverPosRef = useRef<Map<string, { x: number; z: number; rotation: number }>>(new Map());
@@ -103,6 +116,55 @@ export default function DmDashboard() {
     timer = window.setTimeout(poll, 100);
     return () => { cancelled = true; clearTimeout(timer); };
   }, [campaignId, activeScene]);
+
+  useEffect(() => {
+    if (!campaignId || !activeScene) return;
+    api.scenes.getItems(campaignId, activeScene.id)
+      .then(({ items }) => {
+        graphRef.clear()
+        items.forEach((item: SceneItem) => graphRef.addItem(item))
+        setSceneItems(graphRef.getItems())
+      })
+      .catch(() => setSceneItems([]));
+  }, [campaignId, activeScene, graphRef]);
+
+  const handleItemsChange = useCallback((items: SceneItem[]) => {
+    setSceneItems([...items])
+    if (campaignId && activeScene) {
+      api.scenes.saveItems(campaignId, activeScene.id, items).catch(() => {})
+    }
+  }, [campaignId, activeScene])
+
+  const { toggleDoor, lockDoor, unlockDoor } = useDoorInteraction(graphRef, handleItemsChange)
+
+  const handleWallComplete = useCallback((item: SceneItem) => {
+    graphRef.addItem(item)
+    handleItemsChange(graphRef.getItems())
+    setDrawMode('none')
+  }, [graphRef, handleItemsChange])
+
+  const handleDoorItemClick = useCallback((itemId: string) => {
+    toggleDoor(itemId)
+  }, [toggleDoor])
+
+  const handleDoorContextMenu = useCallback((itemId: string, clientX: number, clientY: number) => {
+    const item = graphRef.getItem(itemId)
+    if (item?.metadata.type === 'door') {
+      setDoorContextMenu({ x: clientX, y: clientY, itemId, state: item.metadata.state })
+    }
+  }, [graphRef])
+
+  const handleWallContextMenu = useCallback((itemId: string, clientX: number, clientY: number) => {
+    const item = graphRef.getItem(itemId)
+    if (item?.metadata.type === 'wall') {
+      setWallContextMenu({ x: clientX, y: clientY, itemId })
+    }
+  }, [graphRef])
+
+  const handleDeleteItem = useCallback((itemId: string) => {
+    graphRef.removeItem(itemId)
+    handleItemsChange(graphRef.getItems())
+  }, [graphRef, handleItemsChange])
 
   useEffect(() => {
     for (const sc of sceneChars) {
@@ -604,6 +666,55 @@ export default function DmDashboard() {
           ⚙ Scene
         </button>
 
+        <div className="relative group shrink-0">
+          <button className={`text-xs px-2 py-1 rounded transition-colors ${drawMode !== 'none' ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>
+            🧱 Build ▾
+          </button>
+          <div className="absolute right-0 top-full mt-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 min-w-[160px]">
+            <button
+              onClick={() => setDrawMode(drawMode === 'wall' ? 'none' : 'wall')}
+              className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawMode === 'wall' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
+            >
+              🧱 Draw Wall
+            </button>
+            <button
+              onClick={() => setDrawMode(drawMode === 'door' ? 'none' : 'door')}
+              className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawMode === 'door' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
+            >
+              🚪 Place Door
+            </button>
+            <div className="border-t border-[var(--bg-tertiary)] my-1" />
+            <div className="px-3 py-1">
+              <p className="text-[10px] text-[var(--text-secondary)] mb-1">Wall material</p>
+              <div className="flex gap-1">
+                {(['stone', 'wood', 'metal', 'glass', 'magic'] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setWallMaterial(m)}
+                    className={`w-5 h-5 rounded text-[9px] ${wallMaterial === m ? 'ring-2 ring-amber-400' : ''}`}
+                    style={{ backgroundColor: m === 'stone' ? '#6b7280' : m === 'wood' ? '#92400e' : m === 'metal' ? '#64748b' : m === 'glass' ? '#93c5fd' : '#a855f7' }}
+                    title={m}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="px-3 py-1">
+              <p className="text-[10px] text-[var(--text-secondary)] mb-1">Door material</p>
+              <div className="flex gap-1">
+                {(['wood', 'metal', 'glass', 'magic'] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setDoorMaterial(m)}
+                    className={`w-5 h-5 rounded text-[9px] ${doorMaterial === m ? 'ring-2 ring-amber-400' : ''}`}
+                    style={{ backgroundColor: m === 'wood' ? '#b45309' : m === 'metal' ? '#475569' : m === 'glass' ? '#60a5fa' : '#c084fc' }}
+                    title={m}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <button
           onClick={handleInviteCode}
           className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${
@@ -860,6 +971,7 @@ export default function DmDashboard() {
                     brightness: sc.brightness ?? 0,
                   };
                 })}
+                items={sceneItems}
                 lighting={activeScene.lighting}
                 selectedTokenId={selectedTokenId}
                 mapScale={activeScene.map_scale ?? 1}
@@ -868,7 +980,23 @@ export default function DmDashboard() {
                 onTokenClick={handleTokenClick}
                 onTokenDrop={handleTokenDrop}
                 onTokenContextMenu={handleTokenContextMenu}
+                onItemClick={handleDoorItemClick}
+                onItemContextMenu={(itemId, clientX, clientY) => {
+                  const item = graphRef.getItem(itemId)
+                  if (item?.metadata.type === 'door') handleDoorContextMenu(itemId, clientX, clientY)
+                  else if (item?.metadata.type === 'wall') handleWallContextMenu(itemId, clientX, clientY)
+                }}
               />
+              {drawMode !== 'none' && (
+                <WallDrawer
+                  enabled
+                  mode={drawMode === 'wall' ? 'wall' : 'door'}
+                  material={wallMaterial}
+                  doorMaterial={doorMaterial}
+                  onComplete={handleWallComplete}
+                  onCancel={() => setDrawMode('none')}
+                />
+              )}
             </Suspense>
           ) : (
             <div className="w-full h-full flex items-center justify-center text-[var(--text-secondary)]">
@@ -1134,6 +1262,28 @@ export default function DmDashboard() {
           y={contextMenu.y}
           items={contextMenu.items}
           onClose={() => setContextMenu(null)}
+        />
+      )}
+
+      {doorContextMenu && (
+        <DoorContextMenu
+          x={doorContextMenu.x}
+          y={doorContextMenu.y}
+          doorState={doorContextMenu.state as 'open' | 'closed' | 'locked'}
+          onToggle={() => toggleDoor(doorContextMenu.itemId)}
+          onLock={() => lockDoor(doorContextMenu.itemId)}
+          onUnlock={() => unlockDoor(doorContextMenu.itemId)}
+          onDelete={() => handleDeleteItem(doorContextMenu.itemId)}
+          onClose={() => setDoorContextMenu(null)}
+        />
+      )}
+
+      {wallContextMenu && (
+        <WallContextMenu
+          x={wallContextMenu.x}
+          y={wallContextMenu.y}
+          onDelete={() => handleDeleteItem(wallContextMenu.itemId)}
+          onClose={() => setWallContextMenu(null)}
         />
       )}
 

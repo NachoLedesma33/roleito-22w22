@@ -35,6 +35,10 @@ export class SceneGraph {
     this.items.delete(id)
   }
 
+  clear(): void {
+    this.items.clear()
+  }
+
   attachItem(parentId: string, childId: string): void {
     const parent = this.items.get(parentId)
     const child = this.items.get(childId)
