@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 
-const API_BASE = 'http://localhost:8000/api';
+const API_BASE = '/api';
 
 interface DMBrief {
   id: string;

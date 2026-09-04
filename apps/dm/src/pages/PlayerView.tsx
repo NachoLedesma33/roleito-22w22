@@ -11,7 +11,7 @@ import MinimizedBar from '@/components/MinimizedBar';
 import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastContainer';
 import { api } from '@/lib/api';
 
-const API_BASE = 'http://localhost:8000/api';
+const API_BASE = '/api';
 const POLL_MS = 100;
 const VIDA_LABELS: Record<string, string> = {
   vigor: 'V',
@@ -22,7 +22,7 @@ const VIDA_LABELS: Record<string, string> = {
 
 function staticUrl(path: string | null): string | null {
   if (!path) return null;
-  return `http://localhost:8000/api/static/${path.replace(/\\/g, '/').split('/assets/')[1]}`;
+  return `/api/static/${path.replace(/\\/g, '/').split('/assets/')[1]}`;
 }
 
 interface PlayerToken {

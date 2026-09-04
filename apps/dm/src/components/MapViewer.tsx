@@ -3,7 +3,7 @@ import { api, Map, MapMarker, Scene } from '@/lib/api';
 
 function staticUrl(path: string | null): string | null {
   if (!path) return null;
-  return `http://localhost:8000/api/static/${path.replace(/\\/g, '/').split('/assets/')[1]}`;
+  return `/api/static/${path.replace(/\\/g, '/').split('/assets/')[1]}`;
 }
 
 const MARKER_COLORS = [
