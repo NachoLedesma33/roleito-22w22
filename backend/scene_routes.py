@@ -10,6 +10,7 @@ from schemas import (
 )
 import os
 import uuid
+import json
 
 router = APIRouter(tags=["scenes"])
 
