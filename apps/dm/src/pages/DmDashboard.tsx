@@ -410,6 +410,35 @@ export default function DmDashboard() {
 
   const handleTokenDrop = useCallback(async (sceneCharId: string, x: number, z: number) => {
     if (!campaignId || !activeScene) return;
+
+    const mScale = activeScene.map_scale ?? 1;
+    const mapH = 10 * mScale;
+    const mapW = mapH;
+    const normX = (x / mapW) + 0.5;
+    const normZ = (z / mapH) + 0.5;
+
+    const walls = graphRef.getItems()
+      .filter((item) => item.metadata.type === 'wall' && item.shape?.type === 'line')
+      .map((item) => {
+        const pts = (item.shape as any).points;
+        return [pts[0], pts[1], pts[2], pts[3]] as [number, number, number, number];
+      });
+
+    const { checkWallCollision } = await import('@/lib/wall-collision');
+    if (checkWallCollision(normX, normZ, walls, 0.03)) {
+      setToastQueue((prev) => [...prev.slice(-4), {
+        id: `wall-block-${Date.now()}`,
+        rollerName: 'Wall',
+        diceType: 1,
+        count: 1,
+        results: [1],
+        total: 1,
+        label: 'Blocked by wall',
+        timestamp: Date.now(),
+      }]);
+      return;
+    }
+
     setSceneChars((prev) =>
       prev.map((sc) => sc.id === sceneCharId ? { ...sc, x, z } : sc)
     );
@@ -424,7 +453,7 @@ export default function DmDashboard() {
     } catch (err) {
       console.error('Failed to persist token position:', err);
     }
-  }, [campaignId, activeScene]);
+  }, [campaignId, activeScene, graphRef]);
 
   const handleAddToScene = useCallback(async (entityType: string, entityId: string) => {
     if (!campaignId || !activeScene) return;

@@ -150,7 +150,7 @@ function WallRenderer({ item, isSelected, onClick, mapScale = 1, imageAspect = 1
         <meshStandardMaterial
           color={color}
           transparent
-          opacity={0.0}
+          opacity={isSelected ? 0.3 : 0.12}
           side={THREE.DoubleSide}
         />
       </mesh>
