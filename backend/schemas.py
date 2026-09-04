@@ -353,6 +353,7 @@ class SceneUpdate(BaseModel):
     map_scale: Optional[float] = None
     grid_size: Optional[float] = None
     grid_snap: Optional[bool] = None
+    items_json: Optional[str] = None
 
 
 class SceneCharacterPosition(BaseModel):
@@ -385,6 +386,7 @@ class SceneResponse(BaseModel):
     map_scale: float = 1.0
     grid_size: float = 0.0
     grid_snap: bool = False
+    items_json: str = "[]"
     created_at: datetime
     updated_at: datetime
 

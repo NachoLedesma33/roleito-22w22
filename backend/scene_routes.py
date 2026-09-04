@@ -125,6 +125,51 @@ async def delete_scene(
     return {"status": "deleted", "id": scene_id}
 
 
+@router.put("/campaigns/{campaign_id}/scenes/{scene_id}/items", response_model=SceneResponse)
+async def save_scene_items(
+    campaign_id: str,
+    scene_id: str,
+    data: dict,
+    db: AsyncSession = Depends(get_session),
+):
+    result = await db.execute(
+        select(Scene).where(
+            Scene.id == scene_id,
+            Scene.campaign_id == campaign_id,
+        )
+    )
+    scene = result.scalar_one_or_none()
+    if not scene:
+        raise HTTPException(status_code=404, detail="Scene not found")
+
+    import json
+    scene.items_json = json.dumps(data.get("items", []))
+    await db.commit()
+    await db.refresh(scene)
+    return scene
+
+
+@router.get("/campaigns/{campaign_id}/scenes/{scene_id}/items")
+async def get_scene_items(
+    campaign_id: str,
+    scene_id: str,
+    db: AsyncSession = Depends(get_session),
+):
+    result = await db.execute(
+        select(Scene).where(
+            Scene.id == scene_id,
+            Scene.campaign_id == campaign_id,
+        )
+    )
+    scene = result.scalar_one_or_none()
+    if not scene:
+        raise HTTPException(status_code=404, detail="Scene not found")
+
+    import json
+    items = json.loads(scene.items_json) if scene.items_json else []
+    return {"items": items}
+
+
 @router.post("/campaigns/{campaign_id}/scenes/{scene_id}/upload-background", response_model=SceneResponse)
 async def upload_scene_background(
     campaign_id: str,

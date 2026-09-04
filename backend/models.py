@@ -213,6 +213,7 @@ class Scene(Base):
     map_scale = Column(Float, default=1.0)
     grid_size = Column(Float, default=0.0)
     grid_snap = Column(Integer, default=0)
+    items_json = Column(Text, default="[]")
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

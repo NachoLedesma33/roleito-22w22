@@ -331,6 +331,7 @@ export interface Scene {
   map_scale: number;
   grid_size: number;
   grid_snap: boolean;
+  items_json: string;
   created_at: string;
   updated_at: string;
 }
@@ -633,6 +634,13 @@ export const api = {
       request<SceneCharacter>(`/campaigns/${campaignId}/scenes/${sceneId}/move`, {
         method: 'PATCH',
         body: JSON.stringify(data),
+      }),
+    getItems: (campaignId: string, sceneId: string) =>
+      request<{ items: any[] }>(`/campaigns/${campaignId}/scenes/${sceneId}/items`),
+    saveItems: (campaignId: string, sceneId: string, items: any[]) =>
+      request<Scene>(`/campaigns/${campaignId}/scenes/${sceneId}/items`, {
+        method: 'PUT',
+        body: JSON.stringify({ items }),
       }),
   },
 
