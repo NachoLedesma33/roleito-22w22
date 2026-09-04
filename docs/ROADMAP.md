@@ -2451,6 +2451,105 @@ J7. Documentation: update all docs with final state
 
 ---
 
+## PHASE K — Walkable Space & Collision
+
+**Goal**: Characters collide with walls correctly.
+
+### Tasks
+
+```text
+K1. Agent footprint types: circle, capsule, rectangle
+K2. Wall inflation: expand walls by agent radius
+K3. Configuration space: C_free = C_world ⊖ B(r)
+K4. Point-vs-segment collision detection
+K5. Multiple wall collision resolution
+K6. Wall sliding: remove normal velocity, keep tangential
+K7. Swept collision: prevent tunneling at high speed
+K8. Corner resolution: push away from corner points
+```
+
+### Done when
+
+- [ ] Character cannot walk through walls
+- [ ] Character slides along walls when pushing into them
+- [ ] Fast movement doesn't tunnel through thin walls
+- [ ] Corners don't trap characters
+
+---
+
+## PHASE L — NavMesh & Pathfinding
+
+**Goal**: AI and click-move use pathfinding.
+
+### Tasks
+
+```text
+L1. NavMesh generation from walkable polygons
+L2. Grid A* for grid-based maps
+L3. NavMesh A* for free-movement maps
+L4. Funnel algorithm (string pulling) for path smoothing
+L5. Path caching and invalidation
+L6. Multi-floor NavMesh with portals (stairs/elevators)
+L7. Pathfinding budget: max 10ms per query
+```
+
+### Done when
+
+- [ ] Click-to-move finds shortest path around walls
+- [ ] Path is smooth (no zigzag through grid cells)
+- [ ] Stairs connect floors in pathfinding
+- [ ] Performance stays under 10ms
+
+---
+
+## PHASE M — Movement Agent
+
+**Goal**: Unified movement system for all characters.
+
+### Tasks
+
+```text
+M1. Movement Controller: input → collision → position
+M2. WASD movement with camera-relative direction
+M3. Click-move with pathfinding
+M4. DM drag with collision validation
+M5. Path following: advance through waypoints
+M6. 2D position (x,z) → 3D position (x,y,z) transform
+M7. Network sync: client prediction + server authority
+```
+
+### Done when
+
+- [ ] Player WASD movement works with collision
+- [ ] Click-move follows path correctly
+- [ ] DM can drag tokens (with collision)
+- [ ] 3D models follow 2D positions
+
+---
+
+## PHASE N — Dynamic Obstacles
+
+**Goal**: Doors and traps modify navigation in real-time.
+
+### Tasks
+
+```text
+N1. Door state machine: open/closed/locked/destroyed
+N2. Incremental NavMesh update on door state change
+N3. Floor portals: stairs/elevators as NavMesh connectors
+N4. Trap activation: add/remove obstacle polygons
+N5. Walkable space invalidation on obstacle change
+```
+
+### Done when
+
+- [ ] Opening a door updates walkable space
+- [ ] Closing a door blocks pathfinding
+- [ ] Stairs connect floors for navigation
+- [ ] Traps can block movement when activated
+
+---
+
 ## Phase Dependencies
 
 ```text
@@ -2463,20 +2562,28 @@ A (Scene Graph)
 ├── G (Map Analysis) ← needs A, B
 ├── H (Assets) ← needs A
 ├── I (3D) ← needs A, B, E
+├── K (Walkable Space) ← needs B
+├── L (NavMesh) ← needs K
+├── M (Movement Agent) ← needs K, L
+├── N (Dynamic Obstacles) ← needs B, L
 └── J (Integration) ← needs all
 ```
 
 ## Recommended Order
 
 ```text
-1. A — Scene Graph Foundation (foundational)
-2. B — Walls & Doors (needed for D, E, F, G)
-3. C — Selection & Interaction (usability)
-4. D — Fog of War Static (DM tool)
-5. E — Lighting (atmosphere)
-6. F — Line of Sight (gameplay)
-7. G — Map Analysis (differentiator)
-8. H — Assets (content)
-9. I — 3D Rendering (immersion)
-10. J — Integration & Polish (release)
+1.  A — Scene Graph Foundation (foundational)
+2.  B — Walls & Doors (needed for D, E, F, G, K)
+3.  C — Selection & Interaction (usability)
+4.  D — Fog of War Static (DM tool)
+5.  E — Lighting (atmosphere)
+6.  F — Line of Sight (gameplay)
+7.  G — Map Analysis (differentiator)
+8.  H — Assets (content)
+9.  K — Walkable Space & Collision (movement foundation)
+10. L — NavMesh & Pathfinding (AI movement)
+11. M — Movement Agent (unified movement)
+12. N — Dynamic Obstacles (real-time navigation)
+13. I — 3D Rendering (immersion)
+14. J — Integration & Polish (release)
 ```
