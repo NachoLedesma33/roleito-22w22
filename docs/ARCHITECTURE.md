@@ -1394,7 +1394,38 @@ Advanced AI features
 
 ---
 
-# 27. Architecture Principles
+# 27. Three-State Architecture
+
+## 27.1 Overview
+
+Roleito follows the three-state model from Owlbear Rodeo:
+
+```text
+PERSISTENT STATE          TRANSIENT STATE          EPHEMERAL STATE
+(Scene Graph,            (Interaction API,         (Broadcast API,
+ World State,             selection, scroll,        emotes, cursors,
+ Campaign Data)           pointer, measurements)    custom events)
+     │                          │                          │
+     ▼                          ▼                          ▼
+  SQLite DB              Real-time sync             WebSocket
+  File storage           Interpolated              Fire-and-forget
+  Survives restart       Never persisted            Gone after event
+```
+
+**Persistent State**: The scene graph (Items), world state, campaign data, fog of war. Stored in SQLite and files. Survives session restarts. Source of truth.
+
+**Transient State**: Player interaction state — selection, scroll position, pointer, measurements, rulers. Real-time, interpolated between peers. Never persisted to disk. Reconstructed from last known state on reconnect.
+
+**Ephemeral State**: One-shot broadcast events — emotes, name tags, cursor images, custom events. Emitted once, consumed, gone. No persistence, no replay.
+
+### See Also
+- `SCENE-GRAPH.md` — Item system, layers, attachments
+- `FOG-AND-VISIBILITY.md` — Fog persistence and per-player visibility
+- `OWLBEAR-REFERENCE.md` — Owlbear's three-state implementation details
+
+---
+
+# 28. Architecture Principles
 
 ```text
 1. LOCAL-FIRST
@@ -1425,12 +1456,46 @@ Advanced AI features
    Logical separation even locally
 
 10. RECOVERABLE
-   Any state can be rebuilt
+    Any state can be rebuilt
+
+11. THREE-STATE MODEL
+    Persistent (source of truth), Transient (real-time), Ephemeral (fire-and-forget)
+
+12. SELECTION BELONGS TO PLAYER
+    Not to Items — player-centric selection model
+
+13. LAYER ≠ Z-INDEX
+    Layer = category, zIndex = order within layer. Never interchangeable.
 ```
 
 ---
 
-# 28. Integration Map
+# 29. New Systems (Post-Owlbear Analysis)
+
+The following systems were designed based on analysis of Owlbear Rodeo architecture:
+
+| System | Document | Key Concept |
+|--------|----------|-------------|
+| Scene Graph | `SCENE-GRAPH.md` | Items, layers, zIndex, attachments, shapes |
+| Map Analysis | `MAP-ANALYSIS.md` | Image → rooms/walls/doors → semantic scene |
+| Fog of War | `FOG-AND-VISIBILITY.md` | Static (exploration) + Dynamic (per-turn LoS) |
+| Walls & LoS | `WALLS-AND-LINE-OF-SIGHT.md` | Raycasting, visibility masks, pathfinding |
+| Lighting | `LIGHTING-SYSTEM.md` | Point/cone/line/ambient, wall occlusion |
+| Assets | `ASSET-SYSTEM.md` | CC0-only, manifests, AI generation |
+| 2D→3D | `2D-TO-3D.md` | Scene graph → Three.js mapping |
+| Reference | `OWLBEAR-REFERENCE.md` | Technical patterns to adopt/adapt |
+| Status | `IMPLEMENTATION-STATUS.md` | What's built vs planned |
+
+### Key Differentiator
+Owlbear does NOT semantically interpret map images. Roleito builds:
+```text
+Map Analyzer → Semantic Scene → 2D Battlemap + 3D Immersive View
+```
+from the same source image. This is Roleito's core advantage.
+
+---
+
+# 30. Integration Map
 
 ```text
 CONTEXT.md ← All agents read first
@@ -1450,6 +1515,15 @@ INGESTION-AND-LORE.md ← Historical import
 AGENTS-SYSTEM.md ← Agent definitions
     ↓
 ARCHITECTURE.md ← Technical implementation
+    ↓
+NEW SYSTEMS (Post-Owlbear):
+    SCENE-GRAPH.md ← Item system
+    MAP-ANALYSIS.md ← Image → scene
+    FOG-AND-VISIBILITY.md ← Fog + LoS
+    WALLS-AND-LINE-OF-SIGHT.md ← Walls + raycasting
+    LIGHTING-SYSTEM.md ← Dynamic lighting
+    ASSET-SYSTEM.md ← Asset management
+    2D-TO-3D.md ← 3D rendering
 ```
 
 ---

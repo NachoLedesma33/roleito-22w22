@@ -2155,3 +2155,328 @@ y ayuda al DM a representarla."
 ```
 
 sin tener que reconstruir completamente la arquitectura.
+
+---
+
+# 106. Practical Implementation Roadmap (Post-Owlbear Analysis)
+
+> Practical roadmap with concrete tasks, based on new documentation.
+> Each phase produces a working system before moving to the next.
+
+## Documentation Reference
+
+| System | Doc | Status |
+|--------|-----|--------|
+| Scene Graph | `SCENE-GRAPH.md` | Designed |
+| Map Analysis | `MAP-ANALYSIS.md` | Designed |
+| Fog of War | `FOG-AND-VISIBILITY.md` | Designed |
+| Walls & LoS | `WALLS-AND-LINE-OF-SIGHT.md` | Designed |
+| Lighting | `LIGHTING-SYSTEM.md` | Designed |
+| Assets | `ASSET-SYSTEM.md` | Designed |
+| 2D→3D | `2D-TO-3D.md` | Designed |
+| Reference | `OWLBEAR-REFERENCE.md` | Complete |
+| Status | `IMPLEMENTATION-STATUS.md` | Complete |
+
+---
+
+## PHASE A — Scene Graph Foundation
+
+**Goal**: Items render on 2D canvas with selection.
+
+### Tasks
+
+```text
+A1. Define Item type in core/domain/types.ts
+A2. SceneGraph class: addItem, updateItem, removeItem
+A3. SceneCanvas component: render Items from graph
+A4. ItemRenderer: Image items + Shape items
+A5. Layer system: 7 layers, render order
+A6. zIndex: auto (y-position) and manual modes
+A7. Selection: player-centric, click to select
+A8. Scene serialization: JSON → Scene Graph
+A9. Scene persistence: save/load to SQLite
+```
+
+### Done when
+
+- [ ] DM can upload a map image
+- [ ] Map renders as Item with shape='rectangle'
+- [ ] DM can place token Items on the map
+- [ ] Tokens render in correct layer order
+- [ ] DM can select/deselect tokens
+- [ ] Scene saves and reloads correctly
+
+---
+
+## PHASE B — Walls & Doors
+
+**Goal**: Walls and doors as Items with collision.
+
+### Tasks
+
+```text
+B1. WallItem definition (shape='line', metadata.type='wall')
+B2. DoorItem definition (metadata.type='door', states)
+B3. Wall drawing tool: click-click to place wall segments
+B4. Door drawing tool: click-click to place doors
+B5. Wall rendering: stroke lines with thickness
+B6. Door rendering: open/closed visual states
+B7. Movement blocking: walls prevent token movement
+B8. Door interaction: open/close/lock toggle
+```
+
+### Done when
+
+- [ ] DM can draw wall segments
+- [ ] DM can place doors on walls
+- [ ] Walls block token movement
+- [ ] Doors can be opened/closed
+- [ ] Closed doors block movement, open doors pass
+
+---
+
+## PHASE C — Selection & Interaction
+
+**Goal**: Full selection system with interaction UI.
+
+### Tasks
+
+```text
+C1. Multi-select (shift+click or drag selection box)
+C2. Drag to move selected Items
+C3. Delete selected Items
+C4. Property panel: edit Item properties
+C5. Lock/unlock Items (DM only)
+C6. Show/hide Items (player visibility)
+C7. Attachment system: attach child to parent
+C8. Attach label/token to character
+```
+
+### Done when
+
+- [ ] DM can multi-select tokens
+- [ ] DM can drag-move selected tokens
+- [ ] DM can edit token name/image/metadata
+- [ ] DM can lock tokens (prevent movement)
+- [ ] Labels attach to tokens and follow them
+
+---
+
+## PHASE D — Fog of War (Static)
+
+**Goal**: DM can reveal/hide map areas.
+
+### Tasks
+
+```text
+D1. FogState structure in world state
+D2. FogRegion type: rectangle, polygon, ellipse, flood
+D3. Fog rendering: mask on SceneLayer.FOG
+D4. DM fog brush tool: paint reveal/hide
+D5. Rectangle select tool for fog
+D6. Flood fill tool for rooms
+D7. Clear all fog button
+D8. Fog persistence: save/load per scene
+D9. Per-player fog state (explored vs visible)
+```
+
+### Done when
+
+- [ ] DM can paint fog reveal areas
+- [ ] Revealed areas show map, unrevealed are dark
+- [ ] Fog persists across session restarts
+- [ ] Each player has own fog state
+- [ ] DM can clear all fog
+
+---
+
+## PHASE E — Lighting
+
+**Goal**: Dynamic light sources on the scene.
+
+### Tasks
+
+```text
+E1. LightSource entity definition
+E2. Light rendering: visual glow/indicator
+E3. DM light placement tool
+E4. Attach light to token
+E5. Light properties: color, intensity, range
+E6. Light presets: torch, lantern, campfire
+E7. Wall occlusion: walls block light propagation
+E8. Bright/dim/dark zones calculation
+E9. Light flicker/pulse animations
+```
+
+### Done when
+
+- [ ] DM can place light sources
+- [ ] Lights can be attached to tokens
+- [ ] Light range affects nearby area
+- [ ] Walls block light propagation
+- [ ] Light presets work (torch flickers)
+
+---
+
+## PHASE F — Line of Sight (Dynamic Fog)
+
+**Goal**: Per-turn visibility based on character vision.
+
+### Tasks
+
+```text
+F1. VisionConfig type (normal, darkvision, blindsight)
+F2. Raycasting engine: Bresenham/DDA
+F3. Wall intersection detection
+F4. Visibility mask generation per character
+F5. Combined visibility (union of party)
+F6. Dynamic fog: updates on movement
+F7. Movement range visualization
+F8. A* pathfinding for movement
+```
+
+### Done when
+
+- [ ] Characters see only what's within LoS
+- [ ] Walls block vision correctly
+- [ ] Darkvision allows seeing in dark
+- [ ] Movement range shows valid cells
+- [ ] Pathfinding avoids walls
+
+---
+
+## PHASE G — Map Analysis
+
+**Goal**: Upload map image → auto-detect features.
+
+### Tasks
+
+```text
+G1. Image ingestion: normalize dimensions
+G2. Grid detection: auto-detect grid lines
+G3. Feature detection: wall/door/room detection
+G4. Semantic interpretation: features → Items
+G5. DM review: adjust detected features
+G6. Manual override: DM can redraw features
+G7. Scene Graph generation from analysis
+```
+
+### Done when
+
+- [ ] DM uploads map image
+- [ ] Grid auto-detected
+- [ ] Walls and doors suggested
+- [ ] DM can accept/modify suggestions
+- [ ] Scene Graph generated from approved features
+
+---
+
+## PHASE H — Assets & AI Generation
+
+**Goal**: Asset browser + AI asset generation.
+
+### Tasks
+
+```text
+H1. Asset manifest system
+H2. Asset browser UI: grid view, filter, search
+H3. Drag-and-drop to scene
+H4. Asset resolution: campaign → shared → built-in
+H5. AI token generation: describe → PNG
+H6. AI environment generation: describe → texture
+H7. Asset caching: LRU memory cache
+```
+
+### Done when
+
+- [ ] Asset browser shows available assets
+- [ ] DM can drag asset to scene
+- [ ] AI can generate token from description
+- [ ] Generated assets appear in browser
+- [ ] Assets cached for performance
+
+---
+
+## PHASE I — 3D Rendering
+
+**Goal**: Scene Graph → Three.js 3D view.
+
+### Tasks
+
+```text
+I1. 2D→3D mapping rules
+I2. Camera systems: top-down, isometric, third-person
+I3. Wall 3D: box geometry from line segments
+I4. Token 3D: GLB models from asset system
+I5. Terrain 3D: plane with texture
+I6. Light 3D: Three.js PointLight/SpotLight
+I7. Fog 3D: volumetric fog or post-processing
+I8. LOD system: detail levels by distance
+I9. Performance: frustum culling, instancing
+```
+
+### Done when
+
+- [ ] 3D view loads from Scene Graph
+- [ ] Walls render as 3D geometry
+- [ ] Tokens render as 3D models
+- [ ] Camera orbit/follow works
+- [ ] 60fps at 1080p
+
+---
+
+## PHASE J — Integration & Polish
+
+**Goal**: All systems working together.
+
+### Tasks
+
+```text
+J1. Integration testing: all phases work together
+J2. Performance optimization: <16ms frame time
+J3. Error handling: graceful degradation
+J4. DM Dashboard: all tools in unified UI
+J5. Player View: visible Items + fog display
+J6. WebSocket: real-time DM→Player sync
+J7. Documentation: update all docs with final state
+```
+
+### Done when
+
+- [ ] DM can run a complete session
+- [ ] Players see fog + visible tokens
+- [ ] Real-time sync works
+- [ ] No crashes during normal play
+- [ ] Performance targets met
+
+---
+
+## Phase Dependencies
+
+```text
+A (Scene Graph)
+├── B (Walls & Doors)
+├── C (Selection)
+├── D (Fog of War) ← needs B
+├── E (Lighting) ← needs B
+├── F (LoS) ← needs B, D
+├── G (Map Analysis) ← needs A, B
+├── H (Assets) ← needs A
+├── I (3D) ← needs A, B, E
+└── J (Integration) ← needs all
+```
+
+## Recommended Order
+
+```text
+1. A — Scene Graph Foundation (foundational)
+2. B — Walls & Doors (needed for D, E, F, G)
+3. C — Selection & Interaction (usability)
+4. D — Fog of War Static (DM tool)
+5. E — Lighting (atmosphere)
+6. F — Line of Sight (gameplay)
+7. G — Map Analysis (differentiator)
+8. H — Assets (content)
+9. I — 3D Rendering (immersion)
+10. J — Integration & Polish (release)
+```
