@@ -5,7 +5,7 @@ import { SceneItem } from '@core/domain/types';
 import { SceneGraph } from '@core/scene/scene-graph';
 import { useDoorInteraction } from '@core/scene/door-interaction';
 import SceneRenderer from '@/components/SceneRenderer';
-import WallDrawer from '@/components/WallDrawer';
+import { createEmptyDrawState, createWallItem, type DrawState } from '@/components/WallDrawer';
 import DoorContextMenu from '@/components/DoorContextMenu';
 import WallContextMenu from '@/components/WallContextMenu';
 import SessionLogHud from '@/components/SessionLogHud';
@@ -61,7 +61,7 @@ export default function DmDashboard() {
   const [toastQueue, setToastQueue] = useState<ToastRoll[]>([]);
   const [sceneItems, setSceneItems] = useState<SceneItem[]>([]);
   const [graphRef] = useState(() => new SceneGraph());
-  const [drawMode, setDrawMode] = useState<'none' | 'wall' | 'door'>('none');
+  const [drawState, setDrawState] = useState<DrawState | null>(null);
   const [wallMaterial, setWallMaterial] = useState<'stone' | 'wood' | 'metal' | 'glass' | 'magic'>('stone');
   const [doorMaterial, setDoorMaterial] = useState<'wood' | 'metal' | 'glass' | 'magic'>('wood');
   const [doorContextMenu, setDoorContextMenu] = useState<{ x: number; y: number; itemId: string; state: string } | null>(null);
@@ -143,11 +143,41 @@ export default function DmDashboard() {
 
   const { toggleDoor, lockDoor, unlockDoor } = useDoorInteraction(graphRef, handleItemsChange)
 
-  const handleWallComplete = useCallback((item: SceneItem) => {
-    graphRef.addItem(item)
-    handleItemsChange(graphRef.getItems())
-    setDrawMode('none')
-  }, [graphRef, handleItemsChange])
+  const handleDrawStart = useCallback((point: { x: number; y: number }) => {
+    setDrawState((prev) => prev ? { ...prev, startPoint: point, currentPoint: point } : null)
+  }, [])
+
+  const handleDrawMove = useCallback((point: { x: number; y: number }) => {
+    setDrawState((prev) => prev ? { ...prev, currentPoint: point } : null)
+  }, [])
+
+  const handleDrawEnd = useCallback(() => {
+    setDrawState((prev) => {
+      if (!prev || !prev.startPoint || !prev.currentPoint) return null
+      const item = createWallItem(prev, campaignId ?? '')
+      if (item) {
+        graphRef.addItem(item)
+        handleItemsChange(graphRef.getItems())
+      }
+      return null
+    })
+  }, [graphRef, handleItemsChange, campaignId])
+
+  const startDrawMode = useCallback((mode: 'wall' | 'door') => {
+    setDrawState((prev) => {
+      if (prev?.mode === mode) return null
+      return createEmptyDrawState(mode, wallMaterial, doorMaterial)
+    })
+    setBuildMenuOpen(false)
+  }, [wallMaterial, doorMaterial])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && drawState) setDrawState(null)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [drawState])
 
   const handleDoorItemClick = useCallback((itemId: string) => {
     toggleDoor(itemId)
@@ -832,21 +862,21 @@ export default function DmDashboard() {
         <div ref={buildMenuRef} className="relative shrink-0">
           <button
             onClick={() => setBuildMenuOpen(!buildMenuOpen)}
-            className={`text-xs px-2 py-1 rounded transition-colors ${drawMode !== 'none' ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+            className={`text-xs px-2 py-1 rounded transition-colors ${drawState ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
           >
             🧱 Build ▾
           </button>
           {buildMenuOpen && (
             <div className="absolute left-0 top-full mt-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg z-50 min-w-[180px]">
               <button
-                onClick={() => { setDrawMode(drawMode === 'wall' ? 'none' : 'wall'); setBuildMenuOpen(false) }}
-                className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawMode === 'wall' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
+                onClick={() => startDrawMode('wall')}
+                className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawState?.mode === 'wall' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
               >
                 🧱 Draw Wall
               </button>
               <button
-                onClick={() => { setDrawMode(drawMode === 'door' ? 'none' : 'door'); setBuildMenuOpen(false) }}
-                className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawMode === 'door' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
+                onClick={() => startDrawMode('door')}
+                className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawState?.mode === 'door' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
               >
                 🚪 Place Door
               </button>
@@ -882,9 +912,9 @@ export default function DmDashboard() {
             </div>
           )}
         </div>
-        {drawMode !== 'none' && (
+        {drawState && (
           <span className="text-[10px] text-amber-400">
-            {drawMode === 'wall' ? '🧱 Click-drag to draw wall' : '🚪 Click-drag to place door'} · ESC to cancel
+            {drawState.mode === 'wall' ? '🧱 Click-drag to draw wall' : '🚪 Click-drag to place door'} · ESC to cancel
           </span>
         )}
       </div>
@@ -1006,6 +1036,7 @@ export default function DmDashboard() {
                 mapScale={activeScene.map_scale ?? 1}
                 gridSize={activeScene.grid_size ?? 0}
                 gridSnap={activeScene.grid_snap ?? false}
+                drawState={drawState}
                 onTokenClick={handleTokenClick}
                 onTokenDrop={handleTokenDrop}
                 onTokenContextMenu={handleTokenContextMenu}
@@ -1015,17 +1046,10 @@ export default function DmDashboard() {
                   if (item?.metadata.type === 'door') handleDoorContextMenu(itemId, clientX, clientY)
                   else if (item?.metadata.type === 'wall') handleWallContextMenu(itemId, clientX, clientY)
                 }}
+                onDrawStart={handleDrawStart}
+                onDrawMove={handleDrawMove}
+                onDrawEnd={handleDrawEnd}
               />
-              {drawMode !== 'none' && (
-                <WallDrawer
-                  enabled
-                  mode={drawMode === 'wall' ? 'wall' : 'door'}
-                  material={wallMaterial}
-                  doorMaterial={doorMaterial}
-                  onComplete={handleWallComplete}
-                  onCancel={() => setDrawMode('none')}
-                />
-              )}
             </Suspense>
           ) : (
             <div className="w-full h-full flex items-center justify-center text-[var(--text-secondary)]">

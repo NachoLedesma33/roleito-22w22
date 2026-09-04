@@ -5,7 +5,9 @@ import * as THREE from 'three';
 import TokenSprite from './TokenSprite';
 import TokenModel from './TokenModel';
 import ItemRenderer from './ItemRenderer';
+import WallDrawerCanvas from './WallDrawerCanvas';
 import { SceneItem } from '@core/domain/types';
+import type { DrawState } from './WallDrawer';
 
 interface SceneEntity {
   id: string;
@@ -35,11 +37,15 @@ interface SceneRendererProps {
   mapScale?: number;
   gridSize?: number;
   gridSnap?: boolean;
+  drawState?: DrawState | null;
   onTokenClick?: (sceneCharId: string) => void;
   onItemClick?: (itemId: string) => void;
   onItemContextMenu?: (itemId: string, clientX: number, clientY: number) => void;
   onTokenDrop?: (sceneCharId: string, x: number, z: number) => void;
   onTokenContextMenu?: (sceneCharId: string, clientX: number, clientY: number) => void;
+  onDrawStart?: (point: { x: number; y: number }) => void;
+  onDrawMove?: (point: { x: number; y: number }) => void;
+  onDrawEnd?: () => void;
 }
 
 type DragStarter = (
@@ -446,11 +452,15 @@ export default function SceneRenderer({
   mapScale = 1,
   gridSize = 0,
   gridSnap = false,
+  drawState = null,
   onTokenClick,
   onItemClick,
   onItemContextMenu,
   onTokenDrop,
   onTokenContextMenu,
+  onDrawStart,
+  onDrawMove,
+  onDrawEnd,
 }: SceneRendererProps) {
   const visibleChars = useMemo(() => characters.filter((c) => c.visible), [characters]);
   const renderItems = useMemo(() => {
@@ -529,6 +539,14 @@ export default function SceneRenderer({
           onContextMenu={onItemContextMenu ? (e) => onItemContextMenu(item.id, e.clientX, e.clientY) : undefined}
         />
       ))}
+      {drawState && onDrawStart && onDrawMove && onDrawEnd && (
+        <WallDrawerCanvas
+          drawState={drawState}
+          onDrawStart={onDrawStart}
+          onDrawMove={onDrawMove}
+          onDrawEnd={onDrawEnd}
+        />
+      )}
       <OrbitControls
         makeDefault
         enablePan={true}
