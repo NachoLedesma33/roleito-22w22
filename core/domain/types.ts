@@ -248,14 +248,21 @@ export interface TokenMetadata {
 export interface WallMetadata {
   type: 'wall'
   wallType: 'solid' | 'door' | 'window'
-  material: string
+  material: 'stone' | 'wood' | 'metal' | 'glass' | 'magic'
   height: number
+  thickness: number
+  opacity: number
+  lineOfSight: boolean
+  movement: boolean
+  soundOcclusion: number
 }
 
 export interface DoorMetadata {
   type: 'door'
   state: 'open' | 'closed' | 'locked'
+  material: 'wood' | 'metal' | 'glass' | 'magic'
   keyId?: string
+  autoClose: boolean
 }
 
 export interface TerrainMetadata {
