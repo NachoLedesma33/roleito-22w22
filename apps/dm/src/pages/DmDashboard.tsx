@@ -66,6 +66,8 @@ export default function DmDashboard() {
   const [doorMaterial, setDoorMaterial] = useState<'wood' | 'metal' | 'glass' | 'magic'>('wood');
   const [doorContextMenu, setDoorContextMenu] = useState<{ x: number; y: number; itemId: string; state: string } | null>(null);
   const [wallContextMenu, setWallContextMenu] = useState<{ x: number; y: number; itemId: string } | null>(null);
+  const [buildMenuOpen, setBuildMenuOpen] = useState(false);
+  const buildMenuRef = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const lastRollTsRef = useRef<number>(0);
   const serverPosRef = useRef<Map<string, { x: number; z: number; rotation: number }>>(new Map());
@@ -111,9 +113,9 @@ export default function DmDashboard() {
         const sc = await api.scenes.getCharacters(campaignId, activeScene.id);
         if (!cancelled) setSceneChars(sc);
       } catch {}
-      if (!cancelled) timer = window.setTimeout(poll, 100);
+      if (!cancelled) timer = window.setTimeout(poll, 500);
     };
-    timer = window.setTimeout(poll, 100);
+    timer = window.setTimeout(poll, 500);
     return () => { cancelled = true; clearTimeout(timer); };
   }, [campaignId, activeScene]);
 
@@ -128,10 +130,14 @@ export default function DmDashboard() {
       .catch(() => setSceneItems([]));
   }, [campaignId, activeScene, graphRef]);
 
+  const saveTimerRef = useRef<number>(0);
   const handleItemsChange = useCallback((items: SceneItem[]) => {
     setSceneItems([...items])
     if (campaignId && activeScene) {
-      api.scenes.saveItems(campaignId, activeScene.id, items).catch(() => {})
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = window.setTimeout(() => {
+        api.scenes.saveItems(campaignId!, activeScene!.id, items).catch(() => {})
+      }, 300)
     }
   }, [campaignId, activeScene])
 
@@ -177,6 +183,16 @@ export default function DmDashboard() {
       }
     }
   }, [sceneChars]);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (buildMenuRef.current && !buildMenuRef.current.contains(e.target as Node)) {
+        setBuildMenuOpen(false)
+      }
+    }
+    if (buildMenuOpen) document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [buildMenuOpen]);
 
   useEffect(() => {
     let running = true;
@@ -666,53 +682,58 @@ export default function DmDashboard() {
           ⚙ Scene
         </button>
 
-        <div className="relative group shrink-0">
-          <button className={`text-xs px-2 py-1 rounded transition-colors ${drawMode !== 'none' ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>
+        <div ref={buildMenuRef} className="relative shrink-0">
+          <button
+            onClick={() => setBuildMenuOpen(!buildMenuOpen)}
+            className={`text-xs px-2 py-1 rounded transition-colors ${drawMode !== 'none' ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+          >
             🧱 Build ▾
           </button>
-          <div className="absolute right-0 top-full mt-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 min-w-[160px]">
-            <button
-              onClick={() => setDrawMode(drawMode === 'wall' ? 'none' : 'wall')}
-              className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawMode === 'wall' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
-            >
-              🧱 Draw Wall
-            </button>
-            <button
-              onClick={() => setDrawMode(drawMode === 'door' ? 'none' : 'door')}
-              className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawMode === 'door' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
-            >
-              🚪 Place Door
-            </button>
-            <div className="border-t border-[var(--bg-tertiary)] my-1" />
-            <div className="px-3 py-1">
-              <p className="text-[10px] text-[var(--text-secondary)] mb-1">Wall material</p>
-              <div className="flex gap-1">
-                {(['stone', 'wood', 'metal', 'glass', 'magic'] as const).map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => setWallMaterial(m)}
-                    className={`w-5 h-5 rounded text-[9px] ${wallMaterial === m ? 'ring-2 ring-amber-400' : ''}`}
-                    style={{ backgroundColor: m === 'stone' ? '#6b7280' : m === 'wood' ? '#92400e' : m === 'metal' ? '#64748b' : m === 'glass' ? '#93c5fd' : '#a855f7' }}
-                    title={m}
-                  />
-                ))}
+          {buildMenuOpen && (
+            <div className="absolute right-0 top-full mt-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg z-50 min-w-[160px]">
+              <button
+                onClick={() => { setDrawMode(drawMode === 'wall' ? 'none' : 'wall'); setBuildMenuOpen(false) }}
+                className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawMode === 'wall' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
+              >
+                🧱 Draw Wall
+              </button>
+              <button
+                onClick={() => { setDrawMode(drawMode === 'door' ? 'none' : 'door'); setBuildMenuOpen(false) }}
+                className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawMode === 'door' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
+              >
+                🚪 Place Door
+              </button>
+              <div className="border-t border-[var(--bg-tertiary)] my-1" />
+              <div className="px-3 py-1">
+                <p className="text-[10px] text-[var(--text-secondary)] mb-1">Wall material</p>
+                <div className="flex gap-1">
+                  {(['stone', 'wood', 'metal', 'glass', 'magic'] as const).map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => setWallMaterial(m)}
+                      className={`w-5 h-5 rounded text-[9px] ${wallMaterial === m ? 'ring-2 ring-amber-400' : ''}`}
+                      style={{ backgroundColor: m === 'stone' ? '#6b7280' : m === 'wood' ? '#92400e' : m === 'metal' ? '#64748b' : m === 'glass' ? '#93c5fd' : '#a855f7' }}
+                      title={m}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="px-3 py-1">
+                <p className="text-[10px] text-[var(--text-secondary)] mb-1">Door material</p>
+                <div className="flex gap-1">
+                  {(['wood', 'metal', 'glass', 'magic'] as const).map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => setDoorMaterial(m)}
+                      className={`w-5 h-5 rounded text-[9px] ${doorMaterial === m ? 'ring-2 ring-amber-400' : ''}`}
+                      style={{ backgroundColor: m === 'wood' ? '#b45309' : m === 'metal' ? '#475569' : m === 'glass' ? '#60a5fa' : '#c084fc' }}
+                      title={m}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
-            <div className="px-3 py-1">
-              <p className="text-[10px] text-[var(--text-secondary)] mb-1">Door material</p>
-              <div className="flex gap-1">
-                {(['wood', 'metal', 'glass', 'magic'] as const).map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => setDoorMaterial(m)}
-                    className={`w-5 h-5 rounded text-[9px] ${doorMaterial === m ? 'ring-2 ring-amber-400' : ''}`}
-                    style={{ backgroundColor: m === 'wood' ? '#b45309' : m === 'metal' ? '#475569' : m === 'glass' ? '#60a5fa' : '#c084fc' }}
-                    title={m}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
+          )}
         </div>
 
         <button

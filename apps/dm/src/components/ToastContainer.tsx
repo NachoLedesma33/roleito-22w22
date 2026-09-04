@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
 import type { DiceRollResponse } from '@/lib/api';
 
 export interface ToastRoll {
@@ -104,9 +104,12 @@ function SingleToast({ toast, onDismiss }: { toast: ToastRoll; onDismiss: () => 
 }
 
 export default function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
+  const dismissRef = useRef(onDismiss);
+  dismissRef.current = onDismiss;
+
   const handleDismiss = useCallback(
-    (id: string) => () => onDismiss(id),
-    [onDismiss]
+    (id: string) => () => dismissRef.current(id),
+    []
   );
 
   if (toasts.length === 0) return null;
