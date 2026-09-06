@@ -105,3 +105,7 @@ data/vault.enc
 # Generated test data (regenerable)
 data/snapshots/
 data/canon/
+
+# Test artifacts
+backend/detection-result.json
+backend/test-dungeon.png
