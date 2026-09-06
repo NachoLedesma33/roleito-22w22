@@ -117,7 +117,7 @@ const WALL_MATERIAL_COLORS: Record<string, string> = {
   magic: '#a855f7',
 }
 
-function WallRenderer({ item, isSelected, onClick, mapScale = 1, imageAspect = 1 }: ItemRendererProps) {
+function WallRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, imageAspect = 1 }: ItemRendererProps) {
   const shape = item.shape as import('@core/domain/types').ItemShape & { type: 'line'; points: number[] }
   const meta = item.metadata as import('@core/domain/types').WallMetadata
   const color = WALL_MATERIAL_COLORS[meta.material] ?? '#6b7280'
@@ -145,6 +145,7 @@ function WallRenderer({ item, isSelected, onClick, mapScale = 1, imageAspect = 1
       <mesh
         position={[0, height / 2, 0]}
         onClick={(e) => { e.stopPropagation(); onClick?.() }}
+        onContextMenu={(e) => { e.stopPropagation(); onContextMenu?.(e.nativeEvent) }}
       >
         <boxGeometry args={[thickness, height, length]} />
         <meshStandardMaterial

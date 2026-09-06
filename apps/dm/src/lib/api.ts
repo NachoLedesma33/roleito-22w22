@@ -642,9 +642,9 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify({ items }),
       }),
-    detectWalls: (campaignId: string, sceneId: string) =>
+    detectWalls: (campaignId: string, sceneId: string, mode: string = 'blueprint') =>
       request<{ items: any[]; wall_count: number; door_count: number; image_size: { width: number; height: number } }>(
-        `/campaigns/${campaignId}/scenes/${sceneId}/detect-walls`,
+        `/campaigns/${campaignId}/scenes/${sceneId}/detect-walls?mode=${mode}`,
         { method: 'POST' }
       ),
   },

@@ -69,6 +69,7 @@ export default function DmDashboard() {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [buildMenuOpen, setBuildMenuOpen] = useState(false);
   const [detectingWalls, setDetectingWalls] = useState(false);
+  const [detectionMode, setDetectionMode] = useState<'blueprint' | 'textured'>('blueprint');
   const buildMenuRef = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const lastRollTsRef = useRef<number>(0);
@@ -176,12 +177,34 @@ export default function DmDashboard() {
     setBuildMenuOpen(false)
   }, [wallMaterial, doorMaterial])
 
+  const handleClearAllWalls = useCallback(() => {
+    if (!confirm('Delete ALL walls and doors? This cannot be undone.')) return
+    const items = graphRef.getItems()
+    const toRemove = items.filter(
+      (item: SceneItem) => item.metadata?.type === 'wall' || item.metadata?.type === 'door'
+    )
+    for (const item of toRemove) {
+      graphRef.removeItem(item.id)
+    }
+    handleItemsChange(graphRef.getItems())
+    setToastQueue((prev) => [...prev.slice(-4), {
+      id: `clear-${Date.now()}`,
+      rollerName: 'Clear',
+      diceType: 20,
+      count: 1,
+      results: [toRemove.length],
+      total: toRemove.length,
+      label: `walls + doors removed`,
+      timestamp: Date.now(),
+    }])
+  }, [graphRef, handleItemsChange])
+
   const handleAutoDetect = useCallback(async () => {
     if (!campaignId || !activeScene) return
     setBuildMenuOpen(false)
     setDetectingWalls(true)
     try {
-      const result = await api.scenes.detectWalls(campaignId, activeScene.id)
+      const result = await api.scenes.detectWalls(campaignId, activeScene.id, detectionMode)
       if (result.items && result.items.length > 0) {
         for (const item of result.items) {
           graphRef.addItem(item as SceneItem)
@@ -223,7 +246,7 @@ export default function DmDashboard() {
     } finally {
       setDetectingWalls(false)
     }
-  }, [campaignId, activeScene, graphRef, handleItemsChange])
+  }, [campaignId, activeScene, graphRef, handleItemsChange, detectionMode])
 
   const handleDeleteItem = useCallback((itemId: string) => {
     graphRef.removeItem(itemId)
@@ -789,12 +812,32 @@ export default function DmDashboard() {
                   >
                     🚪 Place Door
                   </button>
+                  <div className="flex gap-1 px-3 py-1">
+                    <button
+                      onClick={() => setDetectionMode('blueprint')}
+                      className={`flex-1 text-[10px] px-2 py-1 rounded transition-colors ${detectionMode === 'blueprint' ? 'bg-blue-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'}`}
+                    >
+                      Blueprint
+                    </button>
+                    <button
+                      onClick={() => setDetectionMode('textured')}
+                      className={`flex-1 text-[10px] px-2 py-1 rounded transition-colors ${detectionMode === 'textured' ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'}`}
+                    >
+                      Textured
+                    </button>
+                  </div>
                   <button
                     onClick={handleAutoDetect}
                     disabled={detectingWalls}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${detectingWalls ? 'text-amber-400 animate-pulse' : 'text-[var(--text-secondary)]'}`}
                   >
                     {detectingWalls ? '⏳ Detecting...' : '🔍 Auto-detect walls'}
+                  </button>
+                  <button
+                    onClick={handleClearAllWalls}
+                    className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-red-400"
+                  >
+                    🗑️ Clear all walls
                   </button>
                   <div className="border-t border-[var(--bg-tertiary)] my-1" />
                   <div className="px-3 py-1">
