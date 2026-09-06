@@ -647,6 +647,11 @@ export const api = {
         `/campaigns/${campaignId}/scenes/${sceneId}/detect-walls?mode=${mode}`,
         { method: 'POST' }
       ),
+    classify: (campaignId: string, sceneId: string) =>
+      request<{ scene_type: string; confidence: number; dominant_colors: string[]; suggested_backgrounds: any[] }>(
+        `/campaigns/${campaignId}/scenes/${sceneId}/classify`,
+        { method: 'POST' }
+      ),
   },
 
   notebooks: {

@@ -8,6 +8,7 @@ import SceneRenderer from '@/components/SceneRenderer';
 import { createEmptyDrawState, createWallItem, type DrawState } from '@/components/WallDrawer';
 import DoorContextMenu from '@/components/DoorContextMenu';
 import WallContextMenu from '@/components/WallContextMenu';
+import BackgroundSelector, { generateBackgroundCSS } from '@/components/BackgroundSelector';
 import SessionLogHud from '@/components/SessionLogHud';
 import SceneNotesHud from '@/components/SceneNotesHud';
 import QuickActionsHud from '@/components/QuickActionsHud';
@@ -70,6 +71,12 @@ export default function DmDashboard() {
   const [buildMenuOpen, setBuildMenuOpen] = useState(false);
   const [detectingWalls, setDetectingWalls] = useState(false);
   const [detectionMode, setDetectionMode] = useState<'blueprint' | 'textured'>('blueprint');
+  const [bgSelector, setBgSelector] = useState<{
+    sceneType: string;
+    suggestions: any[];
+    dominantColors: string[];
+  } | null>(null);
+  const [bgCSS, setBgCSS] = useState<string | null>(null);
   const buildMenuRef = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const lastRollTsRef = useRef<number>(0);
@@ -396,6 +403,19 @@ export default function DmDashboard() {
     setActiveScene(updated);
     setScenes((prev) => prev.map((s) => s.id === updated.id ? updated : s));
     e.target.value = '';
+
+    try {
+      const classification = await api.scenes.classify(campaignId, scene.id);
+      if (classification.suggested_backgrounds?.length > 0) {
+        setBgSelector({
+          sceneType: classification.scene_type,
+          suggestions: classification.suggested_backgrounds,
+          dominantColors: classification.dominant_colors,
+        });
+      }
+    } catch {
+      // classification is optional, ignore errors
+    }
   };
 
   const handleToggleLighting = async (mode: string) => {
@@ -1143,7 +1163,10 @@ export default function DmDashboard() {
         )}
 
         {/* 3D Scene Canvas */}
-        <div className="flex-1 relative min-h-0 min-w-0">
+        <div
+          className="flex-1 relative min-h-0 min-w-0"
+          style={bgCSS ? { background: bgCSS } : undefined}
+        >
           {activeScene?.background_path ? (
             <Suspense fallback={
               <div className="w-full h-full flex items-center justify-center text-[var(--text-secondary)]">
@@ -1470,6 +1493,23 @@ export default function DmDashboard() {
           onUnlock={() => unlockDoor(doorContextMenu.itemId)}
           onDelete={() => handleDeleteItem(doorContextMenu.itemId)}
           onClose={() => setDoorContextMenu(null)}
+        />
+      )}
+
+      {bgSelector && (
+        <BackgroundSelector
+          sceneType={bgSelector.sceneType}
+          suggestions={bgSelector.suggestions}
+          dominantColors={bgSelector.dominantColors}
+          onSelect={(bgId) => {
+            const bg = bgSelector.suggestions.find((s) => s.id === bgId);
+            if (bg) {
+              setBgCSS(generateBackgroundCSS(bgSelector.sceneType, bg.colors));
+            }
+            setBgSelector(null);
+          }}
+          onUseDefault={() => setBgSelector(null)}
+          onClose={() => setBgSelector(null)}
         />
       )}
 

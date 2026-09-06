@@ -252,6 +252,37 @@ async def upload_scene_background(
     return scene
 
 
+@router.post("/campaigns/{campaign_id}/scenes/{scene_id}/classify")
+async def classify_scene_endpoint(
+    campaign_id: str,
+    scene_id: str,
+    db: AsyncSession = Depends(get_session),
+):
+    result = await db.execute(
+        select(Scene).where(
+            Scene.id == scene_id,
+            Scene.campaign_id == campaign_id,
+        )
+    )
+    scene = result.scalar_one_or_none()
+    if not scene:
+        raise HTTPException(status_code=404, detail="Scene not found")
+    if not scene.background_path or not os.path.exists(scene.background_path):
+        raise HTTPException(status_code=400, detail="No background image to classify")
+
+    from scene_classifier import classify_scene
+    from starlette.concurrency import run_in_threadpool
+
+    classification = await run_in_threadpool(classify_scene, scene.background_path)
+
+    return {
+        "scene_type": classification.scene_type,
+        "confidence": classification.confidence,
+        "dominant_colors": classification.dominant_colors,
+        "suggested_backgrounds": classification.suggested_backgrounds,
+    }
+
+
 def get_scene_static_url(file_path: str) -> str | None:
     if not file_path:
         return None
