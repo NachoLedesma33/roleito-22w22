@@ -191,11 +191,14 @@ async def detect_walls(
         raise HTTPException(status_code=400, detail="No background image to analyze")
 
     from wall_detection import detect_map, scene_items_from_detection, DetectionMode
+    from starlette.concurrency import run_in_threadpool
 
     detection_mode = DetectionMode.TEXTURED if mode == "textured" else DetectionMode.BLUEPRINT
 
     try:
-        detection = detect_map(scene.background_path, mode=detection_mode)
+        detection = await run_in_threadpool(
+            detect_map, scene.background_path, detection_mode
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Detection failed: {str(e)}")
 

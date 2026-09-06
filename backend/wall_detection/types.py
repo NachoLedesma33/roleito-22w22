@@ -61,6 +61,15 @@ class DetectedRoom:
     polygon: List[Point]
     door_ids: List[str] = field(default_factory=list)
     label: str = ""
+    area: float = 0.0
+
+
+@dataclass
+class WalkableArea:
+    id: str
+    polygon: List[Point]
+    area: float = 0.0
+    ratio: float = 0.0
 
 
 @dataclass
@@ -71,6 +80,8 @@ class DetectedMap:
     doors: List[DetectedDoor] = field(default_factory=list)
     windows: List[DetectedWindow] = field(default_factory=list)
     rooms: List[DetectedRoom] = field(default_factory=list)
+    walkable_areas: List[WalkableArea] = field(default_factory=list)
+    walkable_ratio: float = 0.0
     confidence: float = 1.0
     mode: str = "blueprint"
 
@@ -85,6 +96,14 @@ class DetectedMap:
     @property
     def window_count(self) -> int:
         return len(self.windows)
+
+    @property
+    def room_count(self) -> int:
+        return len(self.rooms)
+
+    @property
+    def walkable_area_count(self) -> int:
+        return len(self.walkable_areas)
 
     def to_dict(self) -> dict:
         return {
@@ -123,13 +142,25 @@ class DetectedMap:
                     "polygon": [{"x": p.x, "y": p.y} for p in r.polygon],
                     "door_ids": r.door_ids,
                     "label": r.label,
+                    "area": r.area,
                 }
                 for r in self.rooms
             ],
+            "walkable_areas": [
+                {
+                    "id": a.id,
+                    "polygon": [{"x": p.x, "y": p.y} for p in a.polygon],
+                    "area": a.area,
+                    "ratio": a.ratio,
+                }
+                for a in self.walkable_areas
+            ],
+            "walkable_ratio": self.walkable_ratio,
             "image_size": {"width": self.width, "height": self.height},
             "wall_count": self.wall_count,
             "door_count": self.door_count,
             "window_count": self.window_count,
+            "room_count": self.room_count,
             "confidence": self.confidence,
             "mode": self.mode,
         }

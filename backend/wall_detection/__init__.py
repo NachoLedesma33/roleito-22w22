@@ -19,6 +19,7 @@ from .types import (
     DetectedDoor,
     DetectedWindow,
     DetectedRoom,
+    WalkableArea,
     Point,
 )
 from .preprocessing import DetectionMode
