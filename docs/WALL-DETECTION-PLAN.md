@@ -2,9 +2,35 @@
 
 ## Current State
 
-`backend/wall_detection/` detects walls from 2D battle maps using OpenCV Canny edge detection + contour analysis. Works acceptably for clean blueprints (46 walls, 39 doors) but poorly for rendered/textured maps (227 walls, most false positives). Walls often render outside the actual map area.
+`backend/wall_detection/` detects walls from 2D battle maps using a dual
+pipeline. **Implemented (2026-09-06):**
 
-**Root causes:**
+- **scikit-image** `probabilistic_hough_line()` replaces naive Canny+HoughLinesP
+  for BLUEPRINT mode (precise endpoints, direct `line_length`/`line_gap` control)
+- **Edge-support validation**: segments are kept only if actual wall pixels
+  exist along most of their length (`_segment_support`) — kills false
+  positives from textures/shadows/furniture
+- **Pure-numpy auto grid removal** (`remove_grid_auto`): regular grid lines
+  detected via row/col projection peaks and removed. No scipy import in the
+  hot path (scipy.signal cold-import cost ~8s).
+- **Chain-ordered polylines** (`_order_points_into_chains`): nearest-neighbor
+  greedy ordering handles curved walls (previous polar sort failed on open
+  curves). Optional scipy B-spline smoothing behind `use_spline=False`
+  (off by default).
+- **Shapely room + walkable-area detection** (`geometry.py`):
+  `unary_union` of wall buffers → `map.difference()` → connected walkable
+  components + `walkable_ratio`. Directly answers "what area can be stepped on".
+- **Collinear door detection** (`door_detector.py`): doors = free gaps between
+  near-collinear wall endpoints, verified against the binary image
+  (`_gap_free_ratio`) so furniture/decor gaps are rejected.
+- **Downscale + coordinate rescale**: huge images processed at max 1200px,
+  coordinates rescaled back to original space.
+
+Original state for reference (pre-implementation): worked acceptably for clean
+blueprints (46 walls, 39 doors) but poorly for rendered/textured maps (227
+walls, false positives).
+
+**Root causes (original):**
 - Canny edge detection picks up textures, grid lines, furniture edges, shadows
 - No understanding of architectural context (what IS a wall vs decoration)
 - Contour-based approach fragments long walls into many short segments
@@ -447,10 +473,12 @@ When reviewing a wall:
 
 ### Quick Wins (1-2 days)
 1. ✅ Replace OpenCV Hough with scikit-image `probabilistic_hough_line()`
-2. ✅ Add Shapely for segment merging and simplification
+2. ✅ Add Shapely for segment merging, room detection, walkable area
 3. ✅ Improve contour filtering (aspect ratio, solidity, extent)
-4. ✅ Add grid line removal
-5. ✅ Better door detection (check for door-shaped gaps, not just endpoint gaps)
+4. ✅ Add grid line removal (`remove_grid_auto`, pure numpy)
+5. ✅ Better door detection (collinear gaps + binary validation)
+6. ✅ Curved walls via chain ordering (+ optional B-spline)
+7. ✅ Walkable area computation (`map - wall buffers`)
 
 ### Medium Term (1 week)
 6. AI-assisted detection with GPT-4o/Gemini for textured maps
@@ -491,16 +519,16 @@ When reviewing a wall:
 backend/
   wall_detection/
     __init__.py           # Public API
-    types.py              # DetectedMap, DetectedWall, etc.
-    preprocessing.py      # Image preprocessing (blueprint/textured)
-    clustering.py         # Segment grouping
-    wall_detector.py      # Wall detection (CV)
-    door_detector.py      # Door detection
-    room_detector.py      # Room detection (Shapely)
-    pipeline.py           # Main pipeline
-    ai_detector.py        # VLM-based detection (Phase 2)
-    collision_graph.py    # CollisionGraph builder
-    config.py             # Detection parameters
+    types.py              # DetectedMap, DetectedWall, WalkableArea, etc.
+    preprocessing.py      # Image preprocessing + auto grid removal
+    clustering.py         # Segment grouping + chain ordering
+    geometry.py           # Shapely: rooms, walkable area, B-spline smoothing
+    wall_detector.py      # Wall detection (scikit-image Hough + contours)
+    door_detector.py      # Door detection (collinear gaps + validation)
+    pipeline.py           # Main pipeline (downscale, grid, rooms, walkable)
+    ai_detector.py        # VLM-based detection (Phase 2, not yet)
+    collision_graph.py    # CollisionGraph builder (Phase 4, not yet)
+    config.py             # Detection parameters (not yet)
 ```
 
 ---
