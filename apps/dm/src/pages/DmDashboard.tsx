@@ -403,9 +403,12 @@ export default function DmDashboard() {
     setActiveScene(updated);
     setScenes((prev) => prev.map((s) => s.id === updated.id ? updated : s));
     e.target.value = '';
+  };
 
+  const handleClassifyBackground = async () => {
+    if (!campaignId || !activeScene?.background_path) return;
     try {
-      const classification = await api.scenes.classify(campaignId, scene.id);
+      const classification = await api.scenes.classify(campaignId, activeScene.id);
       if (classification.suggested_backgrounds?.length > 0) {
         setBgSelector({
           sceneType: classification.scene_type,
@@ -414,7 +417,7 @@ export default function DmDashboard() {
         });
       }
     } catch {
-      // classification is optional, ignore errors
+      // classification is optional
     }
   };
 
@@ -907,6 +910,15 @@ export default function DmDashboard() {
           Upload BG
         </button>
         <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={handleUploadBg} />
+
+        <button
+          onClick={handleClassifyBackground}
+          disabled={!activeScene?.background_path}
+          className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0 disabled:opacity-40"
+          title="Suggest background for current map"
+        >
+          Background
+        </button>
 
         <div className="relative group shrink-0">
           <button className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
