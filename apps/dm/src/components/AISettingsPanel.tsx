@@ -33,11 +33,13 @@ const REMOTE_MODELS = [
     { id: 'gpt-4o', label: 'GPT-4o' },
     { id: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
   ]},
-  { group: 'Ollama (local)', models: [
-    { id: 'gemma3:4b', label: 'Gemma 3 4B' },
-    { id: 'llama3', label: 'Llama 3' },
-    { id: 'mistral', label: 'Mistral 7B' },
-    { id: 'phi3', label: 'Phi-3 Mini' },
+  { group: 'Google AI Studio (vision)', models: [
+    { id: 'gemini-3.6-flash', label: 'Gemini 3.6 Flash (recomendado)' },
+    { id: 'gemini-3.6-flash-lite', label: 'Gemini 3.6 Flash Lite' },
+  ]},
+  { group: 'Ollama local (vision, CPU)', models: [
+    { id: 'moondream', label: 'Moondream (1.7 GB, lento)' },
+    { id: 'llava', label: 'LLaVA 7B (4.7 GB)' },
   ]},
 ];
 

@@ -24,6 +24,7 @@ from .types import (
 )
 from .preprocessing import DetectionMode
 from .pipeline import detect_map
+from .ai_detector import detect_walls_ai, detect_walls_ai_sync
 
 
 def scene_items_from_detection(detection_result: DetectedMap) -> list:

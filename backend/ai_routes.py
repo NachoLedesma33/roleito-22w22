@@ -54,6 +54,9 @@ async def get_ai_config(_session: AuthSession = Depends(require_dm)):
 
 @router.put("/ai/config", response_model=AISettingsResponse)
 async def update_ai_config(data: AISettingsUpdate, _session: AuthSession = Depends(require_dm)):
+    current = _load_settings()
+    if current.model and data.model is None:
+        data.model = current.model
     _save_settings(data)
     return data
 

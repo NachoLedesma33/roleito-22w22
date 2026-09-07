@@ -11,8 +11,22 @@ from schemas import (
 import os
 import uuid
 import json
+from pathlib import Path
+
+from vault import get_api_key
 
 router = APIRouter(tags=["scenes"])
+
+
+def _load_ai_settings() -> dict:
+    """Load AI config from data/ai_config.json."""
+    config_path = Path(__file__).parent.parent / "data" / "ai_config.json"
+    if not config_path.exists():
+        return {"provider": "mock", "remote_base_url": "", "model": ""}
+    try:
+        return json.loads(config_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {"provider": "mock", "remote_base_url": "", "model": ""}
 
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "assets")
 
@@ -193,11 +207,37 @@ async def detect_walls(
     from wall_detection import detect_map, scene_items_from_detection, DetectionMode
     from starlette.concurrency import run_in_threadpool
 
-    detection_mode = DetectionMode.TEXTURED if mode == "textured" else DetectionMode.BLUEPRINT
+    use_ai = mode == "ai"
+    if use_ai:
+        ai_settings = _load_ai_settings()
+        provider = ai_settings.get("provider", "mock")
+        if provider == "local":
+            ai_base_url = ai_settings.get("local_base_url", "http://localhost:11434/v1")
+            ai_api_key = ""
+        elif provider == "remote":
+            ai_base_url = ai_settings.get("remote_base_url", "")
+            ai_api_key = get_api_key("remote") or ""
+        else:
+            raise HTTPException(status_code=400, detail="AI detection requires local or remote provider in IA settings")
+        ai_model = ai_settings.get("model") or (
+            "gemini-3.6-flash" if provider == "remote" else "moondream"
+        )
+        detection_mode = None
+    else:
+        detection_mode = DetectionMode.TEXTURED if mode == "textured" else DetectionMode.BLUEPRINT
+        ai_base_url = ""
+        ai_api_key = ""
+        ai_model = ""
 
     try:
         detection = await run_in_threadpool(
-            detect_map, scene.background_path, detection_mode
+            detect_map,
+            scene.background_path,
+            detection_mode,
+            use_ai=use_ai,
+            ai_base_url=ai_base_url,
+            ai_api_key=ai_api_key,
+            ai_model=ai_model,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Detection failed: {str(e)}")

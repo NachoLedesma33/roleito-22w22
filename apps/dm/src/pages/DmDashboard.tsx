@@ -71,6 +71,7 @@ export default function DmDashboard() {
   const [buildMenuOpen, setBuildMenuOpen] = useState(false);
   const [detectingWalls, setDetectingWalls] = useState(false);
   const [detectionMode, setDetectionMode] = useState<'blueprint' | 'textured'>('blueprint');
+  const [useAi, setUseAi] = useState(false);
   const [bgSelector, setBgSelector] = useState<{
     sceneType: string;
     suggestions: any[];
@@ -211,7 +212,7 @@ export default function DmDashboard() {
     setBuildMenuOpen(false)
     setDetectingWalls(true)
     try {
-      const result = await api.scenes.detectWalls(campaignId, activeScene.id, detectionMode)
+      const result = await api.scenes.detectWalls(campaignId, activeScene.id, useAi ? 'ai' : detectionMode)
       if (result.items && result.items.length > 0) {
         for (const item of result.items) {
           graphRef.addItem(item as SceneItem)
@@ -253,7 +254,7 @@ export default function DmDashboard() {
     } finally {
       setDetectingWalls(false)
     }
-  }, [campaignId, activeScene, graphRef, handleItemsChange, detectionMode])
+  }, [campaignId, activeScene, graphRef, handleItemsChange, detectionMode, useAi])
 
   const handleDeleteItem = useCallback((itemId: string) => {
     graphRef.removeItem(itemId)
@@ -847,6 +848,12 @@ export default function DmDashboard() {
                       className={`flex-1 text-[10px] px-2 py-1 rounded transition-colors ${detectionMode === 'textured' ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'}`}
                     >
                       Textured
+                    </button>
+                    <button
+                      onClick={() => setUseAi((v) => !v)}
+                      className={`flex-1 text-[10px] px-2 py-1 rounded transition-colors ${useAi ? 'bg-purple-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'}`}
+                    >
+                      AI
                     </button>
                   </div>
                   <button
