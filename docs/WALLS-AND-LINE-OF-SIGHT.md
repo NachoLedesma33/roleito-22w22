@@ -14,6 +14,13 @@ Walls define spatial boundaries within a scene. Three core systems consume wall 
 
 All three share a single source of truth: wall entities stored as Items in the Scene Graph with `shape.type = 'line'`. Changes to a wall propagate to all dependent systems in the same frame.
 
+> **Enfoque actual (ver `HYBRID-SHADOW-GEOMETRY.md`):** la barrera de
+> movimiento/LoS también puede venir de **ShadowZones** — polígonos cerrados
+> dibujados por el GM cuyos edges actúan como colliders. El output de la IA
+> (`WALL-DETECTION-PLAN.md`) se integra **normalizado a la misma estructura**,
+> sin crear geometría paralela. Las puertas entre zonas son `Portal` items
+> (`open`/`closed` = collider/LoS on/off).
+
 ---
 
 ## 2. Wall Entity Definition

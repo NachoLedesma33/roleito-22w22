@@ -277,7 +277,8 @@ Reference: `2D-TO-3D.md` (34,685 bytes), `3D-RENDERER.md` (118 bytes)
 | DATABASE.md | Implemented | 21,311 | SQLite schema |
 | EVENT-SYSTEM.md | Implemented | 22,431 | Event pipeline |
 | SCENE-GRAPH.md | Implemented | 29,606 | Scene graph design |
-| MAP-ANALYSIS.md | Implemented | 20,382 | Map ingestion design |
+| MAP-ANALYSIS.md | Implemented | 20,382 | Map ingestion design (AI, mejora futura) |
+| HYBRID-SHADOW-GEOMETRY.md | Implemented | - | Hybrid manual+IA walls/vision/fog (canon) |
 | FOG-AND-VISIBILITY.md | Implemented | 15,433 | Fog of war design |
 | WALLS-AND-LINE-OF-SIGHT.md | Implemented | 21,246 | Walls/LoS design |
 | LIGHTING-SYSTEM.md | Implemented | 28,550 | Lighting design |

@@ -2168,7 +2168,8 @@ sin tener que reconstruir completamente la arquitectura.
 | System | Doc | Status |
 |--------|-----|--------|
 | Scene Graph | `SCENE-GRAPH.md` | Designed |
-| Map Analysis | `MAP-ANALYSIS.md` | Designed |
+| **Hybrid Walls/Vision/Fog** | `HYBRID-SHADOW-GEOMETRY.md` | **Canon (manual-first)** |
+| Map Analysis | `MAP-ANALYSIS.md` | Designed (AI, mejora futura) |
 | Fog of War | `FOG-AND-VISIBILITY.md` | Designed |
 | Walls & LoS | `WALLS-AND-LINE-OF-SIGHT.md` | Designed |
 | Lighting | `LIGHTING-SYSTEM.md` | Designed |
@@ -2176,6 +2177,11 @@ sin tener que reconstruir completamente la arquitectura.
 | 2D→3D | `2D-TO-3D.md` | Designed |
 | Reference | `OWLBEAR-REFERENCE.md` | Complete |
 | Status | `IMPLEMENTATION-STATUS.md` | Complete |
+
+> **Dirección actual:** el sistema sigue el enfoque **manual-first** de
+> `HYBRID-SHADOW-GEOMETRY.md`: el GM dibuja zonas (polígonos cerrados) que
+> definen colisión, luz y sombra. La auto-detección con IA (Phase G) queda como
+> **mejora futura**, integrada normalizando su output a la misma geometría.
 
 ---
 
@@ -2208,9 +2214,11 @@ A9. Scene persistence: save/load to SQLite
 
 ---
 
-## PHASE B — Walls & Doors
+## PHASE B — Walls, Doors & Shadow Zones (Manual-first)
 
-**Goal**: Walls and doors as Items with collision, auto-detection from maps.
+**Goal**: Walls, doors and closed polygons as scene geometry. The GM's manual
+zones are the primary source; collision, lighting and fog consume the same
+geometry (see `HYBRID-SHADOW-GEOMETRY.md`).
 
 ### Tasks
 
@@ -2223,10 +2231,16 @@ B5. Wall rendering: 3D box geometry with material colors
 B6. Door rendering: open/closed/locked visual states
 B7. Movement blocking: walls prevent token movement
 B8. Door interaction: open/close/lock toggle
-B9. Wall auto-detection from map images (OpenCV Canny)
+B9. Wall auto-detection from map images (OpenCV Canny) — IMPLEMENTED
+    → re-encuadrado como MEJORA FUTURA (origen alternativo)
 B10. Wall coordinates normalized (0-1) for map scaling
 B11. Walls fully invisible (opacity=0) by default
 B12. Walls/doors scale with map_scale changes
+B13. ShadowZone item: closed polygon (rect/free) → edges = colliders
+B14. Zone drawing tool: rect + free-polygon modes on the map
+B15. Zone fill overlay (semi-transparent) visible to DM, not to players
+B16. Portal: connect two adjacent zone edges (door between rooms)
+B17. Zone rendering: MAP/OVERLAY layer, scaled with map
 ```
 
 ### Done when
@@ -2239,6 +2253,9 @@ B12. Walls/doors scale with map_scale changes
 - [x] Delete key removes selected items
 - [x] Auto-detect walls from map background (🔍 button in Build menu)
 - [x] Wall coordinates normalized so they scale with map
+- [ ] DM draws closed zones (rect + polygon) that act as colliders
+- [ ] Token inside a zone cannot cross its borders without a portal
+- [ ] Zone fill overlay shows for DM, hidden from players
 - [ ] Walls block token movement (Phase D)
 - [ ] Doors can be opened/closed (partially done — UI works, movement blocking in Phase D)
 
@@ -2273,7 +2290,11 @@ C8. Attach label/token to character
 
 ## PHASE D — Fog of War (Static)
 
-**Goal**: DM can reveal/hide map areas.
+**Goal**: DM can reveal/hide map areas. Asymmetric views per role
+(see `HYBRID-SHADOW-GEOMETRY.md` §5):
+- **DM view**: unexplored/covered areas show a **semi-transparent gray filter**
+  (sees the full map + hidden tokens).
+- **Player view**: shadowed areas render as **absolute black**.
 
 ### Tasks
 
@@ -2283,16 +2304,20 @@ D2. FogRegion type: rectangle, polygon, ellipse, flood
 D3. Fog rendering: mask on SceneLayer.FOG
 D4. DM fog brush tool: paint reveal/hide
 D5. Rectangle select tool for fog
-D6. Flood fill tool for rooms
+D6. Flood fill tool for rooms (uses ShadowZone polygons as boundaries)
 D7. Clear all fog button
 D8. Fog persistence: save/load per scene
 D9. Per-player fog state (explored vs visible)
+D10. GM gray filter vs player black mask (asymmetric rendering)
+D11. Zone-based reveal: reveal/un-reveal whole ShadowZone at once
 ```
 
 ### Done when
 
 - [ ] DM can paint fog reveal areas
+- [ ] DM sees a gray semi-transparent overlay; players see black
 - [ ] Revealed areas show map, unrevealed are dark
+- [ ] Zones (rooms) can be revealed/hidden as a unit
 - [ ] Fog persists across session restarts
 - [ ] Each player has own fog state
 - [ ] DM can clear all fog
@@ -2301,20 +2326,23 @@ D9. Per-player fog state (explored vs visible)
 
 ## PHASE E — Lighting
 
-**Goal**: Dynamic light sources on the scene.
+**Goal**: Dynamic light sources on the scene. Tokens are light emitters that
+reveal fog via raycasting against ShadowZone edges
+(see `HYBRID-SHADOW-GEOMETRY.md` §6).
 
 ### Tasks
 
 ```text
-E1. LightSource entity definition
+E1. LightSource entity definition (hard / soft / directional modes)
 E2. Light rendering: visual glow/indicator
 E3. DM light placement tool
-E4. Attach light to token
-E5. Light properties: color, intensity, range
-E6. Light presets: torch, lantern, campfire
-E7. Wall occlusion: walls block light propagation
-E8. Bright/dim/dark zones calculation
+E4. Attach light to token (token = raycasting origin for fog reveal)
+E5. Light properties: color, intensity, range, angle (cone)
+E6. Light presets: torch, lantern, campfire; cone = directional (90° linterna)
+E7. Wall occlusion: ShadowZone edges block light propagation
+E8. Bright/dim/dark zones calculation (hard edge / soft falloff)
 E9. Light flicker/pulse animations
+E10. Light reveal: light rays cut player fog, stop at edges and closed portals
 ```
 
 ### Done when
@@ -2329,14 +2357,16 @@ E9. Light flicker/pulse animations
 
 ## PHASE F — Line of Sight (Dynamic Fog)
 
-**Goal**: Per-turn visibility based on character vision.
+**Goal**: Per-turn visibility based on character vision. Barriers are
+ShadowZone edges and closed portals (same geometry as collision)
+— see `HYBRID-SHADOW-GEOMETRY.md`.
 
 ### Tasks
 
 ```text
 F1. VisionConfig type (normal, darkvision, blindsight)
 F2. Raycasting engine: Bresenham/DDA
-F3. Wall intersection detection
+F3. Edge intersection detection (ShadowZone edges + portals)
 F4. Visibility mask generation per character
 F5. Combined visibility (union of party)
 F6. Dynamic fog: updates on movement
@@ -2354,29 +2384,36 @@ F8. A* pathfinding for movement
 
 ---
 
-## PHASE G — Map Analysis
+## PHASE G — Map Analysis (Future Enhancement — AI)
 
-**Goal**: Upload map image → auto-detect features.
+**Goal**: Upload map image → auto-detect features. **Mejora futura**: la base
+del producto es el Modo Manual (`HYBRID-SHADOW-GEOMETRY.md` §2-3). El output
+de la IA debe **normalizarse a ShadowZone[]** para integrarse sin crear una
+segunda fuente de geometría.
+
+> **Estado:** gran parte del motor existe (`backend/wall_detection/`: CV dual
+> BLUEPRINT/TEXTURED + `ai_detector.py` con Gemini). Lo pendiente es la
+> **normalización a ShadowZones** y la DM review UI por zona.
 
 ### Tasks
 
 ```text
 G1. Image ingestion: normalize dimensions
 G2. Grid detection: auto-detect grid lines
-G3. Feature detection: wall/door/room detection
-G4. Semantic interpretation: features → Items
-G5. DM review: adjust detected features
-G6. Manual override: DM can redraw features
-G7. Scene Graph generation from analysis
+G3. Feature detection: wall/door/room detection (IMPLEMENTED, backend)
+G4. Semantic interpretation: DetectedMap → ShadowZone[] (normalización)
+G5. DM review: adjust detected zones (reusa tools del Modo Manual)
+G6. Manual override: DM can redraw features (base del sistema, ya presente)
+G7. Scene Graph generation from approved zones
 ```
 
 ### Done when
 
 - [ ] DM uploads map image
 - [ ] Grid auto-detected
-- [ ] Walls and doors suggested
-- [ ] DM can accept/modify suggestions
-- [ ] Scene Graph generated from approved features
+- [ ] Walls/rooms proposed and normalized to ShadowZone[] with origin='ai'
+- [ ] DM can accept/modify each zone with manual tools (hybrid mode)
+- [ ] Edits by DM set touchedByDm=true and are not re-analyzed
 
 ---
 
@@ -2568,7 +2605,7 @@ A (Scene Graph)
 ├── D (Fog of War) ← needs B
 ├── E (Lighting) ← needs B
 ├── F (LoS) ← needs B, D
-├── G (Map Analysis) ← needs A, B
+├── G (Map Analysis / AI, futuro) ← needs A, B (normaliza a ShadowZone)
 ├── H (Assets) ← needs A
 ├── I (3D) ← needs A, B, E
 ├── K (Walkable Space) ← needs B
@@ -2582,17 +2619,22 @@ A (Scene Graph)
 
 ```text
 1.  A — Scene Graph Foundation (foundational)
-2.  B — Walls & Doors (needed for D, E, F, G, K)
+2.  B — Walls, Doors & Shadow Zones / Manual-first (needed for D, E, F, K)
 3.  C — Selection & Interaction (usability)
-4.  D — Fog of War Static (DM tool)
-5.  E — Lighting (atmosphere)
-6.  F — Line of Sight (gameplay)
-7.  G — Map Analysis (differentiator)
-8.  H — Assets (content)
-9.  K — Walkable Space & Collision (movement foundation)
-10. L — NavMesh & Pathfinding (AI movement)
-11. M — Movement Agent (unified movement)
-12. N — Dynamic Obstacles (real-time navigation)
-13. I — 3D Rendering (immersion)
+4.  D — Fog of War Static (DM tool, asymmetric GM/player views)
+5.  E — Lighting (atmosphere; token = light source, raycasting)
+6.  F — Line of Sight (gameplay; borders of ShadowZones)
+7.  H — Assets (content)
+8.  K — Walkable Space & Collision (movement foundation, zone-driven)
+9.  L — NavMesh & Pathfinding (AI movement)
+10. M — Movement Agent (unified movement)
+11. N — Dynamic Obstacles (real-time navigation, doors/portals)
+12. I — 3D Rendering (immersion)
+13. G — Map Analysis / AI (MEJORA FUTURA — normaliza a ShadowZone[])
 14. J — Integration & Polish (release)
 ```
+
+> **Nota:** el orden pone el **Modo Manual primero** (dibujar zonas → colisión,
+> luz y sombra gratis). La auto-detección con IA (G) **no bloquea** ninguna
+> fase: se integra al final normalizando a la geometría manual que ya consume
+> todo el sistema (ver `HYBRID-SHADOW-GEOMETRY.md`).

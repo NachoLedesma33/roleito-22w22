@@ -54,11 +54,12 @@ Routing de skills a tareas de este proyecto (invocación manual con `/skill-name
 1. `docs/CONTEXT.md` — Read first, always
 2. `docs/PRODUCT.md`
 3. `docs/DM-DASHBOARD-VTT.md` — VTT UI design (current focus)
-4. `docs/DOMAIN.md` — Conceptual contract
-5. `docs/ARCHITECTURE.md`
-6. `docs/DATABASE.md` — SQLite persistence
-7. `docs/EVENT-SYSTEM.md` — Core event pipeline
-8. Then read only the docs relevant to your task
+4. `docs/HYBRID-SHADOW-GEOMETRY.md` — Walls/vision/fog manual-first (canon actual)
+5. `docs/DOMAIN.md` — Conceptual contract
+6. `docs/ARCHITECTURE.md`
+7. `docs/DATABASE.md` — SQLite persistence
+8. `docs/EVENT-SYSTEM.md` — Core event pipeline
+9. Then read only the docs relevant to your task
 
 ## Coding Conventions
 - TypeScript strict mode

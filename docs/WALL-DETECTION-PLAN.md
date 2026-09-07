@@ -1,5 +1,24 @@
 # Wall Detection Improvement Plan
 
+> ## STATUS: MEJORA FUTURA (origen alternativo de geometría)
+>
+> El **enfoque principal** del proyecto es el **Modo Manual basado en geometría**
+> (`HYBRID-SHADOW-GEOMETRY.md`): el GM dibuja polígonos cerrados (ShadowZones)
+> que definen colisión, luz y sombra. El trabajo de IA documentado aquí **no se
+> descarta**: sigue implementado y listo como **mejora futura** para mapas
+> texturizados/blueprints, con la condición de que su output se **normalice a
+> `ShadowZone[]`** para consumir la misma estructura que el modo manual.
+>
+> Prioridad invertida:
+>
+> ```text
+> ANTES:   IA detecta (95%)  →  GM corrige (5%)
+> AHORA:   GM dibuja manual (base, 100% funcional y offline)
+>          IA detecta (opcional, futura)  →  GM pule
+> ```
+
+---
+
 ## Current State
 
 `backend/wall_detection/` detects walls from 2D battle maps using a dual
@@ -537,6 +556,10 @@ backend/
 
 - Always normalize coordinates to 0-1 range for resolution independence
 - Keep detection results cached per scene (don't re-detect on every load)
-- The "95% auto + 5% manual DM correction" approach is the realistic target
+- **Enfoque actual:** "100% manual + IA como acelerador". El target era "95%
+  auto + 5% manual"; hoy se invierte: todo el sistema consume ShadowZones y la
+  IA (esta fase) es un *boost* opcional para mapas texturizados
+- **Integración pendiente**: convertir `DetectedMap` → `ShadowZone[]`
+  (`origin: 'ai'`, `touchedByDm: false`) + DM review UI por zona
 - VLM-based detection is the future but costs money per detection
 - CV-only approach is free but limited to clean blueprints

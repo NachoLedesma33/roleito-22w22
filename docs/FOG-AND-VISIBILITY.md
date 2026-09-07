@@ -11,6 +11,14 @@ Both systems render as a single Fog Layer (`SceneLayer.FOG`) on top of all scene
 
 The combined visibility is the intersection of static and dynamic fog: an area must be both previously explored (cut) and currently visible (in LoS) to be rendered without fog.
 
+> **Enfoque actual (ver `HYBRID-SHADOW-GEOMETRY.md` §5):** las barreras y
+> contornos que alimentan este pipeline provienen de **ShadowZones** (polígonos
+> dibujados por el GM o normalizados desde IA). La vista es **asimétrica**:
+> el GM ve un filtro grisáceo semitransparente sobre las áreas no reveladas
+> (ve el mapa completo + tokens ocultos); los **jugadores** ven **negro
+> absoluto** en las zonas de sombra. El revelado dinámico por luz del token se
+> describe en `HYBRID-SHADOW-GEOMETRY.md` §6.
+
 ## 2. Static Fog of War
 
 Static Fog manages persistent map exploration. The DM paints reveal/hide regions on the map, and players retain knowledge of explored areas across sessions.

@@ -56,6 +56,12 @@ Two entry modes:
 
 The map is the source of truth for the 2D scene. All spatial queries (fog of war, line of sight, movement) resolve against the map's semantic data, not the raw pixels.
 
+> **Enfoque actual (manual-first):** el pipeline automatizado de este doc es una
+> **mejora futura**. La base del producto es el **Modo Manual** de
+> `HYBRID-SHADOW-GEOMETRY.md`: el GM dibuja polígonos cerrados (ShadowZones)
+> que definen colisión, luz y sombra. La salida de este pipeline debe
+> **normalizarse a `ShadowZone[]`** antes de integrarse al runtime.
+
 ---
 
 # 2. Pipeline Stages
@@ -716,6 +722,10 @@ This enables:
 ---
 
 # 8. Future: Progressive Analysis
+
+> **Reencuadrado como mejora futura.** El Modo Manual (`HYBRID-SHADOW-GEOMETRY.md`)
+> es el camino principal; la automatización de este doc se integra al final
+> normalizando resultados a `ShadowZone[]`.
 
 ## Phase 1 — Manual + Basic Grid (MVP)
 

@@ -14,6 +14,12 @@ Core requirements:
 - Wall sliding for smooth movement along surfaces
 - Corner resolution to prevent trapping
 
+> **Fuente de geometría (enfoque actual):** los segments los aporta la capa de
+> **ShadowZones** (`HYBRID-SHADOW-GEOMETRY.md`): cada edge de un polígono
+> cerrado dibujado por el GM (o normalizado desde IA) es un segmento
+> bloqueante. Un token dentro de una zona no puede cruzarla sin un `Portal`
+> abierto (§7 del doc híbrido). No se requiere IA para colisionar.
+
 ## 2. Agent Configuration
 
 Every movable entity has a collision profile that defines its physical presence in the world.
