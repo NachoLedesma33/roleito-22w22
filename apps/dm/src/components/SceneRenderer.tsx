@@ -6,6 +6,8 @@ import TokenSprite from './TokenSprite';
 import TokenModel from './TokenModel';
 import ItemRenderer from './ItemRenderer';
 import WallDrawerCanvas from './WallDrawerCanvas';
+import ZoneDrawerCanvas from './ZoneDrawerCanvas';
+import type { ZoneDraft } from './ZoneDrawer';
 import { SceneItem } from '@core/domain/types';
 import type { DrawState } from './WallDrawer';
 
@@ -33,11 +35,18 @@ interface SceneRendererProps {
   selectedTokenId?: string | null;
   selectedItemIds?: string[];
   readOnly?: boolean;
+  showZones?: boolean;
   movableEntityIds?: string[];
   mapScale?: number;
   gridSize?: number;
   gridSnap?: boolean;
   drawState?: DrawState | null;
+  zoneDraft?: ZoneDraft | null;
+  onZoneAddPoint?: (point: { x: number; y: number }) => void;
+  onZoneDragStart?: (point: { x: number; y: number }) => void;
+  onZoneDragMove?: (point: { x: number; y: number }) => void;
+  onZoneDragEnd?: (point: { x: number; y: number }) => void;
+  onZoneFinish?: () => void;
   onTokenClick?: (sceneCharId: string) => void;
   onItemClick?: (itemId: string) => void;
   onItemContextMenu?: (itemId: string, clientX: number, clientY: number) => void;
@@ -448,11 +457,18 @@ export default function SceneRenderer({
   selectedTokenId,
   selectedItemIds = [],
   readOnly = false,
+  showZones = false,
   movableEntityIds,
   mapScale = 1,
   gridSize = 0,
   gridSnap = false,
   drawState = null,
+  zoneDraft = null,
+  onZoneAddPoint,
+  onZoneDragStart,
+  onZoneDragMove,
+  onZoneDragEnd,
+  onZoneFinish,
   onTokenClick,
   onItemClick,
   onItemContextMenu,
@@ -465,12 +481,12 @@ export default function SceneRenderer({
   const visibleChars = useMemo(() => characters.filter((c) => c.visible), [characters]);
   const renderItems = useMemo(() => {
     return items
-      .filter((i) => i.visible)
+      .filter((i) => i.visible && (showZones || i.metadata.type !== 'zone'))
       .sort((a, b) => {
         if (a.layer !== b.layer) return a.layer - b.layer
         return a.zIndex - b.zIndex
       })
-  }, [items]);
+  }, [items, showZones]);
   const hasDrag = !readOnly || (movableEntityIds && movableEntityIds.length > 0);
   const justSelectedRef = useRef(false);
   const [imageAspect, setImageAspect] = useState(1);
@@ -545,6 +561,8 @@ export default function SceneRenderer({
           key={item.id}
           item={item}
           isSelected={selectedItemIds.includes(item.id)}
+          readOnly={readOnly}
+          showZones={showZones}
           onClick={onItemClick ? () => onItemClick(item.id) : undefined}
           onContextMenu={onItemContextMenu ? (e) => onItemContextMenu(item.id, e.clientX, e.clientY) : undefined}
           mapScale={mapScale}
@@ -559,12 +577,22 @@ export default function SceneRenderer({
           onDrawEnd={onDrawEnd}
         />
       )}
+      {zoneDraft && onZoneAddPoint && onZoneDragStart && onZoneDragMove && onZoneDragEnd && onZoneFinish && (
+        <ZoneDrawerCanvas
+          draft={zoneDraft}
+          onAddPoint={onZoneAddPoint}
+          onDragStart={onZoneDragStart}
+          onDragMove={onZoneDragMove}
+          onDragEnd={onZoneDragEnd}
+          onFinishPolygon={onZoneFinish}
+        />
+      )}
       <OrbitControls
         makeDefault
-        enabled={!drawState}
-        enablePan={!drawState}
-        enableZoom={!drawState}
-        enableRotate={!drawState}
+        enabled={!drawState && !zoneDraft}
+        enablePan={!drawState && !zoneDraft}
+        enableZoom={!drawState && !zoneDraft}
+        enableRotate={!drawState && !zoneDraft}
         maxPolarAngle={Math.PI / 2.2}
         minDistance={3}
         maxDistance={maxDistance}

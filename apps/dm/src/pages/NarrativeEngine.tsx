@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { api, NarrativeEvent, ParseResponse } from '@/lib/api';
+import { api, ParseResponse } from '@/lib/api';
 
 export default function NarrativeEngine() {
   const { id: campaignId } = useParams<{ id: string }>();

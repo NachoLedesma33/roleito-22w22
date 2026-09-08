@@ -225,9 +225,11 @@ export type AttachmentBehavior = 'position' | 'rotation' | 'scale'
 export type ItemShape =
   | { type: 'rectangle'; fill: string; stroke?: string; strokeWidth?: number }
   | { type: 'ellipse'; fill: string; stroke?: string; strokeWidth?: number }
-  | { type: 'polygon'; points: number[]; fill: string; stroke?: string }
+  | { type: 'polygon'; points: number[]; fill: string; stroke?: string; strokeWidth?: number }
   | { type: 'line'; points: number[]; stroke: string; strokeWidth: number }
   | { type: 'text'; text: string; fontSize: number; fontFamily: string; color: string }
+
+export type ShapePolygon = Extract<ItemShape, { type: 'polygon' }>
 
 export type ItemMetadata =
   | TokenMetadata
@@ -238,6 +240,7 @@ export type ItemMetadata =
   | LabelMetadata
   | FogMetadata
   | RoomMetadata
+  | ZoneMetadata
 
 export interface TokenMetadata {
   type: 'token'
@@ -295,4 +298,29 @@ export interface RoomMetadata {
   roomId: string
   name: string
   description: string
+}
+
+export interface PortalRef {
+  id: string
+  zoneA: string
+  zoneB: string
+  state: 'closed' | 'open' | 'locked'
+  localEdge: [Point2D, Point2D]
+  activatesOn: { id: string } | null
+}
+
+export interface ZoneMetadata {
+  type: 'zone'
+  zoneType: 'rectangle' | 'polygon'
+  origin: 'manual' | 'ai' | 'hybrid'
+  touchedByDm: boolean
+  shadowOnly: boolean
+  fillColor: string
+  fillOpacity: number
+  portals: PortalRef[]
+}
+
+export interface Point2D {
+  x: number
+  y: number
 }

@@ -186,6 +186,7 @@ export default function PlayerView() {
   const lastRollTsRef = useRef<number>(0);
   const dataRef = useRef<typeof data>(null);
   const wasdTargetRef = useRef<{ x: number; z: number; rotation: number } | null>(null);
+  const lastMoveAtRef = useRef(0);
   const serverPosRef = useRef<Map<string, { x: number; z: number; rotation: number }>>(new Map());
   const renderedPosRef = useRef<Map<string, { x: number; z: number; rotation: number }>>(new Map());
   const rafRef = useRef<number>(0);
@@ -363,6 +364,20 @@ export default function PlayerView() {
         renderedPosRef.current.delete(id);
       }
     }
+    if (myId) {
+      const mySc = data.characters.find((c) => c.id === myId);
+      const cur = wasdTargetRef.current;
+      if (mySc && cur) {
+        const dist = Math.hypot(mySc.x - cur.x, mySc.z - cur.z);
+        const idleMs = Date.now() - lastMoveAtRef.current;
+        const drift = idleMs > 250 ? 0.01 : 0.5;
+        if (dist > drift) {
+          const target = { x: mySc.x, z: mySc.z, rotation: mySc.rotation ?? cur.rotation };
+          wasdTargetRef.current = target;
+          setWasdTarget(target);
+        }
+      }
+    }
   }, [data, choice]);
 
   useEffect(() => {
@@ -449,6 +464,7 @@ export default function PlayerView() {
       }
 
       if (moved) {
+        lastMoveAtRef.current = Date.now();
         const mapScale = currentData.map_scale ?? 1;
         const mapH = 10 * mapScale;
         const mapW = mapH;
@@ -464,8 +480,15 @@ export default function PlayerView() {
             const pts = item.shape.points;
             return [pts[0], pts[1], pts[2], pts[3]] as [number, number, number, number];
           });
-        const { checkWallCollision } = await import('@/lib/wall-collision');
+        const { checkWallCollision, extractZonePolygons, crossZoneBorder } = await import('@/lib/wall-collision');
         if (checkWallCollision(normX, normZ, walls, 0.03)) {
+          return;
+        }
+
+        const zones = extractZonePolygons(currentData.items ?? [], mapW, mapH)
+        const prevNormX = (prev ? prev.x : sc.x) / mapW + 0.5
+        const prevNormZ = (prev ? prev.z : sc.z) / mapH + 0.5
+        if (crossZoneBorder(prevNormX, prevNormZ, normX, normZ, zones)) {
           return;
         }
 
@@ -742,6 +765,7 @@ export default function PlayerView() {
               lighting={data.lighting}
               mapScale={data.map_scale ?? 1}
               items={data.items ?? []}
+              readOnly
               gridSize={data.grid_size ?? 0}
               gridSnap={data.grid_snap ?? false}
               selectedTokenId={
@@ -770,6 +794,10 @@ export default function PlayerView() {
                       const normX = (x / mapW) + 0.5;
                       const normZ = (z / mapH) + 0.5;
 
+                      const sc = data.characters.find(
+                        (ch) => ch.type === 'character' && data.player_characters.some((p) => p.id === ch.entity_id && p.id === choice.id)
+                      );
+
                       const walls = (data.items ?? [])
                         .filter((item: any) => item.metadata?.type === 'wall' && item.shape?.type === 'line')
                         .map((item: any) => {
@@ -777,14 +805,18 @@ export default function PlayerView() {
                           return [pts[0], pts[1], pts[2], pts[3]] as [number, number, number, number];
                         });
 
-                      const { checkWallCollision } = await import('@/lib/wall-collision');
+                      const { checkWallCollision, extractZonePolygons, crossZoneBorder } = await import('@/lib/wall-collision');
                       if (checkWallCollision(normX, normZ, walls, 0.03)) {
                         return;
                       }
 
-                      const sc = data.characters.find(
-                        (ch) => ch.type === 'character' && data.player_characters.some((p) => p.id === ch.entity_id && p.id === choice.id)
-                      );
+                      const zones = extractZonePolygons(data.items ?? [], mapW, mapH)
+                      const prevPosX = sc ? sc.x : x
+                      const prevPosZ = sc ? sc.z : z
+                      if (crossZoneBorder(prevPosX / mapW + 0.5, prevPosZ / mapH + 0.5, normX, normZ, zones)) {
+                        return;
+                      }
+
                       const target = { x, z, rotation: wasdTarget?.rotation ?? (sc?.rotation ?? 0) };
                       wasdTargetRef.current = target;
                       setWasdTarget(target);

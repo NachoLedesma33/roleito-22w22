@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Billboard, Text } from '@react-three/drei'
 import * as THREE from 'three'
@@ -13,13 +13,15 @@ const TOKEN_COLORS: Record<string, string> = {
 interface ItemRendererProps {
   item: SceneItem
   isSelected?: boolean
+  readOnly?: boolean
+  showZones?: boolean
   onClick?: () => void
   onContextMenu?: (e: MouseEvent) => void
   mapScale?: number
   imageAspect?: number
 }
 
-export default function ItemRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, imageAspect = 1 }: ItemRendererProps) {
+export default function ItemRenderer({ item, isSelected, showZones = false, onClick, onContextMenu, mapScale = 1, imageAspect = 1 }: ItemRendererProps) {
   const groupRef = useRef<THREE.Group>(null)
 
   useFrame((state) => {
@@ -28,6 +30,11 @@ export default function ItemRenderer({ item, isSelected, onClick, onContextMenu,
       groupRef.current.position.y = 0.6 * item.scale + Math.sin(state.clock.elapsedTime * 2 + item.x) * 0.04 * item.scale
     }
   })
+
+  if (item.metadata.type === 'zone') {
+    if (!showZones) return null
+    return <ZoneRenderer item={item} isSelected={isSelected} onClick={onClick} onContextMenu={onContextMenu} mapScale={mapScale} />
+  }
 
   if (item.metadata.type === 'wall' && item.shape?.type === 'line') {
     return <WallRenderer item={item} isSelected={isSelected} onClick={onClick} mapScale={mapScale} imageAspect={imageAspect} />
@@ -294,4 +301,91 @@ function ShapeRenderer({ item, isSelected, onClick }: ItemRendererProps) {
   }
 
   return null
+}
+
+function ZoneRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1 }: ItemRendererProps) {
+  const meta = item.metadata as import('@core/domain/types').ZoneMetadata
+  const mapHeight = 10 * mapScale
+  const mapWidth = mapHeight
+
+  const groupPos = [item.x, 0, item.y] as const
+  const fillY = 0.02
+  const outlineY = 0.035
+
+  if (item.shape?.type === 'rectangle') {
+    const hw = item.width / 2
+    const hh = item.height / 2
+    const outline = [
+      new THREE.Vector3(-hw, outlineY, -hh),
+      new THREE.Vector3(hw, outlineY, -hh),
+      new THREE.Vector3(hw, outlineY, hh),
+      new THREE.Vector3(-hw, outlineY, hh),
+      new THREE.Vector3(-hw, outlineY, -hh),
+    ]
+    const outlineGeo = new THREE.BufferGeometry().setFromPoints(outline)
+    return (
+      <group position={groupPos} rotation={[0, (item.rotation * Math.PI) / 180, 0]}>
+        <mesh onClick={(e) => { e.stopPropagation(); onClick?.() }}
+          onContextMenu={(e) => { e.stopPropagation(); onContextMenu?.(e.nativeEvent) }}>
+          <planeGeometry args={[item.width, item.height]} />
+          <meshBasicMaterial color={meta.fillColor} transparent opacity={meta.fillOpacity} side={THREE.DoubleSide} />
+        </mesh>
+        <lineSegments geometry={outlineGeo}>
+          <lineBasicMaterial color={meta.fillColor} linewidth={2} />
+        </lineSegments>
+        {isSelected && (
+          <mesh position={[0, 0.01, 0]}>
+            <planeGeometry args={[item.width + 0.05, item.height + 0.05]} />
+            <meshBasicMaterial color="#3b82f6" transparent opacity={0.3} side={THREE.DoubleSide} />
+          </mesh>
+        )}
+      </group>
+    )
+  }
+
+  const shape = item.shape as import('@core/domain/types').ShapePolygon
+  const handleClick = useCallback((e: { stopPropagation: () => void }) => {
+    e.stopPropagation()
+    onClick?.()
+  }, [onClick])
+  const handleContextMenu = useCallback((e: { stopPropagation: () => void; nativeEvent: MouseEvent }) => {
+    e.stopPropagation()
+    onContextMenu?.(e.nativeEvent)
+  }, [onContextMenu])
+  const { geometry, outlineGeo } = useMemo(() => {
+    const verts: THREE.Vector2[] = []
+    const world: THREE.Vector3[] = []
+    for (let i = 0; i + 1 < shape.points.length; i += 2) {
+      const nx = shape.points[i]
+      const ny = shape.points[i + 1]
+      const wx = (nx - 0.5) * mapWidth - item.x
+      const wz = (ny - 0.5) * mapHeight - item.y
+      verts.push(new THREE.Vector2(wx, -wz))
+      world.push(new THREE.Vector3(wx, outlineY, wz))
+    }
+    const shape3 = new THREE.Shape(verts)
+    const geo = new THREE.ShapeGeometry(shape3, 4)
+    const outlinePts: THREE.Vector3[] = []
+    for (let i = 0; i < world.length; i++) {
+      outlinePts.push(world[i], world[(i + 1) % world.length])
+    }
+    const outlineGeo = new THREE.BufferGeometry().setFromPoints(outlinePts)
+    return { geometry: geo, outlineGeo }
+  }, [shape, mapWidth, mapHeight, item.x, item.y])
+
+  return (
+    <group position={groupPos}>
+      <mesh geometry={geometry} position={[0, fillY, 0]} rotation={[-Math.PI / 2, 0, 0]} onClick={handleClick} onContextMenu={handleContextMenu}>
+        <meshBasicMaterial color={meta.fillColor} transparent opacity={meta.fillOpacity} side={THREE.DoubleSide} />
+      </mesh>
+      <lineSegments geometry={outlineGeo}>
+        <lineBasicMaterial color={meta.fillColor} linewidth={2} />
+      </lineSegments>
+      {isSelected && (
+        <lineSegments geometry={outlineGeo} position={[0, 0.01, 0]}>
+          <lineBasicMaterial color="#3b82f6" linewidth={3} />
+        </lineSegments>
+      )}
+    </group>
+  )
 }

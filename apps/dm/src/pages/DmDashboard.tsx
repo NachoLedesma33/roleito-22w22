@@ -6,6 +6,7 @@ import { SceneGraph } from '@core/scene/scene-graph';
 import { useDoorInteraction } from '@core/scene/door-interaction';
 import SceneRenderer from '@/components/SceneRenderer';
 import { createEmptyDrawState, createWallItem, type DrawState } from '@/components/WallDrawer';
+import { createEmptyZoneDraft, createZoneItem, ZONE_COLORS, ZONE_DEFAULT_COLOR, type ZoneDraft } from '@/components/ZoneDrawer';
 import DoorContextMenu from '@/components/DoorContextMenu';
 import WallContextMenu from '@/components/WallContextMenu';
 import BackgroundSelector, { generateBackgroundCSS } from '@/components/BackgroundSelector';
@@ -63,6 +64,8 @@ export default function DmDashboard() {
   const [sceneItems, setSceneItems] = useState<SceneItem[]>([]);
   const [graphRef] = useState(() => new SceneGraph());
   const [drawState, setDrawState] = useState<DrawState | null>(null);
+  const [zoneDraft, setZoneDraft] = useState<ZoneDraft | null>(null);
+  const [zoneColor, setZoneColor] = useState(ZONE_DEFAULT_COLOR);
   const [wallMaterial, setWallMaterial] = useState<'stone' | 'wood' | 'metal' | 'glass' | 'magic'>('stone');
   const [doorMaterial, setDoorMaterial] = useState<'wood' | 'metal' | 'glass' | 'magic'>('wood');
   const [doorContextMenu, setDoorContextMenu] = useState<{ x: number; y: number; itemId: string; state: string } | null>(null);
@@ -185,6 +188,57 @@ export default function DmDashboard() {
     setBuildMenuOpen(false)
   }, [wallMaterial, doorMaterial])
 
+  const finalizeZoneDraft = useCallback(() => {
+    setZoneDraft((prev) => {
+      if (!prev) return null
+      if (prev.mode === 'rect') {
+        const a = prev.startPoint
+        const b = prev.currentPoint
+        if (!a || !b || Math.hypot(b.x - a.x, b.y - a.y) < 0.2) return null
+      } else if (prev.points.length < 3) {
+        return null
+      }
+      const mScale = activeScene?.map_scale ?? 1
+      const mapSize = 10 * mScale
+      const item = createZoneItem(prev, zoneColor, mapSize, mapSize)
+      if (item) {
+        graphRef.addItem(item)
+        handleItemsChange(graphRef.getItems())
+      }
+      return null
+    })
+  }, [graphRef, handleItemsChange, activeScene, zoneColor])
+
+  const handleZoneAddPoint = useCallback((point: { x: number; y: number }) => {
+    setZoneDraft((prev) => {
+      if (!prev) return prev
+      const last = prev.points[prev.points.length - 1]
+      if (last && Math.hypot(point.x - last.x, point.y - last.y) < 0.15) return prev
+      return { ...prev, points: [...prev.points, point] }
+    })
+  }, [])
+
+  const handleZoneDragStart = useCallback((point: { x: number; y: number }) => {
+    setZoneDraft((prev) => prev ? { ...prev, startPoint: point, currentPoint: point } : prev)
+  }, [])
+
+  const handleZoneDragMove = useCallback((point: { x: number; y: number }) => {
+    setZoneDraft((prev) => prev ? { ...prev, currentPoint: point } : prev)
+  }, [])
+
+  const handleZoneDragEnd = useCallback((_point: { x: number; y: number }) => {
+    finalizeZoneDraft()
+  }, [finalizeZoneDraft])
+
+  const startZoneMode = useCallback((mode: 'rect' | 'polygon') => {
+    setDrawState(null)
+    setZoneDraft((prev) => {
+      if (prev?.mode === mode) return null
+      return createEmptyZoneDraft(mode)
+    })
+    setBuildMenuOpen(false)
+  }, [])
+
   const handleClearAllWalls = useCallback(() => {
     if (!confirm('Delete ALL walls and doors? This cannot be undone.')) return
     const items = graphRef.getItems()
@@ -203,6 +257,40 @@ export default function DmDashboard() {
       results: [toRemove.length],
       total: toRemove.length,
       label: `walls + doors removed`,
+      timestamp: Date.now(),
+    }])
+  }, [graphRef, handleItemsChange])
+
+  const handleClearAllZones = useCallback(() => {
+    const items = graphRef.getItems()
+    const toRemove = items.filter(
+      (item: SceneItem) => item.metadata?.type === 'zone'
+    )
+    if (toRemove.length === 0) {
+      setToastQueue((prev) => [...prev.slice(-4), {
+        id: `clearz-${Date.now()}`,
+        rollerName: 'Clear',
+        diceType: 20,
+        count: 1,
+        results: [0],
+        total: 0,
+        label: `no zones to remove`,
+        timestamp: Date.now(),
+      }])
+      return
+    }
+    for (const item of toRemove) {
+      graphRef.removeItem(item.id)
+    }
+    handleItemsChange(graphRef.getItems())
+    setToastQueue((prev) => [...prev.slice(-4), {
+      id: `clearz-${Date.now()}`,
+      rollerName: 'Clear',
+      diceType: 20,
+      count: 1,
+      results: [toRemove.length],
+      total: toRemove.length,
+      label: `zones removed`,
       timestamp: Date.now(),
     }])
   }, [graphRef, handleItemsChange])
@@ -276,7 +364,8 @@ export default function DmDashboard() {
 
   const handleWallContextMenu = useCallback((itemId: string, clientX: number, clientY: number) => {
     const item = graphRef.getItem(itemId)
-    if (item?.metadata.type === 'wall') {
+    if (item?.metadata.type === 'wall' || item?.metadata.type === 'zone') {
+      setSelectedItemId(itemId)
       setWallContextMenu({ x: clientX, y: clientY, itemId })
     }
   }, [graphRef])
@@ -285,6 +374,7 @@ export default function DmDashboard() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (drawState) setDrawState(null)
+        else if (zoneDraft) setZoneDraft(null)
         else setSelectedItemId(null)
       }
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedItemId) {
@@ -295,7 +385,7 @@ export default function DmDashboard() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [drawState, selectedItemId, handleDeleteItem])
+  }, [drawState, zoneDraft, selectedItemId, handleDeleteItem])
 
   useEffect(() => {
     for (const sc of sceneChars) {
@@ -818,7 +908,7 @@ export default function DmDashboard() {
             <div ref={buildMenuRef} className="relative shrink-0">
               <button
                 onClick={() => setBuildMenuOpen(!buildMenuOpen)}
-                className={`text-xs px-2 py-1 rounded transition-colors ${drawState ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                className={`text-xs px-2 py-1 rounded transition-colors ${drawState || zoneDraft ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
               >
                 🧱 Build ▾
               </button>
@@ -836,6 +926,33 @@ export default function DmDashboard() {
                   >
                     🚪 Place Door
                   </button>
+                  <button
+                    onClick={() => startZoneMode('rect')}
+                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${zoneDraft?.mode === 'rect' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
+                  >
+                    ▭ Zone (rect)
+                  </button>
+                  <button
+                    onClick={() => startZoneMode('polygon')}
+                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${zoneDraft?.mode === 'polygon' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
+                  >
+                    ⬠ Zone (polygon)
+                  </button>
+                  <div className="border-t border-[var(--bg-tertiary)] my-1" />
+                  <div className="px-3 py-1">
+                    <p className="text-[10px] text-[var(--text-secondary)] mb-1">Zone color</p>
+                    <div className="flex gap-1">
+                      {Object.entries(ZONE_COLORS).map(([name, hex]) => (
+                        <button
+                          key={name}
+                          onClick={() => setZoneColor(hex)}
+                          className={`w-5 h-5 rounded ${zoneColor === hex ? 'ring-2 ring-amber-400' : ''}`}
+                          style={{ backgroundColor: hex }}
+                          title={name}
+                        />
+                      ))}
+                    </div>
+                  </div>
                   <div className="flex gap-1 px-3 py-1">
                     <button
                       onClick={() => setDetectionMode('blueprint')}
@@ -868,6 +985,12 @@ export default function DmDashboard() {
                     className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-red-400"
                   >
                     🗑️ Clear all walls
+                  </button>
+                  <button
+                    onClick={handleClearAllZones}
+                    className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-red-400"
+                  >
+                    🗑️ Clear all zones
                   </button>
                   <div className="border-t border-[var(--bg-tertiary)] my-1" />
                   <div className="px-3 py-1">
@@ -904,6 +1027,13 @@ export default function DmDashboard() {
             {drawState && (
               <span className="text-[10px] text-amber-400 shrink-0">
                 {drawState.mode === 'wall' ? '🧱 Click-drag to draw wall' : '🚪 Click-drag to place door'} · ESC to cancel
+              </span>
+            )}
+            {zoneDraft && (
+              <span className="text-[10px] text-amber-400 shrink-0">
+                {zoneDraft.mode === 'rect'
+                  ? '▭ Click-drag to draw zone rect'
+                  : '⬠ Click to place vertices · click 1st point to close'} · ESC to cancel
               </span>
             )}
           </>
@@ -1221,6 +1351,13 @@ export default function DmDashboard() {
                 gridSize={activeScene.grid_size ?? 0}
                 gridSnap={activeScene.grid_snap ?? false}
                 drawState={drawState}
+                showZones
+                zoneDraft={zoneDraft}
+                onZoneAddPoint={handleZoneAddPoint}
+                onZoneDragStart={handleZoneDragStart}
+                onZoneDragMove={handleZoneDragMove}
+                onZoneDragEnd={handleZoneDragEnd}
+                onZoneFinish={finalizeZoneDraft}
                 onTokenClick={handleTokenClick}
                 onTokenDrop={handleTokenDrop}
                 onTokenContextMenu={handleTokenContextMenu}
@@ -1228,7 +1365,7 @@ export default function DmDashboard() {
                 onItemContextMenu={(itemId, clientX, clientY) => {
                   const item = graphRef.getItem(itemId)
                   if (item?.metadata.type === 'door') handleDoorContextMenu(itemId, clientX, clientY)
-                  else if (item?.metadata.type === 'wall') handleWallContextMenu(itemId, clientX, clientY)
+                  else if (item?.metadata.type === 'wall' || item?.metadata.type === 'zone') handleWallContextMenu(itemId, clientX, clientY)
                 }}
                 onDrawStart={handleDrawStart}
                 onDrawMove={handleDrawMove}
