@@ -159,8 +159,6 @@ test.describe('Dashboard VTT Core', () => {
     await expect(page.getByText('On Scene (1)')).toBeVisible({ timeout: 10_000 });
     await page.getByRole('button', { name: 'Cedric' }).click();
 
-    const sheet = page.getByText('Cedric — Sheet');
-    await expect(sheet).toBeVisible();
     await expect(page.getByText('Max PV')).toBeVisible();
     await expect(page.locator('input.text-red-400')).toHaveValue('13');
     await expect(page.locator('input.text-blue-400')).toHaveValue('8');
@@ -171,10 +169,10 @@ test.describe('Dashboard VTT Core', () => {
     await expect(page.getByTitle('Roll dice (D)')).toBeVisible();
 
     await page.keyboard.press('d');
-    await expect(page.getByText('Dice Roller')).toBeVisible();
+    await expect(page.getByText('Die Type')).toBeVisible();
 
     await page.keyboard.press('Escape');
-    await expect(page.getByText('Dice Roller')).toHaveCount(0);
+    await expect(page.getByText('Die Type')).toHaveCount(0);
   });
 
   test('D7: tecla N abre notebook y Escape cierra', async ({ page, campaign }) => {
@@ -182,10 +180,10 @@ test.describe('Dashboard VTT Core', () => {
     await expect(page.getByTitle('DM Notebook (N)')).toBeVisible();
 
     await page.keyboard.press('n');
-    await expect(page.getByText('DM Notebook').first()).toBeVisible();
+    await expect(page.getByRole('button', { name: '+ New Note' })).toBeVisible();
 
     await page.keyboard.press('Escape');
-    await expect(page.getByText('DM Notebook')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '+ New Note' })).toHaveCount(0);
   });
 
   test('D8: tecla R abre recap y Escape cierra', async ({ page, campaign }) => {
@@ -193,10 +191,10 @@ test.describe('Dashboard VTT Core', () => {
     await expect(page.getByTitle('Session Recap (R)')).toBeVisible();
 
     await page.keyboard.press('r');
-    await expect(page.getByText('Session Recap')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'AI Recap' })).toBeVisible();
 
     await page.keyboard.press('Escape');
-    await expect(page.getByText('Session Recap')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'AI Recap' })).toHaveCount(0);
   });
 
   test('D9: background y retratos reales renderizan sin errores de textura @showcase', async ({ page, campaign, request }) => {

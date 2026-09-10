@@ -44,7 +44,7 @@ test.describe('DM Notebook', () => {
   async function openNotebook(page: Page) {
     await page.getByTitle('DM Notebook (N)').click();
     const panel = page.locator('div.fixed', {
-      has: page.getByRole('heading', { name: 'DM Notebook' }),
+      has: page.getByRole('button', { name: '+ New Note' }),
     });
     await expect(panel).toBeVisible();
     return panel;

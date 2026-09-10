@@ -1,4 +1,5 @@
 import { expect, test } from '../fixtures/campaign-fixture';
+import type { Page } from '@playwright/test';
 import {
   API_BASE,
   createCharacter,
@@ -11,6 +12,12 @@ import {
 } from '../helpers/api-helpers';
 
 test.describe('Player View', () => {
+  function playerSheet(page: Page) {
+    return page
+      .locator('div.fixed')
+      .filter({ has: page.getByRole('button', { name: 'Notas', exact: true }) });
+  }
+
   async function setupActiveSceneWithTokens(
     request: import('@playwright/test').APIRequestContext,
     campaignId: string,
@@ -115,11 +122,11 @@ test.describe('Player View', () => {
     await expect(page.getByText('¿Quién sos?')).toBeVisible({ timeout: 10_000 });
 
     await page.getByRole('button', { name: /Borin/ }).click();
-    await expect(page.getByTestId('player-sheet')).toBeVisible();
-    await expect(page.getByTestId('player-sheet')).toContainText('18/18 PV');
+    await expect(playerSheet(page)).toBeVisible();
+    await expect(playerSheet(page)).toContainText('18/18 PV');
 
     await updateCharacter(request, campaign.id, mia.id, { current_pv: 7 });
-    await expect(page.getByTestId('player-sheet')).toContainText('7/18 PV', {
+    await expect(playerSheet(page)).toContainText('7/18 PV', {
       timeout: 10_000,
     });
   });
@@ -136,10 +143,10 @@ test.describe('Player View', () => {
     await page.goto(`/campaigns/join/${code}`);
     await expect(page.getByText('¿Quién sos?')).toBeVisible({ timeout: 10_000 });
     await page.getByRole('button', { name: /Lyra/ }).click();
-    await expect(page.getByTestId('player-sheet')).toContainText('Lyra');
+    await expect(playerSheet(page)).toContainText('Lyra');
 
     await page.reload();
-    await expect(page.getByTestId('player-sheet')).toBeVisible({ timeout: 10_000 });
+    await expect(playerSheet(page)).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText('¿Quién sos?')).toHaveCount(0);
   });
 
@@ -155,7 +162,7 @@ test.describe('Player View', () => {
     await page.goto(`/campaigns/join/${code}`);
     await expect(page.getByText('¿Quién sos?')).toBeVisible({ timeout: 10_000 });
     await page.getByRole('button', { name: /Tomás/ }).click();
-    await expect(page.getByTestId('player-sheet')).toBeVisible();
+    await expect(playerSheet(page)).toBeVisible();
 
     await page.getByRole('button', { name: 'Cambiar' }).click();
     await expect(page.getByText('¿Quién sos?')).toBeVisible();
@@ -189,20 +196,20 @@ test.describe('Player View', () => {
     await page.goto(`/campaigns/join/${code}`);
     await expect(page.getByText('¿Quién sos?')).toBeVisible({ timeout: 10_000 });
     await page.getByRole('button', { name: /Lyra/ }).click();
-    await expect(page.getByTestId('player-sheet')).toBeVisible();
+    await expect(playerSheet(page)).toBeVisible();
 
-    await expect(page.getByTestId('player-sheet')).toContainText('Stats');
-    await expect(page.getByTestId('player-sheet')).toContainText('Vigor');
-    await expect(page.getByTestId('player-sheet')).toContainText('12');
+    await expect(playerSheet(page)).toContainText('Stats');
+    await expect(playerSheet(page)).toContainText('Vigor');
+    await expect(playerSheet(page)).toContainText('12');
 
     await page.getByRole('button', { name: 'Inv' }).click();
-    await expect(page.getByTestId('player-sheet')).toContainText('Vacío');
+    await expect(playerSheet(page)).toContainText('Vacío');
 
     await page.getByRole('button', { name: 'Hech' }).click();
-    await expect(page.getByTestId('player-sheet')).toContainText('No hay hechizos');
+    await expect(playerSheet(page)).toContainText('No hay hechizos');
 
     await page.getByRole('button', { name: 'Notas' }).click();
-    await expect(page.getByTestId('player-sheet')).toContainText('Guardar notas');
+    await expect(playerSheet(page)).toContainText('Guardar notas');
   });
 
   test('PV9: notas del jugador se guardan y persisten', async ({
@@ -217,10 +224,10 @@ test.describe('Player View', () => {
     await page.goto(`/campaigns/join/${code}`);
     await expect(page.getByText('¿Quién sos?')).toBeVisible({ timeout: 10_000 });
     await page.getByRole('button', { name: /Borin/ }).click();
-    await expect(page.getByTestId('player-sheet')).toBeVisible();
+    await expect(playerSheet(page)).toBeVisible();
 
     await page.getByRole('button', { name: 'Notas' }).click();
-    const textarea = page.getByTestId('player-sheet').getByPlaceholder('Mis notas del personaje...');
+    const textarea = playerSheet(page).getByPlaceholder('Mis notas del personaje...');
     await expect(textarea).toBeVisible();
     await textarea.fill('Mi nota de prueba PV9');
 
@@ -235,9 +242,9 @@ test.describe('Player View', () => {
     expect(body.player_notes).toBe('Mi nota de prueba PV9');
 
     await page.reload();
-    await expect(page.getByTestId('player-sheet')).toBeVisible({ timeout: 10_000 });
+    await expect(playerSheet(page)).toBeVisible({ timeout: 10_000 });
     await page.getByRole('button', { name: 'Notas' }).click();
-    const textareaAfter = page.getByTestId('player-sheet').getByPlaceholder('Mis notas del personaje...');
+    const textareaAfter = playerSheet(page).getByPlaceholder('Mis notas del personaje...');
     await expect(textareaAfter).toHaveValue('Mi nota de prueba PV9', { timeout: 10_000 });
   });
 
@@ -258,7 +265,7 @@ test.describe('Player View', () => {
     await page.goto(`/campaigns/join/${code}`);
     await expect(page.getByText('¿Quién sos?')).toBeVisible({ timeout: 10_000 });
     await page.getByRole('button', { name: /Cedric/ }).click();
-    await expect(page.getByTestId('player-sheet')).toBeVisible();
+    await expect(playerSheet(page)).toBeVisible();
 
     const downloadPromise = page.waitForEvent('download');
     await page.getByTitle('Exportar ficha como Markdown').click();

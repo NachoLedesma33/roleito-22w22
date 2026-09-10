@@ -18,7 +18,7 @@ test.describe('Initiative Tracker', () => {
     await page.goto(`/campaigns/${campaignId}`);
     await expect(page.getByText('On Scene (2)')).toBeVisible({ timeout: 10_000 });
     await page.getByTitle('Initiative Tracker').click();
-    await expect(page.getByText('Initiative — Round 1')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Roll Initiative (d20)' })).toBeVisible();
   }
 
   test('I1: abre tracker con combatientes de la escena', async ({ page, campaign, request }) => {

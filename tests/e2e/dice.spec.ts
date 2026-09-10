@@ -5,7 +5,7 @@ async function openRoller(page: import('@playwright/test').Page, campaignId: str
   await page.goto(`/campaigns/${campaignId}`);
   await expect(page.getByTitle('Roll dice (D)')).toBeVisible();
   await page.keyboard.press('d');
-  await expect(page.getByText('Dice Roller')).toBeVisible();
+  await expect(page.getByText('Die Type')).toBeVisible();
 }
 
 test.describe('Dice Roller', () => {
@@ -66,7 +66,7 @@ test.describe('Dice Roller', () => {
     await openRoller(page, campaign.id);
 
     await page.keyboard.press('Escape');
-    await expect(page.getByText('Dice Roller')).toHaveCount(0);
+    await expect(page.getByText('Die Type')).toHaveCount(0);
   });
 
   test('DR6: roller para personaje muestra atributos y tag en historial', async ({ page, request, campaign }) => {

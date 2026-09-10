@@ -17,7 +17,7 @@ test.describe('Recap System', () => {
 
   function recapPanel(page: import('@playwright/test').Page) {
     return page.locator('div.fixed', {
-      has: page.getByRole('heading', { name: 'Session Recap' }),
+      has: page.getByRole('button', { name: 'AI Recap' }),
     });
   }
 
@@ -38,7 +38,7 @@ test.describe('Recap System', () => {
 
     const panel = recapPanel(page);
     await expect(
-      panel.getByRole('heading', { name: 'Session Recap' }),
+      panel.getByRole('button', { name: 'AI Recap' }),
     ).toBeVisible();
     await expect(panel.getByText('# Session 1 — La Taberna')).toBeVisible();
     await expect(panel.getByText('Emboscan goblins en el camino')).toBeVisible();
@@ -116,7 +116,7 @@ test.describe('Recap System', () => {
     await openDashboard(page, campaign.id);
     await page.keyboard.press('r');
     const panel = recapPanel(page);
-    await expect(panel.getByRole('heading', { name: 'Session Recap' })).toBeVisible();
+    await expect(panel.getByRole('button', { name: 'AI Recap' })).toBeVisible();
 
     const downloadPromise = page.waitForEvent('download');
     await panel.getByRole('button', { name: 'Export' }).click();

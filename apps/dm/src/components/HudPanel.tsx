@@ -291,7 +291,7 @@ export default function HudPanel({
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-3 pt-2 scrollbar-none">{children}</div>
+      <div className="flex-1 overflow-y-auto p-3 pt-6 scrollbar-none">{children}</div>
 
       {/* Edge/corner resize handles */}
       {edges.map((edge) => {

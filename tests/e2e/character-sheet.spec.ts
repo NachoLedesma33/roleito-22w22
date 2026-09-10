@@ -13,7 +13,7 @@ test.describe('Character Sheet HUD', () => {
     await page.goto(`/campaigns/${campaignId}`);
     await expect(page.getByText('On Scene (1)')).toBeVisible({ timeout: 10_000 });
     await page.getByRole('button', { name: char.name }).click();
-    await expect(page.getByText(`${char.name} — Sheet`)).toBeVisible();
+    await expect(page.getByText('Max PV')).toBeVisible();
   }
 
   test('CS1: click en token abre sheet con nombre y clase', async ({ page, campaign, request }) => {

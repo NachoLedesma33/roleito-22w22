@@ -75,7 +75,8 @@ test.describe('Campaign Bulk Operations', () => {
     await expect(page.getByText('2 selected')).toBeVisible();
 
     page.on('dialog', (dialog) => dialog.accept());
-    await page.getByRole('button', { name: 'Delete' }).click();
+    const bulkBar = page.locator('div.mb-4.p-3.rounded-lg').filter({ hasText: '2 selected' });
+    await bulkBar.getByRole('button', { name: 'Delete', exact: true }).click();
 
     for (const name of names) {
       await expect(page.getByRole('link', { name })).toHaveCount(0);
@@ -154,8 +155,10 @@ test.describe('Campaign Bulk Operations', () => {
     await page.goto('/');
     await expect(page.getByRole('link', { name: campaign.name })).toBeVisible();
 
-    await page.getByText('Select all').click();
-    await expect(page.getByText(`${1} selected`)).toBeVisible();
+    const rows = page.locator('input[type="checkbox"]');
+    const expectedCount = (await rows.count()) - 1;
+    await rows.first().click();
+    await expect(page.getByText(`${expectedCount} selected`)).toBeVisible();
     await expect(page.getByText('Deselect all')).toBeVisible();
   });
 });
