@@ -343,6 +343,43 @@ export async function updateScene(
   return jsonOrThrow<Scene>(res, 'updateScene');
 }
 
+export interface SceneItem {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  layer: number;
+  visible: boolean;
+  metadata: { type: string; [key: string]: unknown };
+  shape?: { type: string; points?: number[]; [key: string]: unknown };
+}
+
+export async function putSceneItems(
+  request: APIRequestContext,
+  campaignId: string,
+  sceneId: string,
+  items: unknown[],
+): Promise<Scene> {
+  const res = await request.put(
+    `${API_BASE}/campaigns/${campaignId}/scenes/${sceneId}/items`,
+    { data: { items } },
+  );
+  return jsonOrThrow<Scene>(res, 'putSceneItems');
+}
+
+export async function getSceneItems(
+  request: APIRequestContext,
+  campaignId: string,
+  sceneId: string,
+): Promise<{ items: SceneItem[] }> {
+  const res = await request.get(
+    `${API_BASE}/campaigns/${campaignId}/scenes/${sceneId}/items`,
+  );
+  return jsonOrThrow<{ items: SceneItem[] }>(res, 'getSceneItems');
+}
+
 export interface TestSession {
   id: string;
   number: number;
@@ -399,15 +436,15 @@ export async function seedEvent(
 
 const TEST_PIN = '1234';
 
+let _authToken: string | null = null;
+
 export async function setupAuth(request: APIRequestContext): Promise<string> {
-  const statusRes = await request.get(`${API_BASE}/auth/status`);
-  const { pin_set } = await statusRes.json();
-  if (!pin_set) {
-    await request.post(`${API_BASE}/auth/setup`, { data: { pin: TEST_PIN } });
-  }
-  const loginRes = await request.post(`${API_BASE}/auth/login`, { data: { pin: TEST_PIN } });
-  const login = await jsonOrThrow<{ token: string }>(loginRes, 'setupAuth login');
-  return login.token;
+  if (_authToken) return _authToken;
+  const name = `E2E DM ${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  const registerRes = await request.post(`${API_BASE}/auth/register`, { data: { name, pin: TEST_PIN } });
+  const registered = await jsonOrThrow<{ token: string }>(registerRes, 'setupAuth register');
+  _authToken = registered.token;
+  return _authToken;
 }
 
 export function withAuth(token: string) {

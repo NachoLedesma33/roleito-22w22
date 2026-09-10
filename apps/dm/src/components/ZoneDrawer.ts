@@ -71,64 +71,32 @@ export function createZoneItem(
     portals: [],
   }
 
-  let item: SceneItem
-  if (draft.mode === 'rect') {
-    const a = draft.startPoint!
-    const b = draft.currentPoint!
-    item = {
-      id,
-      name: 'Zone',
-      x: (a.x + b.x) / 2,
-      y: 0,
-      zIndex: 0,
-      scale: 1,
-      rotation: 0,
-      width: Math.max(Math.abs(b.x - a.x), 0.05),
-      height: Math.max(Math.abs(b.y - a.y), 0.05),
-      opacity: 1,
-      visible: true,
-      locked: false,
-      disableHit: false,
-      disableAutoZIndex: false,
-      attachmentIds: [],
-      disableAttachmentBehavior: [],
-      layer: SceneLayer.OVERLAY,
-      shape: {
-        type: 'rectangle',
-        fill: fillColor,
-        stroke: fillColor,
-        strokeWidth: 2,
-      },
-      metadata,
-    }
-  } else {
-    item = {
-      id,
-      name: 'Zone',
-      x: 0,
-      y: 0,
-      zIndex: 0,
-      scale: 1,
-      rotation: 0,
-      width: 0,
-      height: 0,
-      opacity: 1,
-      visible: true,
-      locked: false,
-      disableHit: false,
-      disableAutoZIndex: false,
-      attachmentIds: [],
-      disableAttachmentBehavior: [],
-      layer: SceneLayer.OVERLAY,
-      shape: {
-        type: 'polygon',
-        points,
-        fill: fillColor,
-        stroke: fillColor,
-        strokeWidth: 2,
-      },
-      metadata,
-    }
+  const item: SceneItem = {
+    id,
+    name: 'Zone',
+    x: 0,
+    y: 0,
+    zIndex: 0,
+    scale: 1,
+    rotation: 0,
+    width: 0,
+    height: 0,
+    opacity: 1,
+    visible: true,
+    locked: false,
+    disableHit: false,
+    disableAutoZIndex: false,
+    attachmentIds: [],
+    disableAttachmentBehavior: [],
+    layer: SceneLayer.OVERLAY,
+    shape: {
+      type: 'polygon',
+      points,
+      fill: fillColor,
+      stroke: fillColor,
+      strokeWidth: 2,
+    },
+    metadata,
   }
 
   return item

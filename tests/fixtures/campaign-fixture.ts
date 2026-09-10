@@ -7,16 +7,13 @@ let _cachedToken: string | null = null;
 
 async function getDmToken(req: import('@playwright/test').APIRequestContext): Promise<string> {
   if (_cachedToken) return _cachedToken;
-  const statusRes = await req.get(`${API}/auth/status`);
-  const { pin_set } = await statusRes.json();
-  if (!pin_set) {
-    const setupRes = await req.post(`${API}/auth/setup`, { data: { pin: '1234' } });
-    if (!setupRes.ok()) throw new Error(`auth setup failed: ${setupRes.status()}`);
-  }
-  const loginRes = await req.post(`${API}/auth/login`, { data: { pin: '1234' } });
-  if (!loginRes.ok()) throw new Error(`auth login failed: ${loginRes.status()}`);
-  const login = await loginRes.json();
-  _cachedToken = login.token;
+  const name = `E2E DM ${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  const registerRes = await req.post(`${API}/auth/register`, {
+    data: { name, pin: '1234' },
+  });
+  if (!registerRes.ok()) throw new Error(`auth register failed: ${registerRes.status()}`);
+  const registered = await registerRes.json();
+  _cachedToken = registered.token;
   return _cachedToken;
 }
 

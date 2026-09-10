@@ -2238,9 +2238,9 @@ B11. Walls fully invisible (opacity=0) by default
 B12. Walls/doors scale with map_scale changes
 B13. ShadowZone item: closed polygon (rect/free) → edges = colliders
 B14. Zone drawing tool: rect + free-polygon modes on the map
-B15. Zone fill overlay (semi-transparent) visible to DM, not to players
+B15. Zone fill overlay (semi-transparent) visible to DM, not to players — IMPLEMENTED (readOnly/showZones)
 B16. Portal: connect two adjacent zone edges (door between rooms)
-B17. Zone rendering: MAP/OVERLAY layer, scaled with map
+B17. Zone rendering: MAP/OVERLAY layer, scaled with map — IMPLEMENTED (all zones stored as normalized polygons, scale with map_scale; rect zones unified)
 ```
 
 ### Done when
@@ -2253,9 +2253,9 @@ B17. Zone rendering: MAP/OVERLAY layer, scaled with map
 - [x] Delete key removes selected items
 - [x] Auto-detect walls from map background (🔍 button in Build menu)
 - [x] Wall coordinates normalized so they scale with map
-- [ ] DM draws closed zones (rect + polygon) that act as colliders
+- [x] DM draws closed zones (rect + polygon) that act as colliders
 - [ ] Token inside a zone cannot cross its borders without a portal
-- [ ] Zone fill overlay shows for DM, hidden from players
+- [x] Zone fill overlay shows for DM, hidden from players
 - [ ] Walls block token movement (Phase D)
 - [ ] Doors can be opened/closed (partially done — UI works, movement blocking in Phase D)
 
