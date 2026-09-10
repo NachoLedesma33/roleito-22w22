@@ -37,6 +37,10 @@ export default function ItemRenderer({ item, isSelected, showZones = false, onCl
     return <ZoneRenderer item={item} isSelected={isSelected} onClick={onClick} onContextMenu={onContextMenu} mapScale={mapScale} />
   }
 
+  if (item.metadata.type === 'fog') {
+    return null
+  }
+
   if (item.metadata.type === 'wall' && item.shape?.type === 'line') {
     return <WallRenderer item={item} isSelected={isSelected} onClick={onClick} mapScale={mapScale} imageAspect={imageAspect} />
   }

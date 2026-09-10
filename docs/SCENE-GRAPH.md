@@ -432,6 +432,7 @@ interface TemplateMetadata {
 interface FogMetadata {
   type: 'fog';
   fogType: 'static' | 'dynamic';
+  revealed: boolean;         // false = cubierto (niebla), true = agujero en la máscara
   cutMask?: string;          // URL to mask image defining revealed areas
 }
 
@@ -874,6 +875,7 @@ const fog: Item = {
   metadata: {
     type: 'fog',
     fogType: 'dynamic',
+    revealed: false,
     cutMask: '/campaigns/camp-001/fog-mask-room1.png',
   },
 };

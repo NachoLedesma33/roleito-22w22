@@ -8,6 +8,9 @@ import ItemRenderer from './ItemRenderer';
 import WallDrawerCanvas from './WallDrawerCanvas';
 import ZoneDrawerCanvas from './ZoneDrawerCanvas';
 import PortalDrawerCanvas, { type PortalDraft } from './PortalDrawerCanvas';
+import FogOverlay from './FogOverlay';
+import FogBrushCanvas from './FogBrushCanvas';
+import { extractFogRegions } from '../lib/fogMask';
 import type { ZoneDraft } from './ZoneDrawer';
 import type { ZoneGeometry } from './ZonePortal';
 import { SceneItem } from '@core/domain/types';
@@ -61,6 +64,9 @@ interface SceneRendererProps {
   onDrawStart?: (point: { x: number; y: number }) => void;
   onDrawMove?: (point: { x: number; y: number }) => void;
   onDrawEnd?: () => void;
+  fogBrush?: { reveal: boolean; radius: number } | null;
+  onFogPaint?: (point: { x: number; y: number }) => void;
+  fogColor?: string;
 }
 
 type DragStarter = (
@@ -487,6 +493,9 @@ export default function SceneRenderer({
   onDrawStart,
   onDrawMove,
   onDrawEnd,
+  fogBrush = null,
+  onFogPaint,
+  fogColor = 'rgba(15, 23, 42, 0.55)',
 }: SceneRendererProps) {
   const visibleChars = useMemo(() => characters.filter((c) => c.visible), [characters]);
   const renderItems = useMemo(() => {
@@ -497,7 +506,8 @@ export default function SceneRenderer({
         return a.zIndex - b.zIndex
       })
   }, [items, showZones]);
-  const drawing = !!drawState || !!zoneDraft || !!portalDraft;
+  const fogRegions = useMemo(() => extractFogRegions(items), [items]);
+  const drawing = !!drawState || !!zoneDraft || !!portalDraft || !!fogBrush;
   const hasDrag = !drawing && (!readOnly || (movableEntityIds && movableEntityIds.length > 0));
   const justSelectedRef = useRef(false);
   const [imageAspect, setImageAspect] = useState(1);
@@ -606,6 +616,18 @@ export default function SceneRenderer({
           mapHeight={mapHeight}
           onSelect={onPortalSelect}
           onMove={onPortalMove}
+        />
+      )}
+      {fogRegions.length > 0 && (
+        <FogOverlay regions={fogRegions} color={fogColor} mapWidth={mapWidth} mapHeight={mapHeight} />
+      )}
+      {fogBrush && onFogPaint && (
+        <FogBrushCanvas
+          reveal={fogBrush.reveal}
+          radius={fogBrush.radius}
+          mapWidth={mapWidth}
+          mapHeight={mapHeight}
+          onPaint={onFogPaint}
         />
       )}
       <OrbitControls

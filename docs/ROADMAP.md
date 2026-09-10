@@ -2254,7 +2254,7 @@ B17. Zone rendering: MAP/OVERLAY layer, scaled with map — IMPLEMENTED (all zon
 - [x] Auto-detect walls from map background (🔍 button in Build menu)
 - [x] Wall coordinates normalized so they scale with map
 - [x] DM draws closed zones (rect + polygon) that act as colliders
-- [ ] Token inside a zone cannot cross its borders without a portal
+- [x] Token inside a zone cannot cross its borders without a portal
 - [x] Zone fill overlay shows for DM, hidden from players
 - [ ] Walls block token movement (Phase D)
 - [ ] Doors can be opened/closed (partially done — UI works, movement blocking in Phase D)
@@ -2299,10 +2299,10 @@ C8. Attach label/token to character
 ### Tasks
 
 ```text
-D1. FogState structure in world state
-D2. FogRegion type: rectangle, polygon, ellipse, flood
-D3. Fog rendering: mask on SceneLayer.FOG
-D4. DM fog brush tool: paint reveal/hide
+D1. FogState structure in world state — IMPLEMENTED (fog items on SceneLayer.FOG + extractFogRegions)
+D2. FogRegion type: rectangle, polygon, ellipse, flood — IMPLEMENTED (polygon regions; ellipses via circlePoints)
+D3. Fog rendering: mask on SceneLayer.FOG — IMPLEMENTED (FogOverlay canvas texture: holes = revealed)
+D4. DM fog brush tool: paint reveal/hide — IMPLEMENTED (Build → Fog (paint), Reveal/Hide + brush size)
 D5. Rectangle select tool for fog
 D6. Flood fill tool for rooms (uses ShadowZone polygons as boundaries)
 D7. Clear all fog button

@@ -290,6 +290,7 @@ export interface LabelMetadata {
 export interface FogMetadata {
   type: 'fog'
   fogType: 'static' | 'dynamic'
+  revealed: boolean
   cutMask?: string
 }
 

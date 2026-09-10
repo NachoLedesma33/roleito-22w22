@@ -766,6 +766,7 @@ export default function PlayerView() {
               mapScale={data.map_scale ?? 1}
               items={data.items ?? []}
               readOnly
+              fogColor="#000000"
               gridSize={data.grid_size ?? 0}
               gridSnap={data.grid_snap ?? false}
               selectedTokenId={
