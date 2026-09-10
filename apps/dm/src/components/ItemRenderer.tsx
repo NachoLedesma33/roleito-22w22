@@ -2,7 +2,8 @@ import { useCallback, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Billboard, Text } from '@react-three/drei'
 import * as THREE from 'three'
-import { SceneItem } from '@core/domain/types'
+import { SceneItem, ZoneMetadata } from '@core/domain/types'
+import { PORTAL_COLORS } from './ZonePortal'
 
 const TOKEN_COLORS: Record<string, string> = {
   character: '#4ade80',
@@ -304,13 +305,31 @@ function ShapeRenderer({ item, isSelected, onClick }: ItemRendererProps) {
 }
 
 function ZoneRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1 }: ItemRendererProps) {
-  const meta = item.metadata as import('@core/domain/types').ZoneMetadata
+  const meta = item.metadata as ZoneMetadata
   const mapHeight = 10 * mapScale
   const mapWidth = mapHeight
 
   const groupPos = [item.x, 0, item.y] as const
   const fillY = 0.02
   const outlineY = 0.035
+
+  const portalNodes = useMemo(() => {
+    const nodes: { points: THREE.Vector3[]; color: string }[] = []
+    for (const portal of meta.portals ?? []) {
+      const color = PORTAL_COLORS[portal.state]
+      const a = portal.localEdge[0]
+      const b = portal.localEdge[1]
+      const pts = [
+        new THREE.Vector3((a.x - 0.5) * mapWidth, 0.06, (a.y - 0.5) * mapHeight),
+        new THREE.Vector3((b.x - 0.5) * mapWidth, 0.06, (b.y - 0.5) * mapHeight),
+      ]
+      const midX = ((a.x + b.x) / 2 - 0.5) * mapWidth
+      const midY = ((a.y + b.y) / 2 - 0.5) * mapHeight
+      pts.push(new THREE.Vector3(midX, 0.045, midY), new THREE.Vector3(midX, 0.075, midY))
+      nodes.push({ points: pts, color })
+    }
+    return nodes
+  }, [meta.portals, mapWidth, mapHeight])
 
   if (item.shape?.type === 'rectangle') {
     const hw = item.width / 2
@@ -333,6 +352,7 @@ function ZoneRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1 }
         <lineSegments geometry={outlineGeo}>
           <lineBasicMaterial color={meta.fillColor} linewidth={2} />
         </lineSegments>
+        <ZonePortalMarkers nodes={portalNodes} />
         {isSelected && (
           <mesh position={[0, 0.01, 0]}>
             <planeGeometry args={[item.width + 0.05, item.height + 0.05]} />
@@ -381,11 +401,24 @@ function ZoneRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1 }
       <lineSegments geometry={outlineGeo}>
         <lineBasicMaterial color={meta.fillColor} linewidth={2} />
       </lineSegments>
+      <ZonePortalMarkers nodes={portalNodes} />
       {isSelected && (
         <lineSegments geometry={outlineGeo} position={[0, 0.01, 0]}>
           <lineBasicMaterial color="#3b82f6" linewidth={3} />
         </lineSegments>
       )}
+    </group>
+  )
+}
+
+function ZonePortalMarkers({ nodes }: { nodes: { points: THREE.Vector3[]; color: string }[] }) {
+  return (
+    <group>
+      {nodes.map((node, i) => (
+        <lineSegments key={i} geometry={new THREE.BufferGeometry().setFromPoints(node.points)}>
+          <lineBasicMaterial color={node.color} linewidth={3} />
+        </lineSegments>
+      ))}
     </group>
   )
 }

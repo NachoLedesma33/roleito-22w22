@@ -2239,7 +2239,7 @@ B12. Walls/doors scale with map_scale changes
 B13. ShadowZone item: closed polygon (rect/free) → edges = colliders
 B14. Zone drawing tool: rect + free-polygon modes on the map
 B15. Zone fill overlay (semi-transparent) visible to DM, not to players — IMPLEMENTED (readOnly/showZones)
-B16. Portal: connect two adjacent zone edges (door between rooms)
+B16. Portal: connect two adjacent zone edges (door between rooms) — IMPLEMENTED
 B17. Zone rendering: MAP/OVERLAY layer, scaled with map — IMPLEMENTED (all zones stored as normalized polygons, scale with map_scale; rect zones unified)
 ```
 

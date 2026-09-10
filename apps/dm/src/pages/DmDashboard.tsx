@@ -1,14 +1,18 @@
-import { useEffect, useState, useRef, Suspense, useCallback } from 'react';
+import { useEffect, useState, useRef, Suspense, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api, Campaign, Scene, SceneCharacter, Character, NPC, Map as GameMap } from '@/lib/api';
-import { SceneItem } from '@core/domain/types';
+import { SceneItem, ZoneMetadata } from '@core/domain/types';
 import { SceneGraph } from '@core/scene/scene-graph';
 import { useDoorInteraction } from '@core/scene/door-interaction';
 import SceneRenderer from '@/components/SceneRenderer';
 import { createEmptyDrawState, createWallItem, type DrawState } from '@/components/WallDrawer';
 import { createEmptyZoneDraft, createZoneItem, ZONE_COLORS, ZONE_DEFAULT_COLOR, type ZoneDraft } from '@/components/ZoneDrawer';
+import { createEmptyPortalDraft, type PortalDraft } from '@/components/PortalDrawerCanvas';
+import { createPortalBetween, buildPortalLocalEdge, cyclePortalState, removePortal, zonesToGeometry } from '@/components/ZonePortal';
 import DoorContextMenu from '@/components/DoorContextMenu';
 import WallContextMenu from '@/components/WallContextMenu';
+import ZoneContextMenu from '@/components/ZoneContextMenu';
+import { extractZonePolygons } from '@/lib/wall-collision';
 import BackgroundSelector, { generateBackgroundCSS } from '@/components/BackgroundSelector';
 import SessionLogHud from '@/components/SessionLogHud';
 import SceneNotesHud from '@/components/SceneNotesHud';
@@ -65,11 +69,13 @@ export default function DmDashboard() {
   const [graphRef] = useState(() => new SceneGraph());
   const [drawState, setDrawState] = useState<DrawState | null>(null);
   const [zoneDraft, setZoneDraft] = useState<ZoneDraft | null>(null);
+  const [portalDraft, setPortalDraft] = useState<PortalDraft | null>(null);
   const [zoneColor, setZoneColor] = useState(ZONE_DEFAULT_COLOR);
   const [wallMaterial, setWallMaterial] = useState<'stone' | 'wood' | 'metal' | 'glass' | 'magic'>('stone');
   const [doorMaterial, setDoorMaterial] = useState<'wood' | 'metal' | 'glass' | 'magic'>('wood');
   const [doorContextMenu, setDoorContextMenu] = useState<{ x: number; y: number; itemId: string; state: string } | null>(null);
   const [wallContextMenu, setWallContextMenu] = useState<{ x: number; y: number; itemId: string } | null>(null);
+  const [zoneContextMenu, setZoneContextMenu] = useState<{ x: number; y: number; itemId: string } | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [buildMenuOpen, setBuildMenuOpen] = useState(false);
   const [detectingWalls, setDetectingWalls] = useState(false);
@@ -232,12 +238,81 @@ export default function DmDashboard() {
 
   const startZoneMode = useCallback((mode: 'rect' | 'polygon') => {
     setDrawState(null)
+    setPortalDraft(null)
     setZoneDraft((prev) => {
       if (prev?.mode === mode) return null
       return createEmptyZoneDraft(mode)
     })
     setBuildMenuOpen(false)
   }, [])
+
+  const startPortalMode = useCallback(() => {
+    setDrawState(null)
+    setZoneDraft(null)
+    setPortalDraft((prev) => {
+      if (prev) return null
+      return createEmptyPortalDraft()
+    })
+    setBuildMenuOpen(false)
+  }, [])
+
+  const portalZones = useMemo(() => {
+    if (!portalDraft) return []
+    const mScale = activeScene?.map_scale ?? 1
+    const mapSize = 10 * mScale
+    const zones = extractZonePolygons(graphRef.getItems(), mapSize, mapSize)
+    return zonesToGeometry(zones)
+  }, [portalDraft, activeScene, graphRef])
+
+  const handlePortalSelect = useCallback((snap: { zoneId: string; point: { x: number; y: number }; a: { x: number; y: number }; b: { x: number; y: number } }) => {
+    setPortalDraft((prev) => {
+      if (!prev) return prev
+      if (!prev.zoneAId) {
+        return { ...prev, zoneAId: snap.zoneId, pointA: snap.point, a: snap.a, b: snap.b }
+      }
+      if (snap.zoneId === prev.zoneAId) return prev
+      const items = graphRef.getItems()
+      const zoneA = items.find((i) => i.id === prev.zoneAId)
+      const zoneB = items.find((i) => i.id === snap.zoneId)
+      if (!zoneA || !zoneB) return prev
+      const localEdge = buildPortalLocalEdge({ point: prev.pointA!, a: prev.a!, b: prev.b! })
+      const { zoneA: aUp, zoneB: bUp } = createPortalBetween(zoneA, zoneB, localEdge)
+      graphRef.updateItem(aUp.id, { metadata: aUp.metadata })
+      graphRef.updateItem(bUp.id, { metadata: bUp.metadata })
+      handleItemsChange(graphRef.getItems())
+      setToastQueue((prevQ) => [...prevQ.slice(-4), {
+        id: `portal-${Date.now()}`,
+        rollerName: 'Portal',
+        diceType: 20,
+        count: 1,
+        results: [1],
+        total: 1,
+        label: 'portal created',
+        timestamp: Date.now(),
+      }])
+      return null
+    })
+  }, [graphRef, handleItemsChange])
+
+  const handlePortalMove = useCallback((point: { x: number; y: number }) => {
+    setPortalDraft((prev) => prev ? { ...prev, currentPoint: point } : prev)
+  }, [])
+
+  const handlePortalToggle = useCallback((portalId: string) => {
+    const next = cyclePortalState(graphRef.getItems(), portalId)
+    for (const item of next) {
+      graphRef.updateItem(item.id, { metadata: item.metadata })
+    }
+    handleItemsChange(graphRef.getItems())
+  }, [graphRef, handleItemsChange])
+
+  const handlePortalDelete = useCallback((portalId: string) => {
+    const next = removePortal(graphRef.getItems(), portalId)
+    for (const item of next) {
+      graphRef.updateItem(item.id, { metadata: item.metadata })
+    }
+    handleItemsChange(graphRef.getItems())
+  }, [graphRef, handleItemsChange])
 
   const handleClearAllWalls = useCallback(() => {
     if (!confirm('Delete ALL walls and doors? This cannot be undone.')) return
@@ -364,9 +439,12 @@ export default function DmDashboard() {
 
   const handleWallContextMenu = useCallback((itemId: string, clientX: number, clientY: number) => {
     const item = graphRef.getItem(itemId)
-    if (item?.metadata.type === 'wall' || item?.metadata.type === 'zone') {
+    if (item?.metadata.type === 'wall') {
       setSelectedItemId(itemId)
       setWallContextMenu({ x: clientX, y: clientY, itemId })
+    } else if (item?.metadata.type === 'zone') {
+      setSelectedItemId(itemId)
+      setZoneContextMenu({ x: clientX, y: clientY, itemId })
     }
   }, [graphRef])
 
@@ -375,6 +453,7 @@ export default function DmDashboard() {
       if (e.key === 'Escape') {
         if (drawState) setDrawState(null)
         else if (zoneDraft) setZoneDraft(null)
+        else if (portalDraft) setPortalDraft(null)
         else setSelectedItemId(null)
       }
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedItemId) {
@@ -385,7 +464,7 @@ export default function DmDashboard() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [drawState, zoneDraft, selectedItemId, handleDeleteItem])
+  }, [drawState, zoneDraft, portalDraft, selectedItemId, handleDeleteItem])
 
   useEffect(() => {
     for (const sc of sceneChars) {
@@ -908,7 +987,7 @@ export default function DmDashboard() {
             <div ref={buildMenuRef} className="relative shrink-0">
               <button
                 onClick={() => setBuildMenuOpen(!buildMenuOpen)}
-                className={`text-xs px-2 py-1 rounded transition-colors ${drawState || zoneDraft ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                className={`text-xs px-2 py-1 rounded transition-colors ${drawState || zoneDraft || portalDraft ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
               >
                 🧱 Build ▾
               </button>
@@ -937,6 +1016,12 @@ export default function DmDashboard() {
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${zoneDraft?.mode === 'polygon' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
                   >
                     ⬠ Zone (polygon)
+                  </button>
+                  <button
+                    onClick={startPortalMode}
+                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${portalDraft ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
+                  >
+                    🚪 Portal (zone↔zone)
                   </button>
                   <div className="border-t border-[var(--bg-tertiary)] my-1" />
                   <div className="px-3 py-1">
@@ -1034,6 +1119,13 @@ export default function DmDashboard() {
                 {zoneDraft.mode === 'rect'
                   ? '▭ Click-drag to draw zone rect'
                   : '⬠ Click to place vertices · click 1st point to close'} · ESC to cancel
+              </span>
+            )}
+            {portalDraft && (
+              <span className="text-[10px] text-amber-400 shrink-0">
+                {portalDraft.zoneAId
+                  ? '🚪 Click edge of another zone to complete the portal'
+                  : '🚪 Click edge of zone A'} · ESC to cancel
               </span>
             )}
           </>
@@ -1358,6 +1450,10 @@ export default function DmDashboard() {
                 onZoneDragMove={handleZoneDragMove}
                 onZoneDragEnd={handleZoneDragEnd}
                 onZoneFinish={finalizeZoneDraft}
+                portalDraft={portalDraft}
+                portalZones={portalZones}
+                onPortalSelect={handlePortalSelect}
+                onPortalMove={handlePortalMove}
                 onTokenClick={handleTokenClick}
                 onTokenDrop={handleTokenDrop}
                 onTokenContextMenu={handleTokenContextMenu}
@@ -1677,6 +1773,24 @@ export default function DmDashboard() {
           onClose={() => setWallContextMenu(null)}
         />
       )}
+
+      {zoneContextMenu && (() => {
+        const item = graphRef.getItem(zoneContextMenu.itemId)
+        const portals = item?.metadata.type === 'zone'
+          ? (item.metadata as ZoneMetadata).portals ?? []
+          : []
+        return (
+          <ZoneContextMenu
+            x={zoneContextMenu.x}
+            y={zoneContextMenu.y}
+            portals={portals}
+            onTogglePortal={handlePortalToggle}
+            onDeletePortal={handlePortalDelete}
+            onDelete={() => handleDeleteItem(zoneContextMenu.itemId)}
+            onClose={() => setZoneContextMenu(null)}
+          />
+        )
+      })()}
 
       <MinimizedBar />
 

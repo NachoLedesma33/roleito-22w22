@@ -7,7 +7,9 @@ import TokenModel from './TokenModel';
 import ItemRenderer from './ItemRenderer';
 import WallDrawerCanvas from './WallDrawerCanvas';
 import ZoneDrawerCanvas from './ZoneDrawerCanvas';
+import PortalDrawerCanvas, { type PortalDraft } from './PortalDrawerCanvas';
 import type { ZoneDraft } from './ZoneDrawer';
+import type { ZoneGeometry } from './ZonePortal';
 import { SceneItem } from '@core/domain/types';
 import type { DrawState } from './WallDrawer';
 
@@ -47,6 +49,10 @@ interface SceneRendererProps {
   onZoneDragMove?: (point: { x: number; y: number }) => void;
   onZoneDragEnd?: (point: { x: number; y: number }) => void;
   onZoneFinish?: () => void;
+  portalDraft?: PortalDraft | null;
+  portalZones?: ZoneGeometry[];
+  onPortalSelect?: (snap: import('./ZonePortal').EdgeSnap) => void;
+  onPortalMove?: (point: import('@core/domain/types').Point2D) => void;
   onTokenClick?: (sceneCharId: string) => void;
   onItemClick?: (itemId: string) => void;
   onItemContextMenu?: (itemId: string, clientX: number, clientY: number) => void;
@@ -469,6 +475,10 @@ export default function SceneRenderer({
   onZoneDragMove,
   onZoneDragEnd,
   onZoneFinish,
+  portalDraft = null,
+  portalZones = [],
+  onPortalSelect,
+  onPortalMove,
   onTokenClick,
   onItemClick,
   onItemContextMenu,
@@ -487,7 +497,8 @@ export default function SceneRenderer({
         return a.zIndex - b.zIndex
       })
   }, [items, showZones]);
-  const hasDrag = !readOnly || (movableEntityIds && movableEntityIds.length > 0);
+  const drawing = !!drawState || !!zoneDraft || !!portalDraft;
+  const hasDrag = !drawing && (!readOnly || (movableEntityIds && movableEntityIds.length > 0));
   const justSelectedRef = useRef(false);
   const [imageAspect, setImageAspect] = useState(1);
   const mapHeight = 10 * mapScale;
@@ -587,12 +598,22 @@ export default function SceneRenderer({
           onFinishPolygon={onZoneFinish}
         />
       )}
+      {portalDraft && onPortalSelect && onPortalMove && (
+        <PortalDrawerCanvas
+          draft={portalDraft}
+          zones={portalZones}
+          mapWidth={mapWidth}
+          mapHeight={mapHeight}
+          onSelect={onPortalSelect}
+          onMove={onPortalMove}
+        />
+      )}
       <OrbitControls
         makeDefault
-        enabled={!drawState && !zoneDraft}
-        enablePan={!drawState && !zoneDraft}
-        enableZoom={!drawState && !zoneDraft}
-        enableRotate={!drawState && !zoneDraft}
+        enabled={!drawing}
+        enablePan={!drawing}
+        enableZoom={!drawing}
+        enableRotate={!drawing}
         maxPolarAngle={Math.PI / 2.2}
         minDistance={3}
         maxDistance={maxDistance}

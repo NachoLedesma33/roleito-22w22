@@ -480,7 +480,7 @@ export default function PlayerView() {
             const pts = item.shape.points;
             return [pts[0], pts[1], pts[2], pts[3]] as [number, number, number, number];
           });
-        const { checkWallCollision, extractZonePolygons, crossZoneBorder } = await import('@/lib/wall-collision');
+        const { checkWallCollision, extractZonePolygons, extractPortals, crossZoneBorder } = await import('@/lib/wall-collision');
         if (checkWallCollision(normX, normZ, walls, 0.03)) {
           return;
         }
@@ -488,7 +488,7 @@ export default function PlayerView() {
         const zones = extractZonePolygons(currentData.items ?? [], mapW, mapH)
         const prevNormX = (prev ? prev.x : sc.x) / mapW + 0.5
         const prevNormZ = (prev ? prev.z : sc.z) / mapH + 0.5
-        if (crossZoneBorder(prevNormX, prevNormZ, normX, normZ, zones)) {
+        if (crossZoneBorder(prevNormX, prevNormZ, normX, normZ, zones, extractPortals(currentData.items ?? []))) {
           return;
         }
 
@@ -805,7 +805,7 @@ export default function PlayerView() {
                           return [pts[0], pts[1], pts[2], pts[3]] as [number, number, number, number];
                         });
 
-                      const { checkWallCollision, extractZonePolygons, crossZoneBorder } = await import('@/lib/wall-collision');
+                      const { checkWallCollision, extractZonePolygons, extractPortals, crossZoneBorder } = await import('@/lib/wall-collision');
                       if (checkWallCollision(normX, normZ, walls, 0.03)) {
                         return;
                       }
@@ -813,7 +813,7 @@ export default function PlayerView() {
                       const zones = extractZonePolygons(data.items ?? [], mapW, mapH)
                       const prevPosX = sc ? sc.x : x
                       const prevPosZ = sc ? sc.z : z
-                      if (crossZoneBorder(prevPosX / mapW + 0.5, prevPosZ / mapH + 0.5, normX, normZ, zones)) {
+                      if (crossZoneBorder(prevPosX / mapW + 0.5, prevPosZ / mapH + 0.5, normX, normZ, zones, extractPortals(data.items ?? []))) {
                         return;
                       }
 
