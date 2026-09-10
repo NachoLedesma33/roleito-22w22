@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { SceneItem, SceneLayer } from '@core/domain/types'
-import { circlePoints, extractFogRegions, isFogItem } from './fogMask'
+import { SceneItem, SceneLayer, ShapePolygon } from '@core/domain/types'
+import { circlePoints, extractFogRegions, isFogItem, pointInPolygon, toggleZoneFog } from './fogMask'
 
 function fogItem(id: string, revealed: boolean, points: number[], zIndex = 0): SceneItem {
   return {
@@ -77,5 +77,38 @@ describe('fogMask/roundtrip', () => {
     }
     const north = circlePoints(0.5, 0.5, 0.1, 4)
     expect(north[3]).toBeCloseTo(0.5 + 0.1, 5)
+  })
+
+  it('pointInPolygon detecta interior/exterior/borde', () => {
+    const ring = [0.2, 0.2, 0.8, 0.2, 0.8, 0.8, 0.2, 0.8]
+    expect(pointInPolygon(0.5, 0.5, ring)).toBe(true)
+    expect(pointInPolygon(0.1, 0.1, ring)).toBe(false)
+    expect(pointInPolygon(0.9, 0.9, ring)).toBe(false)
+    expect(pointInPolygon(0.2, 0.5, ring)).toBe(true)
+  })
+
+  it('toggleZoneFog: zona ya cubierta → reveal (borra fog dentro)', () => {
+    const covered = fogItem('fog-in', false, circlePoints(0.5, 0.5, 0.1))
+    const outside = fogItem('fog-out', false, circlePoints(0.1, 0.1, 0.08))
+    const res = toggleZoneFog([covered, outside], 'zone-a', [[0.4, 0.4], [0.6, 0.4], [0.6, 0.6], [0.4, 0.6]])
+    expect(res.applied).toBe('reveal')
+    expect(res.items.map((i) => i.id)).toEqual(['fog-out'])
+  })
+
+  it('toggleZoneFog: zona limpia → hide (crea fog de la zona)', () => {
+    const res = toggleZoneFog([], 'zone-a', [[0.4, 0.4], [0.6, 0.4], [0.6, 0.6], [0.4, 0.6]])
+    expect(res.applied).toBe('hide')
+    const added = res.items.find((i) => i.id.includes('fog-zone'))
+    expect(added).toBeDefined()
+    expect((added?.metadata as { revealed: boolean }).revealed).toBe(false)
+    expect((added?.shape as ShapePolygon | undefined)?.points).toEqual([0.4, 0.4, 0.6, 0.4, 0.6, 0.6, 0.4, 0.6])
+    expect(((added?.shape as ShapePolygon | undefined)?.points ?? []).length % 2).toBe(0)
+    expect(added?.layer).toBe(SceneLayer.FOG)
+  })
+
+  it('toggleZoneFog: poligono invalido → none sin cambios', () => {
+    const res = toggleZoneFog([], 'zone-b', [])
+    expect(res.applied).toBe('none')
+    expect(res.items).toHaveLength(0)
   })
 })

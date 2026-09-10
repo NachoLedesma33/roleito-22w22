@@ -9,7 +9,7 @@ import { createEmptyDrawState, createWallItem, type DrawState } from '@/componen
 import { createEmptyZoneDraft, createZoneItem, ZONE_COLORS, ZONE_DEFAULT_COLOR, type ZoneDraft } from '@/components/ZoneDrawer';
 import { createEmptyPortalDraft, type PortalDraft } from '@/components/PortalDrawerCanvas';
 import { createPortalBetween, buildPortalLocalEdge, cyclePortalState, removePortal, zonesToGeometry } from '@/components/ZonePortal';
-import { circlePoints } from '@/lib/fogMask';
+import { circlePoints, toggleZoneFog } from '@/lib/fogMask';
 import DoorContextMenu from '@/components/DoorContextMenu';
 import WallContextMenu from '@/components/WallContextMenu';
 import ZoneContextMenu from '@/components/ZoneContextMenu';
@@ -73,6 +73,7 @@ export default function DmDashboard() {
   const [portalDraft, setPortalDraft] = useState<PortalDraft | null>(null);
   const [fogMode, setFogMode] = useState<{ reveal: boolean; radius: number } | null>(null);
   const lastFogPointRef = useRef<{ x: number; y: number } | null>(null);
+  const [zoneFogActive, setZoneFogActive] = useState(false);
   const [zoneColor, setZoneColor] = useState(ZONE_DEFAULT_COLOR);
   const [wallMaterial, setWallMaterial] = useState<'stone' | 'wood' | 'metal' | 'glass' | 'magic'>('stone');
   const [doorMaterial, setDoorMaterial] = useState<'wood' | 'metal' | 'glass' | 'magic'>('wood');
@@ -260,12 +261,12 @@ export default function DmDashboard() {
   }, [])
 
   const portalZones = useMemo(() => {
-    if (!portalDraft) return []
+    if (!portalDraft && !zoneFogActive) return []
     const mScale = activeScene?.map_scale ?? 1
     const mapSize = 10 * mScale
     const zones = extractZonePolygons(graphRef.getItems(), mapSize, mapSize)
     return zonesToGeometry(zones)
-  }, [portalDraft, activeScene, graphRef])
+  }, [portalDraft, zoneFogActive, activeScene, graphRef])
 
   const handlePortalSelect = useCallback((snap: { zoneId: string; point: { x: number; y: number }; a: { x: number; y: number }; b: { x: number; y: number } }) => {
     setPortalDraft((prev) => {
@@ -434,6 +435,45 @@ export default function DmDashboard() {
     }])
   }, [graphRef, handleItemsChange])
 
+  const startZoneFogMode = useCallback(() => {
+    setDrawState(null)
+    setZoneDraft(null)
+    setPortalDraft(null)
+    setFogMode(null)
+    setZoneFogActive((prev) => !prev)
+    setBuildMenuOpen(false)
+  }, [])
+
+  const handleZoneFogSelect = useCallback((snap: { zoneId: string }) => {
+    const mScale = activeScene?.map_scale ?? 1
+    const mapSize = 10 * mScale
+    const items = graphRef.getItems()
+    const zone = items.find((i: SceneItem) => i.id === snap.zoneId && i.metadata?.type === 'zone')
+    if (!zone) return
+    const zonePoly: [number, number][] = extractZonePolygons([zone], mapSize, mapSize)[0].points
+    const res = toggleZoneFog(items, snap.zoneId, zonePoly)
+    if (res.applied === 'none') return
+    for (const item of res.items) {
+      if (!items.some((i: SceneItem) => i.id === item.id)) graphRef.addItem(item)
+      else graphRef.updateItem(item.id, item)
+    }
+    const existingIds = new Set(res.items.map((i: SceneItem) => i.id))
+    for (const item of items) {
+      if (!existingIds.has(item.id)) graphRef.removeItem(item.id)
+    }
+    handleItemsChange(graphRef.getItems())
+    setToastQueue((prev) => [...prev.slice(-4), {
+      id: `zonefog-${Date.now()}`,
+      rollerName: 'Zone Fog',
+      diceType: 20,
+      count: 1,
+      results: [1],
+      total: 1,
+      label: res.applied === 'reveal' ? 'fog cleared for zone' : 'fog covering zone',
+      timestamp: Date.now(),
+    }])
+  }, [activeScene, graphRef, handleItemsChange])
+
   const handleAutoDetect = useCallback(async () => {
     if (!campaignId || !activeScene) return
     setBuildMenuOpen(false)
@@ -519,6 +559,7 @@ export default function DmDashboard() {
         else if (zoneDraft) setZoneDraft(null)
         else if (portalDraft) setPortalDraft(null)
         else if (fogMode) setFogMode(null)
+        else if (zoneFogActive) setZoneFogActive(false)
         else setSelectedItemId(null)
       }
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedItemId) {
@@ -529,7 +570,7 @@ export default function DmDashboard() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [drawState, zoneDraft, portalDraft, fogMode, selectedItemId, handleDeleteItem])
+  }, [drawState, zoneDraft, portalDraft, fogMode, zoneFogActive, selectedItemId, handleDeleteItem])
 
   useEffect(() => {
     for (const sc of sceneChars) {
@@ -1052,7 +1093,7 @@ export default function DmDashboard() {
             <div ref={buildMenuRef} className="relative shrink-0">
               <button
                 onClick={() => setBuildMenuOpen(!buildMenuOpen)}
-                className={`text-xs px-2 py-1 rounded transition-colors ${drawState || zoneDraft || portalDraft || fogMode ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                className={`text-xs px-2 py-1 rounded transition-colors ${drawState || zoneDraft || portalDraft || fogMode || zoneFogActive ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
               >
                 🧱 Build ▾
               </button>
@@ -1093,6 +1134,12 @@ export default function DmDashboard() {
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${fogMode ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
                   >
                     🌫️ Fog (paint)
+                  </button>
+                  <button
+                    onClick={startZoneFogMode}
+                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${zoneFogActive ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
+                  >
+                    🧩 Zone fog (toggle)
                   </button>
                   <div className="border-t border-[var(--bg-tertiary)] my-1" />
                   <div className="px-3 py-1">
@@ -1238,6 +1285,11 @@ export default function DmDashboard() {
                   🌫️ Click-drag to paint fog · ESC to cancel
                 </span>
               </>
+            )}
+            {zoneFogActive && (
+              <span className="text-[10px] text-amber-400 shrink-0">
+                🧩 Click inside a zone to toggle fog · ESC to cancel
+              </span>
             )}
           </>
         }
@@ -1568,6 +1620,8 @@ export default function DmDashboard() {
                 portalZones={portalZones}
                 onPortalSelect={handlePortalSelect}
                 onPortalMove={handlePortalMove}
+                zoneFogActive={zoneFogActive}
+                onZoneFogSelect={handleZoneFogSelect}
                 onTokenClick={handleTokenClick}
                 onTokenDrop={handleTokenDrop}
                 onTokenContextMenu={handleTokenContextMenu}

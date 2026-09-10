@@ -2304,12 +2304,12 @@ D2. FogRegion type: rectangle, polygon, ellipse, flood — IMPLEMENTED (polygon 
 D3. Fog rendering: mask on SceneLayer.FOG — IMPLEMENTED (FogOverlay canvas texture: holes = revealed)
 D4. DM fog brush tool: paint reveal/hide — IMPLEMENTED (Build → Fog (paint), Reveal/Hide + brush size)
 D5. Rectangle select tool for fog
-D6. Flood fill tool for rooms (uses ShadowZone polygons as boundaries)
-D7. Clear all fog button
-D8. Fog persistence: save/load per scene
+D6. Flood fill tool for rooms (uses ShadowZone polygons as boundaries) — IMPLEMENTED (Zone fog toggle: click zone → cubre/descubre todo el ShadowZone)
+D7. Clear all fog button — IMPLEMENTED
+D8. Fog persistence: save/load per scene — IMPLEMENTED (fog = scene items via /items PUT/GET)
 D9. Per-player fog state (explored vs visible)
-D10. GM gray filter vs player black mask (asymmetric rendering)
-D11. Zone-based reveal: reveal/un-reveal whole ShadowZone at once
+D10. GM gray filter vs player black mask (asymmetric rendering) — IMPLEMENTED (DM rgba(15,23,42,0.55) / PlayerView #000000)
+D11. Zone-based reveal: reveal/un-reveal whole ShadowZone at once — IMPLEMENTED (Build → Zone fog (toggle))
 ```
 
 ### Done when

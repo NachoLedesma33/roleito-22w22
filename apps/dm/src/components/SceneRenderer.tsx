@@ -7,7 +7,7 @@ import TokenModel from './TokenModel';
 import ItemRenderer from './ItemRenderer';
 import WallDrawerCanvas from './WallDrawerCanvas';
 import ZoneDrawerCanvas from './ZoneDrawerCanvas';
-import PortalDrawerCanvas, { type PortalDraft } from './PortalDrawerCanvas';
+import PortalDrawerCanvas, { createEmptyPortalDraft, type PortalDraft } from './PortalDrawerCanvas';
 import FogOverlay from './FogOverlay';
 import FogBrushCanvas from './FogBrushCanvas';
 import { extractFogRegions } from '../lib/fogMask';
@@ -67,6 +67,8 @@ interface SceneRendererProps {
   fogBrush?: { reveal: boolean; radius: number } | null;
   onFogPaint?: (point: { x: number; y: number }) => void;
   fogColor?: string;
+  zoneFogActive?: boolean;
+  onZoneFogSelect?: (snap: import('./ZonePortal').EdgeSnap) => void;
 }
 
 type DragStarter = (
@@ -496,6 +498,8 @@ export default function SceneRenderer({
   fogBrush = null,
   onFogPaint,
   fogColor = 'rgba(15, 23, 42, 0.55)',
+  zoneFogActive = false,
+  onZoneFogSelect,
 }: SceneRendererProps) {
   const visibleChars = useMemo(() => characters.filter((c) => c.visible), [characters]);
   const renderItems = useMemo(() => {
@@ -507,7 +511,7 @@ export default function SceneRenderer({
       })
   }, [items, showZones]);
   const fogRegions = useMemo(() => extractFogRegions(items), [items]);
-  const drawing = !!drawState || !!zoneDraft || !!portalDraft || !!fogBrush;
+  const drawing = !!drawState || !!zoneDraft || !!portalDraft || !!fogBrush || zoneFogActive;
   const hasDrag = !drawing && (!readOnly || (movableEntityIds && movableEntityIds.length > 0));
   const justSelectedRef = useRef(false);
   const [imageAspect, setImageAspect] = useState(1);
@@ -608,7 +612,7 @@ export default function SceneRenderer({
           onFinishPolygon={onZoneFinish}
         />
       )}
-      {portalDraft && onPortalSelect && onPortalMove && (
+      {(portalDraft && onPortalSelect && onPortalMove) && (
         <PortalDrawerCanvas
           draft={portalDraft}
           zones={portalZones}
@@ -616,6 +620,17 @@ export default function SceneRenderer({
           mapHeight={mapHeight}
           onSelect={onPortalSelect}
           onMove={onPortalMove}
+        />
+      )}
+      {(zoneFogActive && onZoneFogSelect) && (
+        <PortalDrawerCanvas
+          draft={createEmptyPortalDraft()}
+          zones={portalZones}
+          mapWidth={mapWidth}
+          mapHeight={mapHeight}
+          onSelect={onZoneFogSelect}
+          onMove={() => {}}
+          snapMode="inside"
         />
       )}
       {fogRegions.length > 0 && (

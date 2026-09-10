@@ -156,4 +156,84 @@ test.describe('Fog (Phase D)', () => {
     const { items } = await getSceneItems(request, campaign.id, scene.id);
     expect(fogItems(items)).toHaveLength(0);
   });
+
+  test('F4: Zone fog toggle cubre y descubre una ShadowZone', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    const scene = await createScene(request, campaign.id, 'Fog Zone Toggle');
+    const zone: import('../helpers/api-helpers').SceneItem = {
+      id: 'zone-e2e-f4',
+      name: 'Sala Central',
+      x: 0,
+      y: 0,
+      zIndex: 0,
+      scale: 1,
+      rotation: 0,
+      width: 0,
+      height: 0,
+      opacity: 1,
+      visible: true,
+      locked: false,
+      disableHit: false,
+      disableAutoZIndex: false,
+      attachmentIds: [],
+      disableAttachmentBehavior: [],
+      layer: 4,
+      shape: { type: 'polygon', points: [0.3, 0.3, 0.6, 0.3, 0.6, 0.6, 0.3, 0.6], fill: '#334155' },
+      metadata: {
+        type: 'zone',
+        zoneType: 'polygon',
+        origin: 'manual',
+        touchedByDm: true,
+        shadowOnly: false,
+        fillColor: '#334155',
+        fillOpacity: 0.2,
+        portals: [],
+      },
+    };
+    await putSceneItems(request, campaign.id, scene.id, [zone]);
+    const canvas = await openScene(page, campaign.id, scene.id);
+    const box = await canvas.boundingBox();
+    if (!box) throw new Error('canvas sin boundingBox');
+
+    const putPromise = page.waitForResponse(
+      (res) =>
+        res.url().includes(`/scenes/${scene.id}/items`) && res.request().method() === 'PUT',
+      { timeout: 20_000 },
+    );
+    await page.getByRole('button', { name: /Build/i }).click();
+    await page.getByRole('button', { name: /Zone fog \(toggle\)/ }).click();
+    await expect(page.getByText('Click inside a zone to toggle fog')).toBeVisible();
+    const cx = box.x + box.width * (0.3 + 0.15);
+    const cy = box.y + box.height * (0.3 + 0.15);
+    await page.mouse.click(cx, cy);
+    await putPromise;
+    await expect(page.getByText('fog covering zone')).toBeVisible({ timeout: 10_000 });
+
+    let { items } = await getSceneItems(request, campaign.id, scene.id);
+    const fogAfterHide = fogItems(items);
+    expect(fogAfterHide).toHaveLength(1);
+    expect((fogAfterHide[0].metadata as { revealed: boolean }).revealed).toBe(false);
+    const pts = (fogAfterHide[0].shape as { points?: number[] }).points ?? [];
+    expect(pts.length % 2).toBe(0);
+    for (const p of pts) {
+      expect(p).toBeGreaterThanOrEqual(0);
+      expect(p).toBeLessThanOrEqual(1);
+    }
+
+    const putPromise2 = page.waitForResponse(
+      (res) =>
+        res.url().includes(`/scenes/${scene.id}/items`) && res.request().method() === 'PUT',
+      { timeout: 20_000 },
+    );
+    await page.mouse.click(cx, cy);
+    await putPromise2;
+    await expect(page.getByText('fog cleared for zone')).toBeVisible({ timeout: 10_000 });
+
+    ({ items } = await getSceneItems(request, campaign.id, scene.id));
+    expect(fogItems(items)).toHaveLength(0);
+    expect(items.some((i: import('../helpers/api-helpers').SceneItem) => i.id === 'zone-e2e-f4')).toBe(true);
+  });
 });
