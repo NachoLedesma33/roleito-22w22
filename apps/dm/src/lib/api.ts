@@ -245,6 +245,11 @@ export interface Player {
   created_at: string;
 }
 
+export interface PlayerFogRegion {
+  points: number[];
+  revealed: boolean;
+}
+
 export interface Map {
   id: string;
   campaign_id: string;
@@ -547,6 +552,17 @@ export const api = {
       request<Player>(`/campaigns/${campaignId}/players/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (campaignId: string, id: string) =>
       request<{ status: string; id: string }>(`/campaigns/${campaignId}/players/${id}`, { method: 'DELETE' }),
+    fog: {
+      get: (campaignId: string, playerId: string, sceneId: string) =>
+        request<{ player_id: string; scene_id: string; regions: PlayerFogRegion[] }>(
+          `/campaigns/${campaignId}/players/${playerId}/fog/${sceneId}`,
+        ),
+      update: (campaignId: string, playerId: string, sceneId: string, regions: PlayerFogRegion[]) =>
+        request<{ player_id: string; scene_id: string; regions: PlayerFogRegion[] }>(
+          `/campaigns/${campaignId}/players/${playerId}/fog/${sceneId}`,
+          { method: 'PUT', body: JSON.stringify({ regions }) },
+        ),
+    },
   },
 
   maps: {

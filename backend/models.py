@@ -169,6 +169,18 @@ class Player(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class PlayerFog(Base):
+    __tablename__ = "player_fog"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    campaign_id = Column(String, ForeignKey("campaigns.id"), nullable=False)
+    player_id = Column(String, nullable=False)
+    scene_id = Column(String, ForeignKey("scenes.id"), nullable=False)
+    regions_json = Column(Text, default="[]")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class Map(Base):
     __tablename__ = "maps"
 

@@ -2307,7 +2307,7 @@ D5. Rectangle select tool for fog
 D6. Flood fill tool for rooms (uses ShadowZone polygons as boundaries) — IMPLEMENTED (Zone fog toggle: click zone → cubre/descubre todo el ShadowZone)
 D7. Clear all fog button — IMPLEMENTED
 D8. Fog persistence: save/load per scene — IMPLEMENTED (fog = scene items via /items PUT/GET)
-D9. Per-player fog state (explored vs visible)
+D9. Per-player fog state (explored vs visible) — IMPLEMENTED (PlayerFog tabla + GET/PUT per player+scene; PlayerView auto-explora círculo alrededor del token al moverse, dedupe por centro, guarda regions exploradas debounced; render combina fog global + explored del jugador)
 D10. GM gray filter vs player black mask (asymmetric rendering) — IMPLEMENTED (DM rgba(15,23,42,0.55) / PlayerView #000000)
 D11. Zone-based reveal: reveal/un-reveal whole ShadowZone at once — IMPLEMENTED (Build → Zone fog (toggle))
 ```

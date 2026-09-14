@@ -10,6 +10,8 @@ import TopBar from '@/components/TopBar';
 import MinimizedBar from '@/components/MinimizedBar';
 import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastContainer';
 import { api } from '@/lib/api';
+import type { FogRegion } from '@/lib/fogMask';
+import { EXPLORE_RADIUS, exploredPointsFor, exploredToFogRegion, isAlreadyExplored } from '@/lib/playerFog';
 
 const API_BASE = '/api';
 const POLL_MS = 100;
@@ -177,6 +179,11 @@ export default function PlayerView() {
   const [showDiceRoller, setShowDiceRoller] = useState(false);
   const [toastQueue, setToastQueue] = useState<ToastRoll[]>([]);
   const [wasdTarget, setWasdTarget] = useState<{ x: number; z: number; rotation: number } | null>(null);
+  const [playerFogRegions, setPlayerFogRegions] = useState<FogRegion[]>([]);
+  const playerFogRef = useRef<FogRegion[]>([]);
+  const playerFogSaveTimerRef = useRef<number | null>(null);
+  const playerIdRef = useRef<string | null>(null);
+  const sceneIdForFogRef = useRef<string | null>(null);
   const myCharRef = useRef<MyChar | null>(null);
   const mySceneCharRef = useRef<PlayerToken | null>(null);
 
@@ -337,6 +344,44 @@ export default function PlayerView() {
   useEffect(() => { myCharRef.current = myChar; }, [myChar]);
   useEffect(() => { dataRef.current = data; }, [data]);
   useEffect(() => { wasdTargetRef.current = wasdTarget; }, [wasdTarget]);
+
+  // Load per-player fog once per player+scene; reset when player/scene changes
+  useEffect(() => {
+    if (!data || choice?.kind !== 'character') return;
+    const playerId = choice.id;
+    const sceneId = data.scene_id;
+    if (!sceneId) return;
+    if (playerIdRef.current === playerId && sceneIdForFogRef.current === sceneId) return;
+    playerIdRef.current = playerId;
+    sceneIdForFogRef.current = sceneId;
+    let cancelled = false;
+    api.players.fog.get(data.campaign_id, playerId, sceneId)
+      .then((res) => {
+        if (cancelled) return;
+        const regions = (res.regions ?? []).map((r, i) => exploredToFogRegion(r.points, i));
+        playerFogRef.current = regions;
+        setPlayerFogRegions(regions);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [choice, data]);
+
+  const markExplored = useCallback((normX: number, normZ: number) => {
+    const d = dataRef.current;
+    const c = choiceRef.current;
+    if (!d || !c || c.kind !== 'character' || !d.scene_id) return;
+    if (isAlreadyExplored(playerFogRef.current, normX, normZ, EXPLORE_RADIUS)) return;
+    const points = exploredPointsFor(normX, normZ, EXPLORE_RADIUS);
+    const regions = [...playerFogRef.current, exploredToFogRegion(points, playerFogRef.current.length)];
+    playerFogRef.current = regions;
+    setPlayerFogRegions(regions);
+    if (playerFogSaveTimerRef.current) window.clearTimeout(playerFogSaveTimerRef.current);
+    playerFogSaveTimerRef.current = window.setTimeout(() => {
+      playerFogSaveTimerRef.current = null;
+      const regionsNow = playerFogRef.current.map((r) => ({ points: r.points, revealed: true }));
+      api.players.fog.update(d.campaign_id, c.id, d.scene_id!, regionsNow).catch(() => {});
+    }, 800);
+  }, []);
 
   useEffect(() => {
     if (!data || !myChar || choice?.kind !== 'character') return;
@@ -499,6 +544,7 @@ export default function PlayerView() {
         const target = { x, z, rotation };
         wasdTargetRef.current = target;
         setWasdTarget(target);
+        markExplored(normX, normZ);
         api.scenes.moveCharacter(currentData.campaign_id, currentData.scene_id!, {
           character_id: cur.id,
           x, z, rotation,
@@ -767,6 +813,7 @@ export default function PlayerView() {
               items={data.items ?? []}
               readOnly
               fogColor="#000000"
+              playerFogRegions={playerFogRegions}
               gridSize={data.grid_size ?? 0}
               gridSnap={data.grid_snap ?? false}
               selectedTokenId={
@@ -821,6 +868,7 @@ export default function PlayerView() {
                       const target = { x, z, rotation: wasdTarget?.rotation ?? (sc?.rotation ?? 0) };
                       wasdTargetRef.current = target;
                       setWasdTarget(target);
+                      markExplored(normX, normZ);
                       api.scenes.moveCharacter(data.campaign_id, data.scene_id!, {
                         character_id: choice.id,
                         x, z,

@@ -11,6 +11,7 @@ import PortalDrawerCanvas, { createEmptyPortalDraft, type PortalDraft } from './
 import FogOverlay from './FogOverlay';
 import FogBrushCanvas from './FogBrushCanvas';
 import { extractFogRegions } from '../lib/fogMask';
+import type { FogRegion } from '../lib/fogMask';
 import type { ZoneDraft } from './ZoneDrawer';
 import type { ZoneGeometry } from './ZonePortal';
 import { SceneItem } from '@core/domain/types';
@@ -67,6 +68,7 @@ interface SceneRendererProps {
   fogBrush?: { reveal: boolean; radius: number } | null;
   onFogPaint?: (point: { x: number; y: number }) => void;
   fogColor?: string;
+  playerFogRegions?: FogRegion[];
   zoneFogActive?: boolean;
   onZoneFogSelect?: (snap: import('./ZonePortal').EdgeSnap) => void;
 }
@@ -498,6 +500,7 @@ export default function SceneRenderer({
   fogBrush = null,
   onFogPaint,
   fogColor = 'rgba(15, 23, 42, 0.55)',
+  playerFogRegions = [],
   zoneFogActive = false,
   onZoneFogSelect,
 }: SceneRendererProps) {
@@ -510,7 +513,10 @@ export default function SceneRenderer({
         return a.zIndex - b.zIndex
       })
   }, [items, showZones]);
-  const fogRegions = useMemo(() => extractFogRegions(items), [items]);
+  const fogRegions = useMemo(
+    () => [...extractFogRegions(items), ...(playerFogRegions ?? [])],
+    [items, playerFogRegions],
+  );
   const drawing = !!drawState || !!zoneDraft || !!portalDraft || !!fogBrush || zoneFogActive;
   const hasDrag = !drawing && (!readOnly || (movableEntityIds && movableEntityIds.length > 0));
   const justSelectedRef = useRef(false);

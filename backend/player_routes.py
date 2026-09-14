@@ -3,10 +3,11 @@ from fastapi import UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from database import get_session
-from models import Player, Map, Asset, Campaign
-from schemas import PlayerCreate, PlayerUpdate, PlayerResponse, MapCreate, MapResponse, AssetResponse
+from models import Player, Map, Asset, Campaign, PlayerFog, Scene
+from schemas import PlayerCreate, PlayerUpdate, PlayerResponse, MapCreate, MapResponse, AssetResponse, PlayerFogResponse, PlayerFogUpdate
 import os
 import uuid
+import json as _json
 
 router = APIRouter(tags=["players", "maps", "assets"])
 
@@ -115,6 +116,81 @@ async def delete_player(
     await db.delete(player)
     await db.commit()
     return {"status": "deleted", "id": player_id}
+
+
+# ── Per-player Fog (D9 explored) ────────────────────────────
+
+
+@router.get("/campaigns/{campaign_id}/players/{player_id}/fog/{scene_id}", response_model=PlayerFogResponse)
+async def get_player_fog(
+    campaign_id: str,
+    player_id: str,
+    scene_id: str,
+    db: AsyncSession = Depends(get_session),
+):
+    scene_r = await db.execute(
+        select(Scene).where(
+            Scene.id == scene_id,
+            Scene.campaign_id == campaign_id,
+        )
+    )
+    if not scene_r.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Scene not found")
+
+    result = await db.execute(
+        select(PlayerFog).where(
+            PlayerFog.campaign_id == campaign_id,
+            PlayerFog.player_id == player_id,
+            PlayerFog.scene_id == scene_id,
+        )
+    )
+    row = result.scalar_one_or_none()
+    if not row:
+        return {"player_id": player_id, "scene_id": scene_id, "regions": []}
+    regions = _json.loads(row.regions_json) if row.regions_json else []
+    return {"player_id": player_id, "scene_id": scene_id, "regions": regions}
+
+
+@router.put("/campaigns/{campaign_id}/players/{player_id}/fog/{scene_id}", response_model=PlayerFogResponse)
+async def put_player_fog(
+    campaign_id: str,
+    player_id: str,
+    scene_id: str,
+    data: PlayerFogUpdate,
+    db: AsyncSession = Depends(get_session),
+):
+    scene_r = await db.execute(
+        select(Scene).where(
+            Scene.id == scene_id,
+            Scene.campaign_id == campaign_id,
+        )
+    )
+    if not scene_r.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Scene not found")
+
+    result = await db.execute(
+        select(PlayerFog).where(
+            PlayerFog.campaign_id == campaign_id,
+            PlayerFog.player_id == player_id,
+            PlayerFog.scene_id == scene_id,
+        )
+    )
+    row = result.scalar_one_or_none()
+    if not row:
+        row = PlayerFog(
+            campaign_id=campaign_id,
+            player_id=player_id,
+            scene_id=scene_id,
+        )
+        db.add(row)
+    row.regions_json = _json.dumps([r.model_dump() for r in data.regions])
+    await db.commit()
+    await db.refresh(row)
+    return {
+        "player_id": player_id,
+        "scene_id": scene_id,
+        "regions": _json.loads(row.regions_json) if row.regions_json else [],
+    }
 
 
 # ── Map CRUD ────────────────────────────────────────────────

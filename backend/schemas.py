@@ -301,6 +301,21 @@ class PlayerResponse(BaseModel):
         from_attributes = True
 
 
+class PlayerFogRegion(BaseModel):
+    points: list[float]
+    revealed: bool = True
+
+
+class PlayerFogResponse(BaseModel):
+    player_id: str
+    scene_id: str
+    regions: list[PlayerFogRegion] = []
+
+
+class PlayerFogUpdate(BaseModel):
+    regions: list[PlayerFogRegion] = []
+
+
 class MapCreate(BaseModel):
     name: str
     description: str = ""
