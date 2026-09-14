@@ -72,6 +72,7 @@ export default function DmDashboard() {
   const [zoneDraft, setZoneDraft] = useState<ZoneDraft | null>(null);
   const [portalDraft, setPortalDraft] = useState<PortalDraft | null>(null);
   const [fogMode, setFogMode] = useState<{ reveal: boolean; radius: number } | null>(null);
+  const [rectFogMode, setRectFogMode] = useState<{ reveal: boolean } | null>(null);
   const lastFogPointRef = useRef<{ x: number; y: number } | null>(null);
   const [zoneFogActive, setZoneFogActive] = useState(false);
   const [zoneColor, setZoneColor] = useState(ZONE_DEFAULT_COLOR);
@@ -191,6 +192,7 @@ export default function DmDashboard() {
   }, [graphRef, handleItemsChange, campaignId, activeScene])
 
   const startDrawMode = useCallback((mode: 'wall' | 'door') => {
+    setRectFogMode(null)
     setDrawState((prev) => {
       if (prev?.mode === mode) return null
       return createEmptyDrawState(mode, wallMaterial, doorMaterial)
@@ -241,6 +243,7 @@ export default function DmDashboard() {
   }, [finalizeZoneDraft])
 
   const startZoneMode = useCallback((mode: 'rect' | 'polygon') => {
+    setRectFogMode(null)
     setDrawState(null)
     setPortalDraft(null)
     setZoneDraft((prev) => {
@@ -251,6 +254,7 @@ export default function DmDashboard() {
   }, [])
 
   const startPortalMode = useCallback(() => {
+    setRectFogMode(null)
     setDrawState(null)
     setZoneDraft(null)
     setPortalDraft((prev) => {
@@ -379,9 +383,25 @@ export default function DmDashboard() {
     setDrawState(null)
     setZoneDraft(null)
     setPortalDraft(null)
+    setZoneFogActive(false)
+    setRectFogMode(null)
     setFogMode((prev) => {
       if (prev) return null
       return { reveal: true, radius: 0.08 }
+    })
+    setBuildMenuOpen(false)
+  }, [])
+
+  const startRectFogMode = useCallback(() => {
+    lastFogPointRef.current = null
+    setDrawState(null)
+    setZoneDraft(null)
+    setPortalDraft(null)
+    setFogMode(null)
+    setZoneFogActive(false)
+    setRectFogMode((prev) => {
+      if (prev) return null
+      return { reveal: true }
     })
     setBuildMenuOpen(false)
   }, [])
@@ -416,6 +436,33 @@ export default function DmDashboard() {
     handleItemsChange(graphRef.getItems())
   }, [fogMode, graphRef, handleItemsChange])
 
+  const handleFogRect = useCallback((points: number[]) => {
+    if (!rectFogMode) return
+    const item: SceneItem = {
+      id: `fogrect-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      name: 'Fog',
+      x: 0,
+      y: 0,
+      zIndex: 0,
+      scale: 1,
+      rotation: 0,
+      width: 0,
+      height: 0,
+      opacity: 1,
+      visible: true,
+      locked: false,
+      disableHit: false,
+      disableAutoZIndex: false,
+      attachmentIds: [],
+      disableAttachmentBehavior: [],
+      layer: SceneLayer.FOG,
+      shape: { type: 'polygon', points, fill: '#000000' },
+      metadata: { type: 'fog', fogType: 'static', revealed: rectFogMode.reveal },
+    }
+    graphRef.addItem(item)
+    handleItemsChange(graphRef.getItems())
+  }, [rectFogMode, graphRef, handleItemsChange])
+
   const handleClearAllFog = useCallback(() => {
     const items = graphRef.getItems()
     const toRemove = items.filter((item: SceneItem) => item.metadata?.type === 'fog')
@@ -440,6 +487,7 @@ export default function DmDashboard() {
     setZoneDraft(null)
     setPortalDraft(null)
     setFogMode(null)
+    setRectFogMode(null)
     setZoneFogActive((prev) => !prev)
     setBuildMenuOpen(false)
   }, [])
@@ -559,6 +607,7 @@ export default function DmDashboard() {
         else if (zoneDraft) setZoneDraft(null)
         else if (portalDraft) setPortalDraft(null)
         else if (fogMode) setFogMode(null)
+        else if (rectFogMode) setRectFogMode(null)
         else if (zoneFogActive) setZoneFogActive(false)
         else setSelectedItemId(null)
       }
@@ -570,7 +619,7 @@ export default function DmDashboard() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [drawState, zoneDraft, portalDraft, fogMode, zoneFogActive, selectedItemId, handleDeleteItem])
+  }, [drawState, zoneDraft, portalDraft, fogMode, rectFogMode, zoneFogActive, selectedItemId, handleDeleteItem])
 
   useEffect(() => {
     for (const sc of sceneChars) {
@@ -1093,7 +1142,7 @@ export default function DmDashboard() {
             <div ref={buildMenuRef} className="relative shrink-0">
               <button
                 onClick={() => setBuildMenuOpen(!buildMenuOpen)}
-                className={`text-xs px-2 py-1 rounded transition-colors ${drawState || zoneDraft || portalDraft || fogMode || zoneFogActive ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                className={`text-xs px-2 py-1 rounded transition-colors ${drawState || zoneDraft || portalDraft || fogMode || rectFogMode || zoneFogActive ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
               >
                 🧱 Build ▾
               </button>
@@ -1134,6 +1183,12 @@ export default function DmDashboard() {
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${fogMode ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
                   >
                     🌫️ Fog (paint)
+                  </button>
+                  <button
+                    onClick={startRectFogMode}
+                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${rectFogMode ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
+                  >
+                    ▭ Fog (rect)
                   </button>
                   <button
                     onClick={startZoneFogMode}
@@ -1283,6 +1338,27 @@ export default function DmDashboard() {
                 </div>
                 <span className="text-[10px] text-amber-400 shrink-0">
                   🌫️ Click-drag to paint fog · ESC to cancel
+                </span>
+              </>
+            )}
+            {rectFogMode && (
+              <>
+                <div className="flex items-center gap-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-1.5 py-0.5 shrink-0">
+                  <button
+                    onClick={() => setRectFogMode((prev) => prev ? { ...prev, reveal: true } : prev)}
+                    className={`text-[10px] px-2 py-0.5 rounded transition-colors ${rectFogMode.reveal ? 'bg-green-600 text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
+                  >
+                    Reveal
+                  </button>
+                  <button
+                    onClick={() => setRectFogMode((prev) => prev ? { ...prev, reveal: false } : prev)}
+                    className={`text-[10px] px-2 py-0.5 rounded transition-colors ${!rectFogMode.reveal ? 'bg-red-600 text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
+                  >
+                    Hide
+                  </button>
+                </div>
+                <span className="text-[10px] text-amber-400 shrink-0">
+                  ▭ Click-drag to draw fog rect · ESC to cancel
                 </span>
               </>
             )}
@@ -1617,6 +1693,8 @@ export default function DmDashboard() {
                 fogBrush={fogMode}
                 fogColor="rgba(15, 23, 42, 0.55)"
                 onFogPaint={handleFogPaint}
+                fogRect={rectFogMode}
+                onFogRect={handleFogRect}
                 portalZones={portalZones}
                 onPortalSelect={handlePortalSelect}
                 onPortalMove={handlePortalMove}

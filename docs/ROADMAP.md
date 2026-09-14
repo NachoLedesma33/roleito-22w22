@@ -2303,7 +2303,7 @@ D1. FogState structure in world state — IMPLEMENTED (fog items on SceneLayer.F
 D2. FogRegion type: rectangle, polygon, ellipse, flood — IMPLEMENTED (polygon regions; ellipses via circlePoints)
 D3. Fog rendering: mask on SceneLayer.FOG — IMPLEMENTED (FogOverlay canvas texture: holes = revealed)
 D4. DM fog brush tool: paint reveal/hide — IMPLEMENTED (Build → Fog (paint), Reveal/Hide + brush size)
-D5. Rectangle select tool for fog
+D5. Rectangle select tool for fog — IMPLEMENTED (Build → Fog (rect), click-drag rect → 4-pt polygon fog item, Reveal/Hide toggle)
 D6. Flood fill tool for rooms (uses ShadowZone polygons as boundaries) — IMPLEMENTED (Zone fog toggle: click zone → cubre/descubre todo el ShadowZone)
 D7. Clear all fog button — IMPLEMENTED
 D8. Fog persistence: save/load per scene — IMPLEMENTED (fog = scene items via /items PUT/GET)
