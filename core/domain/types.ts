@@ -241,6 +241,7 @@ export type ItemMetadata =
   | FogMetadata
   | RoomMetadata
   | ZoneMetadata
+  | LightMetadata
 
 export interface TokenMetadata {
   type: 'token'
@@ -292,6 +293,24 @@ export interface FogMetadata {
   fogType: 'static' | 'dynamic'
   revealed: boolean
   cutMask?: string
+}
+
+export type LightMode = 'hard' | 'soft' | 'directional'
+
+export interface LightSourceConfig {
+  mode: LightMode
+  color: string
+  intensity: number
+  radius: number
+  angle?: number
+  direction?: number
+  falloff?: number
+}
+
+export interface LightMetadata {
+  type: 'light'
+  source: LightSourceConfig
+  attachedTo?: string
 }
 
 export interface RoomMetadata {

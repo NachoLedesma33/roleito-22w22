@@ -10,6 +10,7 @@ import { createEmptyZoneDraft, createZoneItem, ZONE_COLORS, ZONE_DEFAULT_COLOR, 
 import { createEmptyPortalDraft, type PortalDraft } from '@/components/PortalDrawerCanvas';
 import { createPortalBetween, buildPortalLocalEdge, cyclePortalState, removePortal, zonesToGeometry } from '@/components/ZonePortal';
 import { circlePoints, toggleZoneFog } from '@/lib/fogMask';
+import { createLightItem, LIGHT_PRESETS } from '@/lib/light';
 import DoorContextMenu from '@/components/DoorContextMenu';
 import WallContextMenu from '@/components/WallContextMenu';
 import ZoneContextMenu from '@/components/ZoneContextMenu';
@@ -75,6 +76,7 @@ export default function DmDashboard() {
   const [rectFogMode, setRectFogMode] = useState<{ reveal: boolean } | null>(null);
   const lastFogPointRef = useRef<{ x: number; y: number } | null>(null);
   const [zoneFogActive, setZoneFogActive] = useState(false);
+  const [lightPlaceMode, setLightPlaceMode] = useState<{ preset: string } | null>(null);
   const [zoneColor, setZoneColor] = useState(ZONE_DEFAULT_COLOR);
   const [wallMaterial, setWallMaterial] = useState<'stone' | 'wood' | 'metal' | 'glass' | 'magic'>('stone');
   const [doorMaterial, setDoorMaterial] = useState<'wood' | 'metal' | 'glass' | 'magic'>('wood');
@@ -492,6 +494,31 @@ export default function DmDashboard() {
     setBuildMenuOpen(false)
   }, [])
 
+  const startLightPlaceMode = useCallback(() => {
+    setDrawState(null)
+    setZoneDraft(null)
+    setPortalDraft(null)
+    setFogMode(null)
+    setRectFogMode(null)
+    setZoneFogActive(false)
+    setLightPlaceMode((prev) => {
+      if (prev) return null
+      return { preset: 'torch' }
+    })
+    setBuildMenuOpen(false)
+  }, [])
+
+  const handleLightPlace = useCallback((point: { x: number; y: number }) => {
+    if (!lightPlaceMode) return
+    const mScale = activeScene?.map_scale ?? 1
+    const mapHeight = 10 * mScale
+    const mapWidth = 10 * mScale
+    const item = createLightItem(lightPlaceMode.preset, point, mapWidth, mapHeight)
+    if (!item) return
+    graphRef.addItem(item)
+    handleItemsChange(graphRef.getItems())
+  }, [lightPlaceMode, activeScene, graphRef, handleItemsChange])
+
   const handleZoneFogSelect = useCallback((snap: { zoneId: string }) => {
     const mScale = activeScene?.map_scale ?? 1
     const mapSize = 10 * mScale
@@ -609,6 +636,7 @@ export default function DmDashboard() {
         else if (fogMode) setFogMode(null)
         else if (rectFogMode) setRectFogMode(null)
         else if (zoneFogActive) setZoneFogActive(false)
+        else if (lightPlaceMode) setLightPlaceMode(null)
         else setSelectedItemId(null)
       }
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedItemId) {
@@ -619,7 +647,7 @@ export default function DmDashboard() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [drawState, zoneDraft, portalDraft, fogMode, rectFogMode, zoneFogActive, selectedItemId, handleDeleteItem])
+  }, [drawState, zoneDraft, portalDraft, fogMode, rectFogMode, zoneFogActive, lightPlaceMode, selectedItemId, handleDeleteItem])
 
   useEffect(() => {
     for (const sc of sceneChars) {
@@ -1196,6 +1224,12 @@ export default function DmDashboard() {
                   >
                     🧩 Zone fog (toggle)
                   </button>
+                  <button
+                    onClick={startLightPlaceMode}
+                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${lightPlaceMode ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
+                  >
+                    💡 Light (place)
+                  </button>
                   <div className="border-t border-[var(--bg-tertiary)] my-1" />
                   <div className="px-3 py-1">
                     <p className="text-[10px] text-[var(--text-secondary)] mb-1">Zone color</p>
@@ -1366,6 +1400,24 @@ export default function DmDashboard() {
               <span className="text-[10px] text-amber-400 shrink-0">
                 🧩 Click inside a zone to toggle fog · ESC to cancel
               </span>
+            )}
+            {lightPlaceMode && (
+              <>
+                <div className="flex items-center gap-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-1.5 py-0.5 shrink-0">
+                  {Object.entries(LIGHT_PRESETS).map(([key, preset]) => (
+                    <button
+                      key={key}
+                      onClick={() => setLightPlaceMode({ preset: key })}
+                      title={preset.name}
+                      className={`w-5 h-5 rounded-full transition-colors ${lightPlaceMode.preset === key ? 'ring-2 ring-amber-400' : ''}`}
+                      style={{ backgroundColor: preset.color }}
+                    />
+                  ))}
+                </div>
+                <span className="text-[10px] text-amber-400 shrink-0">
+                  💡 Click to place light · ESC to cancel
+                </span>
+              </>
             )}
           </>
         }
@@ -1700,6 +1752,8 @@ export default function DmDashboard() {
                 onPortalMove={handlePortalMove}
                 zoneFogActive={zoneFogActive}
                 onZoneFogSelect={handleZoneFogSelect}
+                lightPlace={lightPlaceMode}
+                onLightPlace={handleLightPlace}
                 onTokenClick={handleTokenClick}
                 onTokenDrop={handleTokenDrop}
                 onTokenContextMenu={handleTokenContextMenu}

@@ -2333,9 +2333,9 @@ reveal fog via raycasting against ShadowZone edges
 ### Tasks
 
 ```text
-E1. LightSource entity definition (hard / soft / directional modes)
-E2. Light rendering: visual glow/indicator
-E3. DM light placement tool
+E1. LightSource entity definition (hard / soft / directional modes) — IMPLEMENTED (LightMetadata + LightSourceConfig en core/domain/types.ts; mode hard/soft/directional, color, intensity, radius normalizado, angle/direction para cono, falloff; LIGHT_PRESETS torch/lantern/campfire/candle/lanternDir/magic + normalizeLightConfig/clampIntensity/hexToRgba/coneSectorPoints/lightGlowOpacity en lib/light.ts, 9 specs)
+E2. Light rendering: visual glow/indicator — IMPLEMENTED (LightRenderer en ItemRenderer: halo radial por CanvasTexture hard edge/soft falloff, cono ShapeGeometry para directional, ring de radio, orbe emisivo en el centro, ring de selección; persiste como item metadata type 'light' via items_json sin cambios de schema)
+E3. DM light placement tool — IMPLEMENTED (Build → "💡 Light (place)"; `LightPlaceCanvas` raycast hover preview + click → `createLightItem`; toolbar de presets con chips de color; exclusivo con otros tools; ESC cancela; e2e L1 roundtrip + L2 placement UI 2/2)
 E4. Attach light to token (token = raycasting origin for fog reveal)
 E5. Light properties: color, intensity, range, angle (cone)
 E6. Light presets: torch, lantern, campfire; cone = directional (90° linterna)

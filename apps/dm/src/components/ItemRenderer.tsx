@@ -2,8 +2,9 @@ import { useCallback, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Billboard, Text } from '@react-three/drei'
 import * as THREE from 'three'
-import { SceneItem, ZoneMetadata } from '@core/domain/types'
+import { SceneItem, ZoneMetadata, LightMetadata } from '@core/domain/types'
 import { PORTAL_COLORS } from './ZonePortal'
+import { normalizeLightConfig, lightGlowOpacity, hexToRgba } from '../lib/light'
 
 const TOKEN_COLORS: Record<string, string> = {
   character: '#4ade80',
@@ -39,6 +40,10 @@ export default function ItemRenderer({ item, isSelected, showZones = false, onCl
 
   if (item.metadata.type === 'fog') {
     return null
+  }
+
+  if (item.metadata.type === 'light') {
+    return <LightRenderer item={item} isSelected={isSelected} onClick={onClick} onContextMenu={onContextMenu} mapScale={mapScale} />
   }
 
   if (item.metadata.type === 'wall' && item.shape?.type === 'line') {
@@ -425,4 +430,124 @@ function ZonePortalMarkers({ nodes }: { nodes: { points: THREE.Vector3[]; color:
       ))}
     </group>
   )
+}
+
+function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1 }: ItemRendererProps) {
+  const meta = item.metadata as LightMetadata
+  const source = normalizeLightConfig(meta.source)
+  const mapHeight = 10 * mapScale
+  const radians = (deg: number) => (deg * Math.PI) / 180
+
+  const glowOpacity = lightGlowOpacity(meta)
+
+  const glowTexture = useMemo(() => {
+    const size = 64
+    const canvas = document.createElement('canvas')
+    canvas.width = size
+    canvas.height = size
+    const ctx = canvas.getContext('2d')!
+    const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2)
+    if (source.mode === 'hard') {
+      grad.addColorStop(0, hexToRgba(source.color, 0.7))
+      grad.addColorStop(0.85, hexToRgba(source.color, 0.45))
+      grad.addColorStop(1, hexToRgba(source.color, 0))
+    } else {
+      grad.addColorStop(0, hexToRgba(source.color, 0.6))
+      grad.addColorStop(1, hexToRgba(source.color, 0))
+    }
+    ctx.fillStyle = grad
+    ctx.fillRect(0, 0, size, size)
+    const tex = new THREE.CanvasTexture(canvas)
+    tex.needsUpdate = true
+    return tex
+  }, [source.color, source.mode])
+
+  const sectorGeometry = useMemo(() => {
+    if (source.mode !== 'directional' || !source.angle) return null
+    const half = source.angle / 2
+    const pts: [number, number][] = [[0, 0]]
+    const N = 24
+    for (let i = 0; i <= N; i++) {
+      const a = radians(source.direction! - half + (i / N) * source.angle)
+      pts.push([Math.cos(a) * source.radius * mapHeight, Math.sin(a) * source.radius * mapHeight])
+    }
+    const shape = new THREE.Shape()
+    shape.moveTo(pts[0][0], pts[0][1])
+    for (let i = 1; i < pts.length; i++) shape.lineTo(pts[i][0], pts[i][1])
+    const geo = new THREE.ShapeGeometry(shape, 4)
+    geo.rotateX(-Math.PI / 2)
+    return geo
+  }, [source.mode, source.angle, source.direction, source.radius, mapHeight])
+
+  const ringRadius = source.radius * mapHeight
+  const y = 0.045
+
+  const halo = (() => {
+    if (source.mode === 'directional' && sectorGeometry) {
+      return (
+        <mesh geometry={sectorGeometry} position={[0, y, 0]}>
+          <meshBasicMaterial
+            map={glowTexture}
+            transparent
+            opacity={glowOpacity}
+            side={THREE.DoubleSide}
+            depthWrite={false}
+          />
+        </mesh>
+      )
+    }
+    return (
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, y, 0]}>
+        <circleGeometry args={[ringRadius, 32]} />
+        <meshBasicMaterial
+          map={glowTexture}
+          transparent
+          opacity={glowOpacity}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+        />
+      </mesh>
+    )
+  })()
+
+  return (
+    <group
+      position={[item.x, 0, item.y]}
+      rotation={[0, source.direction || 0, 0]}
+      onClick={(e) => { e.stopPropagation(); onClick?.() }}
+      onContextMenu={(e) => { e.stopPropagation(); onContextMenu?.(e.nativeEvent) }}
+    >
+      {halo}
+      {source.mode !== 'directional' && (
+        <LineLoopPoints radius={ringRadius} position={y} />
+      )}
+      <mesh position={[0, 0.15, 0]}>
+        <sphereGeometry args={[0.09, 16, 16]} />
+        <meshStandardMaterial
+          color="#000000"
+          emissive={new THREE.Color(source.color)}
+          emissiveIntensity={0.9 * source.intensity + 0.3}
+        />
+      </mesh>
+      {isSelected && (
+        <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[ringRadius - 0.03, ringRadius + 0.03, 32]} />
+          <meshBasicMaterial color="#3b82f6" transparent opacity={0.8} side={THREE.DoubleSide} />
+        </mesh>
+      )}
+    </group>
+  )
+}
+
+function LineLoopPoints({ radius, position = 0 }: { radius: number; position?: number }) {
+  const points = useMemo(() => {
+    const pts: THREE.Vector3[] = []
+    for (let i = 0; i <= 32; i++) {
+      const a = (i / 32) * Math.PI * 2
+      pts.push(new THREE.Vector3(Math.cos(a) * radius, 0, Math.sin(a) * radius))
+    }
+    return pts
+  }, [radius])
+  const geo = useMemo(() => new THREE.BufferGeometry().setFromPoints(points), [points])
+  return <lineSegments geometry={geo} position={[0, position, 0]}><lineBasicMaterial color="#ffffff" transparent opacity={0.5} /></lineSegments>
 }

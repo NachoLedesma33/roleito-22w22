@@ -11,6 +11,7 @@ import PortalDrawerCanvas, { createEmptyPortalDraft, type PortalDraft } from './
 import FogOverlay from './FogOverlay';
 import FogBrushCanvas from './FogBrushCanvas';
 import FogRectCanvas from './FogRectCanvas';
+import LightPlaceCanvas from './LightPlaceCanvas';
 import { extractFogRegions } from '../lib/fogMask';
 import type { FogRegion } from '../lib/fogMask';
 import type { ZoneDraft } from './ZoneDrawer';
@@ -74,6 +75,8 @@ interface SceneRendererProps {
   playerFogRegions?: FogRegion[];
   zoneFogActive?: boolean;
   onZoneFogSelect?: (snap: import('./ZonePortal').EdgeSnap) => void;
+  lightPlace?: { preset: string } | null;
+  onLightPlace?: (point: { x: number; y: number }) => void;
 }
 
 type DragStarter = (
@@ -508,6 +511,8 @@ export default function SceneRenderer({
   playerFogRegions = [],
   zoneFogActive = false,
   onZoneFogSelect,
+  lightPlace = null,
+  onLightPlace,
 }: SceneRendererProps) {
   const visibleChars = useMemo(() => characters.filter((c) => c.visible), [characters]);
   const renderItems = useMemo(() => {
@@ -522,7 +527,7 @@ export default function SceneRenderer({
     () => [...extractFogRegions(items), ...(playerFogRegions ?? [])],
     [items, playerFogRegions],
   );
-  const drawing = !!drawState || !!zoneDraft || !!portalDraft || !!fogBrush || !!fogRect || zoneFogActive;
+  const drawing = !!drawState || !!zoneDraft || !!portalDraft || !!fogBrush || !!fogRect || zoneFogActive || !!lightPlace;
   const hasDrag = !drawing && (!readOnly || (movableEntityIds && movableEntityIds.length > 0));
   const justSelectedRef = useRef(false);
   const [imageAspect, setImageAspect] = useState(1);
@@ -662,6 +667,14 @@ export default function SceneRenderer({
           mapWidth={mapWidth}
           mapHeight={mapHeight}
           onRect={onFogRect}
+        />
+      )}
+      {lightPlace && onLightPlace && (
+        <LightPlaceCanvas
+          presetKey={lightPlace.preset}
+          mapWidth={mapWidth}
+          mapHeight={mapHeight}
+          onPlace={onLightPlace}
         />
       )}
       <OrbitControls
