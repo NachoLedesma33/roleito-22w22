@@ -115,3 +115,10 @@ export function detachLight(light: SceneItem): SceneItem {
 export function isLightAttached(light: SceneItem): boolean {
   return light.metadata?.type === 'light' && !!((light.metadata as LightMetadata).attachedTo)
 }
+
+export function updateLightSource(light: SceneItem, patch: Partial<LightSourceConfig>): SceneItem | null {
+  if (light.metadata?.type !== 'light') return null
+  const prev = normalizeLightConfig((light.metadata as LightMetadata).source)
+  const source = normalizeLightConfig({ ...prev, ...patch })
+  return { ...light, metadata: { ...(light.metadata as LightMetadata), source } }
+}

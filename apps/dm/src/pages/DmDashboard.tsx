@@ -10,7 +10,8 @@ import { createEmptyZoneDraft, createZoneItem, ZONE_COLORS, ZONE_DEFAULT_COLOR, 
 import { createEmptyPortalDraft, type PortalDraft } from '@/components/PortalDrawerCanvas';
 import { createPortalBetween, buildPortalLocalEdge, cyclePortalState, removePortal, zonesToGeometry } from '@/components/ZonePortal';
 import { circlePoints, toggleZoneFog } from '@/lib/fogMask';
-import { createLightItem, LIGHT_PRESETS, attachLightToToken, detachLight } from '@/lib/light';
+import { createLightItem, LIGHT_PRESETS, attachLightToToken, detachLight, normalizeLightConfig, updateLightSource } from '@/lib/light';
+import { LightMetadata } from '@core/domain/types';
 import DoorContextMenu from '@/components/DoorContextMenu';
 import WallContextMenu from '@/components/WallContextMenu';
 import ZoneContextMenu from '@/components/ZoneContextMenu';
@@ -576,6 +577,23 @@ export default function DmDashboard() {
       timestamp: Date.now(),
     }])
   }, [graphRef, handleItemsChange])
+
+  const selectedLight = useMemo(() => {
+    if (!selectedItemId || attachLightMode || drawState || zoneDraft || portalDraft || fogMode || rectFogMode || zoneFogActive || lightPlaceMode) return null
+    const item = graphRef.getItem(selectedItemId)
+    if (item?.metadata.type !== 'light') return null
+    return { item, source: normalizeLightConfig((item.metadata as LightMetadata).source) }
+  }, [selectedItemId, attachLightMode, drawState, zoneDraft, portalDraft, fogMode, rectFogMode, zoneFogActive, lightPlaceMode, graphRef, sceneItems])
+
+  const handleLightSourceChange = useCallback((patch: Partial<ReturnType<typeof normalizeLightConfig>>) => {
+    if (!selectedItemId) return
+    const light = graphRef.getItem(selectedItemId)
+    if (!light) return
+    const updated = updateLightSource(light, patch)
+    if (!updated) return
+    graphRef.updateItem(selectedItemId, updated)
+    handleItemsChange(graphRef.getItems())
+  }, [selectedItemId, graphRef, handleItemsChange])
 
   const handleZoneFogSelect = useCallback((snap: { zoneId: string }) => {
     const mScale = activeScene?.map_scale ?? 1
@@ -1521,6 +1539,92 @@ export default function DmDashboard() {
                 </div>
               )
             })()}
+            {selectedLight && (
+              <div className="flex items-center gap-2 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-2 py-1 shrink-0">
+                <span className="text-[10px] text-[var(--text-secondary)]">💡 {selectedLight.item.name}</span>
+                <div className="flex gap-0.5">
+                  {(['hard', 'soft', 'directional'] as const).map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => handleLightSourceChange({ mode: m })}
+                      className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${selectedLight.source.mode === m ? 'bg-amber-600 text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
+                    >
+                      {m === 'directional' ? 'cone' : m}
+                    </button>
+                  ))}
+                </div>
+                <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
+                  color
+                  <input
+                    type="color"
+                    value={selectedLight.source.color}
+                    onChange={(e) => handleLightSourceChange({ color: e.target.value })}
+                    className="w-5 h-5 rounded cursor-pointer bg-transparent border border-[var(--bg-tertiary)]"
+                    title="Light color"
+                  />
+                </label>
+                <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
+                  int
+                  <input
+                    type="range"
+                    min={0.1}
+                    max={1}
+                    step={0.05}
+                    value={selectedLight.source.intensity}
+                    onChange={(e) => handleLightSourceChange({ intensity: parseFloat(e.target.value) })}
+                    className="w-16 h-1"
+                    title="Intensity"
+                  />
+                  <span className="w-7">{selectedLight.source.intensity.toFixed(2)}</span>
+                </label>
+                <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
+                  range
+                  <input
+                    type="range"
+                    min={0.04}
+                    max={0.5}
+                    step={0.01}
+                    value={selectedLight.source.radius}
+                    onChange={(e) => handleLightSourceChange({ radius: parseFloat(e.target.value) })}
+                    className="w-16 h-1"
+                    title="Range"
+                  />
+                  <span className="w-8">{selectedLight.source.radius.toFixed(2)}</span>
+                </label>
+                {selectedLight.source.mode === 'directional' && (
+                  <>
+                    <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
+                      angle
+                      <input
+                        type="range"
+                        min={20}
+                        max={120}
+                        step={5}
+                        value={selectedLight.source.angle ?? 90}
+                        onChange={(e) => handleLightSourceChange({ angle: parseFloat(e.target.value) })}
+                        className="w-14 h-1"
+                        title="Cone angle"
+                      />
+                      <span className="w-8">{selectedLight.source.angle ?? 90}°</span>
+                    </label>
+                    <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
+                      dir
+                      <input
+                        type="range"
+                        min={0}
+                        max={360}
+                        step={5}
+                        value={selectedLight.source.direction ?? 0}
+                        onChange={(e) => handleLightSourceChange({ direction: parseFloat(e.target.value) })}
+                        className="w-14 h-1"
+                        title="Cone direction"
+                      />
+                      <span className="w-8">{selectedLight.source.direction ?? 0}°</span>
+                    </label>
+                  </>
+                )}
+              </div>
+            )}
           </>
         }
       >

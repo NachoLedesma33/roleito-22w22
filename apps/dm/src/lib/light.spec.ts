@@ -10,6 +10,7 @@ import {
   isLightAttached,
   lightGlowOpacity,
   normalizeLightConfig,
+  updateLightSource,
 } from './light'
 import { LightMetadata, SceneLayer } from '@core/domain/types'
 
@@ -133,5 +134,28 @@ describe('light/helpers', () => {
   it('isLightAttached distingue luz adjunta de una libre', () => {
     expect(isLightAttached(attachLightToToken(createLightItem('torch', { x: 0.5, y: 0.5 })!, 'sc'))).toBe(true)
     expect(isLightAttached(createLightItem('torch', { x: 0.5, y: 0.5 })!)).toBe(false)
+  })
+
+  it('updateLightSource actualiza propiedades preservando el resto sin mutar', () => {
+    const item = createLightItem('torch', { x: 0.5, y: 0.5 })!
+    const upd = updateLightSource(item, { color: '#00ff00', intensity: 0.4 })!
+    expect(upd).not.toBe(item)
+    expect((upd.metadata as LightMetadata).source.color).toBe('#00ff00')
+    expect((upd.metadata as LightMetadata).source.intensity).toBe(0.4)
+    expect((upd.metadata as LightMetadata).source.mode).toBe('hard')
+    expect((upd.metadata as LightMetadata).source.radius).toBeCloseTo(0.15, 5)
+    expect((item.metadata as LightMetadata).source.color).toBe('#ff9d45')
+  })
+
+  it('updateLightSource cambia a directional y normaliza angle por defecto', () => {
+    const item = createLightItem('candle', { x: 0.5, y: 0.5 })!
+    const upd = updateLightSource(item, { mode: 'directional' })!
+    expect((upd.metadata as LightMetadata).source.mode).toBe('directional')
+    expect((upd.metadata as LightMetadata).source.angle).toBe(90)
+  })
+
+  it('updateLightSource devuelve null si el item no es luz', () => {
+    const item = { ...createLightItem('torch', { x: 0.5, y: 0.5 })!, metadata: { type: 'wall' } }
+    expect(updateLightSource(item as never, { color: '#fff' })).toBeNull()
   })
 })
