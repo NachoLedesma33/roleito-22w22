@@ -99,3 +99,19 @@ export function createLightItem(
     metadata: { type: 'light', source },
   }
 }
+
+export function attachLightToToken(light: SceneItem, tokenId: string): SceneItem {
+  const meta = light.metadata as LightMetadata
+  return { ...light, metadata: { ...meta, attachedTo: tokenId } }
+}
+
+export function detachLight(light: SceneItem): SceneItem {
+  const meta = light.metadata as LightMetadata
+  const next = { ...meta }
+  delete next.attachedTo
+  return { ...light, metadata: next }
+}
+
+export function isLightAttached(light: SceneItem): boolean {
+  return light.metadata?.type === 'light' && !!((light.metadata as LightMetadata).attachedTo)
+}

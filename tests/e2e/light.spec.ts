@@ -1,8 +1,10 @@
 import { expect, test } from '../fixtures/campaign-fixture';
 import {
+  createCharacter,
   createScene,
   getSceneItems,
   putSceneItems,
+  seedToken,
   PNG_1PX,
 } from '../helpers/api-helpers';
 
@@ -108,5 +110,30 @@ test.describe('Lighting (Phase E)', () => {
     expect(lights).toHaveLength(1);
     expect(lights[0].name).toBe('Torch');
     expect((lights[0].metadata as { source: { mode: string } }).source.mode).toBe('hard');
+  });
+
+  test('E-l3: light adjunta a token sobrevive roundtrip y render no rompe', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    const scene = await createScene(request, campaign.id, 'Light Attach Inject');
+    const char = await createCharacter(request, campaign.id, { name: 'Bruma Guard' });
+    const [token] = await seedToken(request, campaign.id, scene.id, 'character', char.id, 0, 0);
+    const withAttach = {
+      ...lightItem('light-e2e-a1', { mode: 'hard', color: '#ff9d45', intensity: 0.85, radius: 0.15 }),
+      metadata: { type: 'light', attachedTo: token.id, source: { mode: 'hard', color: '#ff9d45', intensity: 0.85, radius: 0.15 } },
+    };
+    await putSceneItems(request, campaign.id, scene.id, [withAttach]);
+    const errors: string[] = [];
+    page.on('pageerror', (err) => errors.push(err.message));
+
+    await openScene(page, campaign.id, scene.id);
+
+    expect(errors).toHaveLength(0);
+    const { items } = await getSceneItems(request, campaign.id, scene.id);
+    const lights = lightItems(items);
+    expect(lights).toHaveLength(1);
+    expect((lights[0].metadata as { attachedTo: string }).attachedTo).toBe(token.id);
   });
 });

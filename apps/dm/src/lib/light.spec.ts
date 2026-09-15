@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
   LIGHT_PRESETS,
+  attachLightToToken,
   clampIntensity,
   coneSectorPoints,
   createLightItem,
+  detachLight,
   hexToRgba,
+  isLightAttached,
   lightGlowOpacity,
   normalizeLightConfig,
 } from './light'
@@ -109,5 +112,26 @@ describe('light/helpers', () => {
     }
     expect(lightGlowOpacity(hard)).toBeCloseTo(0.45)
     expect(lightGlowOpacity(soft)).toBeCloseTo(0.275)
+  })
+
+  it('attachLightToToken asocia metadata.attachedTo sin mutar el original', () => {
+    const item = createLightItem('torch', { x: 0.5, y: 0.5 })!
+    const attached = attachLightToToken(item, 'scenechar-42')
+    expect(attached).not.toBe(item)
+    expect((attached.metadata as LightMetadata).attachedTo).toBe('scenechar-42')
+    expect((item.metadata as LightMetadata).attachedTo).toBeUndefined()
+  })
+
+  it('detachLight elimina attachedTo sin mutar el original', () => {
+    const item = attachLightToToken(createLightItem('torch', { x: 0.5, y: 0.5 })!, 'scenechar-7')
+    const detached = detachLight(item)
+    expect(detached).not.toBe(item)
+    expect((detached.metadata as LightMetadata).attachedTo).toBeUndefined()
+    expect((item.metadata as LightMetadata).attachedTo).toBe('scenechar-7')
+  })
+
+  it('isLightAttached distingue luz adjunta de una libre', () => {
+    expect(isLightAttached(attachLightToToken(createLightItem('torch', { x: 0.5, y: 0.5 })!, 'sc'))).toBe(true)
+    expect(isLightAttached(createLightItem('torch', { x: 0.5, y: 0.5 })!)).toBe(false)
   })
 })

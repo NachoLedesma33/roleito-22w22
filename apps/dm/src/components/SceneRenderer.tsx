@@ -33,6 +33,7 @@ interface SceneEntity {
   rotation?: number;
   tokenScale?: number;
   brightness?: number;
+  attachesLight?: boolean;
 }
 
 interface SceneRendererProps {
@@ -77,6 +78,7 @@ interface SceneRendererProps {
   onZoneFogSelect?: (snap: import('./ZonePortal').EdgeSnap) => void;
   lightPlace?: { preset: string } | null;
   onLightPlace?: (point: { x: number; y: number }) => void;
+  lightAttach?: { lightId: string | null } | null;
 }
 
 type DragStarter = (
@@ -513,6 +515,7 @@ export default function SceneRenderer({
   onZoneFogSelect,
   lightPlace = null,
   onLightPlace,
+  lightAttach = null,
 }: SceneRendererProps) {
   const visibleChars = useMemo(() => characters.filter((c) => c.visible), [characters]);
   const renderItems = useMemo(() => {
@@ -523,11 +526,22 @@ export default function SceneRenderer({
         return a.zIndex - b.zIndex
       })
   }, [items, showZones]);
+  const attachedLightPos = useMemo(() => {
+    const pos = new Map<string, [number, number, number]>();
+    for (const item of items) {
+      const meta = item.metadata as { type?: string; attachedTo?: string } | undefined;
+      if (item.visible && meta?.type === 'light' && meta.attachedTo) {
+        const ch = visibleChars.find((c) => c.sceneCharId === meta.attachedTo);
+        if (ch) pos.set(item.id, [ch.x, 0, ch.z]);
+      }
+    }
+    return pos;
+  }, [items, visibleChars]);
   const fogRegions = useMemo(
     () => [...extractFogRegions(items), ...(playerFogRegions ?? [])],
     [items, playerFogRegions],
   );
-  const drawing = !!drawState || !!zoneDraft || !!portalDraft || !!fogBrush || !!fogRect || zoneFogActive || !!lightPlace;
+  const drawing = !!drawState || !!zoneDraft || !!portalDraft || !!fogBrush || !!fogRect || zoneFogActive || !!lightPlace || !!lightAttach;
   const hasDrag = !drawing && (!readOnly || (movableEntityIds && movableEntityIds.length > 0));
   const justSelectedRef = useRef(false);
   const [imageAspect, setImageAspect] = useState(1);
@@ -608,6 +622,7 @@ export default function SceneRenderer({
           onContextMenu={onItemContextMenu ? (e) => onItemContextMenu(item.id, e.clientX, e.clientY) : undefined}
           mapScale={mapScale}
           imageAspect={imageAspect}
+          positionOverride={item.metadata.type === 'light' ? attachedLightPos.get(item.id) : undefined}
         />
       ))}
       {drawState && onDrawStart && onDrawMove && onDrawEnd && (

@@ -10,7 +10,7 @@ import { createEmptyZoneDraft, createZoneItem, ZONE_COLORS, ZONE_DEFAULT_COLOR, 
 import { createEmptyPortalDraft, type PortalDraft } from '@/components/PortalDrawerCanvas';
 import { createPortalBetween, buildPortalLocalEdge, cyclePortalState, removePortal, zonesToGeometry } from '@/components/ZonePortal';
 import { circlePoints, toggleZoneFog } from '@/lib/fogMask';
-import { createLightItem, LIGHT_PRESETS } from '@/lib/light';
+import { createLightItem, LIGHT_PRESETS, attachLightToToken, detachLight } from '@/lib/light';
 import DoorContextMenu from '@/components/DoorContextMenu';
 import WallContextMenu from '@/components/WallContextMenu';
 import ZoneContextMenu from '@/components/ZoneContextMenu';
@@ -77,6 +77,7 @@ export default function DmDashboard() {
   const lastFogPointRef = useRef<{ x: number; y: number } | null>(null);
   const [zoneFogActive, setZoneFogActive] = useState(false);
   const [lightPlaceMode, setLightPlaceMode] = useState<{ preset: string } | null>(null);
+  const [attachLightMode, setAttachLightMode] = useState<{ lightId: string | null } | null>(null);
   const [zoneColor, setZoneColor] = useState(ZONE_DEFAULT_COLOR);
   const [wallMaterial, setWallMaterial] = useState<'stone' | 'wood' | 'metal' | 'glass' | 'magic'>('stone');
   const [doorMaterial, setDoorMaterial] = useState<'wood' | 'metal' | 'glass' | 'magic'>('wood');
@@ -519,6 +520,63 @@ export default function DmDashboard() {
     handleItemsChange(graphRef.getItems())
   }, [lightPlaceMode, activeScene, graphRef, handleItemsChange])
 
+  const startAttachLightMode = useCallback(() => {
+    setDrawState(null)
+    setZoneDraft(null)
+    setPortalDraft(null)
+    setFogMode(null)
+    setRectFogMode(null)
+    setZoneFogActive(false)
+    setLightPlaceMode(null)
+    setAttachLightMode((prev) => {
+      if (prev) return null
+      return { lightId: null }
+    })
+    setBuildMenuOpen(false)
+  }, [])
+
+  const handleAttachComplete = useCallback((tokenId: string) => {
+    if (!attachLightMode?.lightId) return
+    const lightId = attachLightMode.lightId
+    const light = graphRef.getItem(lightId)
+    if (!light || light.metadata.type !== 'light') return
+    const attached = attachLightToToken(light, tokenId)
+    graphRef.updateItem(lightId, attached)
+    handleItemsChange(graphRef.getItems())
+    setAttachLightMode(null)
+    setSelectedItemId(null)
+    setSelectedTokenId(null)
+    setToastQueue((prev) => [...prev.slice(-4), {
+      id: `attach-${Date.now()}`,
+      rollerName: 'Light',
+      diceType: 1,
+      count: 1,
+      results: [1],
+      total: 1,
+      label: 'light attached to token',
+      timestamp: Date.now(),
+    }])
+  }, [attachLightMode, graphRef, handleItemsChange])
+
+  const handleLightDetach = useCallback((lightId: string) => {
+    const light = graphRef.getItem(lightId)
+    if (!light || light.metadata.type !== 'light') return
+    graphRef.updateItem(lightId, detachLight(light))
+    handleItemsChange(graphRef.getItems())
+    setSelectedItemId(null)
+    setAttachLightMode(null)
+    setToastQueue((prev) => [...prev.slice(-4), {
+      id: `detach-${Date.now()}`,
+      rollerName: 'Light',
+      diceType: 1,
+      count: 1,
+      results: [1],
+      total: 1,
+      label: 'light detached from token',
+      timestamp: Date.now(),
+    }])
+  }, [graphRef, handleItemsChange])
+
   const handleZoneFogSelect = useCallback((snap: { zoneId: string }) => {
     const mScale = activeScene?.map_scale ?? 1
     const mapSize = 10 * mScale
@@ -609,6 +667,18 @@ export default function DmDashboard() {
     if (item?.metadata.type === 'door') toggleDoor(itemId)
   }, [toggleDoor, graphRef])
 
+  const handleItemClickForAttach = useCallback((itemId: string) => {
+    if (attachLightMode) {
+      const item = graphRef.getItem(itemId)
+      if (item?.metadata.type === 'light') {
+        setSelectedItemId(itemId)
+        setAttachLightMode((prev) => prev ? { lightId: prev.lightId === itemId ? null : itemId } : prev)
+      }
+      return
+    }
+    handleDoorItemClick(itemId)
+  }, [attachLightMode, graphRef, handleDoorItemClick])
+
   const handleDoorContextMenu = useCallback((itemId: string, clientX: number, clientY: number) => {
     const item = graphRef.getItem(itemId)
     if (item?.metadata.type === 'door') {
@@ -637,6 +707,7 @@ export default function DmDashboard() {
         else if (rectFogMode) setRectFogMode(null)
         else if (zoneFogActive) setZoneFogActive(false)
         else if (lightPlaceMode) setLightPlaceMode(null)
+        else if (attachLightMode) setAttachLightMode(null)
         else setSelectedItemId(null)
       }
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedItemId) {
@@ -647,7 +718,7 @@ export default function DmDashboard() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [drawState, zoneDraft, portalDraft, fogMode, rectFogMode, zoneFogActive, lightPlaceMode, selectedItemId, handleDeleteItem])
+  }, [drawState, zoneDraft, portalDraft, fogMode, rectFogMode, zoneFogActive, lightPlaceMode, attachLightMode, selectedItemId, handleDeleteItem])
 
   useEffect(() => {
     for (const sc of sceneChars) {
@@ -782,6 +853,10 @@ export default function DmDashboard() {
   };
 
   const handleTokenClick = useCallback((tokenId: string) => {
+    if (attachLightMode?.lightId) {
+      handleAttachComplete(tokenId)
+      return
+    }
     if (!tokenId) {
       setSelectedTokenId(null);
       setSelectedItemId(null);
@@ -805,7 +880,7 @@ export default function DmDashboard() {
     setDistanceFrom(null);
     setDistanceTo(null);
     setSelectedTokenId((prev) => prev === tokenId ? null : tokenId);
-  }, [distanceFrom]);
+  }, [distanceFrom, attachLightMode, handleAttachComplete]);
 
   const handleTokenDrop = useCallback(async (sceneCharId: string, x: number, z: number) => {
     if (!campaignId || !activeScene) return;
@@ -1170,7 +1245,7 @@ export default function DmDashboard() {
             <div ref={buildMenuRef} className="relative shrink-0">
               <button
                 onClick={() => setBuildMenuOpen(!buildMenuOpen)}
-                className={`text-xs px-2 py-1 rounded transition-colors ${drawState || zoneDraft || portalDraft || fogMode || rectFogMode || zoneFogActive ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                className={`text-xs px-2 py-1 rounded transition-colors ${drawState || zoneDraft || portalDraft || fogMode || rectFogMode || zoneFogActive || lightPlaceMode || attachLightMode ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
               >
                 🧱 Build ▾
               </button>
@@ -1229,6 +1304,12 @@ export default function DmDashboard() {
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${lightPlaceMode ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
                   >
                     💡 Light (place)
+                  </button>
+                  <button
+                    onClick={startAttachLightMode}
+                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${attachLightMode ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
+                  >
+                    🔗 Light → token
                   </button>
                   <div className="border-t border-[var(--bg-tertiary)] my-1" />
                   <div className="px-3 py-1">
@@ -1419,6 +1500,27 @@ export default function DmDashboard() {
                 </span>
               </>
             )}
+            {attachLightMode && (
+              <span className="text-[10px] text-amber-400 shrink-0">
+                {attachLightMode.lightId
+                  ? '🔗 Now click a token to attach this light · ESC to cancel'
+                  : '🔗 Click a light source, then a token · ESC to cancel'}
+              </span>
+            )}
+            {attachLightMode?.lightId && (() => {
+              const selected = graphRef.getItem(attachLightMode.lightId!)
+              if (selected?.metadata.type !== 'light' || !(selected.metadata as { attachedTo?: string }).attachedTo) return null
+              return (
+                <div className="flex items-center gap-1 bg-[var(--bg-tertiary)] rounded px-1.5 py-0.5 shrink-0">
+                  <button
+                    onClick={() => handleLightDetach(attachLightMode.lightId!)}
+                    className="text-[10px] px-2 py-0.5 rounded bg-red-600 text-white hover:bg-red-700 transition-colors"
+                  >
+                    Detach
+                  </button>
+                </div>
+              )
+            })()}
           </>
         }
       >
@@ -1754,10 +1856,11 @@ export default function DmDashboard() {
                 onZoneFogSelect={handleZoneFogSelect}
                 lightPlace={lightPlaceMode}
                 onLightPlace={handleLightPlace}
+                lightAttach={attachLightMode}
                 onTokenClick={handleTokenClick}
                 onTokenDrop={handleTokenDrop}
                 onTokenContextMenu={handleTokenContextMenu}
-                onItemClick={handleDoorItemClick}
+                onItemClick={handleItemClickForAttach}
                 onItemContextMenu={(itemId, clientX, clientY) => {
                   const item = graphRef.getItem(itemId)
                   if (item?.metadata.type === 'door') handleDoorContextMenu(itemId, clientX, clientY)

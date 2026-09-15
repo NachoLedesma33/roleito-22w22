@@ -21,9 +21,10 @@ interface ItemRendererProps {
   onContextMenu?: (e: MouseEvent) => void
   mapScale?: number
   imageAspect?: number
+  positionOverride?: [number, number, number]
 }
 
-export default function ItemRenderer({ item, isSelected, showZones = false, onClick, onContextMenu, mapScale = 1, imageAspect = 1 }: ItemRendererProps) {
+export default function ItemRenderer({ item, isSelected, showZones = false, onClick, onContextMenu, mapScale = 1, imageAspect = 1, positionOverride }: ItemRendererProps) {
   const groupRef = useRef<THREE.Group>(null)
 
   useFrame((state) => {
@@ -43,7 +44,7 @@ export default function ItemRenderer({ item, isSelected, showZones = false, onCl
   }
 
   if (item.metadata.type === 'light') {
-    return <LightRenderer item={item} isSelected={isSelected} onClick={onClick} onContextMenu={onContextMenu} mapScale={mapScale} />
+    return <LightRenderer item={item} isSelected={isSelected} onClick={onClick} onContextMenu={onContextMenu} mapScale={mapScale} positionOverride={positionOverride} />
   }
 
   if (item.metadata.type === 'wall' && item.shape?.type === 'line') {
@@ -432,11 +433,12 @@ function ZonePortalMarkers({ nodes }: { nodes: { points: THREE.Vector3[]; color:
   )
 }
 
-function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1 }: ItemRendererProps) {
+function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, positionOverride }: ItemRendererProps) {
   const meta = item.metadata as LightMetadata
   const source = normalizeLightConfig(meta.source)
   const mapHeight = 10 * mapScale
   const radians = (deg: number) => (deg * Math.PI) / 180
+  const attached = !!meta.attachedTo
 
   const glowOpacity = lightGlowOpacity(meta)
 
@@ -512,7 +514,7 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1 
 
   return (
     <group
-      position={[item.x, 0, item.y]}
+      position={positionOverride ?? [item.x, 0, item.y]}
       rotation={[0, source.direction || 0, 0]}
       onClick={(e) => { e.stopPropagation(); onClick?.() }}
       onContextMenu={(e) => { e.stopPropagation(); onContextMenu?.(e.nativeEvent) }}
@@ -520,6 +522,12 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1 
       {halo}
       {source.mode !== 'directional' && (
         <LineLoopPoints radius={ringRadius} position={y} />
+      )}
+      {attached && (
+        <mesh position={[0, 0.26, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0.11, 0.15, 32]} />
+          <meshBasicMaterial color="#f59e0b" transparent opacity={0.9} side={THREE.DoubleSide} />
+        </mesh>
       )}
       <mesh position={[0, 0.15, 0]}>
         <sphereGeometry args={[0.09, 16, 16]} />
