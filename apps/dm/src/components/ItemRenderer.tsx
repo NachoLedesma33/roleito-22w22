@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import { SceneItem, ZoneMetadata, LightMetadata } from '@core/domain/types'
 import { PORTAL_COLORS } from './ZonePortal'
 import { normalizeLightConfig, lightGlowOpacity, hexToRgba } from '../lib/light'
+import { lightShapePoints } from '../lib/lightOcclusion'
 
 const TOKEN_COLORS: Record<string, string> = {
   character: '#4ade80',
@@ -22,9 +23,10 @@ interface ItemRendererProps {
   mapScale?: number
   imageAspect?: number
   positionOverride?: [number, number, number]
+  occluders?: import('@/lib/lightOcclusion').Occluder[]
 }
 
-export default function ItemRenderer({ item, isSelected, showZones = false, onClick, onContextMenu, mapScale = 1, imageAspect = 1, positionOverride }: ItemRendererProps) {
+export default function ItemRenderer({ item, isSelected, showZones = false, onClick, onContextMenu, mapScale = 1, imageAspect = 1, positionOverride, occluders }: ItemRendererProps) {
   const groupRef = useRef<THREE.Group>(null)
 
   useFrame((state) => {
@@ -44,7 +46,7 @@ export default function ItemRenderer({ item, isSelected, showZones = false, onCl
   }
 
   if (item.metadata.type === 'light') {
-    return <LightRenderer item={item} isSelected={isSelected} onClick={onClick} onContextMenu={onContextMenu} mapScale={mapScale} positionOverride={positionOverride} />
+    return <LightRenderer item={item} isSelected={isSelected} onClick={onClick} onContextMenu={onContextMenu} mapScale={mapScale} positionOverride={positionOverride} occluders={occluders} />
   }
 
   if (item.metadata.type === 'wall' && item.shape?.type === 'line') {
@@ -433,7 +435,7 @@ function ZonePortalMarkers({ nodes }: { nodes: { points: THREE.Vector3[]; color:
   )
 }
 
-function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, positionOverride }: ItemRendererProps) {
+function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, positionOverride, occluders }: ItemRendererProps) {
   const meta = item.metadata as LightMetadata
   const source = normalizeLightConfig(meta.source)
   const mapHeight = 10 * mapScale
@@ -483,8 +485,41 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
 
   const ringRadius = source.radius * mapHeight
   const y = 0.045
+  const lightOx = (positionOverride?.[0] ?? item.x)
+  const lightOz = (positionOverride?.[2] ?? item.y)
+
+  const occludedGeometry = useMemo(() => {
+    if (!occluders || occluders.length === 0) return null
+    const pts = lightShapePoints(
+      lightOx,
+      lightOz,
+      ringRadius,
+      source.mode === 'directional' ? (source.direction ?? 0) : null,
+      source.angle ?? 90,
+      occluders,
+    )
+    const shape = new THREE.Shape()
+    shape.moveTo(pts[0][0], pts[0][1])
+    for (let i = 1; i < pts.length; i++) shape.lineTo(pts[i][0], pts[i][1])
+    const geo = new THREE.ShapeGeometry(shape, 1)
+    geo.rotateX(-Math.PI / 2)
+    return geo
+  }, [occluders, lightOx, lightOz, ringRadius, source.mode, source.direction, source.angle])
 
   const halo = (() => {
+    if (occludedGeometry) {
+      return (
+        <mesh geometry={occludedGeometry} position={[0, y, 0]}>
+          <meshBasicMaterial
+            map={glowTexture}
+            transparent
+            opacity={glowOpacity}
+            side={THREE.DoubleSide}
+            depthWrite={false}
+          />
+        </mesh>
+      )
+    }
     if (source.mode === 'directional' && sectorGeometry) {
       return (
         <mesh geometry={sectorGeometry} position={[0, y, 0]}>

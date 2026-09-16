@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import TokenSprite from './TokenSprite';
 import TokenModel from './TokenModel';
 import ItemRenderer from './ItemRenderer';
+import { buildOccluders } from '../lib/lightOcclusion';
 import WallDrawerCanvas from './WallDrawerCanvas';
 import ZoneDrawerCanvas from './ZoneDrawerCanvas';
 import PortalDrawerCanvas, { createEmptyPortalDraft, type PortalDraft } from './PortalDrawerCanvas';
@@ -547,6 +548,10 @@ export default function SceneRenderer({
   const [imageAspect, setImageAspect] = useState(1);
   const mapHeight = 10 * mapScale;
   const mapWidth = mapHeight * imageAspect;
+  const occluders = useMemo(
+    () => buildOccluders(items ?? [], mapWidth, mapHeight),
+    [items, mapWidth, mapHeight],
+  );
   const maxDistance = Math.max(25, mapScale * 15);
 
   useEffect(() => {
@@ -623,6 +628,7 @@ export default function SceneRenderer({
           mapScale={mapScale}
           imageAspect={imageAspect}
           positionOverride={item.metadata.type === 'light' ? attachedLightPos.get(item.id) : undefined}
+          occluders={occluders}
         />
       ))}
       {drawState && onDrawStart && onDrawMove && onDrawEnd && (

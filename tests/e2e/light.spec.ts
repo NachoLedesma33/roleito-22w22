@@ -136,4 +136,67 @@ test.describe('Lighting (Phase E)', () => {
     expect(lights).toHaveLength(1);
     expect((lights[0].metadata as { attachedTo: string }).attachedTo).toBe(token.id);
   });
+
+  test('E-l4: luz con wall+zonas presentes ocultan render sin romper', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    const scene = await createScene(request, campaign.id, 'Light Occlusion');
+    const wall = {
+      id: 'wall-e2e-1',
+      name: 'Wall',
+      x: 0,
+      y: 0,
+      zIndex: 1,
+      scale: 1,
+      rotation: 0,
+      width: 0,
+      height: 0,
+      opacity: 1,
+      visible: true,
+      locked: false,
+      disableHit: false,
+      disableAutoZIndex: false,
+      attachmentIds: [],
+      disableAttachmentBehavior: [],
+      layer: 2,
+      shape: { type: 'line', points: [0.4, 0.2, 0.6, 0.2], stroke: '#fff', strokeWidth: 1 },
+      metadata: { type: 'wall', wallType: 'solid', material: 'stone', height: 1, thickness: 1, opacity: 1, lineOfSight: true, movement: true, soundOcclusion: 1 },
+    };
+    const zone = {
+      id: 'zone-e2e-1',
+      name: 'Zone',
+      x: 0,
+      y: 0,
+      zIndex: 1,
+      scale: 1,
+      rotation: 0,
+      width: 0,
+      height: 0,
+      opacity: 1,
+      visible: true,
+      locked: false,
+      disableHit: false,
+      disableAutoZIndex: false,
+      attachmentIds: [],
+      disableAttachmentBehavior: [],
+      layer: 2,
+      shape: { type: 'polygon', points: [0.7, 0.2, 0.9, 0.2, 0.9, 0.5, 0.7, 0.5], fill: '#fff', stroke: '#fff' },
+      metadata: { type: 'zone', zoneType: 'polygon', origin: 'manual', touchedByDm: true, shadowOnly: false, fillColor: '#fff', fillOpacity: 0.3, portals: [] },
+    };
+    await putSceneItems(request, campaign.id, scene.id, [
+      wall,
+      zone,
+      lightItem('light-e2e-occ', { mode: 'hard', color: '#ff9d45', intensity: 0.85, radius: 0.4 }),
+    ]);
+    const errors: string[] = [];
+    page.on('pageerror', (err) => errors.push(err.message));
+
+    await openScene(page, campaign.id, scene.id);
+
+    expect(errors).toHaveLength(0);
+    const { items } = await getSceneItems(request, campaign.id, scene.id);
+    expect(items.length).toBe(3);
+  });
 });
