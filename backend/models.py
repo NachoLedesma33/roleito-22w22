@@ -250,6 +250,7 @@ class SceneCharacter(Base):
     vz = Column(Float, default=0.0)
     vrot = Column(Float, default=0.0)
     last_move_at = Column(Float, default=0.0)
+    facing_offset = Column(Float, default=0.0)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 

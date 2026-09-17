@@ -44,6 +44,7 @@ MIGRATIONS = [
     ("scene_characters", "vz", "ALTER TABLE scene_characters ADD COLUMN vz FLOAT DEFAULT 0.0"),
     ("scene_characters", "vrot", "ALTER TABLE scene_characters ADD COLUMN vrot FLOAT DEFAULT 0.0"),
     ("scene_characters", "last_move_at", "ALTER TABLE scene_characters ADD COLUMN last_move_at FLOAT DEFAULT 0.0"),
+    ("scene_characters", "facing_offset", "ALTER TABLE scene_characters ADD COLUMN facing_offset FLOAT DEFAULT 0.0"),
     ("scenes", "items_json", "ALTER TABLE scenes ADD COLUMN items_json TEXT DEFAULT '[]'"),
 ]
 
@@ -52,6 +53,9 @@ VIDA_ATTRS = ["vigor", "intelligence", "dexterity", "cunning"]
 DATA_MIGRATIONS = [
     # VIDA cualitativo: atributos numéricos legacy → "/" (neutro)
     *[f"UPDATE {t} SET {a} = '/' WHERE typeof({a}) = 'integer'" for t in ("characters", "npcs") for a in VIDA_ATTRS],
+    # Rotaciones legacy almacenadas en grados (|r| > π) → radianes. Toda la
+    # convención runtime es en radianes; idempotente (tras convertir |r| ≤ π).
+    "UPDATE scene_characters SET rotation = rotation * pi() / 180 WHERE ABS(rotation) > pi()",
 ]
 
 

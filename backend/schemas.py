@@ -393,6 +393,7 @@ class SceneUpdate(BaseModel):
 
 
 class SceneCharacterPosition(BaseModel):
+    id: Optional[str] = None
     entity_type: str
     entity_id: str
     x: float = 0.0
@@ -404,6 +405,7 @@ class SceneCharacterPosition(BaseModel):
     token_scale: float = 1.0
     move_speed: float = 1.0
     brightness: float = 0.0
+    facing_offset: float = 0.0
 
 
 class SceneResponse(BaseModel):
@@ -448,6 +450,7 @@ class SceneCharacterResponse(BaseModel):
     vz: float = 0.0
     vrot: float = 0.0
     last_move_at: float = 0.0
+    facing_offset: float = 0.0
 
     class Config:
         from_attributes = True

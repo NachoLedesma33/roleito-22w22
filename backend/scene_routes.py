@@ -335,6 +335,12 @@ def get_scene_static_url(file_path: str) -> str | None:
     return normalized[idx + 1:]
 
 
+def _normalize_rotation(r: float | None) -> float:
+    if r is None:
+        return 0.0
+    return round(r % (2 * math.pi) + math.pi, 6) % (2 * math.pi) - math.pi
+
+
 @router.put("/campaigns/{campaign_id}/scenes/{scene_id}/characters", response_model=list[SceneCharacterResponse])
 async def update_scene_characters(
     campaign_id: str,
@@ -372,6 +378,7 @@ async def update_scene_characters(
         x = max(-map_w / 2 + token_radius, min(map_w / 2 - token_radius, ch.x))
         z = max(-map_h / 2 + token_radius, min(map_h / 2 - token_radius, ch.z))
         sc = SceneCharacter(
+            id=ch.id if ch.id else None,
             scene_id=scene_id,
             entity_type=ch.entity_type,
             entity_id=ch.entity_id,
@@ -380,10 +387,11 @@ async def update_scene_characters(
             z=z,
             visible=1 if ch.visible else 0,
             order=ch.order,
-            rotation=ch.rotation,
+            rotation=_normalize_rotation(ch.rotation),
             token_scale=ch.token_scale,
             move_speed=ch.move_speed,
             brightness=ch.brightness,
+            facing_offset=ch.facing_offset,
         )
         db.add(sc)
         created.append(sc)
@@ -456,7 +464,7 @@ async def player_move_character(
     prev_x = sc.x
     prev_z = sc.z
     prev_rot = sc.rotation or 0.0
-    new_rot = round(data.rotation % (2 * math.pi) + math.pi, 6) % (2 * math.pi) - math.pi
+    new_rot = _normalize_rotation(data.rotation)
 
     sc.x = data.x
     sc.z = data.z

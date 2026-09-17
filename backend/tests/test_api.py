@@ -156,6 +156,28 @@ async def test_light_request_resolve_missing_404(client):
 
 
 @pytest.mark.asyncio
+async def test_update_scene_characters_normalizes_rotation(client):
+    camp = (await client.post("/api/campaigns", json={"name": "Rot Camp"})).json()
+    scen = (await client.post(f"/api/campaigns/{camp['id']}/scenes", json={"name": "Arena"})).json()
+    cid = camp["id"]
+    sid = scen["id"]
+
+    res = await client.put(
+        f"/api/campaigns/{cid}/scenes/{sid}/characters",
+        json=[
+            {"entity_type": "character", "entity_id": "char-a", "x": 0.0, "z": 0.0,
+             "rotation": 4.5 * math.pi, "visible": True, "order": 0},
+            {"entity_type": "character", "entity_id": "char-b", "x": 1.0, "z": 1.0,
+             "rotation": 0.0, "visible": True, "order": 1},
+        ],
+    )
+    assert res.status_code == 200, res.text
+    got = {c["entity_id"]: c["rotation"] for c in res.json()}
+    assert got["char-a"] == pytest.approx(math.pi / 2)
+    assert got["char-b"] == pytest.approx(0.0, abs=1e-5)
+
+
+@pytest.mark.asyncio
 async def test_player_move_normalizes_rotation_and_clamps(client):
     camp = (await client.post("/api/campaigns", json={"name": "Move Camp"})).json()
     scen = (await client.post(f"/api/campaigns/{camp['id']}/scenes", json={"name": "Arena"})).json()
