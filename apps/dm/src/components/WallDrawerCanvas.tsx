@@ -2,12 +2,15 @@ import { useCallback, useRef } from 'react'
 import { useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { DrawState } from './WallDrawer'
+import { getY } from '../lib/overlayY'
+import type { RenderMode } from '../lib/overlayY'
 
 interface WallDrawerCanvasProps {
   drawState: DrawState | null
   onDrawStart: (point: { x: number; y: number }) => void
   onDrawMove: (point: { x: number; y: number }) => void
   onDrawEnd: () => void
+  renderMode?: RenderMode
 }
 
 export default function WallDrawerCanvas({
@@ -15,9 +18,11 @@ export default function WallDrawerCanvas({
   onDrawStart,
   onDrawMove,
   onDrawEnd,
+  renderMode = '2d',
 }: WallDrawerCanvasProps) {
   const planeRef = useRef<THREE.Mesh>(null)
   const { camera, raycaster } = useThree()
+  const Y = getY(renderMode)
 
   const getScenePoint = useCallback((e: MouseEvent | THREE.Event) => {
     if (!planeRef.current) return null
@@ -56,8 +61,8 @@ export default function WallDrawerCanvas({
 
   const previewPoints = drawState.startPoint && drawState.currentPoint
     ? [
-        new THREE.Vector3(drawState.startPoint.x, 0.08, drawState.startPoint.y),
-        new THREE.Vector3(drawState.currentPoint.x, 0.08, drawState.currentPoint.y),
+        new THREE.Vector3(drawState.startPoint.x, Y.draft, drawState.startPoint.y),
+        new THREE.Vector3(drawState.currentPoint.x, Y.draft, drawState.currentPoint.y),
       ]
     : []
 

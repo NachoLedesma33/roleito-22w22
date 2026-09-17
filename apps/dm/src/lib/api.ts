@@ -366,6 +366,7 @@ export interface SceneCharacter {
   token_scale: number;
   move_speed: number;
   brightness: number;
+  facing_offset: number;
   vx?: number;
   vz?: number;
   vrot?: number;
@@ -665,7 +666,7 @@ export const api = {
     },
     getCharacters: (campaignId: string, sceneId: string) =>
       request<SceneCharacter[]>(`/campaigns/${campaignId}/scenes/${sceneId}/characters`),
-    updateCharacters: (campaignId: string, sceneId: string, characters: { entity_type: string; entity_id: string; x: number; y: number; z: number; visible: boolean; order: number; rotation?: number; token_scale?: number; move_speed?: number; brightness?: number }[]) =>
+    updateCharacters: (campaignId: string, sceneId: string, characters: { id?: string; entity_type: string; entity_id: string; x: number; y: number; z: number; visible: boolean; order: number; rotation?: number; token_scale?: number; move_speed?: number; brightness?: number; facing_offset?: number }[]) =>
       request<SceneCharacter[]>(`/campaigns/${campaignId}/scenes/${sceneId}/characters`, {
         method: 'PUT',
         body: JSON.stringify(characters),

@@ -1,12 +1,15 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import type { ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
+import { getY } from '../lib/overlayY'
+import type { RenderMode } from '../lib/overlayY'
 
 interface FogRectCanvasProps {
   reveal: boolean
   mapWidth: number
   mapHeight: number
   onRect: (points: number[]) => void
+  renderMode?: RenderMode
 }
 
 const MIN_RECT = 0.015
@@ -16,11 +19,13 @@ export default function FogRectCanvas({
   mapWidth,
   mapHeight,
   onRect,
+  renderMode = '2d',
 }: FogRectCanvasProps) {
   const draggingRef = useRef(false)
   const startRef = useRef<{ x: number; y: number } | null>(null)
   const currentRef = useRef<{ x: number; y: number } | null>(null)
   const [current, setCurrent] = useState<{ x: number; y: number } | null>(null)
+  const Y = getY(renderMode)
 
   const toNormalized = useCallback(
     (e: ThreeEvent<PointerEvent>) => ({
@@ -119,11 +124,11 @@ export default function FogRectCanvas({
       new THREE.Vector3(hw, hh, 0),
     ]
     return {
-      center: new THREE.Vector3(cx, 0.07, cy),
+      center: new THREE.Vector3(cx, renderMode === '2d' ? Y.fogRectEdge : 0.07, cy),
       fillGeo: (() => { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(fillPts, 3)); return g })(),
       edgeGeo: new THREE.BufferGeometry().setFromPoints(edgePts),
     }
-  }, [current, mapWidth, mapHeight])
+  }, [current, mapWidth, mapHeight, renderMode, Y.fogRectEdge])
 
   return (
     <group>

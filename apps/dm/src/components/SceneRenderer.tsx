@@ -34,6 +34,7 @@ interface SceneEntity {
   rotation?: number;
   tokenScale?: number;
   brightness?: number;
+  facingOffset?: number;
   attachesLight?: boolean;
 }
 
@@ -81,6 +82,7 @@ interface SceneRendererProps {
   lightPlace?: { preset: string } | null;
   onLightPlace?: (point: { x: number; y: number }) => void;
   lightAttach?: { lightId: string | null } | null;
+  renderMode?: import('@/lib/overlayY').RenderMode;
 }
 
 type DragStarter = (
@@ -155,19 +157,20 @@ function SceneLighting({ mode }: { mode: string }) {
   }
 }
 
-function GridOverlay({ width, height, gridSize }: { width: number; height: number; gridSize: number }) {
+function GridOverlay({ width, height, gridSize, renderMode = '2d' }: { width: number; height: number; gridSize: number; renderMode?: import('@/lib/overlayY').RenderMode }) {
+  const gridY = renderMode === '2d' ? 0.015 : 0.02;
   const lines = useMemo(() => {
     const pts: THREE.Vector3[][] = [];
     const halfW = width / 2;
     const halfH = height / 2;
     for (let x = -halfW; x <= halfW; x += gridSize) {
-      pts.push([new THREE.Vector3(x, 0.02, -halfH), new THREE.Vector3(x, 0.02, halfH)]);
+      pts.push([new THREE.Vector3(x, gridY, -halfH), new THREE.Vector3(x, gridY, halfH)]);
     }
     for (let z = -halfH; z <= halfH; z += gridSize) {
-      pts.push([new THREE.Vector3(-halfW, 0.02, z), new THREE.Vector3(halfW, 0.02, z)]);
+      pts.push([new THREE.Vector3(-halfW, gridY, z), new THREE.Vector3(halfW, gridY, z)]);
     }
     return pts;
-  }, [width, height, gridSize]);
+  }, [width, height, gridSize, gridY]);
 
   return (
     <group>
@@ -455,7 +458,7 @@ function DraggableToken({
           type={entity.type}
           position={[0, 0, 0]}
           modelUrl={entity.modelUrl}
-          rotation={entity.rotation ?? 0}
+          rotation={(entity.rotation ?? 0) + (entity.facingOffset ?? 0)}
           isSelected={isSelected}
           tokenScale={entity.tokenScale ?? 1}
           brightness={entity.brightness ?? 0}
@@ -529,6 +532,7 @@ export default function SceneRenderer({
   lightPlace = null,
   onLightPlace,
   lightAttach = null,
+  renderMode = '2d',
 }: SceneRendererProps) {
   const visibleChars = useMemo(() => characters.filter((c) => c.visible), [characters]);
   const renderItems = useMemo(() => {
@@ -539,16 +543,16 @@ export default function SceneRenderer({
         return a.zIndex - b.zIndex
       })
   }, [items, showZones]);
-  const attachedLightPos = useMemo(() => {
-    const pos = new Map<string, [number, number, number]>();
+  const attachedLight = useMemo(() => {
+    const info = new Map<string, { pos: [number, number, number]; rotation: number }>();
     for (const item of items) {
       const meta = item.metadata as { type?: string; attachedTo?: string } | undefined;
       if (item.visible && meta?.type === 'light' && meta.attachedTo) {
         const ch = visibleChars.find((c) => c.sceneCharId === meta.attachedTo);
-        if (ch) pos.set(item.id, [ch.x, 0, ch.z]);
+        if (ch) info.set(item.id, { pos: [ch.x, 0, ch.z], rotation: (ch.rotation ?? 0) + (ch.facingOffset ?? 0) });
       }
     }
-    return pos;
+    return info;
   }, [items, visibleChars]);
   const fogRegions = useMemo(
     () => [...extractFogRegions(items), ...(playerFogRegions ?? [])],
@@ -599,7 +603,7 @@ export default function SceneRenderer({
       <Suspense fallback={null}>
         <SceneBackground url={backgroundUrl} mapScale={mapScale} />
       </Suspense>
-      {gridSize > 0 && <GridOverlay width={mapWidth} height={mapHeight} gridSize={gridSize} />}
+      {gridSize > 0 && <GridOverlay width={mapWidth} height={mapHeight} gridSize={gridSize} renderMode={renderMode} />}
       {hasDrag && (
         <DragController
           onTokenDrop={onTokenDrop}
@@ -640,8 +644,10 @@ export default function SceneRenderer({
           onContextMenu={onItemContextMenu ? (e) => onItemContextMenu(item.id, e.clientX, e.clientY) : undefined}
           mapScale={mapScale}
           imageAspect={imageAspect}
-          positionOverride={item.metadata.type === 'light' ? attachedLightPos.get(item.id) : undefined}
+          positionOverride={item.metadata.type === 'light' ? attachedLight.get(item.id)?.pos : undefined}
+          rotationOverride={item.metadata.type === 'light' ? attachedLight.get(item.id)?.rotation : undefined}
           occluders={occluders}
+          renderMode={renderMode}
         />
       ))}
       {drawState && onDrawStart && onDrawMove && onDrawEnd && (
@@ -650,6 +656,7 @@ export default function SceneRenderer({
           onDrawStart={onDrawStart}
           onDrawMove={onDrawMove}
           onDrawEnd={onDrawEnd}
+          renderMode={renderMode}
         />
       )}
       {zoneDraft && onZoneAddPoint && onZoneDragStart && onZoneDragMove && onZoneDragEnd && onZoneFinish && (
@@ -660,6 +667,7 @@ export default function SceneRenderer({
           onDragMove={onZoneDragMove}
           onDragEnd={onZoneDragEnd}
           onFinishPolygon={onZoneFinish}
+          renderMode={renderMode}
         />
       )}
       {(portalDraft && onPortalSelect && onPortalMove) && (
@@ -670,6 +678,7 @@ export default function SceneRenderer({
           mapHeight={mapHeight}
           onSelect={onPortalSelect}
           onMove={onPortalMove}
+          renderMode={renderMode}
         />
       )}
       {(zoneFogActive && onZoneFogSelect) && (
@@ -681,10 +690,11 @@ export default function SceneRenderer({
           onSelect={onZoneFogSelect}
           onMove={() => {}}
           snapMode="inside"
+          renderMode={renderMode}
         />
       )}
       {fogRegions.length > 0 && (
-        <FogOverlay regions={fogRegions} color={fogColor} mapWidth={mapWidth} mapHeight={mapHeight} />
+        <FogOverlay regions={fogRegions} color={fogColor} mapWidth={mapWidth} mapHeight={mapHeight} renderMode={renderMode} />
       )}
       {fogBrush && onFogPaint && (
         <FogBrushCanvas
@@ -693,6 +703,7 @@ export default function SceneRenderer({
           mapWidth={mapWidth}
           mapHeight={mapHeight}
           onPaint={onFogPaint}
+          renderMode={renderMode}
         />
       )}
       {fogRect && onFogRect && (
@@ -701,6 +712,7 @@ export default function SceneRenderer({
           mapWidth={mapWidth}
           mapHeight={mapHeight}
           onRect={onFogRect}
+          renderMode={renderMode}
         />
       )}
       {lightPlace && onLightPlace && (
@@ -709,6 +721,7 @@ export default function SceneRenderer({
           mapWidth={mapWidth}
           mapHeight={mapHeight}
           onPlace={onLightPlace}
+          renderMode={renderMode}
         />
       )}
       <OrbitControls

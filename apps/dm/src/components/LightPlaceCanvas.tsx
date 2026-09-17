@@ -2,12 +2,15 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 import type { ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import { normalizeLightConfig, LIGHT_PRESETS, hexToRgba } from '../lib/light'
+import { getY } from '../lib/overlayY'
+import type { RenderMode } from '../lib/overlayY'
 
 interface LightPlaceCanvasProps {
   presetKey: string
   mapWidth: number
   mapHeight: number
   onPlace: (point: { x: number; y: number }) => void
+  renderMode?: RenderMode
 }
 
 export default function LightPlaceCanvas({
@@ -15,9 +18,11 @@ export default function LightPlaceCanvas({
   mapWidth,
   mapHeight,
   onPlace,
+  renderMode = '2d',
 }: LightPlaceCanvasProps) {
   const hoverRef = useRef<{ x: number; y: number } | null>(null)
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null)
+  const Y = getY(renderMode)
 
   const preset = useMemo(() => LIGHT_PRESETS[presetKey] ?? LIGHT_PRESETS.torch, [presetKey])
   const source = useMemo(() => normalizeLightConfig(preset), [preset])
@@ -103,7 +108,7 @@ export default function LightPlaceCanvas({
         <meshBasicMaterial transparent opacity={0} />
       </mesh>
       {hover && (
-        <group position={[hover.x * mapWidth - mapWidth / 2, 0.06, hover.y * mapHeight - mapHeight / 2]}>
+        <group position={[hover.x * mapWidth - mapWidth / 2, Y.lightPlaceHover, hover.y * mapHeight - mapHeight / 2]}>
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
             <circleGeometry args={[radius, 32]} />
             <meshBasicMaterial
@@ -117,14 +122,21 @@ export default function LightPlaceCanvas({
           <lineSegments geometry={ringGeo} position={[0, 0.02, 0]}>
             <lineBasicMaterial color={preset.color} transparent opacity={0.8} />
           </lineSegments>
-          <mesh position={[0, 0.12, 0]}>
-            <sphereGeometry args={[0.09, 16, 16]} />
-            <meshStandardMaterial
-              color="#000000"
-              emissive={new THREE.Color(preset.color)}
-              emissiveIntensity={1.2}
-            />
-          </mesh>
+          {renderMode === '2d' ? (
+            <mesh position={[0, 0.025, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+              <ringGeometry args={[0.05, 0.09, 32]} />
+              <meshBasicMaterial color={preset.color} transparent opacity={0.9} side={THREE.DoubleSide} />
+            </mesh>
+          ) : (
+            <mesh position={[0, 0.12, 0]}>
+              <sphereGeometry args={[0.09, 16, 16]} />
+              <meshStandardMaterial
+                color="#000000"
+                emissive={new THREE.Color(preset.color)}
+                emissiveIntensity={1.2}
+              />
+            </mesh>
+          )}
         </group>
       )}
     </group>

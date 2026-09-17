@@ -2,6 +2,8 @@ import { useCallback, useRef } from 'react'
 import type { ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import { ZoneDraft } from './ZoneDrawer'
+import { getY } from '../lib/overlayY'
+import type { RenderMode } from '../lib/overlayY'
 
 interface ZoneDrawerCanvasProps {
   draft: ZoneDraft
@@ -10,6 +12,7 @@ interface ZoneDrawerCanvasProps {
   onDragMove: (point: { x: number; y: number }) => void
   onDragEnd: (point: { x: number; y: number }) => void
   onFinishPolygon: () => void
+  renderMode?: RenderMode
 }
 
 const CLOSE_DIST = 0.6
@@ -25,8 +28,10 @@ export default function ZoneDrawerCanvas({
   onDragMove,
   onDragEnd,
   onFinishPolygon,
+  renderMode = '2d',
 }: ZoneDrawerCanvasProps) {
   const planeRef = useRef<THREE.Mesh>(null)
+  const Y = getY(renderMode)
 
   const handlePolygonClick = useCallback((e: ThreeEvent<PointerEvent>) => {
     const point = scenePoint(e)
@@ -52,12 +57,12 @@ export default function ZoneDrawerCanvas({
 
   const buildPreviewPoints = () => {
     const pts: THREE.Vector3[] = []
-    const push = (p: { x: number; y: number }) => pts.push(new THREE.Vector3(p.x, 0.09, p.y))
+    const push = (p: { x: number; y: number }) => pts.push(new THREE.Vector3(p.x, Y.draftPreview, p.y))
     if (draft.mode === 'polygon') {
       for (const p of draft.points) push(p)
       if (draft.points.length > 0 && draft.currentPoint) push(draft.currentPoint)
       if (draft.points.length > 0) {
-        pts.push(new THREE.Vector3(draft.points[0].x, 0.09, draft.points[0].y))
+        pts.push(new THREE.Vector3(draft.points[0].x, Y.draftPreview, draft.points[0].y))
       }
     } else {
       const a = draft.startPoint
@@ -99,7 +104,7 @@ export default function ZoneDrawerCanvas({
       {draft.points.length > 0 && (
         <group>
           {draft.points.map((p, i) => (
-            <mesh key={i} position={[p.x, 0.1, p.y]}>
+            <mesh key={i} position={[p.x, Y.draftHandle, p.y]}>
               <sphereGeometry args={[0.08, 8, 8]} />
               <meshBasicMaterial color="#22c55e" />
             </mesh>

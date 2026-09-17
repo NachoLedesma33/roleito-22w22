@@ -18,13 +18,35 @@ export default function TopBar({ title, titleTo, subtitle, left, children, class
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
+    let lastScrollWidth = el.scrollWidth;
     const check = () => {
       setCanScrollLeft(el.scrollLeft > 2);
       setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
+      lastScrollWidth = el.scrollWidth;
     };
     check();
     el.addEventListener('scroll', check, { passive: true });
-    return () => el.removeEventListener('scroll', check);
+    el.addEventListener('wheel', (e) => {
+      if (e.deltaY !== 0) {
+        el.scrollLeft += e.deltaY;
+      }
+    }, { passive: true });
+    const observer = new MutationObserver(() => {
+      if (el.scrollWidth > lastScrollWidth + 4) {
+        const delta = el.scrollWidth - lastScrollWidth;
+        el.scrollTo({ left: el.scrollLeft + delta, behavior: 'smooth' });
+      }
+      lastScrollWidth = el.scrollWidth;
+      setCanScrollLeft(el.scrollLeft > 2);
+      setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
+    });
+    observer.observe(el, { childList: true });
+    window.addEventListener('resize', check);
+    return () => {
+      el.removeEventListener('scroll', check);
+      observer.disconnect();
+      window.removeEventListener('resize', check);
+    };
   }, []);
 
   return (
@@ -46,32 +68,34 @@ export default function TopBar({ title, titleTo, subtitle, left, children, class
         </>
       )}
 
-      <div className="flex-1 min-w-0" />
+      <div className="relative flex-1 min-w-0 flex items-center">
+        {canScrollLeft && (
+          <button
+            onClick={() => scrollRef.current?.scrollBy({ left: -120, behavior: 'smooth' })}
+            className="absolute left-0 top-0 bottom-0 w-7 z-10 bg-gradient-to-r from-[var(--bg-primary)] to-transparent flex items-center justify-center text-[var(--accent)] opacity-70 hover:opacity-100 transition-opacity"
+            title="Scroll toolbar left"
+          >
+            ‹
+          </button>
+        )}
+        {canScrollRight && (
+          <button
+            onClick={() => scrollRef.current?.scrollBy({ left: 120, behavior: 'smooth' })}
+            className="absolute right-0 top-0 bottom-0 w-7 z-10 bg-gradient-to-l from-[var(--bg-primary)] to-transparent flex items-center justify-center text-[var(--accent)] opacity-70 hover:opacity-100 transition-opacity"
+            title="Scroll toolbar right"
+          >
+            ›
+          </button>
+        )}
 
-      <div
-        ref={scrollRef}
-        className="flex items-center gap-1.5 overflow-x-auto min-w-0 shrink"
-        style={{ scrollbarWidth: 'none' }}
-      >
-        {children}
+        <div
+          ref={scrollRef}
+          className="flex items-center gap-1.5 overflow-x-auto flex-1 min-w-0 scrollbar-none"
+          style={{ scrollbarWidth: 'none', paddingLeft: canScrollLeft ? '1.5rem' : 0, paddingRight: canScrollRight ? '1.5rem' : 0 }}
+        >
+          {children}
+        </div>
       </div>
-
-      {canScrollLeft && (
-        <button
-          onClick={() => scrollRef.current?.scrollBy({ left: -120, behavior: 'smooth' })}
-          className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-[var(--bg-primary)] to-transparent flex items-center justify-center z-10 opacity-0 hover:opacity-100 transition-opacity md:hidden"
-        >
-          ‹
-        </button>
-      )}
-      {canScrollRight && (
-        <button
-          onClick={() => scrollRef.current?.scrollBy({ left: 120, behavior: 'smooth' })}
-          className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-[var(--bg-primary)] to-transparent flex items-center justify-center z-10 opacity-0 hover:opacity-100 transition-opacity md:hidden"
-        >
-          ›
-        </button>
-      )}
     </header>
   );
 }

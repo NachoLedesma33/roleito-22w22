@@ -3,18 +3,24 @@ import { FogRegion, circlePoints } from './fogMask'
 import { normalizeLightConfig } from './light'
 import { buildOccluders, lightShapePoints } from './lightOcclusion'
 
-export const AMBIENT_RADIUS = 0.05
+export const AMBIENT_RADIUS = 0.15
 
 export interface CharPos {
   x: number
   z: number
+  rotation?: number
+  facingOffset?: number
+}
+
+export function rotationToConeDirDeg(rotationRad: number): number {
+  return (Math.atan2(-Math.cos(rotationRad), Math.sin(rotationRad)) * 180) / Math.PI
 }
 
 export function lightVisionOrigin(item: SceneItem, charPos: Map<string, CharPos>): CharPos | null {
   const meta = item.metadata as LightMetadata
   if (meta.attachedTo) {
     const p = charPos.get(meta.attachedTo)
-    return p ? { x: p.x, z: p.z } : null
+    return p ? { x: p.x, z: p.z, rotation: p.rotation, facingOffset: p.facingOffset } : null
   }
   return { x: item.x, z: item.y }
 }
@@ -25,13 +31,15 @@ export function lightToVisionRegion(
   occluders: ReturnType<typeof buildOccluders>,
   mapWidth: number,
   mapHeight: number,
+  directionOverrideDeg?: number,
 ): FogRegion | null {
   const source = normalizeLightConfig((item.metadata as LightMetadata).source)
   const radiusWorld = source.radius * mapHeight
-  const direction = source.mode === 'directional' ? (source.direction ?? 0) : null
+  const direction = source.mode === 'directional' ? (directionOverrideDeg ?? source.direction ?? 0) : null
   const pts = lightShapePoints(origin.x, origin.z, radiusWorld, direction, source.angle ?? 90, occluders)
   if (pts.length < 3) return null
   const points: number[] = []
+  points.push(mapWidth > 0 ? origin.x / mapWidth + 0.5 : 0.5, mapHeight > 0 ? origin.z / mapHeight + 0.5 : 0.5)
   for (const [px, py] of pts) {
     const wx = origin.x + px
     const wz = origin.z - py
@@ -69,7 +77,10 @@ export function computeVisionRegions(
     if (meta.attachedTo && meta.attachedTo !== ownSceneCharId && opts.shareCarriedLights === false) continue
     const origin = lightVisionOrigin(item, charPos)
     if (!origin) continue
-    const region = lightToVisionRegion(item, origin, occluders, mapWidth, mapHeight)
+    const isOwnCone = meta.attachedTo === ownSceneCharId && (meta.source.mode ?? 'hard') === 'directional'
+    const effectiveRotation = origin.rotation !== undefined ? origin.rotation + (origin.facingOffset ?? 0) : undefined
+    const dirOverride = isOwnCone && effectiveRotation !== undefined ? rotationToConeDirDeg(effectiveRotation) : undefined
+    const region = lightToVisionRegion(item, origin, occluders, mapWidth, mapHeight, dirOverride)
     if (region) regions.push(region)
   }
   return regions

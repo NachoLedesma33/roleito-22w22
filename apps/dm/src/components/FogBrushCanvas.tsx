@@ -1,6 +1,8 @@
 import { useCallback, useRef, useState } from 'react'
 import type { ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
+import { getY } from '../lib/overlayY'
+import type { RenderMode } from '../lib/overlayY'
 
 interface FogBrushCanvasProps {
   reveal: boolean
@@ -8,6 +10,7 @@ interface FogBrushCanvasProps {
   mapWidth: number
   mapHeight: number
   onPaint: (point: { x: number; y: number }) => void
+  renderMode?: RenderMode
 }
 
 export default function FogBrushCanvas({
@@ -16,9 +19,11 @@ export default function FogBrushCanvas({
   mapWidth,
   mapHeight,
   onPaint,
+  renderMode = '2d',
 }: FogBrushCanvasProps) {
   const draggingRef = useRef(false)
   const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null)
+  const Y = getY(renderMode)
 
   const toNormalized = useCallback(
     (e: ThreeEvent<PointerEvent>) => ({
@@ -71,7 +76,7 @@ export default function FogBrushCanvas({
       </mesh>
       {lastPoint && (
         <mesh
-          position={[(lastPoint.x - 0.5) * mapWidth, 0.07, (lastPoint.y - 0.5) * mapHeight]}
+          position={[(lastPoint.x - 0.5) * mapWidth, Y.fogBrushCursor, (lastPoint.y - 0.5) * mapHeight]}
           rotation={[-Math.PI / 2, 0, 0]}
         >
           <ringGeometry args={[Math.max(0.02, radius * mapWidth - 0.08), radius * mapWidth, 32]} />

@@ -4,6 +4,8 @@ import * as THREE from 'three'
 import type { Point2D } from '@core/domain/types'
 import { snapToZoneEdge, type EdgeSnap, type ZoneGeometry, PORTAL_COLORS } from './ZonePortal'
 import { pointInPolygon } from '../lib/fogMask'
+import { getY } from '../lib/overlayY'
+import type { RenderMode } from '../lib/overlayY'
 
 export interface PortalDraft {
   zoneAId: string | null
@@ -27,6 +29,7 @@ interface PortalDrawerCanvasProps {
   onSelect: (snap: EdgeSnap) => void
   onMove: (point: Point2D) => void
   snapMode?: PortalSnapMode
+  renderMode?: RenderMode
 }
 
 function scenePoint(e: ThreeEvent<PointerEvent>): { x: number; y: number } {
@@ -37,8 +40,8 @@ function toNorm(p: { x: number; y: number }, mapW: number, mapH: number): Point2
   return { x: p.x / mapW + 0.5, y: p.y / mapH + 0.5 }
 }
 
-function toWorld(p: Point2D, mapW: number, mapH: number): THREE.Vector3 {
-  return new THREE.Vector3((p.x - 0.5) * mapW, 0.09, (p.y - 0.5) * mapH)
+function toWorld(p: Point2D, mapW: number, mapH: number, y: number): THREE.Vector3 {
+  return new THREE.Vector3((p.x - 0.5) * mapW, y, (p.y - 0.5) * mapH)
 }
 
 function snapInside(norm: Point2D, zones: ZoneGeometry[]): EdgeSnap | null {
@@ -66,8 +69,10 @@ export default function PortalDrawerCanvas({
   onSelect,
   onMove,
   snapMode = 'edge',
+  renderMode = '2d',
 }: PortalDrawerCanvasProps) {
   const planeRef = useRef<THREE.Mesh>(null)
+  const Y = getY(renderMode)
 
   const handleDown = useCallback((e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation()
@@ -85,8 +90,8 @@ export default function PortalDrawerCanvas({
   const preview: THREE.Vector3[] = []
   if (draft.pointA && draft.currentPoint) {
     preview.push(
-      toWorld(draft.pointA, mapWidth, mapHeight),
-      toWorld(draft.currentPoint, mapWidth, mapHeight),
+      toWorld(draft.pointA, mapWidth, mapHeight, Y.draftHandle),
+      toWorld(draft.currentPoint, mapWidth, mapHeight, Y.draftHandle),
     )
   }
   const previewGeo = preview.length >= 2
@@ -94,7 +99,7 @@ export default function PortalDrawerCanvas({
     : null
 
   const marker = draft.pointA
-    ? toWorld(draft.pointA, mapWidth, mapHeight)
+    ? toWorld(draft.pointA, mapWidth, mapHeight, Y.draftHandle)
     : null
 
   return (
@@ -112,8 +117,8 @@ export default function PortalDrawerCanvas({
       </mesh>
       {draft.pointA && draft.a && draft.b && (() => {
         const edgeGeo = new THREE.BufferGeometry().setFromPoints([
-          toWorld(draft.a, mapWidth, mapHeight),
-          toWorld(draft.b, mapWidth, mapHeight),
+          toWorld(draft.a, mapWidth, mapHeight, Y.portal),
+          toWorld(draft.b, mapWidth, mapHeight, Y.portal),
         ])
         return (
           <lineSegments geometry={edgeGeo}>

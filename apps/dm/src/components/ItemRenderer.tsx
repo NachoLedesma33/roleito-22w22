@@ -4,8 +4,10 @@ import { Billboard, Text } from '@react-three/drei'
 import * as THREE from 'three'
 import { SceneItem, ZoneMetadata, LightMetadata } from '@core/domain/types'
 import { PORTAL_COLORS } from './ZonePortal'
-import { normalizeLightConfig, lightGlowOpacity, hexToRgba, computeLightZones } from '../lib/light'
+import { normalizeLightConfig, lightGlowOpacity, hexToRgba, computeLightZones, animateLightIntensity } from '../lib/light'
 import { lightShapePoints } from '../lib/lightOcclusion'
+import { remapGlowUv } from '../lib/lightGlow'
+import { RenderMode, DEFAULT_RENDER_MODE, getY } from '../lib/overlayY'
 
 const TOKEN_COLORS: Record<string, string> = {
   character: '#4ade80',
@@ -23,10 +25,12 @@ interface ItemRendererProps {
   mapScale?: number
   imageAspect?: number
   positionOverride?: [number, number, number]
+  rotationOverride?: number
   occluders?: import('@/lib/lightOcclusion').Occluder[]
+  renderMode?: RenderMode
 }
 
-export default function ItemRenderer({ item, isSelected, readOnly = false, showZones = false, onClick, onContextMenu, mapScale = 1, imageAspect = 1, positionOverride, occluders }: ItemRendererProps) {
+export default function ItemRenderer({ item, isSelected, readOnly = false, showZones = false, onClick, onContextMenu, mapScale = 1, imageAspect = 1, positionOverride, rotationOverride, occluders, renderMode = DEFAULT_RENDER_MODE }: ItemRendererProps) {
   const groupRef = useRef<THREE.Group>(null)
 
   useFrame((state) => {
@@ -38,28 +42,28 @@ export default function ItemRenderer({ item, isSelected, readOnly = false, showZ
 
   if (item.metadata.type === 'zone') {
     if (!showZones) return null
-    return <ZoneRenderer item={item} isSelected={isSelected} onClick={onClick} onContextMenu={onContextMenu} mapScale={mapScale} />
+    return <ZoneRenderer item={item} isSelected={isSelected} onClick={onClick} onContextMenu={onContextMenu} mapScale={mapScale} renderMode={renderMode} />
   }
 
   if (item.metadata.type === 'fog') {
     if (item.shape?.type !== 'polygon') return null
-    return <FogHitRegion item={item} isSelected={isSelected} onClick={onClick} onContextMenu={onContextMenu} mapScale={mapScale} imageAspect={imageAspect} />
+    return <FogHitRegion item={item} isSelected={isSelected} onClick={onClick} onContextMenu={onContextMenu} mapScale={mapScale} imageAspect={imageAspect} renderMode={renderMode} />
   }
 
   if (item.metadata.type === 'light') {
-    return <LightRenderer item={item} isSelected={isSelected} onClick={onClick} onContextMenu={onContextMenu} mapScale={mapScale} positionOverride={positionOverride} occluders={occluders} readOnly={readOnly} />
+    return <LightRenderer item={item} isSelected={isSelected} onClick={onClick} onContextMenu={onContextMenu} mapScale={mapScale} positionOverride={positionOverride} rotationOverride={rotationOverride} occluders={occluders} readOnly={readOnly} renderMode={renderMode} />
   }
 
   if (item.metadata.type === 'wall' && item.shape?.type === 'line') {
-    return <WallRenderer item={item} isSelected={isSelected} onClick={onClick} mapScale={mapScale} imageAspect={imageAspect} />
+    return <WallRenderer item={item} isSelected={isSelected} onClick={onClick} mapScale={mapScale} imageAspect={imageAspect} renderMode={renderMode} />
   }
 
   if (item.metadata.type === 'door' && item.shape?.type === 'line') {
-    return <DoorRenderer item={item} isSelected={isSelected} onClick={onClick} />
+    return <DoorRenderer item={item} isSelected={isSelected} onClick={onClick} renderMode={renderMode} />
   }
 
   if (item.shape) {
-    return <ShapeRenderer item={item} isSelected={isSelected} onClick={onClick} />
+    return <ShapeRenderer item={item} isSelected={isSelected} onClick={onClick} renderMode={renderMode} />
   }
 
   if (item.image) {
@@ -138,10 +142,11 @@ const WALL_MATERIAL_COLORS: Record<string, string> = {
   magic: '#a855f7',
 }
 
-function WallRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, imageAspect = 1 }: ItemRendererProps) {
+function WallRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, imageAspect = 1, renderMode = DEFAULT_RENDER_MODE }: ItemRendererProps) {
   const shape = item.shape as import('@core/domain/types').ItemShape & { type: 'line'; points: number[] }
   const meta = item.metadata as import('@core/domain/types').WallMetadata
   const color = WALL_MATERIAL_COLORS[meta.material] ?? '#6b7280'
+  const Y = getY(renderMode)
 
   const mapHeight = 10 * mapScale
   const mapWidth = mapHeight * imageAspect
@@ -151,14 +156,14 @@ function WallRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, 
   const ex = (shape.points[2] - 0.5) * mapWidth
   const ey = (shape.points[3] - 0.5) * mapHeight
 
-  const start = new THREE.Vector3(sx, 0.05, sy)
-  const end = new THREE.Vector3(ex, 0.05, ey)
+  const start = new THREE.Vector3(sx, Y.wallFootprint, sy)
+  const end = new THREE.Vector3(ex, Y.wallFootprint, ey)
   const dir = new THREE.Vector3().subVectors(end, start)
   const length = dir.length()
   const center = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5)
   const angle = Math.atan2(dir.x, dir.z)
 
-  const height = (meta.height / 10) * item.scale
+  const height = renderMode === '2d' ? Y.wallHeight : (meta.height / 10) * item.scale
   const thickness = (meta.thickness / 100) * item.scale
 
   return (
@@ -193,21 +198,22 @@ const DOOR_COLORS: Record<string, string> = {
   magic: '#c084fc',
 }
 
-function DoorRenderer({ item, isSelected, onClick }: ItemRendererProps) {
+function DoorRenderer({ item, isSelected, onClick, renderMode = DEFAULT_RENDER_MODE }: ItemRendererProps) {
   const shape = item.shape as import('@core/domain/types').ItemShape & { type: 'line'; points: number[] }
   const meta = item.metadata as import('@core/domain/types').DoorMetadata
   const color = DOOR_COLORS[meta.material] ?? '#b45309'
   const isOpen = meta.state === 'open'
   const isLocked = meta.state === 'locked'
+  const Y = getY(renderMode)
 
-  const start = new THREE.Vector3(shape.points[0], 0.05, shape.points[1])
-  const end = new THREE.Vector3(shape.points[2], 0.05, shape.points[3])
+  const start = new THREE.Vector3(shape.points[0], Y.wallFootprint, shape.points[1])
+  const end = new THREE.Vector3(shape.points[2], Y.wallFootprint, shape.points[3])
   const dir = new THREE.Vector3().subVectors(end, start)
   const length = dir.length()
   const center = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5)
   const angle = Math.atan2(dir.x, dir.z)
 
-  const height = 0.7 * item.scale
+  const height = renderMode === '2d' ? Y.wallHeight : 0.7 * item.scale
   const thickness = 0.08 * item.scale
 
   return (
@@ -240,13 +246,15 @@ function DoorRenderer({ item, isSelected, onClick }: ItemRendererProps) {
   )
 }
 
-function ShapeRenderer({ item, isSelected, onClick }: ItemRendererProps) {
+function ShapeRenderer({ item, isSelected, onClick, renderMode = DEFAULT_RENDER_MODE }: ItemRendererProps) {
   const shape = item.shape!
   const color = shape.type === 'line' ? shape.stroke : 'fill' in shape ? shape.fill : '#ffffff'
+  const Y = getY(renderMode)
+  const flatY = renderMode === '2d' ? Y.zoneFill : 0.02
 
   if (shape.type === 'rectangle') {
     return (
-      <group position={[item.x, 0.02, item.y]} rotation={[0, (item.rotation * Math.PI) / 180, 0]}>
+      <group position={[item.x, flatY, item.y]} rotation={[0, (item.rotation * Math.PI) / 180, 0]}>
         <mesh onClick={(e) => { e.stopPropagation(); onClick?.() }}>
           <planeGeometry args={[item.width, item.height]} />
           <meshStandardMaterial color={color} transparent opacity={item.opacity ?? 0.8} side={THREE.DoubleSide} />
@@ -263,7 +271,7 @@ function ShapeRenderer({ item, isSelected, onClick }: ItemRendererProps) {
 
   if (shape.type === 'ellipse') {
     return (
-      <group position={[item.x, 0.02, item.y]} rotation={[0, (item.rotation * Math.PI) / 180, 0]}>
+      <group position={[item.x, flatY, item.y]} rotation={[0, (item.rotation * Math.PI) / 180, 0]}>
         <mesh onClick={(e) => { e.stopPropagation(); onClick?.() }}>
           <circleGeometry args={[item.width / 2, 32]} />
           <meshStandardMaterial color={color} transparent opacity={item.opacity ?? 0.8} side={THREE.DoubleSide} />
@@ -279,9 +287,10 @@ function ShapeRenderer({ item, isSelected, onClick }: ItemRendererProps) {
   }
 
   if (shape.type === 'line') {
+    const lineY = renderMode === '2d' ? Y.zoneFill : 0.03
     const points = shape.points.reduce<THREE.Vector3[]>((acc, v, i) => {
       if (i % 2 === 0) {
-        acc.push(new THREE.Vector3(v, 0.03, shape.points[i + 1] ?? 0))
+        acc.push(new THREE.Vector3(v, lineY, shape.points[i + 1] ?? 0))
       }
       return acc
     }, [])
@@ -298,7 +307,7 @@ function ShapeRenderer({ item, isSelected, onClick }: ItemRendererProps) {
 
   if (shape.type === 'text') {
     return (
-      <group position={[item.x, 0.03, item.y]} rotation={[0, (item.rotation * Math.PI) / 180, 0]}>
+      <group position={[item.x, renderMode === '2d' ? Y.zoneFill : 0.03, item.y]} rotation={[0, (item.rotation * Math.PI) / 180, 0]}>
         <Billboard>
           <Text
             fontSize={shape.fontSize}
@@ -317,14 +326,15 @@ function ShapeRenderer({ item, isSelected, onClick }: ItemRendererProps) {
   return null
 }
 
-function ZoneRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1 }: ItemRendererProps) {
+function ZoneRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, renderMode = DEFAULT_RENDER_MODE }: ItemRendererProps) {
   const meta = item.metadata as ZoneMetadata
   const mapHeight = 10 * mapScale
   const mapWidth = mapHeight
+  const Y = getY(renderMode)
 
   const groupPos = [item.x, 0, item.y] as const
-  const fillY = 0.02
-  const outlineY = 0.035
+  const fillY = Y.zoneFill
+  const outlineY = Y.zoneOutline
 
   const portalNodes = useMemo(() => {
     const nodes: { points: THREE.Vector3[]; color: string }[] = []
@@ -333,16 +343,16 @@ function ZoneRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1 }
       const a = portal.localEdge[0]
       const b = portal.localEdge[1]
       const pts = [
-        new THREE.Vector3((a.x - 0.5) * mapWidth, 0.06, (a.y - 0.5) * mapHeight),
-        new THREE.Vector3((b.x - 0.5) * mapWidth, 0.06, (b.y - 0.5) * mapHeight),
+        new THREE.Vector3((a.x - 0.5) * mapWidth, Y.portal, (a.y - 0.5) * mapHeight),
+        new THREE.Vector3((b.x - 0.5) * mapWidth, Y.portal, (b.y - 0.5) * mapHeight),
       ]
       const midX = ((a.x + b.x) / 2 - 0.5) * mapWidth
       const midY = ((a.y + b.y) / 2 - 0.5) * mapHeight
-      pts.push(new THREE.Vector3(midX, 0.045, midY), new THREE.Vector3(midX, 0.075, midY))
+      pts.push(new THREE.Vector3(midX, Y.portalBarMid, midY), new THREE.Vector3(midX, Y.portalBarHigh, midY))
       nodes.push({ points: pts, color })
     }
     return nodes
-  }, [meta.portals, mapWidth, mapHeight])
+  }, [meta.portals, mapWidth, mapHeight, Y])
 
   if (item.shape?.type === 'rectangle') {
     const hw = item.width / 2
@@ -436,14 +446,33 @@ function ZonePortalMarkers({ nodes }: { nodes: { points: THREE.Vector3[]; color:
   )
 }
 
-function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, positionOverride, occluders, readOnly = false }: ItemRendererProps) {
+function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, positionOverride, rotationOverride, occluders, readOnly = false, renderMode = DEFAULT_RENDER_MODE }: ItemRendererProps) {
   const meta = item.metadata as LightMetadata
   const source = normalizeLightConfig(meta.source)
   const mapHeight = 10 * mapScale
   const radians = (deg: number) => (deg * Math.PI) / 180
   const attached = !!meta.attachedTo
+  const attachedCone = attached && source.mode === 'directional'
+  const geometryDirDeg = attachedCone ? 270 : (source.direction ?? 0)
+  const groupRotY = attachedCone ? (rotationOverride ?? 0) : (source.direction || 0)
+  const is2d = renderMode === '2d'
+  const Y = getY(renderMode)
 
   const glowOpacity = lightGlowOpacity(meta)
+  const haloMatRef = useRef<THREE.MeshBasicMaterial>(null)
+  const orbMatRef = useRef<THREE.MeshStandardMaterial>(null)
+  const orbMarkerRef = useRef<THREE.MeshBasicMaterial>(null)
+
+  useFrame((state) => {
+    const mat = haloMatRef.current
+    if (!mat) return
+    const mod = animateLightIntensity(source, state.clock.elapsedTime)
+    mat.opacity = glowOpacity * mod
+    const orb = orbMatRef.current
+    if (orb) orb.emissiveIntensity = (0.9 * source.intensity + 0.3) * mod
+    const marker = orbMarkerRef.current
+    if (marker) marker.opacity = (0.9 * source.intensity + 0.3) * mod
+  })
 
   const glowTexture = useMemo(() => {
     const size = 64
@@ -479,7 +508,7 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
     const pts: [number, number][] = [[0, 0]]
     const N = 24
     for (let i = 0; i <= N; i++) {
-      const a = radians(source.direction! - half + (i / N) * source.angle)
+      const a = radians(geometryDirDeg - half + (i / N) * source.angle)
       pts.push([Math.cos(a) * source.radius * mapHeight, Math.sin(a) * source.radius * mapHeight])
     }
     const shape = new THREE.Shape()
@@ -487,11 +516,13 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
     for (let i = 1; i < pts.length; i++) shape.lineTo(pts[i][0], pts[i][1])
     const geo = new THREE.ShapeGeometry(shape, 4)
     geo.rotateX(-Math.PI / 2)
+    remapGlowUv(geo, source.radius * mapHeight)
     return geo
-  }, [source.mode, source.angle, source.direction, source.radius, mapHeight])
+  }, [source.mode, source.angle, geometryDirDeg, source.radius, mapHeight])
 
   const ringRadius = source.radius * mapHeight
-  const y = 0.045
+  const y = Y.lightHalo
+  const markerY = Y.lightMarker
   const lightOx = (positionOverride?.[0] ?? item.x)
   const lightOz = (positionOverride?.[2] ?? item.y)
 
@@ -501,7 +532,7 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
       lightOx,
       lightOz,
       ringRadius,
-      source.mode === 'directional' ? (source.direction ?? 0) : null,
+      source.mode === 'directional' ? geometryDirDeg : null,
       source.angle ?? 90,
       occluders,
     )
@@ -510,14 +541,16 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
     for (let i = 1; i < pts.length; i++) shape.lineTo(pts[i][0], pts[i][1])
     const geo = new THREE.ShapeGeometry(shape, 1)
     geo.rotateX(-Math.PI / 2)
+    remapGlowUv(geo, ringRadius)
     return geo
-  }, [occluders, lightOx, lightOz, ringRadius, source.mode, source.direction, source.angle])
+  }, [occluders, lightOx, lightOz, ringRadius, source.mode, geometryDirDeg, source.angle])
 
   const halo = (() => {
     if (occludedGeometry) {
       return (
         <mesh geometry={occludedGeometry} position={[0, y, 0]}>
           <meshBasicMaterial
+            ref={haloMatRef}
             map={glowTexture}
             transparent
             opacity={glowOpacity}
@@ -531,6 +564,7 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
       return (
         <mesh geometry={sectorGeometry} position={[0, y, 0]}>
           <meshBasicMaterial
+            ref={haloMatRef}
             map={glowTexture}
             transparent
             opacity={glowOpacity}
@@ -544,6 +578,7 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, y, 0]}>
         <circleGeometry args={[ringRadius, 32]} />
         <meshBasicMaterial
+          ref={haloMatRef}
           map={glowTexture}
           transparent
           opacity={glowOpacity}
@@ -557,32 +592,44 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
   return (
     <group
       position={positionOverride ?? [item.x, 0, item.y]}
-      rotation={[0, source.direction || 0, 0]}
+      rotation={[0, groupRotY, 0]}
       onClick={(e) => { e.stopPropagation(); onClick?.() }}
       onContextMenu={(e) => { e.stopPropagation(); onContextMenu?.(e.nativeEvent) }}
     >
       {halo}
       {!readOnly && source.mode !== 'directional' && (
-        <LineLoopPoints radius={ringRadius} position={y} />
+        <LineLoopPoints radius={ringRadius} position={Y.lightRing} />
       )}
       {!readOnly && attached && (
-        <mesh position={[0, 0.26, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <mesh position={[0, Y.lightAttachRing, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[0.11, 0.15, 32]} />
           <meshBasicMaterial color="#f59e0b" transparent opacity={0.9} side={THREE.DoubleSide} />
         </mesh>
       )}
-      {!readOnly && (
+      {!readOnly && (is2d ? (
+        <mesh position={[0, markerY, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0.06, 0.09, 32]} />
+          <meshBasicMaterial
+            ref={orbMarkerRef}
+            color={source.color}
+            transparent
+            opacity={0.9 * source.intensity + 0.3}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      ) : (
         <mesh position={[0, 0.15, 0]}>
           <sphereGeometry args={[0.09, 16, 16]} />
           <meshStandardMaterial
+            ref={orbMatRef}
             color="#000000"
             emissive={new THREE.Color(source.color)}
             emissiveIntensity={0.9 * source.intensity + 0.3}
           />
         </mesh>
-      )}
+      ))}
       {!readOnly && isSelected && (
-        <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <mesh position={[0, Y.lightSelectionRing, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[ringRadius - 0.03, ringRadius + 0.03, 32]} />
           <meshBasicMaterial color="#3b82f6" transparent opacity={0.8} side={THREE.DoubleSide} />
         </mesh>
@@ -591,10 +638,11 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
   )
 }
 
-function FogHitRegion({ item, isSelected, onClick, onContextMenu, mapScale = 1, imageAspect = 1 }: ItemRendererProps) {
+function FogHitRegion({ item, isSelected, onClick, onContextMenu, mapScale = 1, imageAspect = 1, renderMode = DEFAULT_RENDER_MODE }: ItemRendererProps) {
   const shape = item.shape as import('@core/domain/types').ItemShape & { type: 'polygon'; points: number[] }
   const mapHeight = 10 * mapScale
   const mapWidth = mapHeight * imageAspect
+  const Y = getY(renderMode)
 
   const geom = useMemo(() => {
     const s = new THREE.Shape()
@@ -613,11 +661,11 @@ function FogHitRegion({ item, isSelected, onClick, onContextMenu, mapScale = 1, 
   const outline = useMemo(() => {
     const pts: THREE.Vector3[] = []
     for (let i = 0; i + 1 < shape.points.length; i += 2) {
-      pts.push(new THREE.Vector3((shape.points[i] - 0.5) * mapWidth, 0.02, (shape.points[i + 1] - 0.5) * mapHeight))
+      pts.push(new THREE.Vector3((shape.points[i] - 0.5) * mapWidth, Y.zoneOutline, (shape.points[i + 1] - 0.5) * mapHeight))
     }
     if (pts.length > 0) pts.push(pts[0])
     return new THREE.BufferGeometry().setFromPoints(pts)
-  }, [shape, mapWidth, mapHeight])
+  }, [shape, mapWidth, mapHeight, Y])
 
   return (
     <group

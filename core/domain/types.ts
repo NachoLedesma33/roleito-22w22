@@ -297,6 +297,18 @@ export interface FogMetadata {
 
 export type LightMode = 'hard' | 'soft' | 'directional'
 
+export interface FlickerConfig {
+  speed: number
+  variance: number
+  enabled: boolean
+}
+
+export interface PulseConfig {
+  speed: number
+  variance: number
+  enabled: boolean
+}
+
 export interface LightSourceConfig {
   mode: LightMode
   color: string
@@ -305,6 +317,8 @@ export interface LightSourceConfig {
   angle?: number
   direction?: number
   falloff?: number
+  flicker?: FlickerConfig
+  pulse?: PulseConfig
 }
 
 export interface LightMetadata {

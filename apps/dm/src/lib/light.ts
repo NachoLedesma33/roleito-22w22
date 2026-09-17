@@ -1,4 +1,4 @@
-import { LightMetadata, LightMode, LightSourceConfig, SceneItem, SceneLayer } from '@core/domain/types'
+import { FlickerConfig, LightMetadata, LightMode, LightSourceConfig, PulseConfig, SceneItem, SceneLayer } from '@core/domain/types'
 
 export interface LightPreset {
   name: string
@@ -9,15 +9,17 @@ export interface LightPreset {
   angle?: number
   direction?: number
   falloff?: number
+  flicker?: FlickerConfig
+  pulse?: PulseConfig
 }
 
 export const LIGHT_PRESETS: Record<string, LightPreset> = {
-  torch: { name: 'Torch', mode: 'hard', color: '#ff9d45', intensity: 0.85, radius: 0.15 },
-  lantern: { name: 'Lantern', mode: 'soft', color: '#ffcf7d', intensity: 0.8, radius: 0.28, falloff: 0.7 },
-  campfire: { name: 'Campfire', mode: 'soft', color: '#ff6b2b', intensity: 0.95, radius: 0.45, falloff: 0.5 },
-  candle: { name: 'Candle', mode: 'hard', color: '#ffe08a', intensity: 0.7, radius: 0.08 },
+  torch: { name: 'Torch', mode: 'hard', color: '#ff9d45', intensity: 0.85, radius: 0.15, flicker: { speed: 0.3, variance: 0.1, enabled: true } },
+  lantern: { name: 'Lantern', mode: 'soft', color: '#ffcf7d', intensity: 0.8, radius: 0.28, falloff: 0.7, flicker: { speed: 0.1, variance: 0.05, enabled: true } },
+  campfire: { name: 'Campfire', mode: 'soft', color: '#ff6b2b', intensity: 0.95, radius: 0.45, falloff: 0.5, flicker: { speed: 0.5, variance: 0.2, enabled: true } },
+  candle: { name: 'Candle', mode: 'hard', color: '#ffe08a', intensity: 0.7, radius: 0.08, flicker: { speed: 0.4, variance: 0.15, enabled: true } },
   lanternDir: { name: 'Lantern (cone)', mode: 'directional', color: '#ffe08a', intensity: 0.9, radius: 0.3, angle: 90, direction: 0, falloff: 0.6 },
-  magic: { name: 'Magic', mode: 'soft', color: '#7dc8ff', intensity: 0.9, radius: 0.35, falloff: 0.6 },
+  magic: { name: 'Magic', mode: 'soft', color: '#7dc8ff', intensity: 0.9, radius: 0.35, falloff: 0.6, pulse: { speed: 1.0, variance: 0.3, enabled: true } },
 }
 
 export function normalizeLightConfig(config: Partial<LightSourceConfig>): LightSourceConfig {
@@ -30,7 +32,21 @@ export function normalizeLightConfig(config: Partial<LightSourceConfig>): LightS
     angle: config.angle ?? (mode === 'directional' ? 90 : undefined),
     direction: config.direction ?? 0,
     falloff: config.falloff ?? (mode === 'soft' ? 0.6 : undefined),
+    flicker: config.flicker ? { speed: config.flicker.speed ?? 0.3, variance: config.flicker.variance ?? 0.1, enabled: config.flicker.enabled ?? false } : undefined,
+    pulse: config.pulse ? { speed: config.pulse.speed ?? 0.6, variance: config.pulse.variance ?? 0.2, enabled: config.pulse.enabled ?? false } : undefined,
   }
+}
+
+export function animateLightIntensity(source: LightSourceConfig, time: number): number {
+  const cfg = normalizeLightConfig(source)
+  let modulation = 1.0
+  if (cfg.flicker?.enabled) {
+    modulation += Math.sin(time * cfg.flicker.speed * Math.PI * 2) * cfg.flicker.variance
+  }
+  if (cfg.pulse?.enabled) {
+    modulation += Math.sin(time * cfg.pulse.speed * Math.PI * 2) * cfg.pulse.variance
+  }
+  return Math.max(0, Math.min(1, modulation))
 }
 
 export interface LightZones {

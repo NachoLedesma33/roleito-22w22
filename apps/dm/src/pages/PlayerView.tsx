@@ -11,6 +11,7 @@ import MinimizedBar from '@/components/MinimizedBar';
 import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastContainer';
 import { api } from '@/lib/api';
 import { computeVisionRegions, type CharPos } from '@/lib/playerVision';
+import { DEFAULT_RENDER_MODE } from '@/lib/overlayY';
 
 const API_BASE = '/api';
 const POLL_MS = 16;
@@ -40,6 +41,7 @@ interface PlayerToken {
   move_speed: number;
   token_scale: number;
   brightness: number;
+  facing_offset: number;
   vx?: number;
   vz?: number;
   vrot?: number;
@@ -374,7 +376,7 @@ export default function PlayerView() {
     const m = new Map<string, CharPos>()
     if (!data) return m
     for (const c of data.characters) m.set(c.id, { x: c.x, z: c.z })
-    if (mySceneCharId && wasdTarget) m.set(mySceneCharId, { x: wasdTarget.x, z: wasdTarget.z })
+    if (mySceneCharId && wasdTarget) m.set(mySceneCharId, { x: wasdTarget.x, z: wasdTarget.z, rotation: wasdTarget.rotation, facingOffset: data.characters.find((c) => c.id === mySceneCharId)?.facing_offset ?? 0 })
     return m
   }, [data, mySceneCharId, wasdTarget])
 
@@ -962,6 +964,7 @@ export default function PlayerView() {
                     modelUrl: staticUrl(c.model_path), rotation: wasdTarget.rotation,
                     tokenScale: c.token_scale ?? 1,
                     brightness: c.brightness ?? 0,
+                    facingOffset: c.facing_offset ?? 0,
                   };
                 }
                 const interpolated = renderedPosRef.current.get(c.id);
@@ -975,14 +978,16 @@ export default function PlayerView() {
                   rotation: interpolated ? interpolated.rotation : (c.rotation ?? 0),
                   tokenScale: c.token_scale ?? 1,
                   brightness: c.brightness ?? 0,
+                  facingOffset: c.facing_offset ?? 0,
                 };
               })}
               lighting={data.lighting}
               mapScale={data.map_scale ?? 1}
               items={data.items ?? []}
               readOnly
-              fogColor="#000000"
+              fogColor="rgba(5, 5, 20, 0.82)"
               playerFogRegions={visionRegions}
+              renderMode={DEFAULT_RENDER_MODE}
               gridSize={data.grid_size ?? 0}
               gridSnap={data.grid_snap ?? false}
               selectedTokenId={

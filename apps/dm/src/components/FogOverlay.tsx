@@ -50,9 +50,10 @@ interface FogOverlayProps {
   color: string
   mapWidth: number
   mapHeight: number
+  renderMode?: import('@/lib/overlayY').RenderMode
 }
 
-export default function FogOverlay({ regions, color, mapWidth, mapHeight }: FogOverlayProps) {
+export default function FogOverlay({ regions, color, mapWidth, mapHeight, renderMode = '2d' }: FogOverlayProps) {
   const texture = useMemo(() => {
     const tex = new THREE.CanvasTexture(document.createElement('canvas'))
     tex.needsUpdate = true
@@ -60,6 +61,7 @@ export default function FogOverlay({ regions, color, mapWidth, mapHeight }: FogO
   }, [])
 
   const aspect = mapHeight > 0 ? mapWidth / mapHeight : 1
+  const fogY = renderMode === '2d' ? 0.08 : 6
 
   useEffect(() => {
     const canvas = texture.image as HTMLCanvasElement
@@ -68,7 +70,7 @@ export default function FogOverlay({ regions, color, mapWidth, mapHeight }: FogO
   }, [texture, color, regions, aspect])
 
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 6, 0]} renderOrder={50}>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, fogY, 0]} renderOrder={50}>
       <planeGeometry args={[mapWidth, mapHeight]} />
       <meshBasicMaterial map={texture} transparent depthWrite={false} toneMapped={false} />
     </mesh>

@@ -16,6 +16,7 @@ import DoorContextMenu from '@/components/DoorContextMenu';
 import WallContextMenu from '@/components/WallContextMenu';
 import ZoneContextMenu from '@/components/ZoneContextMenu';
 import { extractZonePolygons } from '@/lib/wall-collision';
+import { DEFAULT_RENDER_MODE } from '@/lib/overlayY';
 import BackgroundSelector, { generateBackgroundCSS } from '@/components/BackgroundSelector';
 import SessionLogHud from '@/components/SessionLogHud';
 import SceneNotesHud from '@/components/SceneNotesHud';
@@ -132,6 +133,7 @@ export default function DmDashboard() {
   const rafRef = useRef<number>(0);
   const sceneCharsRef = useRef(sceneChars);
   sceneCharsRef.current = sceneChars;
+  const lastLocalChangeRef = useRef(0);
 
   useEffect(() => {
     if (!campaignId) return;
@@ -168,7 +170,7 @@ export default function DmDashboard() {
     const poll = async () => {
       try {
         const sc = await api.scenes.getCharacters(campaignId, activeScene.id);
-        if (!cancelled) setSceneChars(sc);
+        if (!cancelled && Date.now() - lastLocalChangeRef.current > 500) setSceneChars(sc);
       } catch {}
       if (!cancelled) timer = window.setTimeout(poll, 100);
     };
@@ -643,7 +645,11 @@ export default function DmDashboard() {
     if (!attachLightMode?.lightId) return
     const lightId = attachLightMode.lightId
     const light = graphRef.getItem(lightId)
-    if (!light || light.metadata.type !== 'light') return
+    if (!light || light.metadata.type !== 'light') {
+      setAttachLightMode(null)
+      setSelectedItemId(null)
+      return
+    }
     const attached = attachLightToToken(light, tokenId)
     graphRef.updateItem(lightId, attached)
     handleItemsChange(graphRef.getItems())
@@ -1221,8 +1227,8 @@ export default function DmDashboard() {
     const current = sceneCharsRef.current;
     const updated = current.map((scn) =>
       scn.id === sceneCharId
-        ? { entity_type: scn.entity_type, entity_id: scn.entity_id, x, y: scn.y, z, visible: !!scn.visible, order: scn.order, token_scale: scn.token_scale ?? 1, move_speed: scn.move_speed ?? 1 }
-        : { entity_type: scn.entity_type, entity_id: scn.entity_id, x: scn.x, y: scn.y, z: scn.z, visible: !!scn.visible, order: scn.order, token_scale: scn.token_scale ?? 1, move_speed: scn.move_speed ?? 1 }
+        ? { id: scn.id, entity_type: scn.entity_type, entity_id: scn.entity_id, x, y: scn.y, z, visible: !!scn.visible, order: scn.order, token_scale: scn.token_scale ?? 1, move_speed: scn.move_speed ?? 1, facing_offset: scn.facing_offset ?? 0 }
+        : { id: scn.id, entity_type: scn.entity_type, entity_id: scn.entity_id, x: scn.x, y: scn.y, z: scn.z, visible: !!scn.visible, order: scn.order, token_scale: scn.token_scale ?? 1, move_speed: scn.move_speed ?? 1, facing_offset: scn.facing_offset ?? 0 }
     );
     try {
       await api.scenes.updateCharacters(campaignId, activeScene.id, updated);
@@ -1245,6 +1251,7 @@ export default function DmDashboard() {
       order: sceneChars.length,
       token_scale: 1,
       move_speed: 1,
+      facing_offset: 0,
     }];
     try {
       const result = await api.scenes.updateCharacters(campaignId, activeScene.id, newChars);
@@ -1270,8 +1277,8 @@ export default function DmDashboard() {
     if (!campaignId || !activeScene) return;
     const updated = sceneChars.map((sc) =>
       sc.id === sceneCharId
-        ? { entity_type: sc.entity_type, entity_id: sc.entity_id, x: sc.x, y: sc.y, z: sc.z, visible: !sc.visible, order: sc.order, token_scale: sc.token_scale ?? 1, move_speed: sc.move_speed ?? 1 }
-        : { entity_type: sc.entity_type, entity_id: sc.entity_id, x: sc.x, y: sc.y, z: sc.z, visible: !!sc.visible, order: sc.order, token_scale: sc.token_scale ?? 1, move_speed: sc.move_speed ?? 1 }
+        ? { id: sc.id, entity_type: sc.entity_type, entity_id: sc.entity_id, x: sc.x, y: sc.y, z: sc.z, visible: !sc.visible, order: sc.order, token_scale: sc.token_scale ?? 1, move_speed: sc.move_speed ?? 1, facing_offset: sc.facing_offset ?? 0 }
+        : { id: sc.id, entity_type: sc.entity_type, entity_id: sc.entity_id, x: sc.x, y: sc.y, z: sc.z, visible: !!sc.visible, order: sc.order, token_scale: sc.token_scale ?? 1, move_speed: sc.move_speed ?? 1, facing_offset: sc.facing_offset ?? 0 }
     );
     try {
       const result = await api.scenes.updateCharacters(campaignId, activeScene.id, updated);
@@ -1729,11 +1736,14 @@ export default function DmDashboard() {
                 </div>
               )}
             </div>
-            {drawState && (
-              <span className="text-[10px] text-amber-400 shrink-0">
-                {drawState.mode === 'wall' ? '🧱 Click-drag to draw wall' : '🚪 Click-drag to place door'} · ESC to cancel
-              </span>
-            )}
+          </>
+        }
+      >
+        {drawState && (
+          <span className="text-[10px] text-amber-400 shrink-0">
+            {drawState.mode === 'wall' ? '🧱 Click-drag to draw wall' : '🚪 Click-drag to place door'} · ESC to cancel
+          </span>
+        )}
             {zoneDraft && (
               <span className="text-[10px] text-amber-400 shrink-0">
                 {zoneDraft.mode === 'rect'
@@ -1920,6 +1930,76 @@ export default function DmDashboard() {
                   />
                   <span className="w-8">{(selectedLight.source.falloff ?? (selectedLight.source.mode === 'hard' ? 1 : 0.6)).toFixed(2)}</span>
                 </label>
+                <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
+                  <span
+                    onClick={() => handleLightSourceChange(selectedLight.source.flicker?.enabled
+                      ? { flicker: undefined }
+                      : { flicker: { speed: selectedLight.source.flicker?.speed ?? 0.3, variance: selectedLight.source.flicker?.variance ?? 0.1, enabled: true } })}
+                    className={`cursor-pointer px-1.5 py-0.5 rounded transition-colors ${selectedLight.source.flicker?.enabled ? 'bg-amber-600 text-white' : 'hover:bg-[var(--bg-tertiary)]'}`}
+                    title="Flicker toggle"
+                  >
+                    ✨ flick
+                  </span>
+                  {selectedLight.source.flicker?.enabled && (
+                    <>
+                      <input
+                        type="range"
+                        min={0.1}
+                        max={2}
+                        step={0.1}
+                        value={selectedLight.source.flicker.speed}
+                        onChange={(e) => handleLightSourceChange({ flicker: { speed: parseFloat(e.target.value), variance: selectedLight.source.flicker!.variance, enabled: true } })}
+                        className="w-12 h-1"
+                        title="Flicker speed (cycles/sec)"
+                      />
+                      <input
+                        type="range"
+                        min={0}
+                        max={0.5}
+                        step={0.05}
+                        value={selectedLight.source.flicker.variance}
+                        onChange={(e) => handleLightSourceChange({ flicker: { speed: selectedLight.source.flicker!.speed, variance: parseFloat(e.target.value), enabled: true } })}
+                        className="w-12 h-1"
+                        title="Flicker variance (intensity swing)"
+                      />
+                    </>
+                  )}
+                </label>
+                <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
+                  <span
+                    onClick={() => handleLightSourceChange(selectedLight.source.pulse?.enabled
+                      ? { pulse: undefined }
+                      : { pulse: { speed: selectedLight.source.pulse?.speed ?? 0.6, variance: selectedLight.source.pulse?.variance ?? 0.2, enabled: true } })}
+                    className={`cursor-pointer px-1.5 py-0.5 rounded transition-colors ${selectedLight.source.pulse?.enabled ? 'bg-amber-600 text-white' : 'hover:bg-[var(--bg-tertiary)]'}`}
+                    title="Pulse toggle"
+                  >
+                    🔶 pulse
+                  </span>
+                  {selectedLight.source.pulse?.enabled && (
+                    <>
+                      <input
+                        type="range"
+                        min={0.1}
+                        max={2}
+                        step={0.1}
+                        value={selectedLight.source.pulse.speed}
+                        onChange={(e) => handleLightSourceChange({ pulse: { speed: parseFloat(e.target.value), variance: selectedLight.source.pulse!.variance, enabled: true } })}
+                        className="w-12 h-1"
+                        title="Pulse speed (cycles/sec)"
+                      />
+                      <input
+                        type="range"
+                        min={0}
+                        max={0.5}
+                        step={0.05}
+                        value={selectedLight.source.pulse.variance}
+                        onChange={(e) => handleLightSourceChange({ pulse: { speed: selectedLight.source.pulse!.speed, variance: parseFloat(e.target.value), enabled: true } })}
+                        className="w-12 h-1"
+                        title="Pulse variance (intensity swing)"
+                      />
+                    </>
+                  )}
+                </label>
                 {selectedLight.source.mode === 'directional' && (
                   <>
                     <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
@@ -1954,9 +2034,6 @@ export default function DmDashboard() {
                 )}
               </div>
             )}
-          </>
-        }
-      >
         <button
           onClick={() => fileInput.current?.click()}
           className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0"
@@ -2259,6 +2336,7 @@ export default function DmDashboard() {
                     rotation: interpolated ? interpolated.rotation : (sc.rotation ?? 0),
                     tokenScale: sc.token_scale ?? 1,
                     brightness: sc.brightness ?? 0,
+                    facingOffset: sc.facing_offset ?? 0,
                   };
                 })}
                 items={sceneItems}
@@ -2270,6 +2348,7 @@ export default function DmDashboard() {
                 gridSnap={activeScene.grid_snap ?? false}
                 drawState={drawState}
                 showZones
+                renderMode={DEFAULT_RENDER_MODE}
                 zoneDraft={zoneDraft}
                 onZoneAddPoint={handleZoneAddPoint}
                 onZoneDragStart={handleZoneDragStart}
@@ -2450,25 +2529,46 @@ export default function DmDashboard() {
                     value={sc.token_scale ?? 1}
                     onChange={(e) => {
                       const v = parseFloat(e.target.value);
+                      lastLocalChangeRef.current = Date.now();
                       setSceneChars((prev) => prev.map((s) => s.id === selectedTokenId ? { ...s, token_scale: v } : s));
-                    }}
-                    onMouseUp={async () => {
                       if (!campaignId || !activeScene) return;
-                      const current = sceneCharsRef.current;
-                      const updated = current.map((s) =>
+                      const updated = sceneCharsRef.current.map((s) =>
                         s.id === selectedTokenId
-                          ? { entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1 }
-                          : { entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1 }
+                          ? { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: v, move_speed: s.move_speed ?? 1, facing_offset: s.facing_offset ?? 0 }
+                          : { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: s.facing_offset ?? 0 }
                       );
-                      try {
-                        await api.scenes.updateCharacters(campaignId, activeScene.id, updated);
-                      } catch (err) {
-                        console.error('Failed to persist token scale:', err);
-                      }
+                      clearTimeout((window as any).__tokenScaleTimer);
+                      (window as any).__tokenScaleTimer = setTimeout(() => {
+                        api.scenes.updateCharacters(campaignId, activeScene.id, updated).catch(() => {});
+                      }, 300);
                     }}
                     className="w-full h-1 accent-[var(--accent)]"
                   />
                   <p className="text-[9px] text-[var(--text-secondary)] mt-0.5 truncate">{ent?.name || 'Unknown'}</p>
+                  <button
+                    onClick={async () => {
+                      const newOffset = (sc.facing_offset ?? 0) === 0 ? Math.PI : 0;
+                      lastLocalChangeRef.current = Date.now();
+                      setSceneChars((prev) => prev.map((s) => s.id === selectedTokenId ? { ...s, facing_offset: newOffset } : s));
+                      if (!campaignId || !activeScene) return;
+                      const updated = sceneCharsRef.current.map((s) =>
+                        s.id === selectedTokenId
+                          ? { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: newOffset }
+                          : { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: s.facing_offset ?? 0 }
+                      );
+                      try {
+                        await api.scenes.updateCharacters(campaignId, activeScene.id, updated);
+                      } catch (err) {
+                        console.error('Failed to persist facing offset:', err);
+                      }
+                    }}
+                    className={`mt-1 w-full text-[10px] px-2 py-1 rounded border transition-colors ${(sc.facing_offset ?? 0) === 0
+                      ? 'border-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:border-[var(--accent)]'
+                      : 'border-[var(--accent)] text-[var(--accent)] bg-[var(--accent)]/10'
+                    }`}
+                  >
+                    {(sc.facing_offset ?? 0) === 0 ? '↔ Flip Facing' : '↔ Facing Flipped'}
+                  </button>
                 </div>
               );
             })()}

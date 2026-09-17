@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   LIGHT_PRESETS,
+  animateLightIntensity,
   attachLightToToken,
   clampIntensity,
   computeLightZones,
@@ -56,6 +57,66 @@ describe('light/presets', () => {
     const p = LIGHT_PRESETS.lanternDir
     expect(p.mode).toBe('directional')
     expect(p.angle).toBe(90)
+  })
+
+  it('presets de fuego traen flicker habilitado con datos en rango (E9)', () => {
+    for (const key of ['torch', 'lantern', 'campfire', 'candle']) {
+      const f = LIGHT_PRESETS[key].flicker
+      expect(f).toBeDefined()
+      expect(f!.enabled).toBe(true)
+      expect(f!.speed).toBeGreaterThan(0)
+      expect(f!.speed).toBeLessThanOrEqual(2)
+      expect(f!.variance).toBeGreaterThanOrEqual(0)
+      expect(f!.variance).toBeLessThanOrEqual(0.5)
+    }
+  })
+
+  it('magic trae pulse habilitado y lanternDir sin flicker/pulse', () => {
+    expect(LIGHT_PRESETS.magic.pulse?.enabled).toBe(true)
+    expect(LIGHT_PRESETS.lanternDir.flicker).toBeUndefined()
+    expect(LIGHT_PRESETS.lanternDir.pulse).toBeUndefined()
+  })
+})
+
+describe('light/animateLightIntensity (E9)', () => {
+  it('sin flicker ni pulse devuelve 1 constante', () => {
+    expect(animateLightIntensity({ mode: 'soft', color: '#fff', intensity: 0.8, radius: 0.3 }, 0)).toBe(1)
+    expect(animateLightIntensity({ mode: 'soft', color: '#fff', intensity: 0.8, radius: 0.3 }, 12.7)).toBe(1)
+  })
+
+  it('flicker oscila alrededor de 1 con amplitud variance y nunca supera 1 (clamp)', () => {
+    const src = { mode: 'hard', color: '#fff', intensity: 1, radius: 0.2, flicker: { speed: 0.5, variance: 0.2, enabled: true } } as const
+    for (let t = 0; t < 2; t += 0.01) {
+      const mod = animateLightIntensity(src, t)
+      expect(mod).toBeGreaterThanOrEqual(0)
+      expect(mod).toBeLessThanOrEqual(1)
+      expect(mod).toBeGreaterThanOrEqual(1 - 0.2)
+    }
+  })
+
+  it('pulse oscila con su propia frecuencia (variance 0.3 → min 0.7)', () => {
+    const src = { mode: 'soft', color: '#fff', intensity: 0.9, radius: 0.3, pulse: { speed: 1, variance: 0.3, enabled: true } } as const
+    expect(animateLightIntensity(src, 0)).toBeCloseTo(1, 5)
+    expect(animateLightIntensity(src, 0.75)).toBeCloseTo(0.7, 5)
+    expect(animateLightIntensity(src, 2.75)).toBeCloseTo(0.7, 5)
+  })
+
+  it('combina flicker y pulse', () => {
+    const src = { mode: 'hard', color: '#fff', intensity: 1, radius: 0.2, flicker: { speed: 0.3, variance: 0.1, enabled: true }, pulse: { speed: 1, variance: 0.2, enabled: true } } as const
+    let min = 1
+    for (let t = 0; t < 5; t += 0.01) {
+      const mod = animateLightIntensity(src, t)
+      expect(mod).toBeGreaterThanOrEqual(0)
+      expect(mod).toBeLessThanOrEqual(1)
+      min = Math.min(min, mod)
+    }
+    expect(min).toBeLessThan(0.75)
+    expect(min).toBeGreaterThanOrEqual(1 - (0.1 + 0.2) - 1e-9)
+  })
+
+  it('disabled no modula', () => {
+    const src = { mode: 'hard', color: '#fff', intensity: 1, radius: 0.2, flicker: { speed: 1, variance: 0.4, enabled: false } } as const
+    expect(animateLightIntensity(src, 3.3)).toBe(1)
   })
 })
 
