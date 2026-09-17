@@ -65,6 +65,7 @@ interface SceneRendererProps {
   onItemClick?: (itemId: string) => void;
   onItemContextMenu?: (itemId: string, clientX: number, clientY: number) => void;
   onTokenDrop?: (sceneCharId: string, x: number, z: number) => void;
+  onTokenDrag?: (sceneCharId: string, x: number, z: number) => void;
   onTokenContextMenu?: (sceneCharId: string, clientX: number, clientY: number) => void;
   onDrawStart?: (point: { x: number; y: number }) => void;
   onDrawMove?: (point: { x: number; y: number }) => void;
@@ -185,11 +186,13 @@ const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -GROUND_Y);
 
 function DragController({
   onTokenDrop,
+  onTokenDrag,
   gridSize,
   gridSnap,
   otherTokens,
 }: {
   onTokenDrop?: (sceneCharId: string, x: number, z: number) => void;
+  onTokenDrag?: (sceneCharId: string, x: number, z: number) => void;
   gridSize?: number;
   gridSnap?: boolean;
   otherTokens?: Array<{ sceneCharId: string; x: number; z: number; tokenScale?: number }>;
@@ -207,6 +210,7 @@ function DragController({
     startClientY: number;
     captured: boolean;
   } | null>(null);
+  const lastDragSendAtRef = useRef(0);
 
   const getGroundPoint = useCallback(
     (clientX: number, clientY: number) => {
@@ -289,10 +293,17 @@ function DragController({
           child.position.z = newPos.z;
         }
       });
+
+      const now = performance.now();
+      if (now - lastDragSendAtRef.current >= 16) {
+        lastDragSendAtRef.current = now;
+        onTokenDrag?.(st.sceneCharId, newPos.x, newPos.z);
+      }
     };
 
     const releaseDrag = () => {
       dragState.current = null;
+      lastDragSendAtRef.current = 0;
       if (controls) controls.enabled = true;
       canvas.style.cursor = 'auto';
     };
@@ -349,7 +360,7 @@ function DragController({
       canvas.removeEventListener('pointerup', onPointerUp);
       canvas.removeEventListener('pointercancel', onPointerCancel);
     };
-  }, [gl, getGroundPoint, clampToBackground, onTokenDrop, controls, scene, gridSize, gridSnap, otherTokens]);
+  }, [gl, getGroundPoint, clampToBackground, onTokenDrop, onTokenDrag, controls, scene, gridSize, gridSnap, otherTokens]);
 
   // Expose startDrag via a global function on the canvas.
   // Mutating the external DOM canvas node inside an effect is intentional:
@@ -502,6 +513,7 @@ export default function SceneRenderer({
   onItemClick,
   onItemContextMenu,
   onTokenDrop,
+  onTokenDrag,
   onTokenContextMenu,
   onDrawStart,
   onDrawMove,
@@ -591,6 +603,7 @@ export default function SceneRenderer({
       {hasDrag && (
         <DragController
           onTokenDrop={onTokenDrop}
+          onTokenDrag={onTokenDrag}
           gridSize={gridSize}
           gridSnap={gridSnap}
           otherTokens={visibleChars.map((c) => ({
