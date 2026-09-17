@@ -40,6 +40,10 @@ MIGRATIONS = [
     ("scene_characters", "token_scale", "ALTER TABLE scene_characters ADD COLUMN token_scale FLOAT DEFAULT 1.0"),
     ("scene_characters", "move_speed", "ALTER TABLE scene_characters ADD COLUMN move_speed FLOAT DEFAULT 1.0"),
     ("scene_characters", "brightness", "ALTER TABLE scene_characters ADD COLUMN brightness FLOAT DEFAULT 0.0"),
+    ("scene_characters", "vx", "ALTER TABLE scene_characters ADD COLUMN vx FLOAT DEFAULT 0.0"),
+    ("scene_characters", "vz", "ALTER TABLE scene_characters ADD COLUMN vz FLOAT DEFAULT 0.0"),
+    ("scene_characters", "vrot", "ALTER TABLE scene_characters ADD COLUMN vrot FLOAT DEFAULT 0.0"),
+    ("scene_characters", "last_move_at", "ALTER TABLE scene_characters ADD COLUMN last_move_at FLOAT DEFAULT 0.0"),
     ("scenes", "items_json", "ALTER TABLE scenes ADD COLUMN items_json TEXT DEFAULT '[]'"),
 ]
 

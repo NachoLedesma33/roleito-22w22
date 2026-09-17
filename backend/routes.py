@@ -621,6 +621,10 @@ async def join_by_invite_code(
                     "move_speed": getattr(sc, 'move_speed', 1.0),
                     "token_scale": getattr(sc, 'token_scale', 1.0),
                     "brightness": getattr(sc, 'brightness', 0.0),
+                    "vx": getattr(sc, 'vx', 0.0),
+                    "vz": getattr(sc, 'vz', 0.0),
+                    "vrot": getattr(sc, 'vrot', 0.0),
+                    "last_move_at": getattr(sc, 'last_move_at', 0.0),
                 })
 
     return {

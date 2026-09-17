@@ -477,6 +477,21 @@ async def player_move_character(
         sc.x = round(sc.x / grid_size) * grid_size
         sc.z = round(sc.z / grid_size) * grid_size
 
+    # Velocity estimate for smooth client extrapolation
+    now = time.time()
+    dt = now - (sc.last_move_at or 0)
+    max_v = 40.0
+    if 0.016 <= dt <= 1.5:
+        sc.vx = max(min((sc.x - prev_x) / dt, max_v), -max_v)
+        sc.vz = max(min((sc.z - prev_z) / dt, max_v), -max_v)
+        dr = new_rot - prev_rot
+        sc.vrot = max(min(math.atan2(math.sin(dr), math.cos(dr)) / dt, max_v), -max_v)
+    else:
+        sc.vx = 0.0
+        sc.vz = 0.0
+        sc.vrot = 0.0
+    sc.last_move_at = now
+
     await db.commit()
     await db.refresh(sc)
     return SceneCharacterResponse.model_validate(sc)
