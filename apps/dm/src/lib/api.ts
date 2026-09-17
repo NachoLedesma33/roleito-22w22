@@ -294,6 +294,17 @@ export interface DMNotebookVersion {
   created_at: string;
 }
 
+export interface LightRequest {
+  id: string;
+  campaign_id: string;
+  player_id: string;
+  character_name: string;
+  scene_id: string;
+  token_id: string;
+  status: string;
+  created_at: string;
+}
+
 export interface DiceRollResponse {
   id: string;
   campaign_id: string;
@@ -355,6 +366,10 @@ export interface SceneCharacter {
   token_scale: number;
   move_speed: number;
   brightness: number;
+  vx?: number;
+  vz?: number;
+  vrot?: number;
+  last_move_at?: number;
 }
 
 type EventCreateFields = {
@@ -563,6 +578,15 @@ export const api = {
           { method: 'PUT', body: JSON.stringify({ regions }) },
         ),
     },
+  },
+
+  lightRequests: {
+    list: (campaignId: string) =>
+      request<LightRequest[]>(`/campaigns/${campaignId}/light-requests`),
+    create: (campaignId: string, data: { player_id: string; character_name: string; scene_id: string; token_id: string }) =>
+      request<LightRequest>(`/campaigns/${campaignId}/light-requests`, { method: 'POST', body: JSON.stringify(data) }),
+    resolve: (campaignId: string, requestId: string) =>
+      request<LightRequest>(`/campaigns/${campaignId}/light-requests/${requestId}/resolve`, { method: 'POST' }),
   },
 
   maps: {

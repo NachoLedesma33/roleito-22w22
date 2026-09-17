@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback, Suspense } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo, Suspense } from 'react';
 import { useParams } from 'react-router-dom';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
@@ -10,11 +10,10 @@ import TopBar from '@/components/TopBar';
 import MinimizedBar from '@/components/MinimizedBar';
 import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastContainer';
 import { api } from '@/lib/api';
-import type { FogRegion } from '@/lib/fogMask';
-import { EXPLORE_RADIUS, exploredPointsFor, exploredToFogRegion, isAlreadyExplored } from '@/lib/playerFog';
+import { computeVisionRegions, type CharPos } from '@/lib/playerVision';
 
 const API_BASE = '/api';
-const POLL_MS = 100;
+const POLL_MS = 16;
 const VIDA_LABELS: Record<string, string> = {
   vigor: 'V',
   intelligence: 'I',
@@ -41,6 +40,10 @@ interface PlayerToken {
   move_speed: number;
   token_scale: number;
   brightness: number;
+  vx?: number;
+  vz?: number;
+  vrot?: number;
+  last_move_at?: number;
 }
 
 interface PlayerCharOption {
@@ -179,13 +182,12 @@ export default function PlayerView() {
   const [showDiceRoller, setShowDiceRoller] = useState(false);
   const [toastQueue, setToastQueue] = useState<ToastRoll[]>([]);
   const [wasdTarget, setWasdTarget] = useState<{ x: number; z: number; rotation: number } | null>(null);
-  const [playerFogRegions, setPlayerFogRegions] = useState<FogRegion[]>([]);
-  const playerFogRef = useRef<FogRegion[]>([]);
-  const playerFogSaveTimerRef = useRef<number | null>(null);
-  const playerIdRef = useRef<string | null>(null);
-  const sceneIdForFogRef = useRef<string | null>(null);
+  const [shareLight, setShareLight] = useState(() => {
+    try { return localStorage.getItem(`roleito:pv:${code}:sharelight`) !== '0' } catch { return true }
+  });
+  const [askingLight, setAskingLight] = useState(false);
+  const [imageAspect, setImageAspect] = useState(1);
   const myCharRef = useRef<MyChar | null>(null);
-  const mySceneCharRef = useRef<PlayerToken | null>(null);
 
   const lastRevRef = useRef<string>('');
   const choiceRef = useRef<Choice>(null);
@@ -195,6 +197,13 @@ export default function PlayerView() {
   const wasdTargetRef = useRef<{ x: number; z: number; rotation: number } | null>(null);
   const lastMoveAtRef = useRef(0);
   const serverPosRef = useRef<Map<string, { x: number; z: number; rotation: number }>>(new Map());
+  const serverPosAtRef = useRef<Map<string, number>>(new Map());
+  const serverLmatRef = useRef<Map<string, number>>(new Map());
+  const clockOffsetRef = useRef(0);
+  const velocitiesRef = useRef<Map<string, { vx: number; vz: number; vrotation: number }>>(new Map());
+  const lastDataRef = useRef<typeof data>(null);
+  const prevAppliedAtRef = useRef(0);
+  const lastFrameAtRef = useRef(0);
   const renderedPosRef = useRef<Map<string, { x: number; z: number; rotation: number }>>(new Map());
   const rafRef = useRef<number>(0);
 
@@ -345,67 +354,178 @@ export default function PlayerView() {
   useEffect(() => { dataRef.current = data; }, [data]);
   useEffect(() => { wasdTargetRef.current = wasdTarget; }, [wasdTarget]);
 
-  // Load per-player fog once per player+scene; reset when player/scene changes
+  const mySceneCharId = useMemo(() => {
+    if (choice?.kind !== 'character' || !data) return null
+    return data.characters.find(
+      (ch) => ch.type === 'character' && data.player_characters.some((p) => p.id === ch.entity_id && p.id === choice.id)
+    )?.id ?? null
+  }, [choice, data])
+
   useEffect(() => {
-    if (!data || choice?.kind !== 'character') return;
-    const playerId = choice.id;
-    const sceneId = data.scene_id;
-    if (!sceneId) return;
-    if (playerIdRef.current === playerId && sceneIdForFogRef.current === sceneId) return;
-    playerIdRef.current = playerId;
-    sceneIdForFogRef.current = sceneId;
-    let cancelled = false;
-    api.players.fog.get(data.campaign_id, playerId, sceneId)
-      .then((res) => {
-        if (cancelled) return;
-        const regions = (res.regions ?? []).map((r, i) => exploredToFogRegion(r.points, i));
-        playerFogRef.current = regions;
-        setPlayerFogRegions(regions);
+    if (!data?.background_path) return
+    const img = new Image()
+    img.onload = () => {
+      if (img.width && img.height) setImageAspect(img.width / img.height)
+    }
+    img.src = staticUrl(data.background_path)!
+  }, [data?.background_path])
+
+  const visionCharPos = useMemo(() => {
+    const m = new Map<string, CharPos>()
+    if (!data) return m
+    for (const c of data.characters) m.set(c.id, { x: c.x, z: c.z })
+    if (mySceneCharId && wasdTarget) m.set(mySceneCharId, { x: wasdTarget.x, z: wasdTarget.z })
+    return m
+  }, [data, mySceneCharId, wasdTarget])
+
+  const mapScale = data?.map_scale ?? 1
+  const mapperH = 10 * mapScale
+  const mapperW = mapperH * imageAspect
+
+  const visionRegions = useMemo(() => {
+    if (!data) return []
+    return computeVisionRegions(data.items ?? [], visionCharPos, mySceneCharId, mapperW, mapperH, {
+      shareCarriedLights: shareLight,
+    })
+  }, [data, visionCharPos, mySceneCharId, mapperW, mapperH, shareLight])
+
+  const requestLight = useCallback(async () => {
+    const d = dataRef.current
+    const c = choiceRef.current
+    if (!d || !c || c.kind !== 'character') return
+    const sc = d.characters.find((ch) => ch.type === 'character' && ch.entity_id === c.id)
+    if (!sc || !d.scene_id) return
+    setAskingLight(true)
+    try {
+      await api.lightRequests.create(d.campaign_id, {
+        player_id: c.id,
+        character_name: myCharRef.current?.name ?? 'player',
+        scene_id: d.scene_id,
+        token_id: sc.id,
       })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [choice, data]);
+      setToastQueue((prev) => [...prev.slice(-4), {
+        id: `asklight-${Date.now()}`,
+        rollerName: '🕯️ Light request',
+        diceType: 1,
+        count: 1,
+        results: [1],
+        total: 1,
+        label: 'solicitud enviada al DM',
+        timestamp: Date.now(),
+      }])
+    } catch {}
+    window.setTimeout(() => setAskingLight(false), 5000)
+  }, [])
 
-  const markExplored = useCallback((normX: number, normZ: number) => {
-    const d = dataRef.current;
-    const c = choiceRef.current;
-    if (!d || !c || c.kind !== 'character' || !d.scene_id) return;
-    if (isAlreadyExplored(playerFogRef.current, normX, normZ, EXPLORE_RADIUS)) return;
-    const points = exploredPointsFor(normX, normZ, EXPLORE_RADIUS);
-    const regions = [...playerFogRef.current, exploredToFogRegion(points, playerFogRef.current.length)];
-    playerFogRef.current = regions;
-    setPlayerFogRegions(regions);
-    if (playerFogSaveTimerRef.current) window.clearTimeout(playerFogSaveTimerRef.current);
-    playerFogSaveTimerRef.current = window.setTimeout(() => {
-      playerFogSaveTimerRef.current = null;
-      const regionsNow = playerFogRef.current.map((r) => ({ points: r.points, revealed: true }));
-      api.players.fog.update(d.campaign_id, c.id, d.scene_id!, regionsNow).catch(() => {});
-    }, 800);
-  }, []);
+  const toggleShareLight = useCallback(() => {
+    setShareLight((v) => {
+      const next = !v
+      try { localStorage.setItem(`roleito:pv:${code}:sharelight`, next ? '1' : '0') } catch {}
+      return next
+    })
+  }, [code])
 
-  useEffect(() => {
-    if (!data || !myChar || choice?.kind !== 'character') return;
-    const sceneChar = data.characters.find(
-      (c) => c.type === 'character' && data.player_characters.some((p) => p.id === c.entity_id && p.id === choice.id)
+  const reportMove = async (x: number, z: number, rotation: number, snap: boolean) => {
+    const currentData = dataRef.current;
+    const cur = choiceRef.current;
+    if (!currentData || !cur || cur.kind !== 'character') return;
+
+    const mScale = currentData.map_scale ?? 1;
+    const mapH = 10 * mScale;
+    const mapW = mapH;
+
+    const sc = currentData.characters.find(
+      (ch) => ch.type === 'character' && currentData.player_characters.some((p) => p.id === ch.entity_id && p.id === cur.id)
     );
-    mySceneCharRef.current = sceneChar ?? null;
-  }, [data, myChar, choice]);
+    if (!sc) return;
 
-  // Smooth interpolation for other characters' positions
+    const normX = (x / mapW) + 0.5;
+    const normZ = (z / mapH) + 0.5;
+
+    const walls = (currentData.items ?? [])
+      .filter((item: any) => item.metadata?.type === 'wall' && item.shape?.type === 'line')
+      .map((item: any) => {
+        const pts = item.shape.points;
+        return [pts[0], pts[1], pts[2], pts[3]] as [number, number, number, number];
+      });
+    const { checkWallCollision, extractZonePolygons, extractPortals, crossZoneBorder } = await import('@/lib/wall-collision');
+    if (checkWallCollision(normX, normZ, walls, 0.03)) return;
+
+    const zones = extractZonePolygons(currentData.items ?? [], mapW, mapH);
+    const prevNormX = (wasdTargetRef.current?.x ?? sc.x) / mapW + 0.5;
+    const prevNormZ = (wasdTargetRef.current?.z ?? sc.z) / mapH + 0.5;
+    if (crossZoneBorder(prevNormX, prevNormZ, normX, normZ, zones, extractPortals(currentData.items ?? []))) return;
+
+    if (snap && currentData.grid_snap && currentData.grid_size > 0) {
+      x = Math.round(x / currentData.grid_size) * currentData.grid_size;
+      z = Math.round(z / currentData.grid_size) * currentData.grid_size;
+    }
+
+    const target = { x, z, rotation: ((rotation % (2 * Math.PI)) + Math.PI) % (2 * Math.PI) - Math.PI };
+    wasdTargetRef.current = target;
+    setWasdTarget(target);
+    api.scenes.moveCharacter(currentData.campaign_id, currentData.scene_id!, {
+      character_id: cur.id,
+      x, z,
+      rotation: target.rotation,
+    }).catch(() => {});
+  };
+
+  // Smooth interpolation targets for other characters' positions
   useEffect(() => {
     if (!data) return;
+    const now = performance.now();
     const myId = choice?.kind === 'character'
       ? data.characters.find(
           (ch) => ch.type === 'character' && data.player_characters.some((p) => p.id === ch.entity_id && p.id === choice.id)
         )?.id
       : null;
+    const prevData = lastDataRef.current;
+    lastDataRef.current = data;
+    const prevAt = prevAppliedAtRef.current;
+    prevAppliedAtRef.current = now;
+
+    let maxLmat = 0;
+    for (const c of data.characters) {
+      const lmat = c.last_move_at ?? 0;
+      if (lmat > maxLmat) maxLmat = lmat;
+    }
+    if (maxLmat > 0) clockOffsetRef.current = Date.now() / 1000 - maxLmat;
+
+    let dtSec = prevAt ? (now - prevAt) / 1000 : 0;
+    if (dtSec < 0.001 || dtSec > 2) dtSec = 0;
+    if (prevData && prevData !== data && dtSec > 0) {
+      for (const c of data.characters) {
+        if (c.id === myId) continue;
+        const p = prevData.characters.find((pp) => pp.id === c.id);
+        if (!p) continue;
+        const delX = c.x - p.x;
+        const delZ = c.z - p.z;
+        const delR = (c.rotation ?? 0) - (p.rotation ?? 0);
+        const movingPos = Math.hypot(delX, delZ) >= 0.0005;
+        const movingRot = Math.abs(Math.atan2(Math.sin(delR), Math.cos(delR))) >= 0.001;
+        const vx = c.vx ?? 0;
+        const vz = c.vz ?? 0;
+        const vrot = c.vrot ?? 0;
+        velocitiesRef.current.set(c.id, {
+          vx: movingPos ? (Math.abs(vx) > 0.001 ? vx : delX / dtSec) : 0,
+          vz: movingPos ? (Math.abs(vz) > 0.001 ? vz : delZ / dtSec) : 0,
+          vrotation: movingRot ? (Math.abs(vrot) > 0.001 ? vrot : Math.atan2(Math.sin(delR), Math.cos(delR)) / dtSec) : 0,
+        });
+      }
+    }
     for (const c of data.characters) {
       if (c.id === myId) continue;
       serverPosRef.current.set(c.id, { x: c.x, z: c.z, rotation: c.rotation ?? 0 });
+      serverPosAtRef.current.set(c.id, now);
+      serverLmatRef.current.set(c.id, c.last_move_at ?? 0);
     }
     for (const id of serverPosRef.current.keys()) {
       if (!data.characters.find((c) => c.id === id)) {
         serverPosRef.current.delete(id);
+        serverPosAtRef.current.delete(id);
+        serverLmatRef.current.delete(id);
+        velocitiesRef.current.delete(id);
         renderedPosRef.current.delete(id);
       }
     }
@@ -434,16 +554,41 @@ export default function PlayerView() {
       : null;
     const tick = () => {
       if (!running) return;
+      const now = performance.now();
+      const dtFrame = lastFrameAtRef.current
+        ? Math.min(Math.max((now - lastFrameAtRef.current) / 1000, 0.001), 0.12)
+        : 0.016;
+      lastFrameAtRef.current = now;
+      const k = 1 - Math.exp(-36 * dtFrame);
       for (const [id, target] of serverPosRef.current.entries()) {
         if (id === myId) continue;
+        const vel = velocitiesRef.current.get(id);
+        const t0 = serverPosAtRef.current.get(id) ?? now;
+        const sLmat = serverLmatRef.current.get(id) ?? 0;
+        let el: number;
+        if (clockOffsetRef.current > 0 && sLmat > 0) {
+          el = Date.now() / 1000 - clockOffsetRef.current - sLmat;
+          if (!(el > 0)) el = 0;
+          el = Math.min(el, 0.05);
+        } else {
+          el = Math.min((now - t0) / 1000, 0.05);
+        }
+        let px = target.x;
+        let pz = target.z;
+        let prot = target.rotation;
+        if (vel && el > 0) {
+          px += vel.vx * el;
+          pz += vel.vz * el;
+          prot += vel.vrotation * el;
+        }
         const prev = renderedPosRef.current.get(id);
         if (!prev) {
-          renderedPosRef.current.set(id, { ...target });
+          renderedPosRef.current.set(id, { x: px, z: pz, rotation: prot });
         } else {
-          const lerpFactor = 1 - Math.pow(0.00001, 1 / 16);
-          prev.x += (target.x - prev.x) * lerpFactor;
-          prev.z += (target.z - prev.z) * lerpFactor;
-          prev.rotation += (target.rotation - prev.rotation) * lerpFactor;
+          prev.x += (px - prev.x) * k;
+          prev.z += (pz - prev.z) * k;
+          const dr = prot - prev.rotation;
+          prev.rotation += Math.atan2(Math.sin(dr), Math.cos(dr)) * k;
         }
       }
       rafRef.current = requestAnimationFrame(tick);
@@ -541,10 +686,9 @@ export default function PlayerView() {
           x = Math.round(x / currentData.grid_size) * currentData.grid_size;
           z = Math.round(z / currentData.grid_size) * currentData.grid_size;
         }
-        const target = { x, z, rotation };
+        const target = { x, z, rotation: ((rotation % (2 * Math.PI)) + Math.PI) % (2 * Math.PI) - Math.PI };
         wasdTargetRef.current = target;
         setWasdTarget(target);
-        markExplored(normX, normZ);
         api.scenes.moveCharacter(currentData.campaign_id, currentData.scene_id!, {
           character_id: cur.id,
           x, z, rotation,
@@ -567,12 +711,12 @@ export default function PlayerView() {
 
     const gameLoop = () => {
       if (keysPressed.size > 0) applyMovement();
-      moveTimer = window.setTimeout(gameLoop, 50);
+      moveTimer = window.setTimeout(gameLoop, 40);
     };
 
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
-    moveTimer = window.setTimeout(gameLoop, 50);
+    moveTimer = window.setTimeout(gameLoop, 40);
 
     return () => {
       window.removeEventListener('keydown', onKeyDown);
@@ -754,6 +898,31 @@ export default function PlayerView() {
             🎲
           </button>
         )}
+        {choice?.kind === 'character' && (
+          <button
+            type="button"
+            onClick={toggleShareLight}
+            className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${
+              shareLight
+                ? 'bg-emerald-600 text-white'
+                : 'bg-gray-800 text-gray-400 hover:text-gray-200 hover:bg-gray-700'
+            }`}
+            title={shareLight ? 'Compartiendo luz con el grupo' : 'Solo tu luz + luces del DM'}
+          >
+            🔦
+          </button>
+        )}
+        {choice?.kind === 'character' && (
+          <button
+            type="button"
+            onClick={requestLight}
+            disabled={askingLight}
+            className="text-xs px-2 py-1 rounded transition-colors shrink-0 bg-gray-800 text-gray-400 hover:text-gray-200 hover:bg-gray-700 disabled:opacity-40"
+            title="Pedir luz al DM"
+          >
+            🕯️
+          </button>
+        )}
         <span
           className="flex items-center gap-1.5 text-[10px] shrink-0"
           title={live ? 'Sincronizado' : 'Reconectando...'}
@@ -813,7 +982,7 @@ export default function PlayerView() {
               items={data.items ?? []}
               readOnly
               fogColor="#000000"
-              playerFogRegions={playerFogRegions}
+              playerFogRegions={visionRegions}
               gridSize={data.grid_size ?? 0}
               gridSnap={data.grid_snap ?? false}
               selectedTokenId={
@@ -835,45 +1004,21 @@ export default function PlayerView() {
               }
               onTokenDrop={
                 choice?.kind === 'character'
-                  ? async (_sceneCharId, x, z) => {
-                      const mScale = data.map_scale ?? 1;
-                      const mapH = 10 * mScale;
-                      const mapW = mapH;
-                      const normX = (x / mapW) + 0.5;
-                      const normZ = (z / mapH) + 0.5;
-
-                      const sc = data.characters.find(
+                  ? (_sceneCharId, x, z) => {
+                      const rotation = wasdTarget?.rotation ?? (data.characters.find(
                         (ch) => ch.type === 'character' && data.player_characters.some((p) => p.id === ch.entity_id && p.id === choice.id)
-                      );
-
-                      const walls = (data.items ?? [])
-                        .filter((item: any) => item.metadata?.type === 'wall' && item.shape?.type === 'line')
-                        .map((item: any) => {
-                          const pts = item.shape.points;
-                          return [pts[0], pts[1], pts[2], pts[3]] as [number, number, number, number];
-                        });
-
-                      const { checkWallCollision, extractZonePolygons, extractPortals, crossZoneBorder } = await import('@/lib/wall-collision');
-                      if (checkWallCollision(normX, normZ, walls, 0.03)) {
-                        return;
-                      }
-
-                      const zones = extractZonePolygons(data.items ?? [], mapW, mapH)
-                      const prevPosX = sc ? sc.x : x
-                      const prevPosZ = sc ? sc.z : z
-                      if (crossZoneBorder(prevPosX / mapW + 0.5, prevPosZ / mapH + 0.5, normX, normZ, zones, extractPortals(data.items ?? []))) {
-                        return;
-                      }
-
-                      const target = { x, z, rotation: wasdTarget?.rotation ?? (sc?.rotation ?? 0) };
-                      wasdTargetRef.current = target;
-                      setWasdTarget(target);
-                      markExplored(normX, normZ);
-                      api.scenes.moveCharacter(data.campaign_id, data.scene_id!, {
-                        character_id: choice.id,
-                        x, z,
-                        rotation: target.rotation,
-                      }).catch(() => {});
+                      )?.rotation ?? 0);
+                      reportMove(x, z, rotation, true);
+                    }
+                  : undefined
+              }
+              onTokenDrag={
+                choice?.kind === 'character'
+                  ? (_sceneCharId, x, z) => {
+                      const rotation = wasdTarget?.rotation ?? (data.characters.find(
+                        (ch) => ch.type === 'character' && data.player_characters.some((p) => p.id === ch.entity_id && p.id === choice.id)
+                      )?.rotation ?? 0);
+                      reportMove(x, z, rotation, false);
                     }
                   : undefined
               }

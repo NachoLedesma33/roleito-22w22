@@ -26,7 +26,7 @@ interface ItemRendererProps {
   occluders?: import('@/lib/lightOcclusion').Occluder[]
 }
 
-export default function ItemRenderer({ item, isSelected, showZones = false, onClick, onContextMenu, mapScale = 1, imageAspect = 1, positionOverride, occluders }: ItemRendererProps) {
+export default function ItemRenderer({ item, isSelected, readOnly = false, showZones = false, onClick, onContextMenu, mapScale = 1, imageAspect = 1, positionOverride, occluders }: ItemRendererProps) {
   const groupRef = useRef<THREE.Group>(null)
 
   useFrame((state) => {
@@ -42,11 +42,12 @@ export default function ItemRenderer({ item, isSelected, showZones = false, onCl
   }
 
   if (item.metadata.type === 'fog') {
-    return null
+    if (item.shape?.type !== 'polygon') return null
+    return <FogHitRegion item={item} isSelected={isSelected} onClick={onClick} onContextMenu={onContextMenu} mapScale={mapScale} imageAspect={imageAspect} />
   }
 
   if (item.metadata.type === 'light') {
-    return <LightRenderer item={item} isSelected={isSelected} onClick={onClick} onContextMenu={onContextMenu} mapScale={mapScale} positionOverride={positionOverride} occluders={occluders} />
+    return <LightRenderer item={item} isSelected={isSelected} onClick={onClick} onContextMenu={onContextMenu} mapScale={mapScale} positionOverride={positionOverride} occluders={occluders} readOnly={readOnly} />
   }
 
   if (item.metadata.type === 'wall' && item.shape?.type === 'line') {
@@ -435,7 +436,7 @@ function ZonePortalMarkers({ nodes }: { nodes: { points: THREE.Vector3[]; color:
   )
 }
 
-function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, positionOverride, occluders }: ItemRendererProps) {
+function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, positionOverride, occluders, readOnly = false }: ItemRendererProps) {
   const meta = item.metadata as LightMetadata
   const source = normalizeLightConfig(meta.source)
   const mapHeight = 10 * mapScale
@@ -561,28 +562,75 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
       onContextMenu={(e) => { e.stopPropagation(); onContextMenu?.(e.nativeEvent) }}
     >
       {halo}
-      {source.mode !== 'directional' && (
+      {!readOnly && source.mode !== 'directional' && (
         <LineLoopPoints radius={ringRadius} position={y} />
       )}
-      {attached && (
+      {!readOnly && attached && (
         <mesh position={[0, 0.26, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[0.11, 0.15, 32]} />
           <meshBasicMaterial color="#f59e0b" transparent opacity={0.9} side={THREE.DoubleSide} />
         </mesh>
       )}
-      <mesh position={[0, 0.15, 0]}>
-        <sphereGeometry args={[0.09, 16, 16]} />
-        <meshStandardMaterial
-          color="#000000"
-          emissive={new THREE.Color(source.color)}
-          emissiveIntensity={0.9 * source.intensity + 0.3}
-        />
-      </mesh>
-      {isSelected && (
+      {!readOnly && (
+        <mesh position={[0, 0.15, 0]}>
+          <sphereGeometry args={[0.09, 16, 16]} />
+          <meshStandardMaterial
+            color="#000000"
+            emissive={new THREE.Color(source.color)}
+            emissiveIntensity={0.9 * source.intensity + 0.3}
+          />
+        </mesh>
+      )}
+      {!readOnly && isSelected && (
         <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[ringRadius - 0.03, ringRadius + 0.03, 32]} />
           <meshBasicMaterial color="#3b82f6" transparent opacity={0.8} side={THREE.DoubleSide} />
         </mesh>
+      )}
+    </group>
+  )
+}
+
+function FogHitRegion({ item, isSelected, onClick, onContextMenu, mapScale = 1, imageAspect = 1 }: ItemRendererProps) {
+  const shape = item.shape as import('@core/domain/types').ItemShape & { type: 'polygon'; points: number[] }
+  const mapHeight = 10 * mapScale
+  const mapWidth = mapHeight * imageAspect
+
+  const geom = useMemo(() => {
+    const s = new THREE.Shape()
+    for (let i = 0; i + 1 < shape.points.length; i += 2) {
+      const wx = (shape.points[i] - 0.5) * mapWidth
+      const wz = (shape.points[i + 1] - 0.5) * mapHeight
+      if (i === 0) s.moveTo(wx, -wz)
+      else s.lineTo(wx, -wz)
+    }
+    s.closePath()
+    const geo = new THREE.ShapeGeometry(s, 1)
+    geo.rotateX(-Math.PI / 2)
+    return geo
+  }, [shape, mapWidth, mapHeight])
+
+  const outline = useMemo(() => {
+    const pts: THREE.Vector3[] = []
+    for (let i = 0; i + 1 < shape.points.length; i += 2) {
+      pts.push(new THREE.Vector3((shape.points[i] - 0.5) * mapWidth, 0.02, (shape.points[i + 1] - 0.5) * mapHeight))
+    }
+    if (pts.length > 0) pts.push(pts[0])
+    return new THREE.BufferGeometry().setFromPoints(pts)
+  }, [shape, mapWidth, mapHeight])
+
+  return (
+    <group
+      onClick={(e) => { e.stopPropagation(); onClick?.() }}
+      onContextMenu={(e) => { e.stopPropagation(); onContextMenu?.(e.nativeEvent) }}
+    >
+      <mesh geometry={geom}>
+        <meshBasicMaterial transparent opacity={0} side={THREE.DoubleSide} depthWrite={false} />
+      </mesh>
+      {isSelected && (
+        <lineSegments geometry={outline}>
+          <lineBasicMaterial color="#3b82f6" />
+        </lineSegments>
       )}
     </group>
   )

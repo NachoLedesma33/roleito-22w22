@@ -246,6 +246,10 @@ class SceneCharacter(Base):
     token_scale = Column(Float, default=1.0)
     move_speed = Column(Float, default=1.0)
     brightness = Column(Float, default=0.0)
+    vx = Column(Float, default=0.0)
+    vz = Column(Float, default=0.0)
+    vrot = Column(Float, default=0.0)
+    last_move_at = Column(Float, default=0.0)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
@@ -326,3 +330,16 @@ class AuthSession(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     last_seen = Column(DateTime, default=datetime.utcnow)
     campaign_id = Column(String, nullable=True)
+
+
+class LightRequest(Base):
+    __tablename__ = "light_requests"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    campaign_id = Column(String, ForeignKey("campaigns.id"), nullable=False)
+    player_id = Column(String, nullable=False)
+    character_name = Column(String, nullable=False)
+    scene_id = Column(String, ForeignKey("scenes.id"), nullable=False)
+    token_id = Column(String, nullable=False)
+    status = Column(String, default="pending")  # pending | granted | ignored
+    created_at = Column(DateTime, default=datetime.utcnow)

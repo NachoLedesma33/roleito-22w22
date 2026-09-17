@@ -3,13 +3,13 @@ from fastapi import UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from database import get_session
-from models import Player, Map, Asset, Campaign, PlayerFog, Scene
-from schemas import PlayerCreate, PlayerUpdate, PlayerResponse, MapCreate, MapResponse, AssetResponse, PlayerFogResponse, PlayerFogUpdate
+from models import Player, Map, Asset, Campaign, PlayerFog, Scene, LightRequest
+from schemas import PlayerCreate, PlayerUpdate, PlayerResponse, MapCreate, MapResponse, AssetResponse, PlayerFogResponse, PlayerFogUpdate, LightRequestCreate, LightRequestResponse
 import os
 import uuid
 import json as _json
 
-router = APIRouter(tags=["players", "maps", "assets"])
+router = APIRouter(tags=["players", "maps", "assets", "light-requests"])
 
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "assets")
 
@@ -191,6 +191,71 @@ async def put_player_fog(
         "scene_id": scene_id,
         "regions": _json.loads(row.regions_json) if row.regions_json else [],
     }
+
+
+# ── Light requests (player -> DM) ───────────────────────────
+
+@router.post("/campaigns/{campaign_id}/light-requests", response_model=LightRequestResponse)
+async def create_light_request(
+    campaign_id: str,
+    data: LightRequestCreate,
+    db: AsyncSession = Depends(get_session),
+):
+    scene_r = await db.execute(
+        select(Scene).where(
+            Scene.id == data.scene_id,
+            Scene.campaign_id == campaign_id,
+        )
+    )
+    if not scene_r.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Scene not found")
+
+    req = LightRequest(
+        campaign_id=campaign_id,
+        player_id=data.player_id,
+        character_name=data.character_name,
+        scene_id=data.scene_id,
+        token_id=data.token_id,
+    )
+    db.add(req)
+    await db.commit()
+    await db.refresh(req)
+    return req
+
+
+@router.get("/campaigns/{campaign_id}/light-requests", response_model=list[LightRequestResponse])
+async def list_light_requests(
+    campaign_id: str,
+    status_filter: str | None = None,
+    db: AsyncSession = Depends(get_session),
+):
+    query = select(LightRequest).where(LightRequest.campaign_id == campaign_id)
+    if status_filter:
+        query = query.where(LightRequest.status == status_filter)
+    result = await db.execute(query.order_by(LightRequest.created_at.asc()))
+    return result.scalars().all()
+
+
+@router.post("/campaigns/{campaign_id}/light-requests/{request_id}/resolve", response_model=LightRequestResponse)
+async def resolve_light_request(
+    campaign_id: str,
+    request_id: str,
+    db: AsyncSession = Depends(get_session),
+):
+    result = await db.execute(
+        select(LightRequest).where(
+            LightRequest.id == request_id,
+            LightRequest.campaign_id == campaign_id,
+        )
+    )
+    req = result.scalar_one_or_none()
+    if not req:
+        raise HTTPException(status_code=404, detail="Light request not found")
+
+    req.status = "granted"
+    await db.commit()
+    await db.refresh(req)
+    return req
 
 
 # ── Map CRUD ────────────────────────────────────────────────

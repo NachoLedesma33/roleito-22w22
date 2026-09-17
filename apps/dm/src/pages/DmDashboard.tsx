@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, Suspense, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { api, Campaign, Scene, SceneCharacter, Character, NPC, Map as GameMap } from '@/lib/api';
+import { api, Campaign, Scene, SceneCharacter, Character, NPC, Map as GameMap, LightRequest } from '@/lib/api';
 import { SceneItem, ZoneMetadata, SceneLayer } from '@core/domain/types';
 import { SceneGraph } from '@core/scene/scene-graph';
 import { useDoorInteraction } from '@core/scene/door-interaction';
@@ -33,6 +33,18 @@ import ContextMenu, { ContextMenuItem } from '@/components/ContextMenu';
 import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastContainer';
 import TopBar from '@/components/TopBar';
 import MinimizedBar from '@/components/MinimizedBar';
+
+const MAX_HISTORY = 30;
+
+function sameIds(a: SceneItem[], b: SceneItem[]): boolean {
+  if (a.length !== b.length) return false
+  const ids = new Set(a.map((i) => i.id))
+  return b.every((i) => ids.has(i.id))
+}
+
+function snapshotOf(items: SceneItem[]): SceneItem[] {
+  return JSON.parse(JSON.stringify(items)) as SceneItem[]
+}
 
 function staticUrl(path: string | null): string | null {
   if (!path) return null;
@@ -67,6 +79,7 @@ export default function DmDashboard() {
   const [distanceFrom, setDistanceFrom] = useState<string | null>(null);
   const [distanceTo, setDistanceTo] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
+  const [lightRequests, setLightRequests] = useState<LightRequest[]>([]);
   const [toastQueue, setToastQueue] = useState<ToastRoll[]>([]);
   const [sceneItems, setSceneItems] = useState<SceneItem[]>([]);
   const [graphRef] = useState(() => new SceneGraph());
@@ -87,6 +100,14 @@ export default function DmDashboard() {
   const [zoneContextMenu, setZoneContextMenu] = useState<{ x: number; y: number; itemId: string } | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [buildMenuOpen, setBuildMenuOpen] = useState(false);
+  const [lightContextMenu, setLightContextMenu] = useState<{ x: number; y: number; itemId: string } | null>(null);
+  const [fogContextMenu, setFogContextMenu] = useState<{ x: number; y: number; itemId: string } | null>(null);
+  const [, setUndoBump] = useState(0);
+  const undoStackRef = useRef<SceneItem[][]>([]);
+  const redoStackRef = useRef<SceneItem[][]>([]);
+  const sceneItemsRef = useRef<SceneItem[]>([]);
+  const applyingHistoryRef = useRef(false);
+  const lastUndoAtRef = useRef(0);
   const [detectingWalls, setDetectingWalls] = useState(false);
   const [detectionMode, setDetectionMode] = useState<'blueprint' | 'textured'>('blueprint');
   const [useAi, setUseAi] = useState(false);
@@ -100,6 +121,13 @@ export default function DmDashboard() {
   const fileInput = useRef<HTMLInputElement>(null);
   const lastRollTsRef = useRef<number>(0);
   const serverPosRef = useRef<Map<string, { x: number; z: number; rotation: number }>>(new Map());
+  const serverPosAtRef = useRef<Map<string, number>>(new Map());
+  const serverLmatRef = useRef<Map<string, number>>(new Map());
+  const clockOffsetRef = useRef(0);
+  const velocitiesRef = useRef<Map<string, { vx: number; vz: number; vrotation: number }>>(new Map());
+  const lastDataRef = useRef<SceneCharacter[]>([]);
+  const prevAppliedAtRef = useRef(0);
+  const lastFrameAtRef = useRef(0);
   const renderedPosRef = useRef<Map<string, { x: number; z: number; rotation: number }>>(new Map());
   const rafRef = useRef<number>(0);
   const sceneCharsRef = useRef(sceneChars);
@@ -142,9 +170,9 @@ export default function DmDashboard() {
         const sc = await api.scenes.getCharacters(campaignId, activeScene.id);
         if (!cancelled) setSceneChars(sc);
       } catch {}
-      if (!cancelled) timer = window.setTimeout(poll, 500);
+      if (!cancelled) timer = window.setTimeout(poll, 100);
     };
-    timer = window.setTimeout(poll, 500);
+    timer = window.setTimeout(poll, 100);
     return () => { cancelled = true; clearTimeout(timer); };
   }, [campaignId, activeScene]);
 
@@ -160,7 +188,58 @@ export default function DmDashboard() {
   }, [campaignId, activeScene, graphRef]);
 
   const saveTimerRef = useRef<number>(0);
+
+  const pushUndo = useCallback((prev: SceneItem[]) => {
+    const now = Date.now()
+    const top = undoStackRef.current[undoStackRef.current.length - 1]
+    const coalesce = top && sameIds(top, prev) && now - lastUndoAtRef.current < 400
+    if (coalesce) {
+      undoStackRef.current[undoStackRef.current.length - 1] = prev
+    } else {
+      undoStackRef.current.push(prev)
+      if (undoStackRef.current.length > MAX_HISTORY) undoStackRef.current.shift()
+    }
+    lastUndoAtRef.current = now
+    redoStackRef.current = []
+    setUndoBump((c) => c + 1)
+  }, [])
+
+  const applyHistoryItems = useCallback((items: SceneItem[]) => {
+    applyingHistoryRef.current = true
+    graphRef.clear()
+    items.forEach((item) => graphRef.addItem(item))
+    sceneItemsRef.current = items
+    setSceneItems([...items])
+    if (campaignId && activeScene) {
+      api.scenes.saveItems(campaignId, activeScene.id, items).catch(() => {})
+    }
+    applyingHistoryRef.current = false
+  }, [campaignId, activeScene, graphRef])
+
+  const handleUndo = useCallback(() => {
+    const prev = undoStackRef.current.pop()
+    if (!prev) return
+    redoStackRef.current.push(snapshotOf(sceneItemsRef.current))
+    setSelectedItemId(null)
+    setZoneContextMenu(null)
+    applyHistoryItems(prev)
+    setUndoBump((c) => c + 1)
+  }, [applyHistoryItems])
+
+  const handleRedo = useCallback(() => {
+    const next = redoStackRef.current.pop()
+    if (!next) return
+    undoStackRef.current.push(snapshotOf(sceneItemsRef.current))
+    applyHistoryItems(next)
+    setUndoBump((c) => c + 1)
+  }, [applyHistoryItems])
+
   const handleItemsChange = useCallback((items: SceneItem[]) => {
+    const prev = sceneItemsRef.current
+    if (!applyingHistoryRef.current && prev.length > 0 && JSON.stringify(prev) !== JSON.stringify(items)) {
+      pushUndo(snapshotOf(prev))
+    }
+    sceneItemsRef.current = [...items]
     setSceneItems([...items])
     if (campaignId && activeScene) {
       clearTimeout(saveTimerRef.current);
@@ -168,7 +247,7 @@ export default function DmDashboard() {
         api.scenes.saveItems(campaignId!, activeScene!.id, items).catch(() => {})
       }, 300)
     }
-  }, [campaignId, activeScene])
+  }, [campaignId, activeScene, pushUndo])
 
   const { toggleDoor, lockDoor, unlockDoor } = useDoorInteraction(graphRef, handleItemsChange)
 
@@ -327,7 +406,7 @@ export default function DmDashboard() {
   }, [graphRef, handleItemsChange])
 
   const handleClearAllWalls = useCallback(() => {
-    if (!confirm('Delete ALL walls and doors? This cannot be undone.')) return
+    if (!confirm('Delete ALL walls and doors?')) return
     const items = graphRef.getItems()
     const toRemove = items.filter(
       (item: SceneItem) => item.metadata?.type === 'wall' || item.metadata?.type === 'door'
@@ -486,6 +565,30 @@ export default function DmDashboard() {
     }])
   }, [graphRef, handleItemsChange])
 
+  const handleClearAllLights = useCallback(() => {
+    const items = graphRef.getItems()
+    const toRemove = items.filter(
+      (item: SceneItem) => item.metadata?.type === 'light'
+    )
+    if (toRemove.length === 0) {
+      setToastQueue((prev) => [...prev.slice(-4), {
+        id: `clearl-${Date.now()}`,
+        rollerName: 'Clear',
+        diceType: 20,
+        count: 1,
+        results: [0],
+        total: 0,
+        label: `no lights to remove`,
+        timestamp: Date.now(),
+      }])
+      return
+    }
+    for (const item of toRemove) {
+      graphRef.removeItem(item.id)
+    }
+    handleItemsChange(graphRef.getItems())
+  }, [graphRef, handleItemsChange])
+
   const startZoneFogMode = useCallback(() => {
     setDrawState(null)
     setZoneDraft(null)
@@ -577,6 +680,51 @@ export default function DmDashboard() {
       timestamp: Date.now(),
     }])
   }, [graphRef, handleItemsChange])
+
+  const handleGrantLight = useCallback(async (request: LightRequest) => {
+    const sc = sceneCharsRef.current.find((s) => s.id === request.token_id)
+    if (!sc || !campaignId) return
+    const mScale = activeScene?.map_scale ?? 1
+    const mapHeight = 10 * mScale
+    const mapWidth = 10 * mScale
+    const item = createLightItem('torch', { x: sc.x / mapWidth + 0.5, y: sc.z / mapHeight + 0.5 }, mapWidth, mapHeight)
+    if (!item) return
+    const attached = attachLightToToken(item, sc.id)
+    graphRef.addItem(attached)
+    handleItemsChange(graphRef.getItems())
+    try {
+      await api.lightRequests.resolve(campaignId, request.id)
+    } catch {}
+    setLightRequests((prev) => prev.filter((r) => r.id !== request.id))
+    setToastQueue((prev) => [...prev.slice(-4), {
+      id: `grant-${Date.now()}`,
+      rollerName: 'Light',
+      diceType: 1,
+      count: 1,
+      results: [1],
+      total: 1,
+      label: `antorcha entregada a ${request.character_name}`,
+      timestamp: Date.now(),
+    }])
+  }, [campaignId, activeScene, graphRef, handleItemsChange])
+
+  const handleDenyLight = useCallback(async (request: LightRequest) => {
+    if (!campaignId) return
+    try {
+      await api.lightRequests.resolve(campaignId, request.id)
+    } catch {}
+    setLightRequests((prev) => prev.filter((r) => r.id !== request.id))
+    setToastQueue((prev) => [...prev.slice(-4), {
+      id: `deny-${Date.now()}`,
+      rollerName: 'Light',
+      diceType: 1,
+      count: 1,
+      results: [1],
+      total: 1,
+      label: `luz denegada a ${request.character_name}`,
+      timestamp: Date.now(),
+    }])
+  }, [campaignId])
 
   const selectedLight = useMemo(() => {
     if (!selectedItemId || attachLightMode || drawState || zoneDraft || portalDraft || fogMode || rectFogMode || zoneFogActive || lightPlaceMode) return null
@@ -712,11 +860,37 @@ export default function DmDashboard() {
     } else if (item?.metadata.type === 'zone') {
       setSelectedItemId(itemId)
       setZoneContextMenu({ x: clientX, y: clientY, itemId })
+    } else if (item?.metadata.type === 'light') {
+      setSelectedItemId(itemId)
+      setLightContextMenu({ x: clientX, y: clientY, itemId })
+    } else if (item?.metadata.type === 'fog') {
+      setSelectedItemId(itemId)
+      setFogContextMenu({ x: clientX, y: clientY, itemId })
     }
   }, [graphRef])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement
+      const isTyping = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+      if ((e.ctrlKey || e.metaKey) && !isTyping) {
+        const k = e.key.toLowerCase()
+        if (k === 'z' && e.shiftKey) {
+          e.preventDefault()
+          handleRedo()
+          return
+        }
+        if (k === 'z') {
+          e.preventDefault()
+          handleUndo()
+          return
+        }
+        if (k === 'y') {
+          e.preventDefault()
+          handleRedo()
+          return
+        }
+      }
       if (e.key === 'Escape') {
         if (drawState) setDrawState(null)
         else if (zoneDraft) setZoneDraft(null)
@@ -736,16 +910,60 @@ export default function DmDashboard() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [drawState, zoneDraft, portalDraft, fogMode, rectFogMode, zoneFogActive, lightPlaceMode, attachLightMode, selectedItemId, handleDeleteItem])
+  }, [drawState, zoneDraft, portalDraft, fogMode, rectFogMode, zoneFogActive, lightPlaceMode, attachLightMode, selectedItemId, handleDeleteItem, handleUndo, handleRedo])
 
   useEffect(() => {
+    const now = performance.now();
+    const prevData = lastDataRef.current;
+    lastDataRef.current = sceneChars;
+    const prevAt = prevAppliedAtRef.current;
+    prevAppliedAtRef.current = now;
+    let dtSec = prevAt ? (now - prevAt) / 1000 : 0;
+    if (dtSec < 0.001 || dtSec > 1.5) dtSec = 0;
+
+    let maxLmat = 0;
+    for (const sc of sceneChars) {
+      const lmat = sc.last_move_at ?? 0;
+      if (lmat > maxLmat) maxLmat = lmat;
+    }
+    if (maxLmat > 0) clockOffsetRef.current = Date.now() / 1000 - maxLmat;
+
+    if (prevData.length > 0 && prevData !== sceneChars && dtSec > 0) {
+      for (const sc of sceneChars) {
+        const p = prevData.find((pp) => pp.id === sc.id);
+        if (!p) continue;
+        const delX = sc.x - p.x;
+        const delZ = sc.z - p.z;
+        const delR = (sc.rotation ?? 0) - (p.rotation ?? 0);
+        const movingPos = Math.hypot(delX, delZ) >= 0.0005;
+        const movingRot = Math.abs(Math.atan2(Math.sin(delR), Math.cos(delR))) >= 0.001;
+        const vx = sc.vx ?? 0;
+        const vz = sc.vz ?? 0;
+        const vrot = sc.vrot ?? 0;
+        velocitiesRef.current.set(sc.id, {
+          vx: movingPos ? (Math.abs(vx) > 0.001 ? vx : delX / dtSec) : 0,
+          vz: movingPos ? (Math.abs(vz) > 0.001 ? vz : delZ / dtSec) : 0,
+          vrotation: movingRot ? (Math.abs(vrot) > 0.001 ? vrot : Math.atan2(Math.sin(delR), Math.cos(delR)) / dtSec) : 0,
+        });
+      }
+    }
+    for (const id of velocitiesRef.current.keys()) {
+      if (!sceneChars.find((sc) => sc.id === id)) {
+        velocitiesRef.current.delete(id);
+      }
+    }
     for (const sc of sceneChars) {
       serverPosRef.current.set(sc.id, { x: sc.x, z: sc.z, rotation: sc.rotation ?? 0 });
+      serverPosAtRef.current.set(sc.id, now);
+      serverLmatRef.current.set(sc.id, sc.last_move_at ?? 0);
     }
     for (const id of serverPosRef.current.keys()) {
       if (!sceneChars.find((sc) => sc.id === id)) {
         serverPosRef.current.delete(id);
+        serverPosAtRef.current.delete(id);
+        serverLmatRef.current.delete(id);
         renderedPosRef.current.delete(id);
+        velocitiesRef.current.delete(id);
       }
     }
   }, [sceneChars]);
@@ -764,15 +982,40 @@ export default function DmDashboard() {
     let running = true;
     const tick = () => {
       if (!running) return;
+      const now = performance.now();
+      const dtFrame = lastFrameAtRef.current
+        ? Math.min(Math.max((now - lastFrameAtRef.current) / 1000, 0.001), 0.12)
+        : 0.016;
+      lastFrameAtRef.current = now;
+      const k = 1 - Math.exp(-36 * dtFrame);
       for (const [id, target] of serverPosRef.current.entries()) {
+        const vel = velocitiesRef.current.get(id);
+        const t0 = serverPosAtRef.current.get(id) ?? now;
+        const sLmat = serverLmatRef.current.get(id) ?? 0;
+        let el: number;
+        if (clockOffsetRef.current > 0 && sLmat > 0) {
+          el = Date.now() / 1000 - clockOffsetRef.current - sLmat;
+          if (!(el > 0)) el = 0;
+          el = Math.min(el, 0.05);
+        } else {
+          el = Math.min((now - t0) / 1000, 0.05);
+        }
+        let px = target.x;
+        let pz = target.z;
+        let prot = target.rotation;
+        if (vel && el > 0) {
+          px += vel.vx * el;
+          pz += vel.vz * el;
+          prot += vel.vrotation * el;
+        }
         const prev = renderedPosRef.current.get(id);
         if (!prev) {
-          renderedPosRef.current.set(id, { ...target });
+          renderedPosRef.current.set(id, { x: px, z: pz, rotation: prot });
         } else {
-          const lerpFactor = 1 - Math.pow(0.00001, 1 / 16);
-          prev.x += (target.x - prev.x) * lerpFactor;
-          prev.z += (target.z - prev.z) * lerpFactor;
-          prev.rotation += (target.rotation - prev.rotation) * lerpFactor;
+          prev.x += (px - prev.x) * k;
+          prev.z += (pz - prev.z) * k;
+          const dr = prot - prev.rotation;
+          prev.rotation += Math.atan2(Math.sin(dr), Math.cos(dr)) * k;
         }
       }
       rafRef.current = requestAnimationFrame(tick);
@@ -797,6 +1040,12 @@ export default function DmDashboard() {
             return updated.slice(-5);
           });
         }
+      } catch {
+        // best-effort
+      }
+      try {
+        const reqs = await api.lightRequests.list(campaignId);
+        if (!cancelled) setLightRequests(reqs.filter((r) => r.status === 'pending'));
       } catch {
         // best-effort
       }
@@ -900,6 +1149,25 @@ export default function DmDashboard() {
     setSelectedTokenId((prev) => prev === tokenId ? null : tokenId);
   }, [distanceFrom, attachLightMode, handleAttachComplete]);
 
+  const handleTokenDrag = useCallback(async (sceneCharId: string, x: number, z: number) => {
+    if (!campaignId || !activeScene) return;
+    const sc = sceneCharsRef.current.find((s) => s.id === sceneCharId);
+    if (!sc) return;
+    setSceneChars((prev) =>
+      prev.map((s) => s.id === sceneCharId ? { ...s, x, z } : s)
+    );
+    if (sc.entity_type !== 'character') return;
+    try {
+      await api.scenes.moveCharacter(campaignId, activeScene.id, {
+        character_id: sc.entity_id,
+        x, z,
+        rotation: sc.rotation ?? 0,
+      });
+    } catch {
+      // best-effort
+    }
+  }, [campaignId, activeScene]);
+
   const handleTokenDrop = useCallback(async (sceneCharId: string, x: number, z: number) => {
     if (!campaignId || !activeScene) return;
 
@@ -931,14 +1199,30 @@ export default function DmDashboard() {
       return;
     }
 
+    const sc = sceneCharsRef.current.find((s) => s.id === sceneCharId);
+    if (!sc) return;
     setSceneChars((prev) =>
-      prev.map((sc) => sc.id === sceneCharId ? { ...sc, x, z } : sc)
+      prev.map((s) => s.id === sceneCharId ? { ...s, x, z } : s)
     );
+
+    if (sc.entity_type === 'character') {
+      try {
+        await api.scenes.moveCharacter(campaignId, activeScene.id, {
+          character_id: sc.entity_id,
+          x, z,
+          rotation: sc.rotation ?? 0,
+        });
+      } catch {
+        // best-effort
+      }
+      return;
+    }
+
     const current = sceneCharsRef.current;
-    const updated = current.map((sc) =>
-      sc.id === sceneCharId
-        ? { entity_type: sc.entity_type, entity_id: sc.entity_id, x, y: sc.y, z, visible: !!sc.visible, order: sc.order, token_scale: sc.token_scale ?? 1, move_speed: sc.move_speed ?? 1 }
-        : { entity_type: sc.entity_type, entity_id: sc.entity_id, x: sc.x, y: sc.y, z: sc.z, visible: !!sc.visible, order: sc.order, token_scale: sc.token_scale ?? 1, move_speed: sc.move_speed ?? 1 }
+    const updated = current.map((scn) =>
+      scn.id === sceneCharId
+        ? { entity_type: scn.entity_type, entity_id: scn.entity_id, x, y: scn.y, z, visible: !!scn.visible, order: scn.order, token_scale: scn.token_scale ?? 1, move_speed: scn.move_speed ?? 1 }
+        : { entity_type: scn.entity_type, entity_id: scn.entity_id, x: scn.x, y: scn.y, z: scn.z, visible: !!scn.visible, order: scn.order, token_scale: scn.token_scale ?? 1, move_speed: scn.move_speed ?? 1 }
     );
     try {
       await api.scenes.updateCharacters(campaignId, activeScene.id, updated);
@@ -1260,6 +1544,24 @@ export default function DmDashboard() {
               {sceneIndex}/{scenes.length}
             </span>
             <div className="w-px h-5 bg-[var(--bg-tertiary)] shrink-0" />
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                onClick={handleUndo}
+                disabled={undoStackRef.current.length === 0}
+                className="text-xs px-1.5 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Undo (Ctrl+Z)"
+              >
+                ↶
+              </button>
+              <button
+                onClick={handleRedo}
+                disabled={redoStackRef.current.length === 0}
+                className="text-xs px-1.5 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Redo (Ctrl+Shift+Z)"
+              >
+                ↷
+              </button>
+            </div>
             <div ref={buildMenuRef} className="relative shrink-0">
               <button
                 onClick={() => setBuildMenuOpen(!buildMenuOpen)}
@@ -1388,6 +1690,12 @@ export default function DmDashboard() {
                     className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-red-400"
                   >
                     🗑️ Clear all fog
+                  </button>
+                  <button
+                    onClick={handleClearAllLights}
+                    className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-red-400"
+                  >
+                    🗑️ Clear all lights
                   </button>
                   <div className="border-t border-[var(--bg-tertiary)] my-1" />
                   <div className="px-3 py-1">
@@ -1542,6 +1850,13 @@ export default function DmDashboard() {
             {selectedLight && (
               <div className="flex items-center gap-2 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-2 py-1 shrink-0">
                 <span className="text-[10px] text-[var(--text-secondary)]">💡 {selectedLight.item.name}</span>
+                <button
+                  onClick={() => { handleDeleteItem(selectedLight.item.id); setSelectedItemId(null) }}
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-red-600 text-white hover:bg-red-700 transition-colors ml-1"
+                  title="Delete light"
+                >
+                  🗑
+                </button>
                 <div className="flex gap-0.5">
                   {(['hard', 'soft', 'directional'] as const).map((m) => (
                     <button
@@ -1590,6 +1905,20 @@ export default function DmDashboard() {
                     title="Range"
                   />
                   <span className="w-8">{selectedLight.source.radius.toFixed(2)}</span>
+                </label>
+                <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
+                  {selectedLight.source.mode === 'hard' ? 'edge' : 'falloff'}
+                  <input
+                    type="range"
+                    min={0.1}
+                    max={1}
+                    step={0.05}
+                    value={selectedLight.source.falloff ?? (selectedLight.source.mode === 'hard' ? 1 : 0.6)}
+                    onChange={(e) => handleLightSourceChange({ falloff: parseFloat(e.target.value) })}
+                    className="w-14 h-1"
+                    title={selectedLight.source.mode === 'hard' ? 'Bright edge position' : 'Bright→dim falloff'}
+                  />
+                  <span className="w-8">{(selectedLight.source.falloff ?? (selectedLight.source.mode === 'hard' ? 1 : 0.6)).toFixed(2)}</span>
                 </label>
                 {selectedLight.source.mode === 'directional' && (
                   <>
@@ -1963,6 +2292,7 @@ export default function DmDashboard() {
                 lightAttach={attachLightMode}
                 onTokenClick={handleTokenClick}
                 onTokenDrop={handleTokenDrop}
+                onTokenDrag={handleTokenDrag}
                 onTokenContextMenu={handleTokenContextMenu}
                 onItemClick={handleItemClickForAttach}
                 onItemContextMenu={(itemId, clientX, clientY) => {
@@ -1985,6 +2315,20 @@ export default function DmDashboard() {
                     : 'Select a scene or upload a map background.'}
                 </p>
               </div>
+            </div>
+          )}
+          {lightRequests.length > 0 && (
+            <div onPointerDown={(e) => e.stopPropagation()} className="absolute top-3 right-3 z-10 bg-[var(--bg-primary)]/90 backdrop-blur border border-[var(--bg-tertiary)] rounded-lg p-2 w-60 max-h-48 overflow-y-auto shadow-lg">
+              <p className="text-xs font-medium text-[var(--text-primary)] mb-1.5 px-1">🕯️ Peticiones de luz</p>
+              <ul className="space-y-1.5">
+                {lightRequests.map((r) => (
+                  <li key={r.id} className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+                    <span className="truncate flex-1" title={`${r.character_name} pide luz`}>{r.character_name}</span>
+                    <button onClick={() => handleGrantLight(r)} className="px-1.5 py-0.5 rounded bg-emerald-600/80 text-white hover:bg-emerald-500 transition-colors" title="Entregar antorcha">🔦</button>
+                    <button onClick={() => handleDenyLight(r)} className="px-1.5 py-0.5 rounded bg-gray-700 text-gray-400 hover:text-white transition-colors" title="Denegar">✕</button>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 
@@ -2298,6 +2642,28 @@ export default function DmDashboard() {
           />
         )
       })()}
+
+      {lightContextMenu && (
+        <ContextMenu
+          x={lightContextMenu.x}
+          y={lightContextMenu.y}
+          items={[
+            { label: 'Delete light', icon: '🗑️', danger: true, onClick: () => handleDeleteItem(lightContextMenu.itemId) },
+          ]}
+          onClose={() => setLightContextMenu(null)}
+        />
+      )}
+
+      {fogContextMenu && (
+        <ContextMenu
+          x={fogContextMenu.x}
+          y={fogContextMenu.y}
+          items={[
+            { label: 'Delete fog region', icon: '🗑️', danger: true, onClick: () => handleDeleteItem(fogContextMenu.itemId) },
+          ]}
+          onClose={() => setFogContextMenu(null)}
+        />
+      )}
 
       <MinimizedBar />
 

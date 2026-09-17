@@ -316,6 +316,27 @@ class PlayerFogUpdate(BaseModel):
     regions: list[PlayerFogRegion] = []
 
 
+class LightRequestCreate(BaseModel):
+    player_id: str
+    character_name: str
+    scene_id: str
+    token_id: str
+
+
+class LightRequestResponse(BaseModel):
+    id: str
+    campaign_id: str
+    player_id: str
+    character_name: str
+    scene_id: str
+    token_id: str
+    status: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class MapCreate(BaseModel):
     name: str
     description: str = ""
@@ -423,6 +444,10 @@ class SceneCharacterResponse(BaseModel):
     token_scale: float = 1.0
     move_speed: float = 1.0
     brightness: float = 0.0
+    vx: float = 0.0
+    vz: float = 0.0
+    vrot: float = 0.0
+    last_move_at: float = 0.0
 
     class Config:
         from_attributes = True
