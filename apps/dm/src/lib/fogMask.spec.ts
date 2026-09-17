@@ -57,7 +57,7 @@ describe('fogMask/roundtrip', () => {
     const regions = extractFogRegions(items)
     expect(regions.map((r) => r.id)).toEqual(['f1', 'f2'])
     expect(regions[0].revealed).toBe(true)
-    expect(regions[0].points).toHaveLength(32)
+    expect(regions[0].points).toHaveLength(64)
     expect(regions[1].revealed).toBe(false)
   })
 

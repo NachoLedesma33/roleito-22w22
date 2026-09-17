@@ -24,7 +24,7 @@ export function extractFogRegions(items: SceneItem[]): FogRegion[] {
   return regions
 }
 
-export function circlePoints(cx: number, cy: number, radius: number, segments = 16): number[] {
+export function circlePoints(cx: number, cy: number, radius: number, segments = 32): number[] {
   const pts: number[] = []
   for (let i = 0; i < segments; i++) {
     const a = (i / segments) * Math.PI * 2
