@@ -4,7 +4,7 @@ import { Billboard, Text } from '@react-three/drei'
 import * as THREE from 'three'
 import { SceneItem, ZoneMetadata, LightMetadata } from '@core/domain/types'
 import { PORTAL_COLORS } from './ZonePortal'
-import { normalizeLightConfig, lightGlowOpacity, hexToRgba } from '../lib/light'
+import { normalizeLightConfig, lightGlowOpacity, hexToRgba, computeLightZones } from '../lib/light'
 import { lightShapePoints } from '../lib/lightOcclusion'
 
 const TOKEN_COLORS: Record<string, string> = {
@@ -451,12 +451,18 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
     canvas.height = size
     const ctx = canvas.getContext('2d')!
     const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2)
+    const zones = computeLightZones(source)
+    const brightRatio = Math.min(1, Math.max(0.02, zones.brightRadius / Math.max(1e-6, zones.radius)))
+    const dimRatio = Math.min(1, Math.max(brightRatio, zones.dimRadius / Math.max(1e-6, zones.radius)))
     if (source.mode === 'hard') {
-      grad.addColorStop(0, hexToRgba(source.color, 0.7))
-      grad.addColorStop(0.85, hexToRgba(source.color, 0.45))
+      grad.addColorStop(0, hexToRgba(source.color, 0.75))
+      grad.addColorStop(brightRatio * 0.9, hexToRgba(source.color, 0.45))
+      grad.addColorStop(brightRatio, hexToRgba(source.color, 0))
       grad.addColorStop(1, hexToRgba(source.color, 0))
     } else {
-      grad.addColorStop(0, hexToRgba(source.color, 0.6))
+      grad.addColorStop(0, hexToRgba(source.color, 0.7))
+      grad.addColorStop(brightRatio, hexToRgba(source.color, 0.5))
+      grad.addColorStop(dimRatio, hexToRgba(source.color, 0.15))
       grad.addColorStop(1, hexToRgba(source.color, 0))
     }
     ctx.fillStyle = grad
@@ -464,7 +470,7 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
     const tex = new THREE.CanvasTexture(canvas)
     tex.needsUpdate = true
     return tex
-  }, [source.color, source.mode])
+  }, [source.color, source.mode, source.radius, source.falloff])
 
   const sectorGeometry = useMemo(() => {
     if (source.mode !== 'directional' || !source.angle) return null

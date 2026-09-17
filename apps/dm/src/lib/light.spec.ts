@@ -3,12 +3,14 @@ import {
   LIGHT_PRESETS,
   attachLightToToken,
   clampIntensity,
+  computeLightZones,
   coneSectorPoints,
   createLightItem,
   detachLight,
   hexToRgba,
   isLightAttached,
   lightGlowOpacity,
+  lightIntensityAt,
   normalizeLightConfig,
   updateLightSource,
 } from './light'
@@ -157,5 +159,60 @@ describe('light/helpers', () => {
   it('updateLightSource devuelve null si el item no es luz', () => {
     const item = { ...createLightItem('torch', { x: 0.5, y: 0.5 })!, metadata: { type: 'wall' } }
     expect(updateLightSource(item as never, { color: '#fff' })).toBeNull()
+  })
+})
+
+describe('light/zones (E8)', () => {
+  it('soft sin falloff explicito hereda falloff 0.6', () => {
+    const cfg = normalizeLightConfig({ mode: 'soft', intensity: 0.5, radius: 0.3 })
+    expect(cfg.falloff).toBeCloseTo(0.6, 5)
+    expect(normalizeLightConfig({}).falloff).toBeUndefined()
+  })
+
+  it('hard sin falloff: zona bright = radio completo, sin banda dim (borde duro al borde)', () => {
+    const zones = computeLightZones({ mode: 'hard', color: '#fff', intensity: 1, radius: 0.2 })
+    expect(zones.brightRadius).toBeCloseTo(0.2, 5)
+    expect(zones.dimRadius).toBeCloseTo(0.2, 5)
+    expect(zones.radius).toBeCloseTo(0.2, 5)
+  })
+
+  it('hard con falloff 0.4: bright recorta al 40% y dim = bright (sin banda)', () => {
+    const zones = computeLightZones({ mode: 'hard', color: '#fff', intensity: 1, radius: 0.2, falloff: 0.4 })
+    expect(zones.brightRadius).toBeCloseTo(0.08, 5)
+    expect(zones.dimRadius).toBeCloseTo(0.08, 5)
+  })
+
+  it('soft con falloff 0 → bright al 50% y dim al 90% del radio', () => {
+    const zones = computeLightZones({ mode: 'soft', color: '#fff', intensity: 1, radius: 0.4, falloff: 0 } as const)
+    expect(zones.brightRadius).toBeCloseTo(0.2, 5)
+    expect(zones.dimRadius).toBeCloseTo(0.36, 5)
+  })
+
+  it('soft falloff 0.6: bright al 80%, dim al 96% (banda de transicion real)', () => {
+    const zones = computeLightZones({ mode: 'soft', color: '#fff', intensity: 1, radius: 0.3, falloff: 0.6 } as const)
+    expect(zones.brightRadius).toBeCloseTo(0.24, 5)
+    expect(zones.dimRadius).toBeCloseTo(0.288, 5)
+    expect(zones.brightRadius).toBeLessThan(zones.dimRadius)
+    expect(zones.dimRadius).toBeLessThan(zones.radius)
+  })
+
+  it('intensidad mantiene plateau hasta falloff y decae lineal hasta 0 al radio', () => {
+    const src = { mode: 'soft', color: '#fff', intensity: 0.8, radius: 0.2, falloff: 0.5 } as const
+    expect(lightIntensityAt(src, 0)).toBeCloseTo(0.8, 5)
+    expect(lightIntensityAt(src, 0.1)).toBeCloseTo(0.8, 5)
+    expect(lightIntensityAt(src, 0.15)).toBeCloseTo(0.4, 5)
+    expect(lightIntensityAt(src, 0.2)).toBe(0)
+    expect(lightIntensityAt(src, 0.3)).toBe(0)
+  })
+
+  it('intensidad hard: plena dentro del edge, 0 fuera (salto duro)', () => {
+    const src = { mode: 'hard', color: '#fff', intensity: 0.9, radius: 0.2, falloff: 0.5 } as const
+    expect(lightIntensityAt(src, 0.0999)).toBeCloseTo(0.9, 5)
+    expect(lightIntensityAt(src, 0.1001)).toBe(0)
+  })
+
+  it('zonas respetan intensidad baja (escala, no cruza umbrales del config)', () => {
+    const zones = computeLightZones({ mode: 'soft', color: '#fff', intensity: 0.2, radius: 0.3, falloff: 0.6 } as const)
+    expect(zones.brightRadius).toBeCloseTo(0.24, 5)
   })
 })

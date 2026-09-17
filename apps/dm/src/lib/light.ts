@@ -21,15 +21,47 @@ export const LIGHT_PRESETS: Record<string, LightPreset> = {
 }
 
 export function normalizeLightConfig(config: Partial<LightSourceConfig>): LightSourceConfig {
+  const mode = config.mode ?? 'hard'
   return {
-    mode: config.mode ?? 'hard',
+    mode,
     color: config.color ?? '#ffffff',
     intensity: Math.min(1, Math.max(0, config.intensity ?? 1)),
     radius: Math.max(0.02, config.radius ?? 0.2),
-    angle: config.angle ?? (config.mode === 'directional' ? 90 : undefined),
+    angle: config.angle ?? (mode === 'directional' ? 90 : undefined),
     direction: config.direction ?? 0,
-    falloff: config.falloff,
+    falloff: config.falloff ?? (mode === 'soft' ? 0.6 : undefined),
   }
+}
+
+export interface LightZones {
+  brightRadius: number
+  dimRadius: number
+  radius: number
+}
+
+export function lightIntensityAt(source: LightSourceConfig, distance: number): number {
+  const cfg = normalizeLightConfig(source)
+  const radius = Math.max(1e-6, cfg.radius)
+  const t = Math.min(1, Math.max(0, distance / radius))
+  if (cfg.mode === 'hard') {
+    const edge = cfg.falloff ?? 1
+    return t <= edge ? cfg.intensity : 0
+  }
+  const plateau = Math.min(0.99, cfg.falloff ?? 0)
+  if (t <= plateau) return cfg.intensity
+  return cfg.intensity * Math.max(0, (1 - t) / Math.max(1e-6, 1 - plateau))
+}
+
+export function computeLightZones(source: LightSourceConfig): LightZones {
+  const cfg = normalizeLightConfig(source)
+  if (cfg.mode === 'hard') {
+    const bright = Math.min(1, cfg.falloff ?? 1)
+    return { brightRadius: cfg.radius * bright, dimRadius: cfg.radius * bright, radius: cfg.radius }
+  }
+  const plateau = Math.min(0.99, cfg.falloff ?? 0)
+  const brightT = Math.min(1, 1 - 0.5 * (1 - plateau))
+  const dimT = Math.min(1, 1 - 0.1 * (1 - plateau))
+  return { brightRadius: cfg.radius * brightT, dimRadius: cfg.radius * dimT, radius: cfg.radius }
 }
 
 export function clampIntensity(intensity: number): number {
