@@ -8,7 +8,9 @@ from schemas import (
     SceneCreate, SceneUpdate, SceneResponse,
     SceneCharacterPosition, SceneCharacterResponse,
 )
+import math
 import os
+import time
 import uuid
 import json
 from pathlib import Path
@@ -362,7 +364,7 @@ async def update_scene_characters(
     scene = scene_result.scalar_one_or_none()
     map_scale = getattr(scene, 'map_scale', 1.0) if scene else 1.0
     map_h = 10 * (map_scale or 1.0)
-    map_w = map_h * 4
+    map_w = map_h
     token_radius = 0.4
 
     created = []
@@ -451,14 +453,19 @@ async def player_move_character(
     if not sc:
         raise HTTPException(status_code=404, detail="Character not on this scene")
 
+    prev_x = sc.x
+    prev_z = sc.z
+    prev_rot = sc.rotation or 0.0
+    new_rot = round(data.rotation % (2 * math.pi) + math.pi, 6) % (2 * math.pi) - math.pi
+
     sc.x = data.x
     sc.z = data.z
-    sc.rotation = data.rotation
+    sc.rotation = new_rot
 
     # Boundary collision: clamp to map bounds
     map_scale = getattr(scene, 'map_scale', 1.0) or 1.0
     map_h = 10 * map_scale
-    map_w = map_h * 4
+    map_w = map_h
     token_radius = 0.4
     sc.x = max(-map_w / 2 + token_radius, min(map_w / 2 - token_radius, sc.x))
     sc.z = max(-map_h / 2 + token_radius, min(map_h / 2 - token_radius, sc.z))
