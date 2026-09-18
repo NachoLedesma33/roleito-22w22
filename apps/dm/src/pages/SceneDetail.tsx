@@ -181,7 +181,7 @@ export default function SceneDetail() {
           <button onClick={() => fileInput.current?.click()} className="px-3 py-1 text-sm rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
             Upload Background
           </button>
-          <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={handleUploadBg} />
+          <input ref={fileInput} type="file" accept="image/*,.glb,.gltf" className="hidden" onChange={handleUploadBg} />
         </div>
       </div>
 

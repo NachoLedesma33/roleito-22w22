@@ -1,6 +1,6 @@
 import { Suspense, useMemo, useRef, useCallback, useEffect, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
-import { OrbitControls, useTexture } from '@react-three/drei';
+import { OrbitControls, useTexture, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import TokenSprite from './TokenSprite';
 import TokenModel from './TokenModel';
@@ -94,6 +94,16 @@ type DragStarter = (
 ) => void;
 
 function SceneBackground({ url, mapScale = 1 }: { url: string; mapScale?: number }) {
+  const isModel = /\.(glb|gltf)$/i.test(url);
+
+  if (isModel) {
+    return <SceneBackgroundModel url={url} mapScale={mapScale} />;
+  }
+
+  return <SceneBackgroundImage url={url} mapScale={mapScale} />;
+}
+
+function SceneBackgroundImage({ url, mapScale = 1 }: { url: string; mapScale?: number }) {
   const texture = useTexture(url);
   const img = texture.image as HTMLImageElement;
   const aspect = img.width / img.height;
@@ -108,6 +118,26 @@ function SceneBackground({ url, mapScale = 1 }: { url: string; mapScale?: number
       <planeGeometry args={[width, height]} />
       <meshStandardMaterial map={texture} />
     </mesh>
+  );
+}
+
+function SceneBackgroundModel({ url, mapScale = 1 }: { url: string; mapScale?: number }) {
+  const { scene } = useGLTF(url);
+  const cloned = useMemo(() => {
+    const c = scene.clone(true);
+    c.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    return c;
+  }, [scene]);
+
+  return (
+    <group name="scene-background" scale={[mapScale, mapScale, mapScale]}>
+      <primitive object={cloned} />
+    </group>
   );
 }
 
@@ -572,6 +602,10 @@ export default function SceneRenderer({
 
   useEffect(() => {
     if (!backgroundUrl) return;
+    if (/\.(glb|gltf)$/i.test(backgroundUrl)) {
+      setImageAspect(1);
+      return;
+    }
     const img = new Image();
     img.onload = () => {
       if (img.width && img.height) setImageAspect(img.width / img.height);
