@@ -79,8 +79,7 @@ export function computeVisionRegions(
     const origin = lightVisionOrigin(item, charPos)
     if (!origin) continue
     const isOwnCone = meta.attachedTo === ownSceneCharId && (meta.source.mode ?? 'hard') === 'directional'
-    const effectiveRotation = origin.rotation !== undefined ? origin.rotation + (origin.facingOffset ?? 0) : undefined
-    const dirOverride = isOwnCone && effectiveRotation !== undefined ? rotationToConeDirDeg(effectiveRotation) : undefined
+    const dirOverride = isOwnCone && origin.rotation !== undefined ? rotationToConeDirDeg(origin.rotation) : undefined
     const region = lightToVisionRegion(item, origin, occluders, mapWidth, mapHeight, dirOverride)
     if (region) regions.push(region)
   }

@@ -2590,30 +2590,33 @@ export default function DmDashboard() {
                     className="w-full h-1 accent-[var(--accent)]"
                   />
                   <p className="text-[9px] text-[var(--text-secondary)] mt-0.5 truncate">{ent?.name || 'Unknown'}</p>
-                  <button
-                    onClick={async () => {
-                      const newOffset = (sc.facing_offset ?? 0) === 0 ? Math.PI : 0;
+                  <div className="flex items-center justify-between mb-1 mt-2">
+                    <span className="text-[10px] text-[var(--text-secondary)]">Facing</span>
+                    <span className="text-[10px] text-[var(--accent)] font-mono">{Math.round(((sc.facing_offset ?? 0) * 180) / Math.PI)}°</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={6.28318}
+                    step={0.017453}
+                    value={sc.facing_offset ?? 0}
+                    onChange={(e) => {
+                      const v = parseFloat(e.target.value);
                       lastLocalChangeRef.current = Date.now();
-                      setSceneChars((prev) => prev.map((s) => s.id === selectedTokenId ? { ...s, facing_offset: newOffset } : s));
+                      setSceneChars((prev) => prev.map((s) => s.id === selectedTokenId ? { ...s, facing_offset: v } : s));
                       if (!campaignId || !activeScene) return;
                       const updated = sceneCharsRef.current.map((s) =>
                         s.id === selectedTokenId
-                          ? { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: newOffset }
+                          ? { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: v }
                           : { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: s.facing_offset ?? 0 }
                       );
-                      try {
-                        await api.scenes.updateCharacters(campaignId, activeScene.id, updated);
-                      } catch (err) {
-                        console.error('Failed to persist facing offset:', err);
-                      }
+                      clearTimeout((window as any).__facingTimer);
+                      (window as any).__facingTimer = setTimeout(() => {
+                        api.scenes.updateCharacters(campaignId, activeScene.id, updated).catch(() => {});
+                      }, 300);
                     }}
-                    className={`mt-1 w-full text-[10px] px-2 py-1 rounded border transition-colors ${(sc.facing_offset ?? 0) === 0
-                      ? 'border-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:border-[var(--accent)]'
-                      : 'border-[var(--accent)] text-[var(--accent)] bg-[var(--accent)]/10'
-                    }`}
-                  >
-                    {(sc.facing_offset ?? 0) === 0 ? '↔ Flip Facing' : '↔ Facing Flipped'}
-                  </button>
+                    className="w-full h-1 accent-[var(--accent)]"
+                  />
                 </div>
               );
             })()}

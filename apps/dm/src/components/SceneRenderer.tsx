@@ -549,7 +549,7 @@ export default function SceneRenderer({
       const meta = item.metadata as { type?: string; attachedTo?: string } | undefined;
       if (item.visible && meta?.type === 'light' && meta.attachedTo) {
         const ch = visibleChars.find((c) => c.sceneCharId === meta.attachedTo);
-        if (ch) info.set(item.id, { pos: [ch.x, 0, ch.z], rotation: (ch.rotation ?? 0) + (ch.facingOffset ?? 0) });
+        if (ch)       info.set(item.id, { pos: [ch.x, 0, ch.z], rotation: ch.rotation ?? 0 });
       }
     }
     return info;
