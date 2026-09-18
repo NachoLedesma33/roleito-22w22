@@ -1990,15 +1990,15 @@ export default function DmDashboard() {
                   range
                   <input
                     type="range"
-                    min={0.001}
+                    min={0.0001}
                     max={0.5}
-                    step={0.0001}
+                    step={0.00001}
                     value={selectedLight.source.radius}
                     onChange={(e) => handleLightSourceChange({ radius: parseFloat(e.target.value) })}
                     className="w-16 h-1"
                     title="Range"
                   />
-                  <span className="w-8">{selectedLight.source.radius.toFixed(4)}</span>
+                  <span className="w-8">{selectedLight.source.radius.toFixed(5)}</span>
                 </label>
                 <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
                   {selectedLight.source.mode === 'hard' ? 'edge' : 'falloff'}
