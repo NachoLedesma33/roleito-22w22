@@ -61,13 +61,13 @@ export default function SceneSettingsHud({ scene, onUpdate, onClose }: SceneSett
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">Floor Offset</label>
-              <span className="text-[10px] text-[var(--accent)] font-mono">{modelYOffset.toFixed(2)}</span>
+              <span className="text-[10px] text-[var(--accent)] font-mono">{modelYOffset.toFixed(3)}</span>
             </div>
             <input
               type="range"
               min={-10}
               max={10}
-              step={0.01}
+              step={0.001}
               value={modelYOffset}
               onChange={(e) => {
                 const v = parseFloat(e.target.value);
