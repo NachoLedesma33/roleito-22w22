@@ -71,7 +71,7 @@ async def compute_player_revision(db: AsyncSession, campaign_id: str) -> str:
             SceneCharacter.id, SceneCharacter.scene_id, SceneCharacter.entity_type,
             SceneCharacter.entity_id, SceneCharacter.x, SceneCharacter.y,
             SceneCharacter.z, SceneCharacter.visible, SceneCharacter.order,
-            SceneCharacter.rotation,
+            SceneCharacter.rotation, SceneCharacter.facing_offset,
         )
         .join(Scene, Scene.id == SceneCharacter.scene_id)
         .where(Scene.campaign_id == campaign_id)

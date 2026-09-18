@@ -528,13 +528,21 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
 
   const occludedGeometry = useMemo(() => {
     if (!occluders || occluders.length === 0) return null
+    const originX = attachedCone ? 0 : lightOx
+    const originZ = attachedCone ? 0 : lightOz
+    const localOccluders = attachedCone
+      ? occluders.map((o) => ({
+          a: [o.a[0] - lightOx, o.a[1] - lightOz] as [number, number],
+          b: [o.b[0] - lightOx, o.b[1] - lightOz] as [number, number],
+        }))
+      : occluders
     const pts = lightShapePoints(
-      lightOx,
-      lightOz,
+      originX,
+      originZ,
       ringRadius,
       source.mode === 'directional' ? geometryDirDeg : null,
       source.angle ?? 90,
-      occluders,
+      localOccluders,
     )
     const shape = new THREE.Shape()
     shape.moveTo(pts[0][0], pts[0][1])
@@ -543,7 +551,7 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
     geo.rotateX(-Math.PI / 2)
     remapGlowUv(geo, ringRadius)
     return geo
-  }, [occluders, lightOx, lightOz, ringRadius, source.mode, geometryDirDeg, source.angle])
+  }, [occluders, lightOx, lightOz, ringRadius, source.mode, geometryDirDeg, source.angle, attachedCone])
 
   const halo = (() => {
     if (occludedGeometry) {

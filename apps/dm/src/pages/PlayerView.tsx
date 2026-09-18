@@ -197,6 +197,7 @@ export default function PlayerView() {
   const lastRollTsRef = useRef<number>(0);
   const dataRef = useRef<typeof data>(null);
   const wasdTargetRef = useRef<{ x: number; z: number; rotation: number } | null>(null);
+  const lastMoveDirRef = useRef<number | null>(null);
   const lastMoveAtRef = useRef(0);
   const serverPosRef = useRef<Map<string, { x: number; z: number; rotation: number }>>(new Map());
   const serverPosAtRef = useRef<Map<string, number>>(new Map());
@@ -376,7 +377,10 @@ export default function PlayerView() {
     const m = new Map<string, CharPos>()
     if (!data) return m
     for (const c of data.characters) m.set(c.id, { x: c.x, z: c.z })
-    if (mySceneCharId && wasdTarget) m.set(mySceneCharId, { x: wasdTarget.x, z: wasdTarget.z, rotation: wasdTarget.rotation, facingOffset: data.characters.find((c) => c.id === mySceneCharId)?.facing_offset ?? 0 })
+    if (mySceneCharId && wasdTarget) {
+      const coneRotation = lastMoveDirRef.current ?? wasdTarget.rotation
+      m.set(mySceneCharId, { x: wasdTarget.x, z: wasdTarget.z, rotation: coneRotation, facingOffset: data.characters.find((c) => c.id === mySceneCharId)?.facing_offset ?? 0 })
+    }
     return m
   }, [data, mySceneCharId, wasdTarget])
 
@@ -623,6 +627,7 @@ export default function PlayerView() {
       let z = prev ? prev.z : sc.z;
       let rotation = prev ? prev.rotation : (sc.rotation ?? 0);
       let moved = false;
+      let hasWasd = false;
 
       const moveSpeed = 0.15 * (sc.move_speed ?? 1);
 
@@ -630,21 +635,25 @@ export default function PlayerView() {
         x += Math.sin(rotation) * moveSpeed;
         z += Math.cos(rotation) * moveSpeed;
         moved = true;
+        hasWasd = true;
       }
       if (keysPressed.has('s') || keysPressed.has('arrowdown')) {
         x -= Math.sin(rotation) * moveSpeed;
         z -= Math.cos(rotation) * moveSpeed;
         moved = true;
+        hasWasd = true;
       }
       if (keysPressed.has('a') || keysPressed.has('arrowleft')) {
         x += Math.cos(rotation) * -moveSpeed;
         z += Math.sin(rotation) * moveSpeed;
         moved = true;
+        hasWasd = true;
       }
       if (keysPressed.has('d') || keysPressed.has('arrowright')) {
         x += Math.cos(rotation) * moveSpeed;
         z -= Math.sin(rotation) * moveSpeed;
         moved = true;
+        hasWasd = true;
       }
       if (keysPressed.has('q')) {
         rotation += ROTATE_SPEED;
@@ -656,6 +665,13 @@ export default function PlayerView() {
       }
 
       if (moved) {
+        if (hasWasd) {
+          const dx = x - (prev ? prev.x : sc.x);
+          const dz = z - (prev ? prev.z : sc.z);
+          if (dx !== 0 || dz !== 0) {
+            lastMoveDirRef.current = Math.atan2(dx, dz);
+          }
+        }
         lastMoveAtRef.current = Date.now();
         const mapScale = currentData.map_scale ?? 1;
         const mapH = 10 * mapScale;

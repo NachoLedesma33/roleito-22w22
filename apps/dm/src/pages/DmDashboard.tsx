@@ -626,20 +626,6 @@ export default function DmDashboard() {
     handleItemsChange(graphRef.getItems())
   }, [lightPlaceMode, activeScene, graphRef, handleItemsChange])
 
-  const startAttachLightMode = useCallback(() => {
-    setDrawState(null)
-    setZoneDraft(null)
-    setPortalDraft(null)
-    setFogMode(null)
-    setRectFogMode(null)
-    setZoneFogActive(false)
-    setLightPlaceMode(null)
-    setAttachLightMode((prev) => {
-      if (prev) return null
-      return { lightId: null }
-    })
-    setBuildMenuOpen(false)
-  }, [])
 
   const handleAttachComplete = useCallback((tokenId: string) => {
     if (!attachLightMode?.lightId) return
@@ -1120,10 +1106,75 @@ export default function DmDashboard() {
 
   const handleToggleLighting = async (mode: string) => {
     if (!campaignId || !activeScene) return;
-    const updated = await api.scenes.update(campaignId, activeScene.id, { lighting: mode });
-    setActiveScene(updated);
-    setScenes((prev) => prev.map((s) => s.id === updated.id ? updated : s));
+    try {
+      const updated = await api.scenes.update(campaignId, activeScene.id, { lighting: mode });
+      setActiveScene(updated);
+      setScenes((prev) => prev.map((s) => s.id === updated.id ? updated : s));
+    } catch {
+      setToastQueue((prev) => [...prev.slice(-4), {
+        id: `lighting-err-${Date.now()}`,
+        rollerName: 'System',
+        diceType: 1, count: 1, results: [1], total: 1,
+        label: 'Failed to update lighting',
+        timestamp: Date.now(),
+      }]);
+    }
   };
+
+  const handleTokenLightAttach = useCallback((sceneCharId: string, lightId: string) => {
+    const light = graphRef.getItem(lightId)
+    if (!light || light.metadata.type !== 'light') return
+    const attached = attachLightToToken(light, sceneCharId)
+    graphRef.updateItem(lightId, attached)
+    handleItemsChange(graphRef.getItems())
+    setContextMenu(null)
+    setSelectedItemId(lightId)
+    setToastQueue((prev) => [...prev.slice(-4), {
+      id: `attach-ctx-${Date.now()}`,
+      rollerName: 'Light',
+      diceType: 1, count: 1, results: [1], total: 1,
+      label: 'light attached — edit in toolbar',
+      timestamp: Date.now(),
+    }])
+  }, [graphRef, handleItemsChange])
+
+  const handleTokenLightDetach = useCallback((lightId: string) => {
+    const light = graphRef.getItem(lightId)
+    if (!light || light.metadata.type !== 'light') return
+    graphRef.updateItem(lightId, detachLight(light))
+    handleItemsChange(graphRef.getItems())
+    setSelectedItemId(null)
+    setContextMenu(null)
+    setToastQueue((prev) => [...prev.slice(-4), {
+      id: `detach-ctx-${Date.now()}`,
+      rollerName: 'Light',
+      diceType: 1, count: 1, results: [1], total: 1,
+      label: 'light detached from token',
+      timestamp: Date.now(),
+    }])
+  }, [graphRef, handleItemsChange])
+
+  const handleCreateAndAttachLight = useCallback((sceneCharId: string) => {
+    const sc = sceneCharsRef.current.find((s) => s.id === sceneCharId)
+    if (!sc || !activeScene) return
+    const mScale = activeScene.map_scale ?? 1
+    const mapHeight = 10 * mScale
+    const mapWidth = 10 * mScale
+    const item = createLightItem('lantern', { x: sc.x / mapWidth + 0.5, y: sc.z / mapHeight + 0.5 }, mapWidth, mapHeight)
+    if (!item) return
+    const attached = attachLightToToken(item, sc.id)
+    graphRef.addItem(attached)
+    handleItemsChange(graphRef.getItems())
+    setContextMenu(null)
+    setSelectedItemId(attached.id)
+    setToastQueue((prev) => [...prev.slice(-4), {
+      id: `create-attach-${Date.now()}`,
+      rollerName: 'Light',
+      diceType: 1, count: 1, results: [1], total: 1,
+      label: 'light created — edit in toolbar',
+      timestamp: Date.now(),
+    }])
+  }, [activeScene, graphRef, handleItemsChange])
 
   const handleTokenClick = useCallback((tokenId: string) => {
     if (attachLightMode?.lightId) {
@@ -1323,39 +1374,39 @@ export default function DmDashboard() {
     const ent = allEntities.find((x) => x.id === sc?.entity_id);
     const name = ent?.name || 'Unknown';
 
+    const allItems = graphRef.getItems()
+    const attachedLights = allItems.filter((it) => it.metadata.type === 'light' && (it.metadata as { attachedTo?: string }).attachedTo === sceneCharId)
+    const freeLights = allItems.filter((it) => it.metadata.type === 'light' && !(it.metadata as { attachedTo?: string }).attachedTo)
+
+    const lightItems: ContextMenuItem[] = []
+    for (const lt of attachedLights) {
+      const src = (lt.metadata as { source?: { mode?: string; angle?: number } }).source
+      const modeLabel = src?.mode === 'directional' ? ` (cone ${src.angle ?? 90}°)` : ` (${src?.mode ?? 'hard'})`
+      lightItems.push({ label: `Edit "${lt.name || 'light'}"${modeLabel}`, icon: '⚙', onClick: () => setSelectedItemId(lt.id) })
+      lightItems.push({ label: `Detach "${lt.name || 'light'}"`, icon: '🔥', onClick: () => handleTokenLightDetach(lt.id) })
+    }
+    for (const lt of freeLights) {
+      const src = (lt.metadata as { source?: { mode?: string } }).source
+      const modeLabel = src?.mode === 'directional' ? ' (cone)' : ''
+      lightItems.push({ label: `Attach "${lt.name || 'light'}"${modeLabel}`, icon: '💡', onClick: () => handleTokenLightAttach(sceneCharId, lt.id) })
+    }
+    lightItems.push({ label: 'Create new light', icon: '✨', onClick: () => handleCreateAndAttachLight(sceneCharId) })
+
     setContextMenu({
       x: clientX,
       y: clientY,
       items: [
-        {
-          label: `Select ${name}`,
-          icon: '◉',
-          onClick: () => setSelectedTokenId(sceneCharId),
-        },
-        {
-          label: sc?.visible ? 'Hide from players' : 'Show to players',
-          icon: sc?.visible ? '👁' : '🚫',
-          onClick: () => handleToggleVisibility(sceneCharId),
-        },
+        { label: `Select ${name}`, icon: '◉', onClick: () => setSelectedTokenId(sceneCharId) },
+        { label: sc?.visible ? 'Hide from players' : 'Show to players', icon: sc?.visible ? '👁' : '🚫', onClick: () => handleToggleVisibility(sceneCharId) },
         { label: '', separator: true, onClick: () => {} },
-        {
-          label: 'View character sheet',
-          icon: '📄',
-          onClick: () => {
-            setSelectedTokenId(sceneCharId);
-          },
-          disabled: !ent,
-        },
+        { label: 'View character sheet', icon: '📄', onClick: () => setSelectedTokenId(sceneCharId), disabled: !ent },
         { label: '', separator: true, onClick: () => {} },
-        {
-          label: 'Remove from scene',
-          icon: '🗑',
-          onClick: () => handleRemoveFromScene(sceneCharId),
-          danger: true,
-        },
+        ...lightItems,
+        { label: '', separator: true, onClick: () => {} },
+        { label: 'Remove from scene', icon: '🗑', onClick: () => handleRemoveFromScene(sceneCharId), danger: true },
       ],
     });
-  }, [sceneChars, allEntities, handleToggleVisibility, handleRemoveFromScene]);
+  }, [sceneChars, allEntities, handleToggleVisibility, handleRemoveFromScene, graphRef, handleTokenLightAttach, handleTokenLightDetach, handleCreateAndAttachLight]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -1631,12 +1682,6 @@ export default function DmDashboard() {
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${lightPlaceMode ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
                   >
                     💡 Light (place)
-                  </button>
-                  <button
-                    onClick={startAttachLightMode}
-                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${attachLightMode ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
-                  >
-                    🔗 Light → token
                   </button>
                   <div className="border-t border-[var(--bg-tertiary)] my-1" />
                   <div className="px-3 py-1">
