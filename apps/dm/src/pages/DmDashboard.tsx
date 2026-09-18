@@ -1601,6 +1601,45 @@ export default function DmDashboard() {
             <span className="text-xs text-[var(--text-secondary)] shrink-0">
               {sceneIndex}/{scenes.length}
             </span>
+            <button
+              onClick={async () => {
+                if (!campaignId || !activeScene) return;
+                try {
+                  const updated = await api.scenes.sync(campaignId, activeScene.id);
+                  setActiveScene(updated);
+                  setScenes((prev) => prev.map((s) => s.id === updated.id ? updated : { ...s, status: 'inactive' }));
+                  setToastQueue((prev) => [...prev.slice(-4), {
+                    id: `sync-${Date.now()}`,
+                    rollerName: 'Sync',
+                    diceType: 20,
+                    count: 1,
+                    results: [1],
+                    total: 1,
+                    label: `Scene "${updated.name}" synced to players`,
+                    timestamp: Date.now(),
+                  }]);
+                } catch {
+                  setToastQueue((prev) => [...prev.slice(-4), {
+                    id: `sync-err-${Date.now()}`,
+                    rollerName: 'Sync',
+                    diceType: 20,
+                    count: 1,
+                    results: [0],
+                    total: 0,
+                    label: 'Failed to sync scene',
+                    timestamp: Date.now(),
+                  }]);
+                }
+              }}
+              className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${
+                activeScene?.status === 'active'
+                  ? 'bg-green-600/20 text-green-400 border border-green-600/40'
+                  : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              }`}
+              title="Sync this scene to all players"
+            >
+              {activeScene?.status === 'active' ? '✓ Synced' : '⟳ Sync'}
+            </button>
             <div className="w-px h-5 bg-[var(--bg-tertiary)] shrink-0" />
             <div className="flex items-center gap-1 shrink-0">
               <button

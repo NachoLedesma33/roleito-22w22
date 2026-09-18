@@ -654,6 +654,8 @@ export const api = {
       request<Scene>(`/campaigns/${campaignId}/scenes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (campaignId: string, id: string) =>
       request<{ status: string; id: string }>(`/campaigns/${campaignId}/scenes/${id}`, { method: 'DELETE' }),
+    sync: (campaignId: string, id: string) =>
+      request<Scene>(`/campaigns/${campaignId}/scenes/${id}/sync`, { method: 'POST' }),
     uploadBackground: async (campaignId: string, sceneId: string, file: File) => {
       const form = new FormData();
       form.append('file', file);

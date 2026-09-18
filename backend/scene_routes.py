@@ -112,6 +112,33 @@ async def update_scene(
     return scene
 
 
+@router.post("/campaigns/{campaign_id}/scenes/{scene_id}/sync", response_model=SceneResponse)
+async def sync_scene(
+    campaign_id: str,
+    scene_id: str,
+    db: AsyncSession = Depends(get_session),
+):
+    result = await db.execute(
+        select(Scene).where(
+            Scene.id == scene_id,
+            Scene.campaign_id == campaign_id,
+        )
+    )
+    scene = result.scalar_one_or_none()
+    if not scene:
+        raise HTTPException(status_code=404, detail="Scene not found")
+
+    all_scenes_r = await db.execute(
+        select(Scene).where(Scene.campaign_id == campaign_id)
+    )
+    for s in all_scenes_r.scalars().all():
+        s.status = "active" if s.id == scene_id else "inactive"
+
+    await db.commit()
+    await db.refresh(scene)
+    return scene
+
+
 @router.delete("/campaigns/{campaign_id}/scenes/{scene_id}")
 async def delete_scene(
     campaign_id: str,
