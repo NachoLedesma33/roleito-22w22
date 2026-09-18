@@ -4,15 +4,18 @@ import HudPanel from './HudPanel';
 
 interface SceneSettingsHudProps {
   scene: Scene;
-  onUpdate: (updates: Partial<Pick<Scene, 'map_scale' | 'grid_size' | 'grid_snap'>>) => Promise<void>;
+  onUpdate: (updates: Partial<Pick<Scene, 'map_scale' | 'model_y_offset' | 'grid_size' | 'grid_snap'>>) => Promise<void>;
   onClose: () => void;
 }
 
 export default function SceneSettingsHud({ scene, onUpdate, onClose }: SceneSettingsHudProps) {
   const [mapScale, setMapScale] = useState(scene.map_scale ?? 1);
+  const [modelYOffset, setModelYOffset] = useState(scene.model_y_offset ?? 0);
   const [gridSize, setGridSize] = useState(scene.grid_size ?? 0);
   const [gridSnap, setGridSnap] = useState(scene.grid_snap ?? false);
   const [saving, setSaving] = useState(false);
+
+  const isModel = /\.(glb|gltf)$/i.test(scene.background_path ?? '');
 
   const handleUpdate = async (field: string, value: number | boolean) => {
     setSaving(true);
@@ -38,7 +41,7 @@ export default function SceneSettingsHud({ scene, onUpdate, onClose }: SceneSett
           <input
             type="range"
             min={0.5}
-            max={10}
+            max={isModel ? 50 : 10}
             step={0.5}
             value={mapScale}
             onChange={(e) => {
@@ -52,6 +55,32 @@ export default function SceneSettingsHud({ scene, onUpdate, onClose }: SceneSett
             {mapWidth} × {mapHeight} units
           </p>
         </div>
+
+        {/* Model Y Offset — only for 3D models */}
+        {isModel && (
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">Floor Offset</label>
+              <span className="text-[10px] text-[var(--accent)] font-mono">{modelYOffset.toFixed(1)}</span>
+            </div>
+            <input
+              type="range"
+              min={-10}
+              max={10}
+              step={0.1}
+              value={modelYOffset}
+              onChange={(e) => {
+                const v = parseFloat(e.target.value);
+                setModelYOffset(v);
+                handleUpdate('model_y_offset', v);
+              }}
+              className="w-full h-1 accent-[var(--accent)]"
+            />
+            <p className="text-[9px] text-[var(--text-secondary)] mt-0.5">
+              Adjust if tokens float above/below the floor
+            </p>
+          </div>
+        )}
 
         {/* Grid Size */}
         <div>

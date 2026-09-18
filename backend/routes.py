@@ -636,6 +636,7 @@ async def join_by_invite_code(
         "background_path": background_path,
         "lighting": lighting,
         "map_scale": getattr(active_scene, 'map_scale', 1.0) if active_scene else 1.0,
+        "model_y_offset": getattr(active_scene, 'model_y_offset', 0.0) if active_scene else 0.0,
         "grid_size": getattr(active_scene, 'grid_size', 0.0) if active_scene else 0.0,
         "grid_snap": bool(getattr(active_scene, 'grid_snap', 0)) if active_scene else False,
         "characters": scene_chars,

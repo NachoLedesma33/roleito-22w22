@@ -49,6 +49,7 @@ interface SceneRendererProps {
   showZones?: boolean;
   movableEntityIds?: string[];
   mapScale?: number;
+  modelYOffset?: number;
   gridSize?: number;
   gridSnap?: boolean;
   drawState?: DrawState | null;
@@ -93,11 +94,11 @@ type DragStarter = (
   tokenZ?: number
 ) => void;
 
-function SceneBackground({ url, mapScale = 1 }: { url: string; mapScale?: number }) {
+function SceneBackground({ url, mapScale = 1, modelYOffset = 0 }: { url: string; mapScale?: number; modelYOffset?: number }) {
   const isModel = /\.(glb|gltf)$/i.test(url);
 
   if (isModel) {
-    return <SceneBackgroundModel url={url} mapScale={mapScale} />;
+    return <SceneBackgroundModel url={url} mapScale={mapScale} modelYOffset={modelYOffset} />;
   }
 
   return <SceneBackgroundImage url={url} mapScale={mapScale} />;
@@ -121,18 +122,21 @@ function SceneBackgroundImage({ url, mapScale = 1 }: { url: string; mapScale?: n
   );
 }
 
-function SceneBackgroundModel({ url, mapScale = 1 }: { url: string; mapScale?: number }) {
+function SceneBackgroundModel({ url, mapScale = 1, modelYOffset = 0 }: { url: string; mapScale?: number; modelYOffset?: number }) {
   const { scene } = useGLTF(url);
   const cloned = useMemo(() => {
     const c = scene.clone(true);
+    const box = new THREE.Box3().setFromObject(c);
+    const minY = box.min.y;
     c.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         child.castShadow = true;
         child.receiveShadow = true;
       }
     });
+    c.position.y = -minY + modelYOffset;
     return c;
-  }, [scene]);
+  }, [scene, modelYOffset]);
 
   return (
     <group name="scene-background" scale={[mapScale, mapScale, mapScale]}>
@@ -529,6 +533,7 @@ export default function SceneRenderer({
   showZones = false,
   movableEntityIds,
   mapScale = 1,
+  modelYOffset = 0,
   gridSize = 0,
   gridSnap = false,
   drawState = null,
@@ -635,7 +640,7 @@ export default function SceneRenderer({
     >
       <SceneLighting mode={lighting} />
       <Suspense fallback={null}>
-        <SceneBackground url={backgroundUrl} mapScale={mapScale} />
+        <SceneBackground url={backgroundUrl} mapScale={mapScale} modelYOffset={modelYOffset} />
       </Suspense>
       {gridSize > 0 && <GridOverlay width={mapWidth} height={mapHeight} gridSize={gridSize} renderMode={renderMode} />}
       {hasDrag && (

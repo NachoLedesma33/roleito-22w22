@@ -46,6 +46,7 @@ MIGRATIONS = [
     ("scene_characters", "last_move_at", "ALTER TABLE scene_characters ADD COLUMN last_move_at FLOAT DEFAULT 0.0"),
     ("scene_characters", "facing_offset", "ALTER TABLE scene_characters ADD COLUMN facing_offset FLOAT DEFAULT 0.0"),
     ("scenes", "items_json", "ALTER TABLE scenes ADD COLUMN items_json TEXT DEFAULT '[]'"),
+    ("scenes", "model_y_offset", "ALTER TABLE scenes ADD COLUMN model_y_offset FLOAT DEFAULT 0.0"),
 ]
 
 VIDA_ATTRS = ["vigor", "intelligence", "dexterity", "cunning"]

@@ -2389,6 +2389,7 @@ export default function DmDashboard() {
                 selectedTokenId={selectedTokenId}
                 selectedItemIds={selectedItemId ? [selectedItemId] : []}
                 mapScale={activeScene.map_scale ?? 1}
+                modelYOffset={activeScene.model_y_offset ?? 0}
                 gridSize={activeScene.grid_size ?? 0}
                 gridSnap={activeScene.grid_snap ?? false}
                 drawState={drawState}
@@ -2713,7 +2714,7 @@ export default function DmDashboard() {
           {showSceneSettings && activeScene && campaignId && (
             <SceneSettingsHud
               scene={activeScene}
-              onUpdate={async (updates: Partial<Pick<Scene, 'map_scale' | 'grid_size' | 'grid_snap'>>) => {
+              onUpdate={async (updates: Partial<Pick<Scene, 'map_scale' | 'model_y_offset' | 'grid_size' | 'grid_snap'>>) => {
                 const updated = await api.scenes.update(campaignId, activeScene.id, updates);
                 setActiveScene(updated);
                 setScenes((prev) => prev.map((s) => s.id === updated.id ? updated : s));

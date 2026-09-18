@@ -345,6 +345,7 @@ export interface Scene {
   entrance_x: number;
   entrance_z: number;
   map_scale: number;
+  model_y_offset: number;
   grid_size: number;
   grid_snap: boolean;
   items_json: string;
@@ -649,7 +650,7 @@ export const api = {
       request<Scene>(`/campaigns/${campaignId}/scenes/${id}`),
     create: (campaignId: string, data: { name: string; description?: string; lighting?: string }) =>
       request<Scene>(`/campaigns/${campaignId}/scenes`, { method: 'POST', body: JSON.stringify(data) }),
-    update: (campaignId: string, id: string, data: { name?: string; description?: string; lighting?: string; status?: string; notes?: string; entrance_x?: number; entrance_z?: number; map_id?: string | null; map_scale?: number; grid_size?: number; grid_snap?: boolean }) =>
+    update: (campaignId: string, id: string, data: { name?: string; description?: string; lighting?: string; status?: string; notes?: string; entrance_x?: number; entrance_z?: number; map_id?: string | null; map_scale?: number; model_y_offset?: number; grid_size?: number; grid_snap?: boolean }) =>
       request<Scene>(`/campaigns/${campaignId}/scenes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (campaignId: string, id: string) =>
       request<{ status: string; id: string }>(`/campaigns/${campaignId}/scenes/${id}`, { method: 'DELETE' }),

@@ -65,6 +65,7 @@ interface JoinData {
   background_path: string | null;
   lighting: string;
   map_scale: number;
+  model_y_offset: number;
   grid_size: number;
   grid_snap: boolean;
   characters: PlayerToken[];
@@ -999,6 +1000,7 @@ export default function PlayerView() {
               })}
               lighting={data.lighting}
               mapScale={data.map_scale ?? 1}
+              modelYOffset={data.model_y_offset ?? 0}
               items={data.items ?? []}
               readOnly
               fogColor="rgba(5, 5, 20, 0.82)"

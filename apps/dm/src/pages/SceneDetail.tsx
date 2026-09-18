@@ -207,6 +207,7 @@ export default function SceneDetail() {
                 })}
                 lighting={scene.lighting}
                 mapScale={scene.map_scale ?? 1}
+                modelYOffset={scene.model_y_offset ?? 0}
                 gridSize={scene.grid_size ?? 0}
                 gridSnap={scene.grid_snap ?? false}
               />
