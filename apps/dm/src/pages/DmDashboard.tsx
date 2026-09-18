@@ -1978,7 +1978,7 @@ export default function DmDashboard() {
                     type="range"
                     min={0.1}
                     max={1}
-                    step={0.05}
+                    step={0.01}
                     value={selectedLight.source.intensity}
                     onChange={(e) => handleLightSourceChange({ intensity: parseFloat(e.target.value) })}
                     className="w-16 h-1"
@@ -1992,13 +1992,13 @@ export default function DmDashboard() {
                     type="range"
                     min={0.04}
                     max={0.5}
-                    step={0.01}
+                    step={0.001}
                     value={selectedLight.source.radius}
                     onChange={(e) => handleLightSourceChange({ radius: parseFloat(e.target.value) })}
                     className="w-16 h-1"
                     title="Range"
                   />
-                  <span className="w-8">{selectedLight.source.radius.toFixed(2)}</span>
+                  <span className="w-8">{selectedLight.source.radius.toFixed(3)}</span>
                 </label>
                 <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
                   {selectedLight.source.mode === 'hard' ? 'edge' : 'falloff'}
@@ -2006,7 +2006,7 @@ export default function DmDashboard() {
                     type="range"
                     min={0.1}
                     max={1}
-                    step={0.05}
+                    step={0.01}
                     value={selectedLight.source.falloff ?? (selectedLight.source.mode === 'hard' ? 1 : 0.6)}
                     onChange={(e) => handleLightSourceChange({ falloff: parseFloat(e.target.value) })}
                     className="w-14 h-1"
@@ -2030,7 +2030,7 @@ export default function DmDashboard() {
                         type="range"
                         min={0.1}
                         max={2}
-                        step={0.1}
+                        step={0.01}
                         value={selectedLight.source.flicker.speed}
                         onChange={(e) => handleLightSourceChange({ flicker: { speed: parseFloat(e.target.value), variance: selectedLight.source.flicker!.variance, enabled: true } })}
                         className="w-12 h-1"
@@ -2040,7 +2040,7 @@ export default function DmDashboard() {
                         type="range"
                         min={0}
                         max={0.5}
-                        step={0.05}
+                        step={0.01}
                         value={selectedLight.source.flicker.variance}
                         onChange={(e) => handleLightSourceChange({ flicker: { speed: selectedLight.source.flicker!.speed, variance: parseFloat(e.target.value), enabled: true } })}
                         className="w-12 h-1"
@@ -2065,7 +2065,7 @@ export default function DmDashboard() {
                         type="range"
                         min={0.1}
                         max={2}
-                        step={0.1}
+                        step={0.01}
                         value={selectedLight.source.pulse.speed}
                         onChange={(e) => handleLightSourceChange({ pulse: { speed: parseFloat(e.target.value), variance: selectedLight.source.pulse!.variance, enabled: true } })}
                         className="w-12 h-1"
@@ -2075,7 +2075,7 @@ export default function DmDashboard() {
                         type="range"
                         min={0}
                         max={0.5}
-                        step={0.05}
+                        step={0.01}
                         value={selectedLight.source.pulse.variance}
                         onChange={(e) => handleLightSourceChange({ pulse: { speed: selectedLight.source.pulse!.speed, variance: parseFloat(e.target.value), enabled: true } })}
                         className="w-12 h-1"
@@ -2090,9 +2090,9 @@ export default function DmDashboard() {
                       angle
                       <input
                         type="range"
-                        min={20}
+                        min={5}
                         max={120}
-                        step={5}
+                        step={1}
                         value={selectedLight.source.angle ?? 90}
                         onChange={(e) => handleLightSourceChange({ angle: parseFloat(e.target.value) })}
                         className="w-14 h-1"
@@ -2106,7 +2106,7 @@ export default function DmDashboard() {
                         type="range"
                         min={0}
                         max={360}
-                        step={5}
+                        step={1}
                         value={selectedLight.source.direction ?? 0}
                         onChange={(e) => handleLightSourceChange({ direction: parseFloat(e.target.value) })}
                         className="w-14 h-1"
