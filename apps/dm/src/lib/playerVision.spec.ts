@@ -71,7 +71,7 @@ describe('playerVision', () => {
     expect(ids.has(`vision-${staticLight.id}`)).toBe(true)
   })
 
-  it('computeVisionRegions: shareCarriedLights default true incluye antorchas ajenas y propias; círculo ambiente siempre presente', () => {
+  it('computeVisionRegions: shareCarriedLights default true incluye antorchas ajenas y propias; sin luz adjunta conserva círculo ambiente', () => {
     const own = attachLightToToken(createLightItem('torch', { x: 0.5, y: 0.5 }, MAP_W, MAP_H)!, 'ch-mine')
     const other = attachLightToToken(createLightItem('candle', { x: 0.5, y: 0.5 }, MAP_W, MAP_H)!, 'ch-other')
     const charPos = new Map([
@@ -80,7 +80,7 @@ describe('playerVision', () => {
     ])
     const regions = computeVisionRegions([own, other], charPos, 'ch-mine', MAP_W, MAP_H)
     const ids = new Set(regions.map((r) => r.id))
-    expect(ids.has('vision-ambient')).toBe(true)
+    expect(ids.has('vision-ambient')).toBe(false)
     expect(ids.has(`vision-${own.id}`)).toBe(true)
     expect(ids.has(`vision-${other.id}`)).toBe(true)
   })
@@ -93,12 +93,12 @@ describe('playerVision', () => {
     expect(ids.has('vision-ambient')).toBe(true)
   })
 
-  it('computeVisionRegions: cono propio apunta al facing del token — círculo ambiente siempre presente', () => {
+  it('computeVisionRegions: cono propio apunta al facing del token — sin círculo ambiente al tener luz adjunta', () => {
     const cone = attachLightToToken(createLightItem('lanternDir', { x: 0.5, y: 0.5 }, MAP_W, MAP_H)!, 'ch-mine')
     const charPos = new Map([['ch-mine', { x: 0, z: 0, rotation: 0 }]])
     const regions = computeVisionRegions([cone], charPos, 'ch-mine', MAP_W, MAP_H)
     const ids = new Set(regions.map((r) => r.id))
-    expect(ids.has('vision-ambient')).toBe(true)
+    expect(ids.has('vision-ambient')).toBe(false)
     expect(ids.has(`vision-${cone.id}`)).toBe(true)
     const r = regions.find((x) => x.id === `vision-${cone.id}`)!
     expect(r.points.length).toBeGreaterThan(4)
@@ -131,7 +131,7 @@ describe('playerVision', () => {
     }
   })
 
-  it('cono propio POV: con luz directional adjunta el agujero de niebla ES cono (no círculo) — datos Ghab', () => {
+  it('cono propio POV: con luz directional adjunta el agujero de niebla ES cono (no círculo) — sin ambient cuando hay luz adjunta', () => {
     const MAP_W = 85
     const MAP_H = 85
     const cone = attachLightToToken(
@@ -141,7 +141,7 @@ describe('playerVision', () => {
     const charPos = new Map([['27154b55', { x: 13.21, z: 8.58, rotation: 135 }]])
     const regions = computeVisionRegions([cone], charPos, '27154b55', MAP_W, MAP_H, { shareCarriedLights: true })
     const ids = new Set(regions.map((r) => r.id))
-    expect(ids.has('vision-ambient')).toBe(true)
+    expect(ids.has('vision-ambient')).toBe(false)
     const r = regions.find((x) => x.id === `vision-${cone.id}`)!
     expect(r.revealed).toBe(true)
     expect(r.points.length).toBeLessThan(362)

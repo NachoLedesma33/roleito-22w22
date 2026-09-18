@@ -62,7 +62,8 @@ export function computeVisionRegions(
 ): FogRegion[] {
   const regions: FogRegion[] = []
   const own = ownSceneCharId ? charPos.get(ownSceneCharId) : null
-  if (own) {
+  const hasAttachedLight = ownSceneCharId && items.some((it) => it.metadata.type === 'light' && (it.metadata as LightMetadata).attachedTo === ownSceneCharId && it.visible)
+  if (own && !hasAttachedLight) {
     regions.push({
       id: 'vision-ambient',
       points: circlePoints(own.x / mapWidth + 0.5, own.z / mapHeight + 0.5, AMBIENT_RADIUS),
