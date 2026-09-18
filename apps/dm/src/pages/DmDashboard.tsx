@@ -1998,7 +1998,16 @@ export default function DmDashboard() {
                     className="w-16 h-1"
                     title="Range"
                   />
-                  <span className="w-8">{selectedLight.source.radius.toFixed(5)}</span>
+                  <input
+                    type="number"
+                    min={0.0001}
+                    max={0.5}
+                    step={0.00001}
+                    value={selectedLight.source.radius}
+                    onChange={(e) => handleLightSourceChange({ radius: parseFloat(e.target.value) || 0.0001 })}
+                    className="w-14 h-4 text-[9px] bg-[var(--bg-tertiary)] border border-[var(--bg-tertiary)] rounded px-1 text-[var(--text-primary)] font-mono"
+                    title="Range (type exact value)"
+                  />
                 </label>
                 <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
                   {selectedLight.source.mode === 'hard' ? 'edge' : 'falloff'}
