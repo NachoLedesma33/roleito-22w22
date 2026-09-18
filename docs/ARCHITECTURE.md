@@ -1339,7 +1339,7 @@ SECRET_KEY
 
 # 26. Future Phases
 
-## 26.1 Phase 1 (MVP)
+## 26.1 Phase 1 (MVP) — COMPLETED
 
 ```text
 ✅ Core domain types
@@ -1355,6 +1355,213 @@ SECRET_KEY
 ✅ Canon management
 ✅ Basic search
 ```
+
+---
+
+## 26.2 Phase 2 (VTT Core) — IN PROGRESS
+
+```text
+✅ Scene graph (items, layers, attachments)
+✅ Map display with grid, zoom, pan
+✅ Token drag & drop
+✅ Auto wall detection from images
+✅ Dynamic lighting (point, cone, directional)
+✅ Fog of war (static + dynamic)
+✅ Player vision (line of sight)
+✅ Light attach/detach to tokens
+✅ Scene lighting modes (bright/dim/dark/neutral)
+✅ Initiative tracker component
+✅ Dice roller component
+✅ HP/PM display (VidaDisplay)
+✅ Character sheet component
+✅ Context menu (right-click on tokens)
+✅ Facing rotation slider
+✅ Player WASD movement
+✅ Portal/door system
+✅ Scene management (CRUD)
+✅ Campaign management
+✅ Entity management (characters, NPCs, locations)
+✅ Player view with vision
+✅ Light request system (player → DM)
+✅ Scene notes HUD
+✅ DM assistant panel
+✅ Session log HUD
+❌ Condition/status icons on tokens
+❌ Token HP bars in SceneRenderer
+❌ Round counter in combat tracker
+❌ HP sync between sheets and combat
+❌ Measurement ruler
+❌ Drawing/annotation tools
+❌ Journal/handouts system
+❌ Spell AOE templates
+❌ Ambient audio
+❌ Wall types (terrain, proximity, ethereal)
+❌ Scene variations (day/night)
+❌ Darkness sources
+❌ Light animations
+```
+
+---
+
+## 26.3 Phase 3 (Combat & UI) — PLANNED
+
+```text
+Token HP bars (visual overlay)
+Condition system (icons + effects)
+Combat automation (auto-initiative, auto-damage)
+Measurement ruler
+Drawing tools
+Spell templates
+Token auras
+```
+
+---
+
+## 26.4 Phase 4 (Content & Polish)
+
+```text
+Ambient audio system
+Wall types avanzados
+Scene variations
+Journal/handouts
+Macro system
+Light animations
+Darkness sources
+Scene notes/markers
+```
+
+---
+
+## 26.5 Phase 5 (AI & Memory)
+
+```text
+AI narration
+Context optimization
+Embeddings
+Vector search
+Advanced search
+Agent improvements
+```
+
+---
+
+## 26.6 Phase 6 (Future)
+
+```text
+Multiplayer
+Cloud sync
+Plugin system
+Advanced 3D
+```
+
+---
+
+# 27. VTT Implementation Architecture
+
+## 27.1 Component Map
+
+```text
+DmDashboard.tsx (Main VTT Controller)
+├── SceneRenderer.tsx (3D/2D Canvas)
+│   ├── DraggableToken (token movement)
+│   │   ├── TokenModel.tsx (3D model)
+│   │   └── TokenSprite.tsx (2D portrait)
+│   ├── ItemRenderer.tsx (walls, lights, doors)
+│   │   └── LightRenderer (cone/point glow)
+│   ├── FogOverlay.tsx (fog of war canvas)
+│   ├── FogBrushCanvas.tsx (fog reveal tool)
+│   └── FogRectCanvas.tsx (rect fog tool)
+├── InitiativeTracker.tsx (combat turns)
+├── DiceRoller.tsx (dice engine)
+├── CharacterSheet.tsx (player sheet)
+├── ContextMenu.tsx (right-click actions)
+├── SceneNotesHud.tsx (map annotations)
+├── QuickActionsHud.tsx (toolbar)
+├── SessionLogHud.tsx (event log)
+├── RecapPanel.tsx (session recap)
+└── DMNotebookHud.tsx (DM notes)
+```
+
+## 27.2 Data Flow — Scene Rendering
+
+```text
+Backend API
+    ↓
+DmDashboard (state: sceneChars, sceneItems, activeScene)
+    ↓
+SceneRenderer (props: characters, items, fogRegions, visionCharPos)
+    ├── TokenModel/TokenSprite (per character)
+    │   └── position from sceneChar.x/z
+    │   └── rotation from sceneChar.rotation + facingOffset
+    ├── ItemRenderer (per item)
+    │   ├── WallRenderer (walls, invisible)
+    │   ├── LightRenderer (lights with occlusion)
+    │   └── DoorRenderer (doors, portals)
+    └── FogOverlay (fog regions from playerVision)
+```
+
+## 27.3 Data Flow — Lighting
+
+```text
+Scene Items (type: 'light')
+    ↓
+ItemRenderer → LightRenderer
+    ├── sectorGeometry (cone shape)
+    ├── glowMaterial (radial gradient)
+    ├── occludedGeometry (wall-clipped)
+    └── group rotation (attached → token facing)
+    ↓
+FogOverlay (vision regions from light items)
+    ├── AMBIENT_RADIUS (0.15, only if no attached light)
+    ├── lightToVisionRegion (per visible light)
+    └── lightShapePoints (occlusion clipping)
+```
+
+## 27.4 Data Flow — Player Vision
+
+```text
+PlayerView.tsx
+    ↓
+computeVisionRegions(items, charPos, ownSceneCharId)
+    ├── ambient circle (if no attached light)
+    ├── per-light vision region (with occlusion)
+    └── FogRegion[] → FogOverlay
+    ↓
+FogOverlay (canvas with destination-out compositing)
+```
+
+## 27.5 Coordinate Systems
+
+```text
+Normalized (0-1):
+  - Scene items: x, y in [0,1] relative to map
+  - Fog regions: points in [0,1]
+  - Wall detection output: normalized coords
+
+World (3D):
+  - Token position: x, z in world units
+  - mapHeight = 10 * mapScale
+  - mapWidth = mapHeight * imageAspect
+  - worldX = (normalizedX - 0.5) * mapWidth
+  - worldZ = (normalizedY - 0.5) * mapHeight
+
+Conversion:
+  - normalized → world: multiply by mapSize, offset by -0.5
+  - world → normalized: divide by mapSize, add 0.5
+```
+
+## 27.6 Key Libs
+
+| Lib | Purpose |
+|-----|---------|
+| `light.ts` | createLightItem, attachLightToToken, detachLight, normalizeLightConfig |
+| `lightGlow.ts` | Canvas-generated radial gradient textures for light halos |
+| `lightOcclusion.ts` | lightShapePoints — clips light polygons against wall occluders |
+| `playerVision.ts` | computeVisionRegions — builds fog regions from lights + ambient |
+| `fogMask.ts` | Fog region rendering |
+| `wall-collision.ts` | Wall segment collision detection |
+| `api.ts` | Backend API client (REST) |
+| `@core/domain/types.ts` | SceneItem, SceneLayer, all domain types |
 
 ---
 
