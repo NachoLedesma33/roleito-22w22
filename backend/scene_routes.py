@@ -419,6 +419,8 @@ async def update_scene_characters(
             move_speed=ch.move_speed,
             brightness=ch.brightness,
             facing_offset=ch.facing_offset,
+            vision_type=ch.vision_type,
+            vision_range=ch.vision_range,
         )
         db.add(sc)
         created.append(sc)

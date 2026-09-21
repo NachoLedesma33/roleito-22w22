@@ -358,3 +358,20 @@ export interface Point2D {
   x: number
   y: number
 }
+
+// ─── Line of Sight / Vision ───────────────────────────────────────
+
+export type VisionType = 'normal' | 'darkvision' | 'blindsight' | 'tremorsense' | 'truesight'
+
+export interface VisionConfig {
+  type: VisionType
+  range: number
+  dimRange?: number
+  angle?: number
+  direction?: number
+}
+
+export interface CharacterVision {
+  visions: VisionConfig[]
+  sharePartyVision: boolean
+}

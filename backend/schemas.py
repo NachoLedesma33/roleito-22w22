@@ -407,6 +407,8 @@ class SceneCharacterPosition(BaseModel):
     move_speed: float = 1.0
     brightness: float = 0.0
     facing_offset: float = 0.0
+    vision_type: str = "normal"
+    vision_range: float = 6.0
 
 
 class SceneResponse(BaseModel):
@@ -453,6 +455,8 @@ class SceneCharacterResponse(BaseModel):
     vrot: float = 0.0
     last_move_at: float = 0.0
     facing_offset: float = 0.0
+    vision_type: str = "normal"
+    vision_range: float = 6.0
 
     class Config:
         from_attributes = True
