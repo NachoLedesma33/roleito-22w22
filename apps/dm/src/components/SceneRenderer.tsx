@@ -459,6 +459,14 @@ function DraggableToken({
     }
   }, [entity.sceneCharId]);
 
+  // Apply position imperatively: guarantees the Three.js group moves even if
+  // R3F skips array-prop reconciliation on `<group position={[...]}>`.
+  useEffect(() => {
+    if (groupRef.current) {
+      groupRef.current.position.set(entity.x, entity.y, entity.z);
+    }
+  }, [entity.x, entity.y, entity.z]);
+
   const handlePointerDown = useCallback(
     (e: THREE.Event) => {
       (e as unknown as { stopPropagation?: () => void }).stopPropagation?.();

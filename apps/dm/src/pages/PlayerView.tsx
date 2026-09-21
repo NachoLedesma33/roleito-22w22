@@ -10,6 +10,7 @@ import TopBar from '@/components/TopBar';
 import MinimizedBar from '@/components/MinimizedBar';
 import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastContainer';
 import { api } from '@/lib/api';
+import { checkWallCollision, extractZonePolygons, extractPortals, crossZoneBorder } from '@/lib/wall-collision';
 import { computeVisionRegions, type CharPos } from '@/lib/playerVision';
 import { DEFAULT_RENDER_MODE } from '@/lib/overlayY';
 
@@ -42,6 +43,8 @@ interface PlayerToken {
   token_scale: number;
   brightness: number;
   facing_offset: number;
+  vision_type?: string;
+  vision_range?: number;
   vx?: number;
   vz?: number;
   vrot?: number;
@@ -455,7 +458,6 @@ export default function PlayerView() {
         const pts = item.shape.points;
         return [pts[0], pts[1], pts[2], pts[3]] as [number, number, number, number];
       });
-    const { checkWallCollision, extractZonePolygons, extractPortals, crossZoneBorder } = await import('@/lib/wall-collision');
     if (checkWallCollision(normX, normZ, walls, 0.03)) return;
 
     const zones = extractZonePolygons(currentData.items ?? [], mapW, mapH);
@@ -542,11 +544,12 @@ export default function PlayerView() {
       if (mySc && cur) {
         const dist = Math.hypot(mySc.x - cur.x, mySc.z - cur.z);
         const idleMs = Date.now() - lastMoveAtRef.current;
-        const drift = idleMs > 250 ? 0.01 : 0.5;
-        if (dist > drift) {
-          const target = { x: mySc.x, z: mySc.z, rotation: mySc.rotation ?? cur.rotation };
-          wasdTargetRef.current = target;
-          setWasdTarget(target);
+        if (idleMs > 500) {
+          if (dist > 0.01) {
+            const target = { x: mySc.x, z: mySc.z, rotation: mySc.rotation ?? cur.rotation };
+            wasdTargetRef.current = target;
+            setWasdTarget(target);
+          }
         }
       }
     }
@@ -689,7 +692,6 @@ export default function PlayerView() {
             const pts = item.shape.points;
             return [pts[0], pts[1], pts[2], pts[3]] as [number, number, number, number];
           });
-        const { checkWallCollision, extractZonePolygons, extractPortals, crossZoneBorder } = await import('@/lib/wall-collision');
         if (checkWallCollision(normX, normZ, walls, 0.03)) {
           return;
         }
@@ -701,10 +703,8 @@ export default function PlayerView() {
           return;
         }
 
-        if (currentData.grid_snap && currentData.grid_size > 0) {
-          x = Math.round(x / currentData.grid_size) * currentData.grid_size;
-          z = Math.round(z / currentData.grid_size) * currentData.grid_size;
-        }
+        // No grid snap on keyboard movement: rounding 0.15-unit ticks to the
+        // grid cell keeps the character stuck on a grid line forever.
         const target = { x, z, rotation: ((rotation % (2 * Math.PI)) + Math.PI) % (2 * Math.PI) - Math.PI };
         wasdTargetRef.current = target;
         setWasdTarget(target);
