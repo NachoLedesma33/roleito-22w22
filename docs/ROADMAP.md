@@ -2364,23 +2364,23 @@ ShadowZone edges and closed portals (same geometry as collision)
 ### Tasks
 
 ```text
-F1. VisionConfig type (normal, darkvision, blindsight)
-F2. Raycasting engine: Bresenham/DDA
-F3. Edge intersection detection (ShadowZone edges + portals)
-F4. Visibility mask generation per character
-F5. Combined visibility (union of party)
-F6. Dynamic fog: updates on movement
-F7. Movement range visualization
-F8. A* pathfinding for movement
+F1. VisionConfig type (normal, darkvision, blindsight) — IMPLEMENTED (core/domain/types.ts)
+F2. Raycasting engine: Bresenham/DDA — IMPLEMENTED (losRaycast.ts)
+F3. Edge intersection detection (ShadowZone edges + portals) — IMPLEMENTED (losSystem.ts buildLoSOccluders)
+F4. Visibility mask generation per character — IMPLEMENTED (losRaycast.ts computeVisibilityMask + losSystem.ts computeCharacterLoS)
+F5. Combined visibility (union of party) — IMPLEMENTED (losSystem.ts computePartyLoS)
+F6. Dynamic fog: updates on movement — IMPLEMENTED (PlayerView visionRegions computes LoS on poll)
+F7. Movement range visualization — TODO
+F8. A* pathfinding for movement — IMPLEMENTED (movementRange.ts findPath + computeReachableCells)
 ```
 
 ### Done when
 
-- [ ] Characters see only what's within LoS
-- [ ] Walls block vision correctly
-- [ ] Darkvision allows seeing in dark
-- [ ] Movement range shows valid cells
-- [ ] Pathfinding avoids walls
+- [x] Characters see only what's within LoS
+- [x] Walls block vision correctly
+- [ ] Darkvision allows seeing in dark (type configured, rendering pending)
+- [ ] Movement range shows valid cells (overlay pending)
+- [x] Pathfinding avoids walls
 
 ---
 
