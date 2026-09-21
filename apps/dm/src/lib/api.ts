@@ -372,6 +372,8 @@ export interface SceneCharacter {
   vz?: number;
   vrot?: number;
   last_move_at?: number;
+  vision_type?: string;
+  vision_range?: number;
 }
 
 type EventCreateFields = {

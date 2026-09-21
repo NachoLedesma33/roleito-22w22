@@ -15,7 +15,7 @@ import { LightMetadata } from '@core/domain/types';
 import DoorContextMenu from '@/components/DoorContextMenu';
 import WallContextMenu from '@/components/WallContextMenu';
 import ZoneContextMenu from '@/components/ZoneContextMenu';
-import { extractZonePolygons } from '@/lib/wall-collision';
+import { extractZonePolygons, checkWallCollision } from '@/lib/wall-collision';
 import { DEFAULT_RENDER_MODE } from '@/lib/overlayY';
 import BackgroundSelector, { generateBackgroundCSS } from '@/components/BackgroundSelector';
 import SessionLogHud from '@/components/SessionLogHud';
@@ -1241,7 +1241,6 @@ export default function DmDashboard() {
         return [pts[0], pts[1], pts[2], pts[3]] as [number, number, number, number];
       });
 
-    const { checkWallCollision } = await import('@/lib/wall-collision');
     if (checkWallCollision(normX, normZ, walls, 0.03)) {
       setToastQueue((prev) => [...prev.slice(-4), {
         id: `wall-block-${Date.now()}`,
@@ -1278,8 +1277,8 @@ export default function DmDashboard() {
     const current = sceneCharsRef.current;
     const updated = current.map((scn) =>
       scn.id === sceneCharId
-        ? { id: scn.id, entity_type: scn.entity_type, entity_id: scn.entity_id, x, y: scn.y, z, visible: !!scn.visible, order: scn.order, token_scale: scn.token_scale ?? 1, move_speed: scn.move_speed ?? 1, facing_offset: scn.facing_offset ?? 0 }
-        : { id: scn.id, entity_type: scn.entity_type, entity_id: scn.entity_id, x: scn.x, y: scn.y, z: scn.z, visible: !!scn.visible, order: scn.order, token_scale: scn.token_scale ?? 1, move_speed: scn.move_speed ?? 1, facing_offset: scn.facing_offset ?? 0 }
+        ? { id: scn.id, entity_type: scn.entity_type, entity_id: scn.entity_id, x, y: scn.y, z, visible: !!scn.visible, order: scn.order, token_scale: scn.token_scale ?? 1, move_speed: scn.move_speed ?? 1, facing_offset: scn.facing_offset ?? 0, vision_type: scn.vision_type ?? 'normal', vision_range: scn.vision_range ?? 6.0 }
+        : { id: scn.id, entity_type: scn.entity_type, entity_id: scn.entity_id, x: scn.x, y: scn.y, z: scn.z, visible: !!scn.visible, order: scn.order, token_scale: scn.token_scale ?? 1, move_speed: scn.move_speed ?? 1, facing_offset: scn.facing_offset ?? 0, vision_type: scn.vision_type ?? 'normal', vision_range: scn.vision_range ?? 6.0 }
     );
     try {
       await api.scenes.updateCharacters(campaignId, activeScene.id, updated);
@@ -1303,6 +1302,8 @@ export default function DmDashboard() {
       token_scale: 1,
       move_speed: 1,
       facing_offset: 0,
+      vision_type: 'normal',
+      vision_range: 6.0,
     }];
     try {
       const result = await api.scenes.updateCharacters(campaignId, activeScene.id, newChars);
@@ -1328,8 +1329,8 @@ export default function DmDashboard() {
     if (!campaignId || !activeScene) return;
     const updated = sceneChars.map((sc) =>
       sc.id === sceneCharId
-        ? { id: sc.id, entity_type: sc.entity_type, entity_id: sc.entity_id, x: sc.x, y: sc.y, z: sc.z, visible: !sc.visible, order: sc.order, token_scale: sc.token_scale ?? 1, move_speed: sc.move_speed ?? 1, facing_offset: sc.facing_offset ?? 0 }
-        : { id: sc.id, entity_type: sc.entity_type, entity_id: sc.entity_id, x: sc.x, y: sc.y, z: sc.z, visible: !!sc.visible, order: sc.order, token_scale: sc.token_scale ?? 1, move_speed: sc.move_speed ?? 1, facing_offset: sc.facing_offset ?? 0 }
+        ? { id: sc.id, entity_type: sc.entity_type, entity_id: sc.entity_id, x: sc.x, y: sc.y, z: sc.z, visible: !sc.visible, order: sc.order, token_scale: sc.token_scale ?? 1, move_speed: sc.move_speed ?? 1, facing_offset: sc.facing_offset ?? 0, vision_type: sc.vision_type ?? 'normal', vision_range: sc.vision_range ?? 6.0 }
+        : { id: sc.id, entity_type: sc.entity_type, entity_id: sc.entity_id, x: sc.x, y: sc.y, z: sc.z, visible: !!sc.visible, order: sc.order, token_scale: sc.token_scale ?? 1, move_speed: sc.move_speed ?? 1, facing_offset: sc.facing_offset ?? 0, vision_type: sc.vision_type ?? 'normal', vision_range: sc.vision_range ?? 6.0 }
     );
     try {
       const result = await api.scenes.updateCharacters(campaignId, activeScene.id, updated);
@@ -2628,8 +2629,8 @@ export default function DmDashboard() {
                       if (!campaignId || !activeScene) return;
                       const updated = sceneCharsRef.current.map((s) =>
                         s.id === selectedTokenId
-                          ? { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: v, move_speed: s.move_speed ?? 1, facing_offset: s.facing_offset ?? 0 }
-                          : { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: s.facing_offset ?? 0 }
+                          ? { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: v, move_speed: s.move_speed ?? 1, facing_offset: s.facing_offset ?? 0, vision_type: s.vision_type ?? 'normal', vision_range: s.vision_range ?? 6.0 }
+                          : { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: s.facing_offset ?? 0, vision_type: s.vision_type ?? 'normal', vision_range: s.vision_range ?? 6.0 }
                       );
                       clearTimeout((window as any).__tokenScaleTimer);
                       (window as any).__tokenScaleTimer = setTimeout(() => {
@@ -2656,8 +2657,8 @@ export default function DmDashboard() {
                       if (!campaignId || !activeScene) return;
                       const updated = sceneCharsRef.current.map((s) =>
                         s.id === selectedTokenId
-                          ? { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: v }
-                          : { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: s.facing_offset ?? 0 }
+                          ? { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: v, vision_type: s.vision_type ?? 'normal', vision_range: s.vision_range ?? 6.0 }
+                          : { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: s.facing_offset ?? 0, vision_type: s.vision_type ?? 'normal', vision_range: s.vision_range ?? 6.0 }
                       );
                       clearTimeout((window as any).__facingTimer);
                       (window as any).__facingTimer = setTimeout(() => {
@@ -2666,10 +2667,71 @@ export default function DmDashboard() {
                     }}
                     className="w-full h-1 accent-[var(--accent)]"
                   />
+                {/* Vision Type */}
+                <div className="mb-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] text-[var(--text-secondary)]">Vision Type</span>
+                    <span className="text-[10px] text-[var(--accent)] font-mono">{sc.vision_type ?? 'normal'}</span>
+                  </div>
+                  <select
+                    value={sc.vision_type ?? 'normal'}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      lastLocalChangeRef.current = Date.now();
+                      setSceneChars((prev) => prev.map((s) => s.id === selectedTokenId ? { ...s, vision_type: v } : s));
+                      if (!campaignId || !activeScene) return;
+                      const updated = sceneCharsRef.current.map((s) =>
+                        s.id === selectedTokenId
+                          ? { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: s.facing_offset ?? 0, vision_type: v, vision_range: s.vision_range ?? 6.0 }
+                          : { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: s.facing_offset ?? 0, vision_type: s.vision_type ?? 'normal', vision_range: s.vision_range ?? 6.0 }
+                      );
+                      clearTimeout((window as any).__visionTypeTimer);
+                      (window as any).__visionTypeTimer = setTimeout(() => {
+                        api.scenes.updateCharacters(campaignId, activeScene.id, updated).catch(() => {});
+                      }, 300);
+                    }}
+                    className="w-full bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-[10px] rounded px-1 py-0.5 border border-[var(--border)]"
+                  >
+                    <option value="normal">Normal</option>
+                    <option value="darkvision">Darkvision</option>
+                    <option value="blindsight">Blindsight</option>
+                    <option value="tremorsense">Tremorsense</option>
+                    <option value="truesight">Truesight</option>
+                  </select>
                 </div>
-              );
-            })()}
-          </div>
+                <div className="mb-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] text-[var(--text-secondary)]">Vision Range</span>
+                    <span className="text-[10px] text-[var(--accent)] font-mono">{(sc.vision_range ?? 6.0).toFixed(1)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={1}
+                    max={30}
+                    step={0.5}
+                    value={sc.vision_range ?? 6.0}
+                    onChange={(e) => {
+                      const v = parseFloat(e.target.value);
+                      lastLocalChangeRef.current = Date.now();
+                      setSceneChars((prev) => prev.map((s) => s.id === selectedTokenId ? { ...s, vision_range: v } : s));
+                      if (!campaignId || !activeScene) return;
+                      const updated = sceneCharsRef.current.map((s) =>
+                        s.id === selectedTokenId
+                          ? { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: s.facing_offset ?? 0, vision_type: s.vision_type ?? 'normal', vision_range: v }
+                          : { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: s.facing_offset ?? 0, vision_type: s.vision_type ?? 'normal', vision_range: s.vision_range ?? 6.0 }
+                      );
+                      clearTimeout((window as any).__visionRangeTimer);
+                      (window as any).__visionRangeTimer = setTimeout(() => {
+                        api.scenes.updateCharacters(campaignId, activeScene.id, updated).catch(() => {});
+                      }, 300);
+                    }}
+                    className="w-full h-1 accent-[var(--accent)]"
+                  />
+                </div>
+              </div>
+            );
+          })()}
+        </div>
 
           {/* Character Sheet HUD — bottom right on desktop, bottom sheet on mobile */}
           {selectedChar && selectedEntity && campaignId && (
