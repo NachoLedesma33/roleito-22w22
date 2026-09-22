@@ -130,6 +130,8 @@ export default function DmDashboard() {
   const prevAppliedAtRef = useRef(0);
   const lastFrameAtRef = useRef(0);
   const renderedPosRef = useRef<Map<string, { x: number; z: number; rotation: number }>>(new Map());
+  const draggingTokenIdRef = useRef<string | null>(null);
+  const lastDragTsRef = useRef(0);
   const rafRef = useRef<number>(0);
   const sceneCharsRef = useRef(sceneChars);
   sceneCharsRef.current = sceneChars;
@@ -912,6 +914,11 @@ export default function DmDashboard() {
     prevAppliedAtRef.current = now;
     let dtSec = prevAt ? (now - prevAt) / 1000 : 0;
     if (dtSec < 0.001 || dtSec > 1.5) dtSec = 0;
+    // Mirror PlayerView: characters the DM is dragging are excluded from the
+    // interpolation pipeline entirely — rendered pos must track the pointer.
+    if (draggingTokenIdRef.current && Date.now() - lastDragTsRef.current > 500) {
+      draggingTokenIdRef.current = null;
+    }
 
     let maxLmat = 0;
     for (const sc of sceneChars) {
@@ -922,6 +929,7 @@ export default function DmDashboard() {
 
     if (prevData.length > 0 && prevData !== sceneChars && dtSec > 0) {
       for (const sc of sceneChars) {
+        if (draggingTokenIdRef.current === sc.id) continue;
         const p = prevData.find((pp) => pp.id === sc.id);
         if (!p) continue;
         const delX = sc.x - p.x;
@@ -945,6 +953,7 @@ export default function DmDashboard() {
       }
     }
     for (const sc of sceneChars) {
+      if (draggingTokenIdRef.current === sc.id) continue;
       serverPosRef.current.set(sc.id, { x: sc.x, z: sc.z, rotation: sc.rotation ?? 0 });
       serverPosAtRef.current.set(sc.id, now);
       serverLmatRef.current.set(sc.id, sc.last_move_at ?? 0);
@@ -980,7 +989,12 @@ export default function DmDashboard() {
         : 0.016;
       lastFrameAtRef.current = now;
       const k = 1 - Math.exp(-36 * dtFrame);
+      // Expire drag-exclusion even without state changes (pointercancel path).
+      if (draggingTokenIdRef.current && Date.now() - lastDragTsRef.current > 500) {
+        draggingTokenIdRef.current = null;
+      }
       for (const [id, target] of serverPosRef.current.entries()) {
+        if (draggingTokenIdRef.current === id) continue;
         const vel = velocitiesRef.current.get(id);
         const t0 = serverPosAtRef.current.get(id) ?? now;
         const sLmat = serverLmatRef.current.get(id) ?? 0;
@@ -1210,6 +1224,16 @@ export default function DmDashboard() {
     if (!campaignId || !activeScene) return;
     const sc = sceneCharsRef.current.find((s) => s.id === sceneCharId);
     if (!sc) return;
+    lastLocalChangeRef.current = Date.now();
+    draggingTokenIdRef.current = sceneCharId;
+    lastDragTsRef.current = Date.now();
+    // Purge interpolation state so the prop falls back to raw sc.x/z (direct
+    // pointer position) on the very next render, exactly like PlayerView.
+    serverPosRef.current.delete(sceneCharId);
+    serverPosAtRef.current.delete(sceneCharId);
+    serverLmatRef.current.delete(sceneCharId);
+    velocitiesRef.current.delete(sceneCharId);
+    renderedPosRef.current.delete(sceneCharId);
     setSceneChars((prev) =>
       prev.map((s) => s.id === sceneCharId ? { ...s, x, z } : s)
     );
@@ -1228,6 +1252,8 @@ export default function DmDashboard() {
   const handleTokenDrop = useCallback(async (sceneCharId: string, x: number, z: number) => {
     if (!campaignId || !activeScene) return;
 
+    lastLocalChangeRef.current = Date.now();
+    draggingTokenIdRef.current = null;
     const mScale = activeScene.map_scale ?? 1;
     const mapH = 10 * mScale;
     const mapW = mapH;

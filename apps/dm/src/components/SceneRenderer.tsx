@@ -405,7 +405,10 @@ function DragController({
   // cannot see that `canvas` aliases `gl.domElement` rather than a render value.
   /* eslint-disable react-hooks/immutability */
   useEffect(() => {
-    const canvas = gl.domElement as HTMLCanvasElement & { __startDrag?: DragStarter };
+    const canvas = gl.domElement as HTMLCanvasElement & {
+      __startDrag?: DragStarter;
+      __isTokenDragging?: (sceneCharId: string) => boolean;
+    };
     canvas.__startDrag = (sceneCharId, clientX?, clientY?, tokenX = 0, tokenZ = 0) => {
       let offsetX = 0;
       let offsetZ = 0;
@@ -429,8 +432,13 @@ function DragController({
       if (controls) controls.enabled = false;
       canvas.style.cursor = 'grabbing';
     };
+    canvas.__isTokenDragging = (sceneCharId: string) => {
+      const st = dragState.current;
+      return !!st && st.sceneCharId === sceneCharId && st.active;
+    };
     return () => {
       canvas.__startDrag = undefined;
+      canvas.__isTokenDragging = undefined;
     };
   }, [gl, getGroundPoint, controls, scene]);
   /* eslint-enable react-hooks/immutability */
@@ -461,10 +469,15 @@ function DraggableToken({
 
   // Apply position imperatively: guarantees the Three.js group moves even if
   // R3F skips array-prop reconciliation on `<group position={[...]}>`.
+  // Skip while THIS token is drag-active: the drag handler owns the group
+  // position directly; applying stale entity coords mid-drag makes it erratic.
   useEffect(() => {
-    if (groupRef.current) {
-      groupRef.current.position.set(entity.x, entity.y, entity.z);
-    }
+    if (!groupRef.current) return;
+    const canvas = document.querySelector('canvas') as
+      | (HTMLCanvasElement & { __isTokenDragging?: (id: string) => boolean })
+      | null;
+    if (canvas?.__isTokenDragging?.(entity.sceneCharId)) return;
+    groupRef.current.position.set(entity.x, entity.y, entity.z);
   }, [entity.x, entity.y, entity.z]);
 
   const handlePointerDown = useCallback(
