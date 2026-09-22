@@ -1,79 +1,62 @@
 # Roleito — AGENTS.md
 
-## Project Overview
 Persistent AI RPG World Engine. Local-first platform for tabletop RPG campaigns.
+DM authority + AI assistant. World State = source of truth.
 
-## Stack
-- **Frontend**: React + TypeScript + Vite + TailwindCSS
-- **3D**: Three.js + React Three Fiber + Drei (Phase 5+)
-- **Backend**: Python + FastAPI + SQLAlchemy + SQLite
-- **AI**: Decoupled provider layer (local LLM / external API)
-- **TTS**: Decoupled provider layer
+## Stack & Structure
+- **Frontend real (único): `apps/dm`** — React 18 + TS strict + Vite + Tailwind. Three.js/R3F se usan DENTRO de apps/dm (SceneRenderer, PlayerView), no en apps separadas.
+- `apps/player` y `apps/renderer` son **placeholders vacíos (.gitkeep)**; no crear código ahí. La vista jugador vive en `apps/dm/src/pages/PlayerView.tsx`.
+- **Backend**: FastAPI + SQLAlchemy + SQLite. Todos los routers bajo `/api/`; health en `/health`; assets en `/api/static` (data/assets). App en `backend/main.py`.
+- **`core/` es bilingüe**: Python (events, world, canon, memory, narrative, agents) importado por el backend; TypeScript (`core/domain/types.ts`, `core/scene/*`) consumido por apps/dm vía alias `@core -> ../../core` (vite + vitest + tsconfig). Respetar cada lado; `core/scenes` (plural) no se usa.
+- **`docs/AGENTS.md` NO es este archivo** — es la spec del sistema de agentes AI del producto. No confundir.
 
-## Architecture
+## Commands
+- Dev frontend: `npm run dev` (= dev:dm, puerto 5173, proxy `/api -> localhost:8000`)
+- Dev backend: `npm run dev:backend` — embebe ruta Windows `..\venv\Scripts\python.exe`; en otro OS ajustar
+- Typecheck: `npm run typecheck` (`tsc --noEmit` apps/dm, strict)
+- Lint: `npm run lint` (eslint raíz; ignora backend, data, venv)
+- Unit (vitest, en apps/dm): `npm run test --workspace=apps/dm`; solo `src/**/*.spec.ts`, env node
+  - Single: `npx vitest run src/lib/losSystem.spec.ts`
+  - ⚠️ `losRaycast.spec.ts` **cuelga en vitest** — no correrlo; su cobertura está en losSystem.spec
+- Backend (pytest): desde `backend/`: `..\..\venv\Scripts\python.exe -m pytest`; test deps en `requirements-test.txt` (NO en requirements.txt)
+- E2E: `npm run test:e2e` — Playwright **levanta solo** frontend (5173) + backend (8000) vía webServer; tests en `tests/e2e`, global setup en `tests/global-setup.ts`
+- CI (`e2e.yml`): typecheck → lint → playwright. **NO corre vitest ni pytest** — correr ambos local antes de push
+- Orden de verificación sugerida: `lint → typecheck → vitest → pytest → (si toca UI) e2e`
+
+## Architecture (invariantes)
 - Event-driven: `DM/AI -> Event -> World State -> Renderer`
-- World State = source of truth
-- DM has final authority over canon
-- AI proposes, DM approves/rejects
+- Canon: `PROPOSED -> REVIEW -> APPROVED/REJECTED`; DM autoridad final
+- AI nunca escribe al DB directo — siempre vía Event System
+- Renderer nunca modifica canon; knowledge scope en query time
+- `core/domain/types.ts` = fuente única de tipos TS
+- Determinista → código (movimiento, coords, escena); probabilístico → IA
+- Runtime: rápido, determinista, sin generación pesada
+- Nunca mandar campaña completa al LLM
 
-## Directory Structure
-```
-/apps/dm          — DM control panel (React)
-/apps/player      — Player view (React, future)
-/apps/renderer    — 3D scene renderer (React Three Fiber)
-/core/domain      — Domain types and interfaces
-/core/world       — World state logic
-/core/events      — Event bus and handlers
-/core/canon       — Canon management
-/core/memory      — Context builder, memory tiers
-/core/narrative   — Narrative engine
-/core/scenes      — Scene management
-/infrastructure/  — Database, storage, AI, TTS, search
-/backend          — FastAPI server
-/data             — SQLite DB, campaign data, snapshots
-/data/settings    — External worldbuilding (The Archive In Between)
-/data/campaigns   — Campaign-specific data
-/assets           — Characters, environments, audio, video, images
-/docs             — Technical specification (no lore here)
-```
+## Docs — Reading Order
+1. `docs/CONTEXT.md` (leer primero, siempre)
+2. `docs/PRODUCT.md`
+3. `docs/DM-DASHBOARD-VTT.md`
+4. `docs/HYBRID-SHADOW-GEOMETRY.md` (walls/vision/fog manual-first — canon actual)
+5. `docs/DOMAIN.md`
+6. `docs/ARCHITECTURE.md`
+7. `docs/DATABASE.md`
+8. `docs/EVENT-SYSTEM.md`
+Luego solo los relevantes a la tarea. `scripts/check-docs-consistency.py` valida docs vs código.
+
+## Gotchas (lecciones pagadas)
+- **Windows**: `.gitattributes` fuerza `eol=lf`; assets binarios (img/audio/video/3D) via Git LFS — verificar `git lfs` instalado antes de checkout
+- `npm run dev:renderer` falla (apps/renderer sin package.json) — esperado
+- WASD: grid-snap SOLO en drag/drop (`reportMove(snap)`); teclado es libre — no re-agregar snap al path de teclado
+- PlayerView: `POLL_MS = 16` (~62/s) — mantener polling barato
+- 500s históricos en `characters`/`rolls/recent`/`light-requests`: si reaparecen, investigar antes de asumir regression propia
 
 ## Skills
-Routing de skills a tareas de este proyecto (invocación manual con `/skill-name`, o auto según descripción):
-
 | Skill | Cuándo usarla aquí |
 |-------|--------------------|
-| `frontend-design` | Al diseñar/estilizar UI nueva: paneles HUD del dashboard, vistas de apps/dm y apps/player, overlays del renderer 3D. Antes de escribir componentes visuales desde cero. |
-| `vercel-react-best-practices` | Al escribir, revisar o refactorizar componentes React (apps/dm): memoización, data fetching, control de re-renders del World State en el dashboard. |
-| `web-design-guidelines` | Auditoría post-implementación de pantallas: accesibilidad, UX, consistencia ("review my UI"). Ejecutar tras cerrar una pantalla nueva y antes de releases. |
-| `prototype` | Prototipo desechable para validar un modelo de estado o lógica (ej. flujo de eventos canon, tiers de memoria) antes de integrarlo en core/. |
-| `grill-me` *(solo manual)* | Entrevista para estresar un plan antes de empezar una fase grande del roadmap. El usuario la invoca; el agente nunca la auto-dispara. |
-| `grill-with-docs` *(solo manual)* | Igual que grill-me pero genera ADRs + glosario como subproducto. Usar en decisiones arquitectónicas; los ADRs resultantes van a `docs/adr/`. |
-| `find-skills` | Cuando surja una tarea recurrente sin skill conocida; buscar en skills.sh antes de improvisar. |
-
-## Documentation Reading Order
-1. `docs/CONTEXT.md` — Read first, always
-2. `docs/PRODUCT.md`
-3. `docs/DM-DASHBOARD-VTT.md` — VTT UI design (current focus)
-4. `docs/HYBRID-SHADOW-GEOMETRY.md` — Walls/vision/fog manual-first (canon actual)
-5. `docs/DOMAIN.md` — Conceptual contract
-6. `docs/ARCHITECTURE.md`
-7. `docs/DATABASE.md` — SQLite persistence
-8. `docs/EVENT-SYSTEM.md` — Core event pipeline
-9. Then read only the docs relevant to your task
-
-## Coding Conventions
-- TypeScript strict mode
-- Python type hints
-- No comments unless asked
-- Prefer existing libraries
-- Follow existing patterns
-
-## Key Rules
-- `core/domain/types.ts` — single source of truth for types
-- Never send full campaign to LLM
-- Canon flow: `PROPOSED -> REVIEW -> APPROVED/REJECTED`
-- Knowledge scope enforced at query time
-- Runtime: fast, deterministic, no heavy generation
-- AI never writes directly to DB — always through Event System
-- Renderer never modifies canon
-- World State is source of truth
+| `frontend-design` | UI nueva: paneles del dashboard, vistas apps/dm, overlays del renderer |
+| `vercel-react-best-practices` | Componentes React de apps/dm: memoización, re-renders del World State |
+| `web-design-guidelines` | Auditoría post-implementación de pantallas antes de release |
+| `prototype` | Prototipo desechable para validar modelo de estado (canon, memoria) |
+| `grill-me` / `grill-with-docs` *(solo manual)* | Estresar plan antes de fase grande; ADRs a `docs/adr/` |
+| `find-skills` | Tarea recurrente sin skill conocida |
