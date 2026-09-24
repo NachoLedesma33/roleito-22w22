@@ -15,6 +15,7 @@ import FogRectCanvas from './FogRectCanvas';
 import LightPlaceCanvas from './LightPlaceCanvas';
 import { extractFogRegions } from '../lib/fogMask';
 import type { FogRegion } from '../lib/fogMask';
+import type { MovementCell } from '../lib/movementRange';
 import type { ZoneDraft } from './ZoneDrawer';
 import type { ZoneGeometry } from './ZonePortal';
 import { SceneItem } from '@core/domain/types';
@@ -52,6 +53,11 @@ interface SceneRendererProps {
   modelYOffset?: number;
   gridSize?: number;
   gridSnap?: boolean;
+  movementRange?: {
+    tokenId: string;
+    cellSize: number;
+    cells: MovementCell[];
+  } | null;
   drawState?: DrawState | null;
   zoneDraft?: ZoneDraft | null;
   onZoneAddPoint?: (point: { x: number; y: number }) => void;
@@ -543,6 +549,35 @@ function DraggableToken({
   );
 }
 
+function MovementRangeOverlay({
+  cells,
+  cellSize,
+  renderMode,
+}: {
+  cells: MovementCell[];
+  cellSize: number;
+  renderMode: string;
+}) {
+  const y = renderMode === '2d' ? 0.09 : 0.25;
+  return (
+    <group>
+      {cells.map((c, i) =>
+        c.cost <= 0 ? null : (
+          <mesh
+            key={i}
+            position={[c.x, y, c.y]}
+            rotation={[-Math.PI / 2, 0, 0]}
+            renderOrder={60}
+          >
+            <planeGeometry args={[cellSize * 0.92, cellSize * 0.92]} />
+            <meshBasicMaterial color="#4ade80" transparent opacity={0.35} depthWrite={false} toneMapped={false} />
+          </mesh>
+        ),
+      )}
+    </group>
+  );
+}
+
 export default function SceneRenderer({
   backgroundUrl,
   characters,
@@ -557,6 +592,7 @@ export default function SceneRenderer({
   modelYOffset = 0,
   gridSize = 0,
   gridSnap = false,
+  movementRange = null,
   drawState = null,
   zoneDraft = null,
   onZoneAddPoint,
@@ -664,6 +700,13 @@ export default function SceneRenderer({
         <SceneBackground url={backgroundUrl} mapScale={mapScale} modelYOffset={modelYOffset} />
       </Suspense>
       {gridSize > 0 && <GridOverlay width={mapWidth} height={mapHeight} gridSize={gridSize} renderMode={renderMode} />}
+      {movementRange && (
+        <MovementRangeOverlay
+          cells={movementRange.cells}
+          cellSize={movementRange.cellSize}
+          renderMode={renderMode}
+        />
+      )}
       {hasDrag && (
         <DragController
           onTokenDrop={onTokenDrop}

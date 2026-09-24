@@ -16,6 +16,8 @@ import DoorContextMenu from '@/components/DoorContextMenu';
 import WallContextMenu from '@/components/WallContextMenu';
 import ZoneContextMenu from '@/components/ZoneContextMenu';
 import { extractZonePolygons, checkWallCollision } from '@/lib/wall-collision';
+import { buildOccluders } from '@/lib/lightOcclusion';
+import { computeReachableCells } from '@/lib/movementRange';
 import { DEFAULT_RENDER_MODE } from '@/lib/overlayY';
 import BackgroundSelector, { generateBackgroundCSS } from '@/components/BackgroundSelector';
 import SessionLogHud from '@/components/SessionLogHud';
@@ -1313,6 +1315,24 @@ export default function DmDashboard() {
     }
   }, [campaignId, activeScene, graphRef]);
 
+  // F7: movement range overlay for the selected token (A* reachable cells).
+  const movementRange = useMemo(() => {
+    if (!activeScene || !selectedTokenId) return null;
+    const sc = sceneChars.find((s) => s.id === selectedTokenId);
+    if (!sc) return null;
+    const mScale = activeScene.map_scale ?? 1;
+    const mapH = 10 * mScale;
+    const mapW = mapH;
+    const cellSize = activeScene.grid_size && activeScene.grid_size > 0 ? activeScene.grid_size : 0.5;
+    const occluders = buildOccluders(sceneItems, mapW, mapH);
+    const { cells } = computeReachableCells(
+      sc.x, sc.z,
+      sc.move_speed ?? 5,
+      occluders, cellSize, mapW, mapH,
+    );
+    return { tokenId: sc.id, cellSize, cells };
+  }, [activeScene, selectedTokenId, sceneChars, sceneItems]);
+
   const handleAddToScene = useCallback(async (entityType: string, entityId: string) => {
     if (!campaignId || !activeScene) return;
     const scale = activeScene.map_scale ?? 1;
@@ -2467,6 +2487,7 @@ export default function DmDashboard() {
                 modelYOffset={activeScene.model_y_offset ?? 0}
                 gridSize={activeScene.grid_size ?? 0}
                 gridSnap={activeScene.grid_snap ?? false}
+                movementRange={movementRange}
                 drawState={drawState}
                 showZones
                 renderMode={DEFAULT_RENDER_MODE}
