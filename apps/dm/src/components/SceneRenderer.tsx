@@ -326,6 +326,14 @@ function DragController({
       const newPos = applyDragPosition(e);
       if (!newPos) return;
 
+      if (gridSnap && gridSize && gridSize > 0) {
+        // Live snap to cell CENTER: the token snaps cell-to-cell while
+        // dragging, so releasing never teleports it (grid lines = cell
+        // borders, tokens sit on centers, matching the range overlay).
+        newPos.x = (Math.round(newPos.x / gridSize - 0.5) + 0.5) * gridSize;
+        newPos.z = (Math.round(newPos.z / gridSize - 0.5) + 0.5) * gridSize;
+      }
+
       scene.traverse((child: THREE.Object3D) => {
         if (
           child.userData?.sceneCharId === dragState.current?.sceneCharId &&
