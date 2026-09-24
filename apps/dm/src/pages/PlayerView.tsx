@@ -466,8 +466,8 @@ export default function PlayerView() {
     if (crossZoneBorder(prevNormX, prevNormZ, normX, normZ, zones, extractPortals(currentData.items ?? []))) return;
 
     if (snap && currentData.grid_snap && currentData.grid_size > 0) {
-      x = Math.round(x / currentData.grid_size) * currentData.grid_size;
-      z = Math.round(z / currentData.grid_size) * currentData.grid_size;
+      x = (Math.round(x / currentData.grid_size - 0.5) + 0.5) * currentData.grid_size;
+      z = (Math.round(z / currentData.grid_size - 0.5) + 0.5) * currentData.grid_size;
     }
 
     const target = { x, z, rotation: ((rotation % (2 * Math.PI)) + Math.PI) % (2 * Math.PI) - Math.PI };

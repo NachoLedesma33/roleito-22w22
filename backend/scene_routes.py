@@ -511,8 +511,8 @@ async def player_move_character(
     grid_size = getattr(scene, 'grid_size', 0.0) or 0.0
     grid_snap = getattr(scene, 'grid_snap', 0)
     if grid_snap and grid_size > 0:
-        sc.x = round(sc.x / grid_size) * grid_size
-        sc.z = round(sc.z / grid_size) * grid_size
+        sc.x = (math.floor(sc.x / grid_size) + 0.5) * grid_size
+        sc.z = (math.floor(sc.z / grid_size) + 0.5) * grid_size
 
     # Velocity estimate for smooth client extrapolation
     now = time.time()
