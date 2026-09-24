@@ -2370,7 +2370,7 @@ F3. Edge intersection detection (ShadowZone edges + portals) — IMPLEMENTED (lo
 F4. Visibility mask generation per character — IMPLEMENTED (losRaycast.ts computeVisibilityMask + losSystem.ts computeCharacterLoS)
 F5. Combined visibility (union of party) — IMPLEMENTED (losSystem.ts computePartyLoS)
 F6. Dynamic fog: updates on movement — IMPLEMENTED (PlayerView visionRegions computes LoS on poll)
-F7. Movement range visualization — TODO
+F7. Movement range visualization — IMPLEMENTED (DmDashboard computeReachableCells + SceneRenderer MovementRangeOverlay; shows reachable cells for selected token)
 F8. A* pathfinding for movement — IMPLEMENTED (movementRange.ts findPath + computeReachableCells)
 ```
 
@@ -2379,7 +2379,7 @@ F8. A* pathfinding for movement — IMPLEMENTED (movementRange.ts findPath + com
 - [x] Characters see only what's within LoS
 - [x] Walls block vision correctly
 - [ ] Darkvision allows seeing in dark (type configured, rendering pending)
-- [ ] Movement range shows valid cells (overlay pending)
+- [x] Movement range shows valid cells (overlay pending)
 - [x] Pathfinding avoids walls
 
 ---
