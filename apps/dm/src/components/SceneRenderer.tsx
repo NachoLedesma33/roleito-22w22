@@ -363,8 +363,10 @@ function DragController({
       let newPos = applyDragPosition(e);
       if (newPos) {
         if (gridSnap && gridSize && gridSize > 0) {
-          newPos.x = Math.round(newPos.x / gridSize) * gridSize;
-          newPos.z = Math.round(newPos.z / gridSize) * gridSize;
+          // Snap to cell CENTER (0.5 offset), matching the reachable-cell
+          // overlay — the grid lines are cell borders, tokens sit on centers.
+          newPos.x = (Math.round(newPos.x / gridSize - 0.5) + 0.5) * gridSize;
+          newPos.z = (Math.round(newPos.z / gridSize - 0.5) + 0.5) * gridSize;
         }
         if (otherTokens) {
           const myRadius = 0.4;
