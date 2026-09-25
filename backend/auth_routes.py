@@ -87,6 +87,11 @@ async def register_dm(body: DMCreateRequest, request: Request):
     if check_lockout(ip):
         raise HTTPException(status_code=429, detail="Too many attempts. Try later.")
 
+    async with get_db() as db:
+        existing = (await db.execute(select(DM).where(DM.name == body.name))).scalar_one_or_none()
+    if existing:
+        raise HTTPException(status_code=409, detail="Ya existe un perfil con ese nombre. Ingresá con tu PIN.")
+
     dm = await create_dm(body.name, body.pin)
     clear_failed_attempts(ip)
     session = await create_session(dm.id)
