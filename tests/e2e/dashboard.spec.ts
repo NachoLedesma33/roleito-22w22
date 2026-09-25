@@ -110,8 +110,8 @@ test.describe('Dashboard VTT Core', () => {
 
     const putPromise = page.waitForResponse(
       (res) =>
-        res.url().includes(`/scenes/${scene.id}/characters`) &&
-        res.request().method() === 'PUT',
+        res.url().includes(`/scenes/${scene.id}/move`) &&
+        res.request().method() === 'PATCH',
       { timeout: 15_000 },
     );
 
