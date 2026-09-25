@@ -17,7 +17,7 @@ DM authority + AI assistant. World State = source of truth.
 - Lint: `npm run lint` (eslint raíz; ignora backend, data, venv)
 - Unit (vitest, en apps/dm): `npm run test --workspace=apps/dm`; solo `src/**/*.spec.ts`, env node
   - Single: `npx vitest run src/lib/losSystem.spec.ts`
-  - ⚠️ `losRaycast.spec.ts` **cuelga en vitest** — no correrlo; su cobertura está en losSystem.spec
+  - ⚠️ `losRaycast.spec.ts` colgaba en vitest (rayos con dx/dy=0 → loop infinito en castRayDDA) — fixeado, ya corre
 - Backend (pytest): desde `backend/`: `..\..\venv\Scripts\python.exe -m pytest`; test deps en `requirements-test.txt` (NO en requirements.txt)
 - E2E: `npm run test:e2e` — Playwright **levanta solo** frontend (5173) + backend (8000) vía webServer; tests en `tests/e2e`, global setup en `tests/global-setup.ts`
 - CI (`e2e.yml`): typecheck → lint → playwright. **NO corre vitest ni pytest** — correr ambos local antes de push

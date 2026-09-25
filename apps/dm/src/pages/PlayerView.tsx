@@ -12,6 +12,9 @@ import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastC
 import { api } from '@/lib/api';
 import { checkWallCollision, extractZonePolygons, extractPortals, crossZoneBorder } from '@/lib/wall-collision';
 import { computeVisionRegions, type CharPos } from '@/lib/playerVision';
+import type { VisionConfig } from '@core/domain/types';
+import type { FogRegion } from '@/lib/fogMask';
+import type { LosJob } from '@/lib/losWorker';
 import { DEFAULT_RENDER_MODE } from '@/lib/overlayY';
 
 const API_BASE = '/api';
@@ -392,12 +395,82 @@ export default function PlayerView() {
   const mapperH = 10 * mapScale
   const mapperW = mapperH * imageAspect
 
+  // LoS (worker + throttle): mi personaje ve según vision_type/range, recortado por muros.
+  // El mask (10K+ DDA rays) corre en un Web Worker para no bloquear el render thread.
+  const [losRegion, setLosRegion] = useState<FogRegion | null>(null)
+  const mySceneCharIdRef = useRef<string | null>(null)
+  useEffect(() => { mySceneCharIdRef.current = mySceneCharId }, [mySceneCharId])
+  const mapperRef = useRef({ w: mapperW, h: mapperH })
+  useEffect(() => { mapperRef.current = { w: mapperW, h: mapperH } }, [mapperW, mapperH])
+  const lastLosRef = useRef<{ x: number; z: number; sig: string; jobId: number } | null>(null)
+  const workerRef = useRef<Worker | null>(null)
+  const lastItemsKeyRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    const worker = new Worker(new URL('../lib/losWorker.ts', import.meta.url), { type: 'module' })
+    worker.onmessage = (e: MessageEvent) => {
+      const msg = e.data as { kind: string; jobId: number; region: { points: number[]; revealed: boolean; zIndex: number } | null }
+      if (msg?.kind !== 'los') return
+      if (!lastLosRef.current || msg.jobId !== lastLosRef.current.jobId) return
+      setLosRegion(msg.region ? { id: 'los-mine', points: msg.region.points, revealed: msg.region.revealed, zIndex: msg.region.zIndex } : null)
+    }
+    workerRef.current = worker
+    return () => { worker.terminate(); workerRef.current = null }
+  }, [])
+
+  useEffect(() => {
+    if (!mySceneCharId) return
+    const timer = window.setInterval(() => {
+      const d = dataRef.current
+      if (!d) return
+      const sc = d.characters.find((c) => c.id === mySceneCharIdRef.current)
+      if (!sc || !workerRef.current) return
+      const pos = wasdTargetRef.current ?? { x: sc.x, z: sc.z, rotation: sc.rotation ?? 0 }
+      const visionType = sc.vision_type ?? 'normal'
+      const visionRange = sc.vision_range ?? 6
+      const items = d.items ?? []
+      const itemsKey = `${d.scene_id ?? ''}|${items.length}|${items.map((i) => i.id).join(',')}`
+      const sigLine = `${visionType}|${visionRange}|${itemsKey}`
+      const last = lastLosRef.current
+      if (last && Math.hypot(pos.x - last.x, pos.z - last.z) < 0.25 && last.sig === sigLine) return
+      const { w: mapW, h: mapH } = mapperRef.current
+      if (mapW <= 0 || mapH <= 0) return
+      const visions: VisionConfig[] = [{
+        type: visionType as VisionConfig['type'],
+        range: visionRange,
+        dimRange: visionType === 'normal' ? visionRange * 0.5 : 0,
+      }]
+      const res = visionRange <= 8 ? 0.08 : visionRange <= 16 ? 0.12 : 0.18
+      const jobId = (last?.jobId ?? 0) + 1
+      lastLosRef.current = { x: pos.x, z: pos.z, sig: sigLine, jobId }
+      const job: LosJob = {
+        kind: 'los',
+        jobId,
+        itemsKey,
+        items: lastItemsKeyRef.current === itemsKey ? undefined : items,
+        sceneCharId: sc.id,
+        entityId: sc.entity_id,
+        x: pos.x,
+        z: pos.z,
+        rotation: pos.rotation ?? 0,
+        visions,
+        mapW,
+        mapH,
+        res,
+      }
+      lastItemsKeyRef.current = itemsKey
+      workerRef.current.postMessage(job)
+    }, 250)
+    return () => clearInterval(timer)
+  }, [mySceneCharId])
+
   const visionRegions = useMemo(() => {
     if (!data) return []
-    return computeVisionRegions(data.items ?? [], visionCharPos, mySceneCharId, mapperW, mapperH, {
+    const light = computeVisionRegions(data.items ?? [], visionCharPos, mySceneCharId, mapperW, mapperH, {
       shareCarriedLights: shareLight,
     })
-  }, [data, visionCharPos, mySceneCharId, mapperW, mapperH, shareLight])
+    return losRegion ? [...light, losRegion] : light
+  }, [data, visionCharPos, mySceneCharId, mapperW, mapperH, shareLight, losRegion])
 
   const requestLight = useCallback(async () => {
     const d = dataRef.current

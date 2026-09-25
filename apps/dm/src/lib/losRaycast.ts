@@ -85,13 +85,14 @@ export function castRayDDA(
   const stepX = dx > 0 ? 1 : -1
   const stepY = dy > 0 ? 1 : -1
 
+  // Rayos con componente 0: división por cero produce NaN y el loop nunca converge.
   let tMaxX =
-    ((Math.floor(ox / cellSize) + (dx > 0 ? 1 : 0)) * cellSize - ox) / dx
+    dx === 0 ? Infinity : ((Math.floor(ox / cellSize) + (dx > 0 ? 1 : 0)) * cellSize - ox) / dx
   let tMaxY =
-    ((Math.floor(oy / cellSize) + (dy > 0 ? 1 : 0)) * cellSize - oy) / dy
+    dy === 0 ? Infinity : ((Math.floor(oy / cellSize) + (dy > 0 ? 1 : 0)) * cellSize - oy) / dy
 
-  const tDeltaX = Math.abs(cellSize / dx)
-  const tDeltaY = Math.abs(cellSize / dy)
+  const tDeltaX = dx === 0 ? Infinity : Math.abs(cellSize / dx)
+  const tDeltaY = dy === 0 ? Infinity : Math.abs(cellSize / dy)
 
   let cellX = Math.floor(ox / cellSize)
   let cellY = Math.floor(oy / cellSize)
