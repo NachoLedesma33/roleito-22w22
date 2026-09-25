@@ -132,8 +132,10 @@ test.describe('AI Provider Layer', () => {
     await page.getByRole('button', { name: 'Guardar' }).click();
     await page.getByTestId('ai-test-button').click();
 
+    // El connect a un puerto cerrado puede tardar hasta ~21s (timeout del OS
+    // en Windows) antes de fallar — margen holgado para evitar flaky.
     await expect(page.getByTestId('ai-test-result')).toContainText('Error', {
-      timeout: 10_000,
+      timeout: 25_000,
     });
 
     const cfg = await request.get(`${API}/ai/config`, { headers: authHeaders });

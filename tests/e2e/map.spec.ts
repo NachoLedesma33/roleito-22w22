@@ -161,7 +161,7 @@ test.describe('Map System', () => {
 
     await openDashboard(page, campaign.id);
 
-    await page.getByRole('button', { name: 'Map ▾' }).hover();
+    await page.getByRole('button', { name: 'Map ▾' }).click();
     await page.getByRole('button', { name: 'Plano Ciudad' }).click();
 
     const mapBtn = page.getByTitle('Open map');
@@ -186,7 +186,7 @@ test.describe('Map System', () => {
     await openDashboard(page, campaign.id);
     await expect(page.getByTitle('Open map')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Map ▾' }).hover();
+    await page.getByRole('button', { name: 'Map ▾' }).click();
     await page.getByRole('button', { name: 'Unlink map' }).click();
 
     await expect(page.getByTitle('Open map')).toHaveCount(0);

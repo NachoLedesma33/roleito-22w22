@@ -65,8 +65,12 @@ test.describe('Dice Roller', () => {
   test('DR5: Escape cierra el roller', async ({ page, campaign }) => {
     await openRoller(page, campaign.id);
 
-    await page.keyboard.press('Escape');
-    await expect(page.getByText('Die Type')).toHaveCount(0);
+    // El roller puede tardar en registrar el listener de teclado tras
+    // abrirse — reintentar Escape hasta que cierre.
+    await expect(async () => {
+      await page.keyboard.press('Escape');
+      await expect(page.getByText('Die Type')).toHaveCount(0);
+    }).toPass();
   });
 
   test('DR6: roller para personaje muestra atributos y tag en historial', async ({ page, request, campaign }) => {

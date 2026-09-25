@@ -68,6 +68,7 @@ export default function DmDashboard() {
   const [showSessionLog, setShowSessionLog] = useState(false);
   const [showSceneNotes, setShowSceneNotes] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
+  const [showMapMenu, setShowMapMenu] = useState(false);
   const [copiedInvite, setCopiedInvite] = useState(false);
   const [showDiceRoller, setShowDiceRoller] = useState(false);
   const [showInitiative, setShowInitiative] = useState(false);
@@ -2295,11 +2296,15 @@ export default function DmDashboard() {
         )}
 
         {maps.length > 0 && (
-          <div className="relative group shrink-0">
-            <button className="text-[10px] px-1.5 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+          <div className="relative shrink-0">
+            <button
+              onClick={() => setShowMapMenu((v) => !v)}
+              className={`text-[10px] px-1.5 py-1 rounded transition-colors ${showMapMenu ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)]' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+            >
               Map ▾
             </button>
-            <div className="absolute right-0 top-full mt-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 min-w-[140px]">
+            {showMapMenu && (
+              <div className="absolute right-0 top-full mt-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg z-50 min-w-[140px]">
               {activeScene?.map_id && (
                 <button
                   onClick={async () => {
@@ -2307,6 +2312,7 @@ export default function DmDashboard() {
                     const updated = await api.scenes.update(campaignId, activeScene.id, { map_id: null });
                     setActiveScene(updated);
                     setScenes((prev) => prev.map((s) => s.id === updated.id ? updated : s));
+                    setShowMapMenu(false);
                   }}
                   className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-red-400"
                 >
@@ -2321,6 +2327,7 @@ export default function DmDashboard() {
                     const updated = await api.scenes.update(campaignId, activeScene.id, { map_id: m.id });
                     setActiveScene(updated);
                     setScenes((prev) => prev.map((s) => s.id === updated.id ? updated : s));
+                    setShowMapMenu(false);
                   }}
                   className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${
                     activeScene?.map_id === m.id ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'
@@ -2329,7 +2336,8 @@ export default function DmDashboard() {
                   {activeScene?.map_id === m.id ? '✓ ' : ''}{m.name}
                 </button>
               ))}
-            </div>
+              </div>
+            )}
           </div>
         )}
 
