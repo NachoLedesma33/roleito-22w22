@@ -33,6 +33,7 @@ from canon_routes import router as canon_router
 from auth_routes import router as auth_router
 from vault_routes import router as vault_router
 from dice_routes import dice_router
+from combat_routes import router as combat_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -116,6 +117,7 @@ app.include_router(canon_router, prefix="/api")
 app.include_router(auth_router, prefix="/api")
 app.include_router(vault_router, prefix="/api")
 app.include_router(dice_router, prefix="/api")
+app.include_router(combat_router, prefix="/api")
 
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "assets")
 os.makedirs(ASSETS_DIR, exist_ok=True)

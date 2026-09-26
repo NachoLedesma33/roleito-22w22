@@ -320,6 +320,26 @@ export interface DiceRollResponse {
   created_at: string;
 }
 
+export interface CombatantResponse {
+  id: string;
+  combat_id: string;
+  entity_type: string;
+  entity_id: string;
+  initiative: number | null;
+  roll_seq: number | null;
+  pending_roll: number;
+}
+
+export interface CombatResponse {
+  id: string;
+  campaign_id: string;
+  scene_id: string;
+  status: string;
+  round: number;
+  current_turn: number;
+  combatants: CombatantResponse[];
+}
+
 export interface Asset {
   id: string;
   campaign_id: string;
@@ -801,5 +821,30 @@ export const api = {
       request<DiceRollResponse[]>(`/campaigns/${campaignId}/rolls/recent/all`),
     history: (campaignId: string, entityId: string) =>
       request<DiceRollResponse[]>(`/campaigns/${campaignId}/rolls/history/${entityId}`),
+  },
+
+  combat: {
+    start: (campaignId: string, sceneId: string) =>
+      request<CombatResponse>(`/campaigns/${campaignId}/scenes/${sceneId}/combat`, { method: 'POST' }),
+    getActive: (campaignId: string, sceneId: string) =>
+      request<CombatResponse | null>(`/campaigns/${campaignId}/scenes/${sceneId}/combat`),
+    addCombatants: (campaignId: string, combatId: string, combatants: { entity_type: string; entity_id: string; initiative?: number | null }[]) =>
+      request<CombatResponse>(`/campaigns/${campaignId}/combat/${combatId}/combatants`, {
+        method: 'POST',
+        body: JSON.stringify(combatants),
+      }),
+    next: (campaignId: string, combatId: string) =>
+      request<CombatResponse>(`/campaigns/${campaignId}/combat/${combatId}/next`, { method: 'POST' }),
+    initiativeRoll: (campaignId: string, combatId: string, combatant: { entity_type: string; entity_id: string; initiative: number }) =>
+      request<CombatResponse>(`/campaigns/${campaignId}/combat/${combatId}/initiative-roll`, {
+        method: 'POST',
+        body: JSON.stringify(combatant),
+      }),
+    getPendingRoll: (campaignId: string, sceneId: string, characterId: string) =>
+      request<{ combat_id: string; campaign_id: string; scene_id: string; entity_type: string; entity_id: string } | null>(
+        `/campaigns/${campaignId}/scenes/${sceneId}/combat/pending/${characterId}`
+      ),
+    end: (campaignId: string, combatId: string) =>
+      request<CombatResponse>(`/campaigns/${campaignId}/combat/${combatId}/end`, { method: 'POST' }),
   },
 };

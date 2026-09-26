@@ -263,3 +263,224 @@ async def test_player_move_estimates_velocity(client):
     assert data["vz"] > 0
     assert data["vz"] == pytest.approx(data["vx"], rel=0.5)
     assert data["vrot"] == pytest.approx(0.0)
+
+
+@pytest.mark.asyncio
+async def test_combat_roundtrip_and_ordering(client):
+    camp = (await client.post("/api/campaigns", json={"name": "Combat A"})).json()
+    scen = (await client.post(f"/api/campaigns/{camp['id']}/scenes", json={"name": "Arena"})).json()
+    cid, sid = camp["id"], scen["id"]
+
+    res = await client.post(f"/api/campaigns/{cid}/scenes/{sid}/combat")
+    assert res.status_code == 200, res.text
+    combat = res.json()
+    assert combat["status"] == "active"
+    assert combat["round"] == 1
+    assert combat["current_turn"] == 0
+    assert combat["combatants"] == []
+
+    res = await client.post(f"/api/campaigns/{cid}/scenes/{sid}/combat")
+    assert res.status_code == 400
+
+    res = await client.post(
+        f"/api/campaigns/{cid}/combat/{combat['id']}/combatants",
+        json=[
+            {"entity_type": "npc", "entity_id": "goblin-a", "initiative": 6},
+            {"entity_type": "character", "entity_id": "aria", "initiative": 4},
+            {"entity_type": "npc", "entity_id": "goblin-b", "initiative": 6},
+        ],
+    )
+    assert res.status_code == 200, res.text
+    got = res.json()
+    order = [(c["entity_id"], c["initiative"], c["roll_seq"]) for c in got["combatants"]]
+    assert order == [("goblin-a", 6, 1), ("goblin-b", 6, 3), ("aria", 4, 2)]
+
+    res = await client.post(
+        f"/api/campaigns/{cid}/combat/{combat['id']}/combatants",
+        json=[{"entity_type": "character", "entity_id": "borin"}],
+    )
+    assert res.status_code == 200, res.text
+    got = res.json()
+    ids = [c["entity_id"] for c in got["combatants"]]
+    assert ids == ["goblin-a", "goblin-b", "aria", "borin"]
+    assert got["combatants"][-1]["initiative"] is None
+
+    res = await client.post(
+        f"/api/campaigns/{cid}/combat/{combat['id']}/combatants",
+        json=[{"entity_type": "character", "entity_id": "aria", "initiative": 6}],
+    )
+    assert res.status_code == 200, res.text
+    got = res.json()
+    aria = next(c for c in got["combatants"] if c["entity_id"] == "aria")
+    assert aria["initiative"] == 6
+    assert aria["roll_seq"] == 4
+    assert [c["entity_id"] for c in got["combatants"]] == [
+        "goblin-a", "goblin-b", "aria", "borin",
+    ]
+
+    for _ in range(4):
+        res = await client.post(f"/api/campaigns/{cid}/combat/{combat['id']}/next")
+        assert res.status_code == 200, res.text
+    got = res.json()
+    assert got["round"] == 2
+    assert got["current_turn"] == 0
+
+    res = await client.post(f"/api/campaigns/{cid}/combat/{combat['id']}/end")
+    assert res.status_code == 200
+    assert res.json()["status"] == "ended"
+
+    res = await client.post(f"/api/campaigns/{cid}/combat/{combat['id']}/next")
+    assert res.status_code == 400
+
+    res = await client.get(f"/api/campaigns/{cid}/scenes/{sid}/combat")
+    assert res.status_code == 200
+    assert res.json() is None
+
+
+@pytest.mark.asyncio
+async def test_combat_initiative_range_and_missing(client):
+    camp = (await client.post("/api/campaigns", json={"name": "Combat B"})).json()
+    scen = (await client.post(f"/api/campaigns/{camp['id']}/scenes", json={"name": "Arena"})).json()
+    cid, sid = camp["id"], scen["id"]
+
+    res = await client.post(f"/api/campaigns/{cid}/scenes/{sid}/combat")
+    assert res.status_code == 200
+    combat = res.json()
+
+    res = await client.post(
+        f"/api/campaigns/{cid}/combat/{combat['id']}/combatants",
+        json=[{"entity_type": "npc", "entity_id": "goblin-x", "initiative": 9}],
+    )
+    assert res.status_code == 422
+
+    res = await client.post(f"/api/campaigns/{cid}/combat/nope/next")
+    assert res.status_code == 404
+
+    res = await client.post(f"/api/campaigns/{cid}/combat/{combat['id']}/end")
+    assert res.status_code == 200
+    res = await client.post(f"/api/campaigns/{cid}/combat/{combat['id']}/end")
+    assert res.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_combat_pending_and_player_roll(client):
+    camp = (await client.post("/api/campaigns", json={"name": "Combat Pending"})).json()
+    scen = (await client.post(f"/api/campaigns/{camp['id']}/scenes", json={"name": "Arena"})).json()
+    cid, sid = camp["id"], scen["id"]
+
+    res = await client.post(f"/api/campaigns/{cid}/scenes/{sid}/combat")
+    assert res.status_code == 200
+    combat = res.json()
+
+    res = await client.post(
+        f"/api/campaigns/{cid}/combat/{combat['id']}/combatants",
+        json=[
+            {"entity_type": "character", "entity_id": "aria"},
+            {"entity_type": "npc", "entity_id": "goblin-a"},
+        ],
+    )
+    assert res.status_code == 200, res.text
+
+    # El char tiene prompt activo; el npc no.
+    res = await client.get(f"/api/campaigns/{cid}/scenes/{sid}/combat/pending/aria")
+    assert res.status_code == 200
+    pending = res.json()
+    assert pending["combat_id"] == combat["id"]
+    assert pending["entity_id"] == "aria"
+
+    res = await client.get(f"/api/campaigns/{cid}/scenes/{sid}/combat/pending/goblin-a")
+    assert res.status_code == 200
+    assert res.json() is None
+
+    # El jugador tira → seq asignado, pending limpio.
+    res = await client.post(
+        f"/api/campaigns/{cid}/combat/{combat['id']}/initiative-roll",
+        json={"entity_type": "character", "entity_id": "aria", "initiative": 4},
+    )
+    assert res.status_code == 200, res.text
+    aria = next(c for c in res.json()["combatants"] if c["entity_id"] == "aria")
+    assert aria["initiative"] == 4
+    assert aria["roll_seq"] == 1
+
+    res = await client.get(f"/api/campaigns/{cid}/scenes/{sid}/combat/pending/aria")
+    assert res.json() is None
+
+    # Tirar de nuevo sin pending → 400; npc vía player roll → 400.
+    res = await client.post(
+        f"/api/campaigns/{cid}/combat/{combat['id']}/initiative-roll",
+        json={"entity_type": "character", "entity_id": "aria", "initiative": 5},
+    )
+    assert res.status_code == 400
+
+    res = await client.post(
+        f"/api/campaigns/{cid}/combat/{combat['id']}/initiative-roll",
+        json={"entity_type": "npc", "entity_id": "goblin-a", "initiative": 6},
+    )
+    assert res.status_code == 400
+
+    # DM tira por un char con pending → el prompt se cancela.
+    res = await client.post(
+        f"/api/campaigns/{cid}/combat/{combat['id']}/combatants",
+        json=[{"entity_type": "character", "entity_id": "borin"}],
+    )
+    assert res.status_code == 200
+    res = await client.get(f"/api/campaigns/{cid}/scenes/{sid}/combat/pending/borin")
+    assert res.json()["entity_id"] == "borin"
+
+    res = await client.post(
+        f"/api/campaigns/{cid}/combat/{combat['id']}/combatants",
+        json=[{"entity_type": "character", "entity_id": "borin", "initiative": 2}],
+    )
+    assert res.status_code == 200, res.text
+    res = await client.get(f"/api/campaigns/{cid}/scenes/{sid}/combat/pending/borin")
+    assert res.json() is None
+
+    # Sin combate activo → pending None.
+    await client.post(f"/api/campaigns/{cid}/combat/{combat['id']}/end")
+    res = await client.get(f"/api/campaigns/{cid}/scenes/{sid}/combat/pending/aria")
+    assert res.json() is None
+
+
+@pytest.mark.asyncio
+async def test_combat_queue_concurrent(client):
+    camp = (await client.post("/api/campaigns", json={"name": "Combat Cola"})).json()
+    scen = (await client.post(f"/api/campaigns/{camp['id']}/scenes", json={"name": "Arena"})).json()
+    cid, sid = camp["id"], scen["id"]
+
+    res = await client.post(f"/api/campaigns/{cid}/scenes/{sid}/combat")
+    assert res.status_code == 200
+    combat = res.json()
+
+    res = await client.post(
+        f"/api/campaigns/{cid}/combat/{combat['id']}/combatants",
+        json=[
+            {"entity_type": "character", "entity_id": "c1"},
+            {"entity_type": "character", "entity_id": "c2"},
+            {"entity_type": "character", "entity_id": "c3"},
+        ],
+    )
+    assert res.status_code == 200
+
+    # 3 jugadores tiran al mismo tiempo → seqs distintos (cola FIFO).
+    responses = await asyncio.gather(*[
+        client.post(
+            f"/api/campaigns/{cid}/combat/{combat['id']}/initiative-roll",
+            json={"entity_type": "character", "entity_id": cid_, "initiative": init_},
+        )
+        for cid_, init_ in [("c1", 6), ("c2", 3), ("c3", 6)]
+    ])
+    assert all(r.status_code == 200 for r in responses), [r.text for r in responses]
+
+    res = await client.get(f"/api/campaigns/{cid}/scenes/{sid}/combat")
+    got = res.json()
+    seqs = sorted(c["roll_seq"] for c in got["combatants"])
+    assert seqs == [1, 2, 3]
+    assert [c["entity_id"] for c in got["combatants"]] in (
+        ["c1", "c3", "c2"],
+        ["c3", "c1", "c2"],
+    )
+
+    # Ningún pending activo tras la cola.
+    for cid_ in ("c1", "c2", "c3"):
+        res = await client.get(f"/api/campaigns/{cid}/scenes/{sid}/combat/pending/{cid_}")
+        assert res.json() is None

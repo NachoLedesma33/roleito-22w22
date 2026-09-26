@@ -49,6 +49,8 @@ MIGRATIONS = [
     ("scenes", "model_y_offset", "ALTER TABLE scenes ADD COLUMN model_y_offset FLOAT DEFAULT 0.0"),
     ("scene_characters", "vision_type", "ALTER TABLE scene_characters ADD COLUMN vision_type TEXT DEFAULT 'normal'"),
     ("scene_characters", "vision_range", "ALTER TABLE scene_characters ADD COLUMN vision_range FLOAT DEFAULT 6.0"),
+    ("combats", "next_seq", "ALTER TABLE combats ADD COLUMN next_seq INTEGER DEFAULT 0"),
+    ("combat_combatants", "pending_roll", "ALTER TABLE combat_combatants ADD COLUMN pending_roll INTEGER DEFAULT 0"),
 ]
 
 VIDA_ATTRS = ["vigor", "intelligence", "dexterity", "cunning"]

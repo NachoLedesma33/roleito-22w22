@@ -462,6 +462,35 @@ class SceneCharacterResponse(BaseModel):
         from_attributes = True
 
 
+class CombatantIn(BaseModel):
+    entity_type: str
+    entity_id: str
+    initiative: Optional[int] = Field(default=None, ge=1, le=6)
+
+
+class CombatantResponse(BaseModel):
+    id: str
+    combat_id: str
+    entity_type: str
+    entity_id: str
+    initiative: Optional[int] = None
+    roll_seq: Optional[int] = None
+    pending_roll: int = 0
+
+    class Config:
+        from_attributes = True
+
+
+class CombatResponse(BaseModel):
+    id: str
+    campaign_id: str
+    scene_id: str
+    status: str
+    round: int
+    current_turn: int
+    combatants: list[CombatantResponse]
+
+
 class MapMarkerCreate(BaseModel):
     label: str = ""
     marker_type: str = "poi"

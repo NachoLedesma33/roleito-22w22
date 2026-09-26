@@ -13,6 +13,7 @@ import FogOverlay from './FogOverlay';
 import FogBrushCanvas from './FogBrushCanvas';
 import FogRectCanvas from './FogRectCanvas';
 import LightPlaceCanvas from './LightPlaceCanvas';
+import TokenPlaceCanvas from './TokenPlaceCanvas';
 import { extractFogRegions } from '../lib/fogMask';
 import type { FogRegion } from '../lib/fogMask';
 import type { MovementCell } from '../lib/movementRange';
@@ -89,6 +90,8 @@ interface SceneRendererProps {
   lightPlace?: { preset: string } | null;
   onLightPlace?: (point: { x: number; y: number }) => void;
   lightAttach?: { lightId: string | null } | null;
+  tokenPlace?: { entity_type: string; entity_id: string } | null;
+  onTokenPlace?: (entityType: string, entityId: string, x: number, z: number) => void;
   renderMode?: import('@/lib/overlayY').RenderMode;
 }
 
@@ -230,12 +233,14 @@ const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -GROUND_Y);
 function DragController({
   onTokenDrop,
   onTokenDrag,
+  onTokenPlace,
   gridSize,
   gridSnap,
   otherTokens,
 }: {
   onTokenDrop?: (sceneCharId: string, x: number, z: number) => void;
   onTokenDrag?: (sceneCharId: string, x: number, z: number) => void;
+  onTokenPlace?: (entityType: string, entityId: string, x: number, z: number) => void;
   gridSize?: number;
   gridSnap?: boolean;
   otherTokens?: Array<{ sceneCharId: string; x: number; z: number; tokenScale?: number }>;
@@ -405,15 +410,45 @@ function DragController({
       releaseDrag();
     };
 
+    const onDragOver = (e: DragEvent) => {
+      const types = e.dataTransfer?.types ?? [];
+      if (types.includes('roleito/token')) {
+        e.preventDefault();
+        e.dataTransfer!.dropEffect = 'copy';
+      }
+    };
+
+    const onDrop = (e: DragEvent) => {
+      const raw = e.dataTransfer?.getData('roleito/token');
+      if (!raw) return;
+      e.preventDefault();
+      const sep = raw.indexOf(':');
+      if (sep < 0) return;
+      const entityType = raw.slice(0, sep);
+      const entityId = raw.slice(sep + 1);
+      const hit = getGroundPoint(e.clientX, e.clientY);
+      if (!hit) return;
+      const pos = clampToBackground(hit);
+      if (gridSnap && gridSize && gridSize > 0) {
+        pos.x = (Math.round(pos.x / gridSize - 0.5) + 0.5) * gridSize;
+        pos.z = (Math.round(pos.z / gridSize - 0.5) + 0.5) * gridSize;
+      }
+      onTokenPlace?.(entityType, entityId, pos.x, pos.z);
+    };
+
     canvas.addEventListener('pointermove', onPointerMove);
     canvas.addEventListener('pointerup', onPointerUp);
     canvas.addEventListener('pointercancel', onPointerCancel);
+    canvas.addEventListener('dragover', onDragOver);
+    canvas.addEventListener('drop', onDrop);
     return () => {
       canvas.removeEventListener('pointermove', onPointerMove);
       canvas.removeEventListener('pointerup', onPointerUp);
       canvas.removeEventListener('pointercancel', onPointerCancel);
+      canvas.removeEventListener('dragover', onDragOver);
+      canvas.removeEventListener('drop', onDrop);
     };
-  }, [gl, getGroundPoint, clampToBackground, onTokenDrop, onTokenDrag, controls, scene, gridSize, gridSnap, otherTokens]);
+  }, [gl, getGroundPoint, clampToBackground, onTokenDrop, onTokenDrag, onTokenPlace, controls, scene, gridSize, gridSnap, otherTokens]);
 
   // Expose startDrag via a global function on the canvas.
   // Mutating the external DOM canvas node inside an effect is intentional:
@@ -634,6 +669,8 @@ export default function SceneRenderer({
   lightPlace = null,
   onLightPlace,
   lightAttach = null,
+  tokenPlace = null,
+  onTokenPlace,
   renderMode = '2d',
 }: SceneRendererProps) {
   const visibleChars = useMemo(() => characters.filter((c) => c.visible), [characters]);
@@ -660,7 +697,7 @@ export default function SceneRenderer({
     () => [...extractFogRegions(items), ...(playerFogRegions ?? [])],
     [items, playerFogRegions],
   );
-  const drawing = !!drawState || !!zoneDraft || !!portalDraft || !!fogBrush || !!fogRect || zoneFogActive || !!lightPlace || !!lightAttach;
+  const drawing = !!drawState || !!zoneDraft || !!portalDraft || !!fogBrush || !!fogRect || zoneFogActive || !!lightPlace || !!lightAttach || !!tokenPlace;
   const hasDrag = !drawing && (!readOnly || (movableEntityIds && movableEntityIds.length > 0));
   const justSelectedRef = useRef(false);
   const [imageAspect, setImageAspect] = useState(1);
@@ -721,6 +758,7 @@ export default function SceneRenderer({
         <DragController
           onTokenDrop={onTokenDrop}
           onTokenDrag={onTokenDrag}
+          onTokenPlace={onTokenPlace}
           gridSize={gridSize}
           gridSnap={gridSnap}
           otherTokens={visibleChars.map((c) => ({
@@ -835,6 +873,13 @@ export default function SceneRenderer({
           mapHeight={mapHeight}
           onPlace={onLightPlace}
           renderMode={renderMode}
+        />
+      )}
+      {tokenPlace && onTokenPlace && (
+        <TokenPlaceCanvas
+          mapWidth={mapWidth}
+          mapHeight={mapHeight}
+          onPlace={(p) => onTokenPlace(tokenPlace.entity_type, tokenPlace.entity_id, p.x, p.z)}
         />
       )}
       <OrbitControls

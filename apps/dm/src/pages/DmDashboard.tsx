@@ -95,6 +95,7 @@ export default function DmDashboard() {
   const lastFogPointRef = useRef<{ x: number; y: number } | null>(null);
   const [zoneFogActive, setZoneFogActive] = useState(false);
   const [lightPlaceMode, setLightPlaceMode] = useState<{ preset: string } | null>(null);
+  const [placingToken, setPlacingToken] = useState<{ entity_type: string; entity_id: string } | null>(null);
   const [attachLightMode, setAttachLightMode] = useState<{ lightId: string | null } | null>(null);
   const [zoneColor, setZoneColor] = useState(ZONE_DEFAULT_COLOR);
   const [wallMaterial, setWallMaterial] = useState<'stone' | 'wood' | 'metal' | 'glass' | 'magic'>('stone');
@@ -896,6 +897,7 @@ export default function DmDashboard() {
         else if (rectFogMode) setRectFogMode(null)
         else if (zoneFogActive) setZoneFogActive(false)
         else if (lightPlaceMode) setLightPlaceMode(null)
+        else if (placingToken) setPlacingToken(null)
         else if (attachLightMode) setAttachLightMode(null)
         else setSelectedItemId(null)
       }
@@ -907,7 +909,7 @@ export default function DmDashboard() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [drawState, zoneDraft, portalDraft, fogMode, rectFogMode, zoneFogActive, lightPlaceMode, attachLightMode, selectedItemId, handleDeleteItem, handleUndo, handleRedo])
+  }, [drawState, zoneDraft, portalDraft, fogMode, rectFogMode, zoneFogActive, lightPlaceMode, placingToken, attachLightMode, selectedItemId, handleDeleteItem, handleUndo, handleRedo])
 
   useEffect(() => {
     const now = performance.now();
@@ -1334,30 +1336,36 @@ export default function DmDashboard() {
     return { tokenId: sc.id, cellSize, cells };
   }, [activeScene, selectedTokenId, sceneChars, sceneItems]);
 
-  const handleAddToScene = useCallback(async (entityType: string, entityId: string) => {
+  const handleTokenPlace = useCallback(async (entityType: string, entityId: string, x: number, z: number) => {
     if (!campaignId || !activeScene) return;
-    const scale = activeScene.map_scale ?? 1;
-    const range = 2 * scale;
-    const newChars = [...sceneChars, {
-      entity_type: entityType,
-      entity_id: entityId,
-      x: Math.random() * range * 2 - range,
-      y: 0,
-      z: Math.random() * range * 2 - range,
-      visible: true,
-      order: sceneChars.length,
-      token_scale: 1,
-      move_speed: 1,
-      facing_offset: 0,
-      vision_type: 'normal',
-      vision_range: 6.0,
-    }];
+    const existing = sceneChars.find((sc) => sc.entity_type === entityType && sc.entity_id === entityId);
+    const updated = existing
+      ? sceneChars.map((sc) =>
+          sc.id === existing.id
+            ? { id: sc.id, entity_type: sc.entity_type, entity_id: sc.entity_id, x, y: sc.y, z, visible: !!sc.visible, order: sc.order, token_scale: sc.token_scale ?? 1, move_speed: sc.move_speed ?? 1, facing_offset: sc.facing_offset ?? 0, vision_type: sc.vision_type ?? 'normal', vision_range: sc.vision_range ?? 6.0 }
+            : { id: sc.id, entity_type: sc.entity_type, entity_id: sc.entity_id, x: sc.x, y: sc.y, z: sc.z, visible: !!sc.visible, order: sc.order, token_scale: sc.token_scale ?? 1, move_speed: sc.move_speed ?? 1, facing_offset: sc.facing_offset ?? 0, vision_type: sc.vision_type ?? 'normal', vision_range: sc.vision_range ?? 6.0 }
+        )
+      : [...sceneChars, {
+          entity_type: entityType,
+          entity_id: entityId,
+          x,
+          y: 0,
+          z,
+          visible: true,
+          order: sceneChars.length,
+          token_scale: 1,
+          move_speed: 1,
+          facing_offset: 0,
+          vision_type: 'normal',
+          vision_range: 6.0,
+        }];
     try {
-      const result = await api.scenes.updateCharacters(campaignId, activeScene.id, newChars);
+      const result = await api.scenes.updateCharacters(campaignId, activeScene.id, updated);
       setSceneChars(result);
     } catch (err) {
-      console.error('Failed to add token:', err);
+      console.error('Failed to place token:', err);
     }
+    setPlacingToken(null);
   }, [campaignId, activeScene, sceneChars]);
 
   const handleRemoveFromScene = useCallback(async (sceneCharId: string) => {
@@ -2519,6 +2527,8 @@ export default function DmDashboard() {
                 lightPlace={lightPlaceMode}
                 onLightPlace={handleLightPlace}
                 lightAttach={attachLightMode}
+                tokenPlace={placingToken}
+                onTokenPlace={handleTokenPlace}
                 onTokenClick={handleTokenClick}
                 onTokenDrop={handleTokenDrop}
                 onTokenDrag={handleTokenDrag}
@@ -2643,17 +2653,28 @@ export default function DmDashboard() {
             {allEntities.filter((e) => !new Set(sceneChars.map((sc) => sc.entity_id)).has(e.id)).length > 0 && (
               <>
                 <p className="text-[10px] text-[var(--text-secondary)] mb-1 px-1">Available</p>
+                {placingToken && (
+                  <p className="text-[9px] text-amber-400 mb-1 px-1">Click the map to place (Esc cancels)</p>
+                )}
                 <div className="space-y-0.5 max-h-32 overflow-y-auto">
                   {allEntities
                     .filter((e) => !new Set(sceneChars.map((sc) => sc.entity_id)).has(e.id))
                     .map((ent) => (
                       <button
                         key={ent.id}
-                        onClick={() => handleAddToScene(ent.type, ent.id)}
-                        className="w-full flex items-center gap-1.5 px-1.5 py-1 rounded text-[10px] hover:bg-[var(--bg-tertiary)] transition-colors text-left text-[var(--text-secondary)]"
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('roleito/token', `${ent.type}:${ent.id}`);
+                          e.dataTransfer.effectAllowed = 'copy';
+                        }}
+                        onClick={() => setPlacingToken({ entity_type: ent.type, entity_id: ent.id })}
+                        className={`w-full flex items-center gap-1.5 px-1.5 py-1 rounded text-[10px] hover:bg-[var(--bg-tertiary)] transition-colors text-left ${
+                          placingToken?.entity_id === ent.id ? 'text-amber-400 bg-[var(--bg-tertiary)]' : 'text-[var(--text-secondary)]'
+                        }`}
                       >
                         <span className="text-[var(--accent)]">+</span>
                         <span className="truncate">{ent.name}</span>
+                        <span className="ml-auto text-[9px] opacity-40" title="Drag to map or click to place">↗</span>
                       </button>
                     ))}
                 </div>
@@ -2837,9 +2858,11 @@ export default function DmDashboard() {
               rollerName="DM"
             />
           )}
-          {showInitiative && (
+          {showInitiative && activeScene && (
             <InitiativeTracker
               combatants={initiativeCombatants}
+              campaignId={campaignId!}
+              sceneId={activeScene.id}
               onUpdateHp={handleInitiativeHp}
               onUpdatePm={handleInitiativePm}
               onClose={() => setShowInitiative(false)}

@@ -4,12 +4,12 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import SceneRenderer from '@/components/SceneRenderer';
-import DiceRoller from '@/components/DiceRoller';
+import DiceRoller, { rollDice } from '@/components/DiceRoller';
 import HudPanel from '@/components/HudPanel';
 import TopBar from '@/components/TopBar';
 import MinimizedBar from '@/components/MinimizedBar';
 import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastContainer';
-import { api } from '@/lib/api';
+import { api, type DiceRollResponse } from '@/lib/api';
 import { checkWallCollision, extractZonePolygons, extractPortals, crossZoneBorder } from '@/lib/wall-collision';
 import { computeVisionRegions, type CharPos } from '@/lib/playerVision';
 import type { VisionConfig } from '@core/domain/types';
@@ -190,6 +190,14 @@ export default function PlayerView() {
   const [notesSaving, setNotesSaving] = useState(false);
   const [showDiceRoller, setShowDiceRoller] = useState(false);
   const [toastQueue, setToastQueue] = useState<ToastRoll[]>([]);
+  const [pendingRoll, setPendingRoll] = useState<{
+    combat_id: string;
+    campaign_id: string;
+    scene_id: string;
+    entity_type: string;
+    entity_id: string;
+  } | null>(null);
+  const [rollingInit, setRollingInit] = useState(false);
   const [wasdTarget, setWasdTarget] = useState<{ x: number; z: number; rotation: number } | null>(null);
   const [shareLight, setShareLight] = useState(() => {
     try { return localStorage.getItem(`roleito:pv:${code}:sharelight`) !== '0' } catch { return true }
@@ -358,6 +366,71 @@ export default function PlayerView() {
       clearTimeout(timer);
     };
   }, [code, data]);
+
+  // Prompt de iniciativa para este jugador (si el DM lo agregó al combate)
+  useEffect(() => {
+    if (choice?.kind !== 'character' || !data || !data.scene_id) return;
+    const sceneId = data.scene_id;
+    let cancelled = false;
+    let timer: number;
+
+    const pollPending = async () => {
+      try {
+        const p = await api.combat.getPendingRoll(
+          data.campaign_id,
+          sceneId,
+          choice.id
+        );
+        if (cancelled) return;
+        setPendingRoll(p);
+      } catch {
+        // best-effort
+      }
+      if (!cancelled) timer = window.setTimeout(pollPending, 1500);
+    };
+
+    timer = window.setTimeout(pollPending, 500);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [choice?.kind, choice?.kind === 'character' ? (choice as { kind: 'character'; id: string }).id : null, data?.campaign_id, data?.scene_id]);
+
+  const handleInitiativeRoll = useCallback(async () => {
+    if (choice?.kind !== 'character' || !pendingRoll) return;
+    const { results } = rollDice(6, 1);
+    const value = results[0];
+    setRollingInit(true);
+    try {
+      await api.combat.initiativeRoll(pendingRoll.campaign_id, pendingRoll.combat_id, {
+        entity_type: 'character',
+        entity_id: choice.id,
+        initiative: value,
+      });
+      setToastQueue((prev) =>
+        [
+          ...prev,
+          rollToToast({
+            id: `init-${Date.now()}`,
+            roller_name: myChar?.name ?? 'Tú',
+            dice_type: 6,
+            count: 1,
+            results: [value],
+            total: value,
+            label: 'Iniciativa',
+            created_at: new Date().toISOString(),
+          } as DiceRollResponse),
+        ].slice(-5)
+      );
+      setPendingRoll(null);
+    } catch {
+      // Sin pending: el DM ya tiró por este personaje.
+      setPendingRoll(null);
+    } finally {
+      setRollingInit(false);
+    }
+  }, [choice, pendingRoll, myChar]);
 
   // Keep refs in sync
   useEffect(() => { myCharRef.current = myChar; }, [myChar]);
@@ -1029,6 +1102,24 @@ export default function PlayerView() {
       </TopBar>
 
       <div className="flex-1 relative min-h-0 min-w-0">
+        {pendingRoll && (
+          <div
+            className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-900/95 border border-amber-500/40 shadow-lg"
+            data-testid="initiative-prompt"
+          >
+            <span className="text-amber-400 text-sm">⚔️</span>
+            <span className="text-xs text-gray-200">¡Tirá iniciativa!</span>
+            <button
+              type="button"
+              onClick={handleInitiativeRoll}
+              disabled={rollingInit}
+              className="text-sm px-2.5 py-1 rounded bg-amber-500 text-black font-semibold hover:bg-amber-400 disabled:opacity-40 transition-colors"
+              data-testid="initiative-roll-btn"
+            >
+              🎲 d6
+            </button>
+          </div>
+        )}
         {data.background_path ? (
           <Suspense
             fallback={

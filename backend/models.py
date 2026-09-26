@@ -315,6 +315,30 @@ class DiceRoll(Base):
     campaign = relationship("Campaign", back_populates="dice_rolls")
 
 
+class Combat(Base):
+    __tablename__ = "combats"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    campaign_id = Column(String, ForeignKey("campaigns.id"), nullable=False)
+    scene_id = Column(String, ForeignKey("scenes.id"), nullable=False)
+    status = Column(String, default="active")  # active | ended
+    finished_turns = Column(Integer, default=0)
+    next_seq = Column(Integer, default=0)  # cola de tiradas: seq atómico por roll
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class CombatCombatant(Base):
+    __tablename__ = "combat_combatants"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    combat_id = Column(String, ForeignKey("combats.id"), nullable=False)
+    entity_type = Column(String, nullable=False)  # character | npc
+    entity_id = Column(String, nullable=False)
+    initiative = Column(Integer, nullable=True)  # 1-6; None = sin tirar
+    roll_seq = Column(Integer, nullable=True)  # orden global de tirada
+    pending_roll = Column(Integer, default=0)  # 1 = jugador debe tirar iniciativa
+
+
 class DM(Base):
     __tablename__ = "dms"
 

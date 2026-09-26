@@ -86,6 +86,12 @@ test.describe('Dashboard VTT Core', () => {
     await expect(page.getByText('No tokens placed')).toBeVisible();
 
     await page.getByRole('button', { name: 'Aria' }).click();
+    await expect(page.getByText('Click the map to place (Esc cancels)')).toBeVisible();
+
+    const canvas = page.locator('canvas').first();
+    const box = await canvas.boundingBox();
+    if (!box) throw new Error('canvas sin boundingBox');
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
 
     await expect(page.getByText('On Scene (1)')).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText('No tokens placed')).toHaveCount(0);
