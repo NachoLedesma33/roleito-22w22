@@ -484,3 +484,77 @@ async def test_combat_queue_concurrent(client):
     for cid_ in ("c1", "c2", "c3"):
         res = await client.get(f"/api/campaigns/{cid}/scenes/{sid}/combat/pending/{cid_}")
         assert res.json() is None
+
+
+@pytest.mark.asyncio
+async def test_quests_crud(client):
+    camp = (await client.post("/api/campaigns", json={"name": "Quest Camp"})).json()
+    cid = camp["id"]
+
+    res = await client.post(
+        f"/api/campaigns/{cid}/quests",
+        json={
+            "title": "Salvar la taberna",
+            "description": "El gremio exige el rescate.",
+            "status": "active",
+            "objectives": [
+                {"label": "Hablar con Grimble"},
+                {"label": "Recuperar el barril"},
+                {"label": "Volver", "done": True},
+            ],
+            "reward": "100 gp",
+            "visible_to_players": True,
+        },
+    )
+    assert res.status_code == 200, res.text
+    q = res.json()
+    assert q["title"] == "Salvar la taberna"
+    assert len(q["objectives"]) == 3
+    assert q["objectives"][2]["done"] is True
+    assert q["reward"] == "100 gp"
+
+    quests = (await client.get(f"/api/campaigns/{cid}/quests")).json()
+    assert len(quests) == 1
+
+    res = await client.put(
+        f"/api/campaigns/{cid}/quests/{q['id']}",
+        json={
+            "title": "Salvar la taberna",
+            "description": "Actualizada.",
+            "status": "completed",
+            "objectives": [
+                {"label": "Hablar con Grimble", "done": True},
+                {"label": "Recuperar el barril", "done": True},
+            ],
+            "reward": "100 gp + fama",
+            "visible_to_players": True,
+        },
+    )
+    assert res.status_code == 200, res.text
+    q2 = res.json()
+    assert q2["status"] == "completed"
+    assert len(q2["objectives"]) == 2
+    assert q2["reward"] == "100 gp + fama"
+
+    res = await client.post(
+        f"/api/campaigns/{cid}/quests",
+        json={"title": "Draft oculta", "status": "draft", "visible_to_players": False},
+    )
+    assert res.status_code == 200
+    hidden = res.json()
+    assert hidden["visible_to_players"] is False
+
+    # GET devuelve todo; el filtro de visibilidad lo hace el cliente jugador.
+    quests = (await client.get(f"/api/campaigns/{cid}/quests")).json()
+    assert len(quests) == 2
+
+    res = await client.delete(f"/api/campaigns/{cid}/quests/{hidden['id']}")
+    assert res.status_code == 200
+    quests = (await client.get(f"/api/campaigns/{cid}/quests")).json()
+    assert len(quests) == 1
+
+    # 404: quest inexistente / campaña inexistente.
+    res = await client.put(f"/api/campaigns/{cid}/quests/nope", json={"title": "x"})
+    assert res.status_code == 404
+    res = await client.post("/api/campaigns/no-such/quests", json={"title": "x"})
+    assert res.status_code == 404

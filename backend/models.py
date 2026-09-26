@@ -339,6 +339,21 @@ class CombatCombatant(Base):
     pending_roll = Column(Integer, default=0)  # 1 = jugador debe tirar iniciativa
 
 
+class Quest(Base):
+    __tablename__ = "quests"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    campaign_id = Column(String, ForeignKey("campaigns.id"), nullable=False)
+    title = Column(String, nullable=False)
+    description = Column(Text, default="")
+    status = Column(String, default="active")  # draft | active | completed | failed
+    objectives_json = Column(Text, default="[]")  # [{"label": str, "done": bool}]
+    reward = Column(String, default="")
+    visible_to_players = Column(Integer, default=1)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class DM(Base):
     __tablename__ = "dms"
 

@@ -27,6 +27,7 @@ import DiceRoller from '@/components/DiceRoller';
 import RecapPanel from '@/components/RecapPanel';
 import CharacterSheet from '@/components/CharacterSheet';
 import InitiativeTracker from '@/components/InitiativeTracker';
+import QuestPanel from '@/components/QuestPanel';
 import MapViewer from '@/components/MapViewer';
 import DMNotebookHud from '@/components/DMNotebookHud';
 import AISettingsPanel from '@/components/AISettingsPanel';
@@ -72,6 +73,7 @@ export default function DmDashboard() {
   const [copiedInvite, setCopiedInvite] = useState(false);
   const [showDiceRoller, setShowDiceRoller] = useState(false);
   const [showInitiative, setShowInitiative] = useState(false);
+  const [showQuests, setShowQuests] = useState(false);
   const [showRecap, setShowRecap] = useState(false);
   const [viewingMap, setViewingMap] = useState<GameMap | null>(null);
   const [maps, setMaps] = useState<GameMap[]>([]);
@@ -1486,6 +1488,8 @@ export default function DmDashboard() {
             setShowDiceRoller(false);
           } else if (showInitiative) {
             setShowInitiative(false);
+          } else if (showQuests) {
+            setShowQuests(false);
           } else if (showRecap) {
             setShowRecap(false);
           } else if (showNotebook) {
@@ -2249,6 +2253,14 @@ export default function DmDashboard() {
         </button>
 
         <button
+          onClick={() => setShowQuests(!showQuests)}
+          className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showQuests ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+          title="Quest Board"
+        >
+          📜
+        </button>
+
+        <button
           onClick={() => setShowDiceRoller(!showDiceRoller)}
           className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showDiceRoller ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
           title="Roll dice (D)"
@@ -2866,6 +2878,12 @@ export default function DmDashboard() {
               onUpdateHp={handleInitiativeHp}
               onUpdatePm={handleInitiativePm}
               onClose={() => setShowInitiative(false)}
+            />
+          )}
+          {showQuests && campaignId && (
+            <QuestPanel
+              campaignId={campaignId}
+              onClose={() => setShowQuests(false)}
             />
           )}
           {showRecap && campaignId && (

@@ -491,6 +491,36 @@ class CombatResponse(BaseModel):
     combatants: list[CombatantResponse]
 
 
+class ObjectiveItem(BaseModel):
+    label: str
+    done: bool = False
+
+
+class QuestIn(BaseModel):
+    title: str
+    description: str = ""
+    status: str = "active"
+    objectives: list[ObjectiveItem] = []
+    reward: str = ""
+    visible_to_players: bool = True
+
+
+class QuestOut(BaseModel):
+    id: str
+    campaign_id: str
+    title: str
+    description: str
+    status: str
+    objectives: list[ObjectiveItem]
+    reward: str
+    visible_to_players: bool
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class MapMarkerCreate(BaseModel):
     label: str = ""
     marker_type: str = "poi"

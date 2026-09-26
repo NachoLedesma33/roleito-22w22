@@ -340,6 +340,33 @@ export interface CombatResponse {
   combatants: CombatantResponse[];
 }
 
+export interface QuestObjective {
+  label: string;
+  done: boolean;
+}
+
+export interface QuestResponse {
+  id: string;
+  campaign_id: string;
+  title: string;
+  description: string;
+  status: string;
+  objectives: QuestObjective[];
+  reward: string;
+  visible_to_players: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface QuestInput {
+  title: string;
+  description: string;
+  status: string;
+  objectives: QuestObjective[];
+  reward: string;
+  visible_to_players: boolean;
+}
+
 export interface Asset {
   id: string;
   campaign_id: string;
@@ -846,5 +873,22 @@ export const api = {
       ),
     end: (campaignId: string, combatId: string) =>
       request<CombatResponse>(`/campaigns/${campaignId}/combat/${combatId}/end`, { method: 'POST' }),
+  },
+
+  quests: {
+    list: (campaignId: string) =>
+      request<QuestResponse[]>(`/campaigns/${campaignId}/quests`),
+    create: (campaignId: string, data: QuestInput) =>
+      request<QuestResponse>(`/campaigns/${campaignId}/quests`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    update: (campaignId: string, questId: string, data: QuestInput) =>
+      request<QuestResponse>(`/campaigns/${campaignId}/quests/${questId}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    remove: (campaignId: string, questId: string) =>
+      request<{ ok: boolean }>(`/campaigns/${campaignId}/quests/${questId}`, { method: 'DELETE' }),
   },
 };
