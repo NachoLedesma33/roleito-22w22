@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import HudPanel from './HudPanel';
 import { api, Character, NPC, InventoryItem, Spell } from '@/lib/api';
+import { STATUS_OPTIONS } from '@/lib/statusMarkers';
 
 interface CharacterSheetProps {
   entity: Character | NPC;
@@ -8,6 +9,7 @@ interface CharacterSheetProps {
   campaignId: string;
   onUpdate: (updated: Character | NPC) => void;
   onClose: () => void;
+  statuses?: string[];
 }
 
 function portraitUrl(path: string | null): string | null {
@@ -27,6 +29,7 @@ export default function CharacterSheet({
   campaignId,
   onUpdate,
   onClose,
+  statuses = [],
 }: CharacterSheetProps) {
   const [tab, setTab] = useState<Tab>('stats');
   const [editingDesc, setEditingDesc] = useState(false);
@@ -181,6 +184,23 @@ export default function CharacterSheet({
                 {entity.status === 'alive' ? 'Vivo' : entity.status === 'dead' ? 'Muerto' : entity.status}
               </span>
             </div>
+            {statuses.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1.5 items-center">
+                <span className="text-[9px] text-[var(--text-secondary)] uppercase tracking-wide">Estado</span>
+                {statuses.map((s) => {
+                  const opt = STATUS_OPTIONS.find((o) => o.id === s);
+                  if (!opt) return null;
+                  return (
+                    <span
+                      key={s}
+                      title={opt.label}
+                      className="w-3.5 h-3.5 rounded-full border border-black/40 shrink-0"
+                      style={{ backgroundColor: opt.color }}
+                    />
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 

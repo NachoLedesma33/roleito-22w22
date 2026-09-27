@@ -673,6 +673,10 @@ function DraggableToken({
         statuses={entity.statuses ?? []}
         tokenScale={entity.tokenScale ?? 1}
       />
+      <StatusAura
+        statuses={entity.statuses ?? []}
+        tokenScale={entity.tokenScale ?? 1}
+      />
     </group>
   );
 }
@@ -694,6 +698,46 @@ function TokenStatusBadges({
           <meshBasicMaterial color={STATUS_COLORS[s] ?? '#e5e7eb'} />
         </mesh>
       ))}
+    </group>
+  );
+}
+
+function StatusAura({
+  statuses,
+  tokenScale,
+}: {
+  statuses: string[];
+  tokenScale: number;
+}) {
+  const active = statuses
+    .map((s) => ({ id: s, color: STATUS_COLORS[s] }))
+    .filter((x) => x.color)
+    .slice(0, 3);
+  if (active.length === 0) return null;
+  return (
+    <group>
+      {active.map((st, i) => {
+        const outer = (0.62 - i * 0.16) * tokenScale;
+        const inner = Math.max(0.05, outer - 0.14 * tokenScale);
+        return (
+          <mesh
+            key={st.id}
+            position={[0, 0.06 + i * 0.02, 0]}
+            rotation={[-Math.PI / 2, 0, 0]}
+            renderOrder={55}
+          >
+            <ringGeometry args={[inner, outer, 48]} />
+            <meshBasicMaterial
+              color={st.color}
+              transparent
+              opacity={0.5}
+              depthWrite={false}
+              side={THREE.DoubleSide}
+              toneMapped={false}
+            />
+          </mesh>
+        );
+      })}
     </group>
   );
 }

@@ -13,6 +13,7 @@ export const STATUS_OPTIONS: StatusOption[] = [
   { id: 'stunned', label: 'Aturdido', color: '#eab308' },
   { id: 'prone', label: 'Derribado', color: '#a855f7' },
   { id: 'restrained', label: 'Restringido', color: '#06b6d4' },
+  { id: 'invisible', label: 'Invisible', color: '#a78bfa' },
 ];
 
 export const STATUS_COLORS: Record<string, string> = Object.fromEntries(

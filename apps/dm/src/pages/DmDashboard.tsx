@@ -2870,6 +2870,7 @@ export default function DmDashboard() {
                 entity={selectedChar}
                 entityType={selectedEntity.entity_type as 'character' | 'npc'}
                 campaignId={campaignId}
+                statuses={sceneChars.find((sc) => sc.entity_id === selectedChar.id)?.statuses ?? []}
                 onUpdate={(updated) => {
                   if (selectedEntity.entity_type === 'character') {
                     setCharacters((prev) => prev.map((c) => c.id === updated.id ? updated as Character : c));

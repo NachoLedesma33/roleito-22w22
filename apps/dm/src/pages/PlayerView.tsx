@@ -8,6 +8,7 @@ import DiceRoller, { rollDice } from '@/components/DiceRoller';
 import PlayerQuestPanel from '@/components/PlayerQuestPanel';
 import PlayerCalendarPanel from '@/components/PlayerCalendarPanel';
 import HudPanel from '@/components/HudPanel';
+import { STATUS_OPTIONS } from '@/lib/statusMarkers';
 import TopBar from '@/components/TopBar';
 import MinimizedBar from '@/components/MinimizedBar';
 import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastContainer';
@@ -1032,6 +1033,7 @@ export default function PlayerView() {
   const pv = myChar?.current_pv ?? myChar?.max_pv ?? 0;
   const pm = myChar?.current_pm ?? myChar?.max_pm ?? 0;
   const invItems = myChar?.inventory_json ?? [];
+  const myStatuses = data.characters.find((c) => c.id === mySceneCharId)?.statuses ?? [];
 
   return (
     <div className="h-screen flex flex-col bg-black overflow-hidden select-none">
@@ -1330,6 +1332,24 @@ export default function PlayerView() {
 
               <StatBar label="PV" current={pv} max={myChar.max_pv} />
               <StatBar label="PM" current={pm} max={myChar.max_pm} />
+
+              {myStatuses.length > 0 && (
+                <div className="flex flex-wrap gap-1 items-center">
+                  <span className="text-[9px] text-[var(--text-secondary)] uppercase tracking-wide">Estado</span>
+                  {myStatuses.map((s) => {
+                    const opt = STATUS_OPTIONS.find((o) => o.id === s);
+                    if (!opt) return null;
+                    return (
+                      <span
+                        key={s}
+                        title={opt.label}
+                        className="w-3.5 h-3.5 rounded-full border border-black/40 shrink-0"
+                        style={{ backgroundColor: opt.color }}
+                      />
+                    );
+                  })}
+                </div>
+              )}
 
               <div className="flex gap-0.5 bg-[var(--bg-tertiary)]/50 rounded p-0.5 text-[10px]">
                 {(['stats', 'inventory', 'spells', 'notes'] as const).map((t) => (
