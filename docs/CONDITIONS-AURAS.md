@@ -1,6 +1,6 @@
 # Condiciones y Auras — Plan de implementación
 
-> Estado: EN IMPLEMENTACIÓN — Fase A ✓ (60342dd) y Fase B ✓ (commit pendiente). Pendiente Fase C (config + e2e).
+> Estado: COMPLETO — Fase A ✓ (60342dd), Fase B ✓ (f466262), Fase C ✓ (commit pendiente).
 > Relación con rumbo normal: pendiente de aprobación; no bloquea otras fases.
 
 ## Objetivo
@@ -79,10 +79,16 @@ ciego, ardiendo, invisible, etc.) de forma legible en el VTT:
 - **Llama (ardiendo)**: cono `#f97316` flotando a `0.9·tokenScale`, flicker de escala (1±0.18) + bobbing (0.05·tokenScale). NO anillo para `burning` (evita clutter); flame + badge.
 - **Invisible**: `opacity 0.25` + `depthWrite false` en materiales sprite y gltf (traverse); badges y aura SE MANTIENEN visibles (es el indicador de que está invisible). Toggle 👁 = presencia (server-side), condición = visual. Combinables.
 
-### Fase C — Polish (solo si pide el DM)
+### Fase C — Polish ✓ (commit pendiente)
 8. Config por condición: mostrar solo badge / badge+aura / aura+animación, intensidad.
 9. Test: extender `tests/e2e/status.spec.ts` (marcar via API, assert snapshot en players).
 10. ADR corto en `docs/adr/` si la semántica invisible lo amerita.
+
+**Decisiones tomadas en C:**
+- **Config en `statusMarkers.ts`** (STATUS_CONFIG derivada de STATUS_OPTIONS): campos `aura` ('ring'|'flame'|'none'), `anim` ('pulse'|'spin'|'none'), `intensity`, `spinArc` (rad), `spinDir`. StatusAura consume la config — agrego una condición nueva = editar statusMarkers, cero cambios en renderer.
+- Valores por condición: burning=flame; bleeding=pulse; concentrating=spin lento (arc 5.2, dir −1, intensity 0.33); stunned=spin rápido (arc 2.6, intensity 1.4); resto estático ring.
+- **ADR NO escrito**: semántica invisible ya documentada en este doc (Fase B) — el ADR no aporta; se evita ruido.
+- **e2e S3**: marca `['bleeding','invisible']` via PUT directo (spread del GET + statuses) → snapshot invitación contiene ambos. Complementa S1 (UI toggle) y S2 (snapshot).
 
 ## Riesgos
 - **Perf 3D**: muchas auras animadas → decidido en Fase B: sin gate por ahora (ops triviales); re-activar si fps cae con muchos tokens.

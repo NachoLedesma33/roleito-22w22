@@ -21,7 +21,7 @@ import type { ZoneDraft } from './ZoneDrawer';
 import type { ZoneGeometry } from './ZonePortal';
 import { SceneItem } from '@core/domain/types';
 import type { DrawState } from './WallDrawer';
-import { STATUS_COLORS } from '@/lib/statusMarkers';
+import { STATUS_COLORS, STATUS_CONFIG } from '@/lib/statusMarkers';
 
 interface SceneEntity {
   id: string;
@@ -714,32 +714,35 @@ function StatusAura({
   tokenScale: number;
 }) {
   const ringRefs = useRef<THREE.Mesh[]>([]);
-  const flameRef = useRef<THREE.Mesh>(null);
+  const flameMeshes = useRef<THREE.Mesh[]>([]);
   const rings = statuses
-    .map((id) => ({ id, color: STATUS_COLORS[id] }))
-    .filter((x) => x.color && x.id !== 'burning')
+    .map((id) => ({ id, cfg: STATUS_CONFIG[id] }))
+    .filter((x) => x.cfg && x.cfg.aura === 'ring')
     .slice(0, 3);
-  const onFire = statuses.includes('burning');
+  const flames = statuses
+    .map((id) => ({ id, cfg: STATUS_CONFIG[id] }))
+    .filter((x) => x.cfg && x.cfg.aura === 'flame');
   const flameBaseY = 0.9 * tokenScale;
 
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
     ringRefs.current.forEach((ring, i) => {
-      const id = rings[i]?.id ?? '';
+      const cfg = rings[i]?.cfg;
+      if (!cfg) return;
       const mat = ring.material as THREE.MeshBasicMaterial;
-      if (id === 'bleeding') {
-        ring.scale.setScalar(1 + Math.sin(t * 3 + i) * 0.12);
-        mat.opacity = 0.35 + Math.sin(t * 6 + i) * 0.15;
-      } else if (id === 'stunned' || id === 'concentrating') {
-        const dir = id === 'concentrating' ? -1 : 1;
-        const speed = id === 'concentrating' ? 0.7 : 2.1;
-        ring.rotation.z = t * speed * dir;
+      if (cfg.anim === 'pulse') {
+        ring.scale.setScalar(1 + Math.sin(t * 3 + i) * 0.12 * cfg.intensity);
+        mat.opacity = 0.35 + Math.sin(t * 6 + i) * 0.15 * cfg.intensity;
+      } else if (cfg.anim === 'spin') {
+        ring.rotation.z = t * 2.1 * cfg.intensity * cfg.spinDir;
       }
     });
-    if (flameRef.current) {
-      flameRef.current.position.y = flameBaseY + Math.sin(t * 7) * 0.05 * tokenScale;
-      flameRef.current.scale.setScalar(1 + Math.sin(t * 11) * 0.18);
-    }
+    flameMeshes.current.forEach((flame, i) => {
+      const cfg = flames[i]?.cfg;
+      if (!cfg) return;
+      flame.position.y = flameBaseY + Math.sin(t * 7 + i * 2) * 0.05 * tokenScale * cfg.intensity;
+      flame.scale.setScalar(1 + Math.sin(t * 11 + i * 3) * 0.18 * cfg.intensity);
+    });
   });
 
   return (
@@ -747,8 +750,7 @@ function StatusAura({
       {rings.map((st, i) => {
         const outer = (0.62 - i * 0.16) * tokenScale;
         const inner = Math.max(0.05, outer - 0.14 * tokenScale);
-        const spinArc =
-          st.id === 'concentrating' ? 5.2 : st.id === 'stunned' ? 2.6 : Math.PI * 2;
+        const spinArc = rings[i].cfg.anim === 'spin' ? rings[i].cfg.spinArc : Math.PI * 2;
         return (
           <mesh
             key={st.id}
@@ -759,7 +761,7 @@ function StatusAura({
           >
             <ringGeometry args={[inner, outer, 48, 1, 0, spinArc]} />
             <meshBasicMaterial
-              color={st.color}
+              color={STATUS_COLORS[st.id]}
               transparent
               opacity={0.5}
               depthWrite={false}
@@ -769,18 +771,23 @@ function StatusAura({
           </mesh>
         );
       })}
-      {onFire && (
-        <mesh ref={flameRef} position={[0, flameBaseY, 0]} renderOrder={55}>
+      {flames.map((st, i) => (
+        <mesh
+          key={st.id}
+          ref={(el) => { if (el) flameMeshes.current[i] = el; }}
+          position={[0, flameBaseY, 0]}
+          renderOrder={55}
+        >
           <coneGeometry args={[0.15 * tokenScale, 0.35 * tokenScale, 8]} />
           <meshBasicMaterial
-            color="#f97316"
+            color={STATUS_COLORS[st.id] ?? '#f97316'}
             transparent
             opacity={0.85}
             depthWrite={false}
             toneMapped={false}
           />
         </mesh>
-      )}
+      ))}
     </group>
   );
 }

@@ -131,4 +131,37 @@ test.describe('Status markers', () => {
     expect(charId).toBe(aria.id);
     await ctx.close();
   });
+
+  test('S3: statuses multi marca via API directa → llegan al snapshot del jugador', async ({
+    campaign,
+    request,
+  }) => {
+    const scene = await createScene(request, campaign.id, 'Escena Status3');
+    const aria = await createCharacter(request, campaign.id, { name: 'Aria' });
+    await seedTokens(request, campaign.id, scene.id, [
+      { entityType: 'character', entityId: aria.id, x: 0, z: 0 },
+    ]);
+    await updateScene(request, campaign.id, scene.id, { status: 'active' });
+    const code = await generateInviteCode(request, campaign.id);
+
+    const base = await (
+      await request.get(
+        `http://localhost:8000/api/campaigns/${campaign.id}/scenes/${scene.id}/characters`
+      )
+    ).json();
+    expect(base[0].entity_id).toBe(aria.id);
+
+    await request.put(
+      `http://localhost:8000/api/campaigns/${campaign.id}/scenes/${scene.id}/characters`,
+      { data: [{ ...base[0], statuses: ['bleeding', 'invisible'] }] }
+    );
+
+    const snap = await (
+      await request.get(`http://localhost:8000/api/campaigns/invite/${code}`)
+    ).json();
+    const ch = snap.characters.find((c: { entity_id: string }) => c.entity_id === aria.id);
+    expect(ch).toBeDefined();
+    expect(ch.statuses).toContain('bleeding');
+    expect(ch.statuses).toContain('invisible');
+  });
 });
