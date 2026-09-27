@@ -51,6 +51,7 @@ MIGRATIONS = [
     ("scene_characters", "vision_range", "ALTER TABLE scene_characters ADD COLUMN vision_range FLOAT DEFAULT 6.0"),
     ("combats", "next_seq", "ALTER TABLE combats ADD COLUMN next_seq INTEGER DEFAULT 0"),
     ("combat_combatants", "pending_roll", "ALTER TABLE combat_combatants ADD COLUMN pending_roll INTEGER DEFAULT 0"),
+    ("scene_characters", "statuses_json", "ALTER TABLE scene_characters ADD COLUMN statuses_json TEXT DEFAULT '[]'"),
 ]
 
 VIDA_ATTRS = ["vigor", "intelligence", "dexterity", "cunning"]

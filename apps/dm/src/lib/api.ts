@@ -421,6 +421,7 @@ export interface SceneCharacter {
   last_move_at?: number;
   vision_type?: string;
   vision_range?: number;
+  statuses: string[];
 }
 
 type EventCreateFields = {
@@ -718,7 +719,7 @@ export const api = {
     },
     getCharacters: (campaignId: string, sceneId: string) =>
       request<SceneCharacter[]>(`/campaigns/${campaignId}/scenes/${sceneId}/characters`),
-    updateCharacters: (campaignId: string, sceneId: string, characters: { id?: string; entity_type: string; entity_id: string; x: number; y: number; z: number; visible: boolean; order: number; rotation?: number; token_scale?: number; move_speed?: number; brightness?: number; facing_offset?: number }[]) =>
+    updateCharacters: (campaignId: string, sceneId: string, characters: { id?: string; entity_type: string; entity_id: string; x: number; y: number; z: number; visible: boolean; order: number; rotation?: number; token_scale?: number; move_speed?: number; brightness?: number; facing_offset?: number; vision_type?: string; vision_range?: number; statuses?: string[] }[]) =>
       request<SceneCharacter[]>(`/campaigns/${campaignId}/scenes/${sceneId}/characters`, {
         method: 'PUT',
         body: JSON.stringify(characters),

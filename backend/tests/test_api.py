@@ -178,6 +178,54 @@ async def test_update_scene_characters_normalizes_rotation(client):
 
 
 @pytest.mark.asyncio
+async def test_scene_characters_statuses_roundtrip(client):
+    camp = (await client.post("/api/campaigns", json={"name": "Status Camp"})).json()
+    scen = (await client.post(f"/api/campaigns/{camp['id']}/scenes", json={"name": "Arena"})).json()
+    cid, sid = camp["id"], scen["id"]
+    char = (await client.post(f"/api/campaigns/{cid}/characters", json={"name": "Lira"})).json()
+
+    res = await client.put(
+        f"/api/campaigns/{cid}/scenes/{sid}/characters",
+        json=[{
+            "entity_type": "character",
+            "entity_id": char["id"],
+            "x": 0.0,
+            "z": 0.0,
+            "visible": True,
+            "order": 0,
+            "statuses": ["poisoned", "concentrating"],
+        }],
+    )
+    assert res.status_code == 200, res.text
+    assert res.json()[0]["statuses"] == ["poisoned", "concentrating"]
+
+    # GET devuelve statuses parseado (JSON string → list).
+    got = (await client.get(f"/api/campaigns/{cid}/scenes/{sid}/characters")).json()
+    assert got[0]["statuses"] == ["poisoned", "concentrating"]
+
+    # Snapshot del jugador incluye statuses (escena activa).
+    await client.put(f"/api/campaigns/{cid}/scenes/{sid}", json={"status": "active"})
+    code = (await client.post(f"/api/campaigns/{cid}/invite-code")).json()["invite_code"]
+    snap = (await client.get(f"/api/campaigns/invite/{code}")).json()
+    assert snap["characters"][0]["statuses"] == ["poisoned", "concentrating"]
+
+    # Reemplazo sin statuses → se limpian.
+    res = await client.put(
+        f"/api/campaigns/{cid}/scenes/{sid}/characters",
+        json=[{
+            "entity_type": "character",
+            "entity_id": char["id"],
+            "x": 0.0,
+            "z": 0.0,
+            "visible": True,
+            "order": 0,
+        }],
+    )
+    assert res.status_code == 200, res.text
+    assert res.json()[0]["statuses"] == []
+
+
+@pytest.mark.asyncio
 async def test_player_move_normalizes_rotation_and_clamps(client):
     camp = (await client.post("/api/campaigns", json={"name": "Move Camp"})).json()
     scen = (await client.post(f"/api/campaigns/{camp['id']}/scenes", json={"name": "Arena"})).json()

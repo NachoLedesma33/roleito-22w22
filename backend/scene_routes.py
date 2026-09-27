@@ -20,6 +20,36 @@ from vault import get_api_key
 router = APIRouter(tags=["scenes"])
 
 
+def _sc_response(sc: SceneCharacter) -> SceneCharacterResponse:
+    try:
+        statuses = json.loads(sc.statuses_json or "[]")
+    except ValueError:
+        statuses = []
+    return SceneCharacterResponse(
+        id=sc.id,
+        scene_id=sc.scene_id,
+        entity_type=sc.entity_type,
+        entity_id=sc.entity_id,
+        x=sc.x,
+        y=sc.y,
+        z=sc.z,
+        visible=bool(sc.visible),
+        order=sc.order,
+        rotation=sc.rotation,
+        token_scale=sc.token_scale,
+        move_speed=sc.move_speed,
+        brightness=sc.brightness,
+        vx=sc.vx,
+        vz=sc.vz,
+        vrot=sc.vrot,
+        last_move_at=sc.last_move_at,
+        facing_offset=sc.facing_offset,
+        vision_type=sc.vision_type,
+        vision_range=sc.vision_range,
+        statuses=statuses,
+    )
+
+
 def _load_ai_settings() -> dict:
     """Load AI config from data/ai_config.json."""
     config_path = Path(__file__).parent.parent / "data" / "ai_config.json"
@@ -421,6 +451,7 @@ async def update_scene_characters(
             facing_offset=ch.facing_offset,
             vision_type=ch.vision_type,
             vision_range=ch.vision_range,
+            statuses_json=json.dumps(ch.statuses),
         )
         db.add(sc)
         created.append(sc)
@@ -428,7 +459,7 @@ async def update_scene_characters(
     await db.commit()
     for sc in created:
         await db.refresh(sc)
-    return created
+    return [_sc_response(sc) for sc in created]
 
 
 @router.get("/campaigns/{campaign_id}/scenes/{scene_id}/characters", response_model=list[SceneCharacterResponse])
@@ -449,7 +480,7 @@ async def get_scene_characters(
     chars_r = await db.execute(
         select(SceneCharacter).where(SceneCharacter.scene_id == scene_id)
     )
-    return chars_r.scalars().all()
+    return [_sc_response(sc) for sc in chars_r.scalars().all()]
 
 
 # ── Player Movement ────────────────────────────────────────
@@ -531,4 +562,4 @@ async def player_move_character(
 
     await db.commit()
     await db.refresh(sc)
-    return SceneCharacterResponse.model_validate(sc)
+    return _sc_response(sc)

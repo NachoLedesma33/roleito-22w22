@@ -1,4 +1,6 @@
-from pydantic import BaseModel, Field
+import json
+
+from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
 from typing import Literal, Optional
 
@@ -409,6 +411,7 @@ class SceneCharacterPosition(BaseModel):
     facing_offset: float = 0.0
     vision_type: str = "normal"
     vision_range: float = 6.0
+    statuses: list[str] = []
 
 
 class SceneResponse(BaseModel):
@@ -457,6 +460,7 @@ class SceneCharacterResponse(BaseModel):
     facing_offset: float = 0.0
     vision_type: str = "normal"
     vision_range: float = 6.0
+    statuses: list[str] = []
 
     class Config:
         from_attributes = True

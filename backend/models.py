@@ -254,6 +254,7 @@ class SceneCharacter(Base):
     facing_offset = Column(Float, default=0.0)
     vision_type = Column(String, default="normal")
     vision_range = Column(Float, default=6.0)
+    statuses_json = Column(Text, default="[]")  # ["poisoned", "concentrating", ...]
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 

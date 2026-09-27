@@ -21,6 +21,7 @@ import type { ZoneDraft } from './ZoneDrawer';
 import type { ZoneGeometry } from './ZonePortal';
 import { SceneItem } from '@core/domain/types';
 import type { DrawState } from './WallDrawer';
+import { STATUS_COLORS } from '@/lib/statusMarkers';
 
 interface SceneEntity {
   id: string;
@@ -38,6 +39,7 @@ interface SceneEntity {
   brightness?: number;
   facingOffset?: number;
   attachesLight?: boolean;
+  statuses?: string[];
 }
 
 interface SceneRendererProps {
@@ -590,6 +592,31 @@ function DraggableToken({
           }}
         />
       )}
+      <TokenStatusBadges
+        statuses={entity.statuses ?? []}
+        tokenScale={entity.tokenScale ?? 1}
+      />
+    </group>
+  );
+}
+
+function TokenStatusBadges({
+  statuses,
+  tokenScale,
+}: {
+  statuses: string[];
+  tokenScale: number;
+}) {
+  if (statuses.length === 0) return null;
+  const n = statuses.length;
+  return (
+    <group position={[0, 1.15 * tokenScale, 0]}>
+      {statuses.map((s, i) => (
+        <mesh key={s} position={[(i - (n - 1) / 2) * 0.4 * tokenScale, 0, 0]}>
+          <sphereGeometry args={[0.17 * tokenScale, 12, 12]} />
+          <meshBasicMaterial color={STATUS_COLORS[s] ?? '#e5e7eb'} />
+        </mesh>
+      ))}
     </group>
   );
 }

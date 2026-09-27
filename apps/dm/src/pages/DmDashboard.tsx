@@ -28,6 +28,7 @@ import RecapPanel from '@/components/RecapPanel';
 import CharacterSheet from '@/components/CharacterSheet';
 import InitiativeTracker from '@/components/InitiativeTracker';
 import QuestPanel from '@/components/QuestPanel';
+import { STATUS_OPTIONS } from '@/lib/statusMarkers';
 import MapViewer from '@/components/MapViewer';
 import DMNotebookHud from '@/components/DMNotebookHud';
 import AISettingsPanel from '@/components/AISettingsPanel';
@@ -1310,8 +1311,8 @@ export default function DmDashboard() {
     const current = sceneCharsRef.current;
     const updated = current.map((scn) =>
       scn.id === sceneCharId
-        ? { id: scn.id, entity_type: scn.entity_type, entity_id: scn.entity_id, x, y: scn.y, z, visible: !!scn.visible, order: scn.order, token_scale: scn.token_scale ?? 1, move_speed: scn.move_speed ?? 1, facing_offset: scn.facing_offset ?? 0, vision_type: scn.vision_type ?? 'normal', vision_range: scn.vision_range ?? 6.0 }
-        : { id: scn.id, entity_type: scn.entity_type, entity_id: scn.entity_id, x: scn.x, y: scn.y, z: scn.z, visible: !!scn.visible, order: scn.order, token_scale: scn.token_scale ?? 1, move_speed: scn.move_speed ?? 1, facing_offset: scn.facing_offset ?? 0, vision_type: scn.vision_type ?? 'normal', vision_range: scn.vision_range ?? 6.0 }
+        ? { id: scn.id, entity_type: scn.entity_type, entity_id: scn.entity_id, x, y: scn.y, z, visible: !!scn.visible, order: scn.order, token_scale: scn.token_scale ?? 1, move_speed: scn.move_speed ?? 1, facing_offset: scn.facing_offset ?? 0, vision_type: scn.vision_type ?? 'normal', vision_range: scn.vision_range ?? 6.0, statuses: scn.statuses ?? [] }
+        : { id: scn.id, entity_type: scn.entity_type, entity_id: scn.entity_id, x: scn.x, y: scn.y, z: scn.z, visible: !!scn.visible, order: scn.order, token_scale: scn.token_scale ?? 1, move_speed: scn.move_speed ?? 1, facing_offset: scn.facing_offset ?? 0, vision_type: scn.vision_type ?? 'normal', vision_range: scn.vision_range ?? 6.0, statuses: scn.statuses ?? [] }
     );
     try {
       await api.scenes.updateCharacters(campaignId, activeScene.id, updated);
@@ -1344,8 +1345,8 @@ export default function DmDashboard() {
     const updated = existing
       ? sceneChars.map((sc) =>
           sc.id === existing.id
-            ? { id: sc.id, entity_type: sc.entity_type, entity_id: sc.entity_id, x, y: sc.y, z, visible: !!sc.visible, order: sc.order, token_scale: sc.token_scale ?? 1, move_speed: sc.move_speed ?? 1, facing_offset: sc.facing_offset ?? 0, vision_type: sc.vision_type ?? 'normal', vision_range: sc.vision_range ?? 6.0 }
-            : { id: sc.id, entity_type: sc.entity_type, entity_id: sc.entity_id, x: sc.x, y: sc.y, z: sc.z, visible: !!sc.visible, order: sc.order, token_scale: sc.token_scale ?? 1, move_speed: sc.move_speed ?? 1, facing_offset: sc.facing_offset ?? 0, vision_type: sc.vision_type ?? 'normal', vision_range: sc.vision_range ?? 6.0 }
+            ? { id: sc.id, entity_type: sc.entity_type, entity_id: sc.entity_id, x, y: sc.y, z, visible: !!sc.visible, order: sc.order, token_scale: sc.token_scale ?? 1, move_speed: sc.move_speed ?? 1, facing_offset: sc.facing_offset ?? 0, vision_type: sc.vision_type ?? 'normal', vision_range: sc.vision_range ?? 6.0, statuses: sc.statuses ?? [] }
+            : { id: sc.id, entity_type: sc.entity_type, entity_id: sc.entity_id, x: sc.x, y: sc.y, z: sc.z, visible: !!sc.visible, order: sc.order, token_scale: sc.token_scale ?? 1, move_speed: sc.move_speed ?? 1, facing_offset: sc.facing_offset ?? 0, vision_type: sc.vision_type ?? 'normal', vision_range: sc.vision_range ?? 6.0, statuses: sc.statuses ?? [] }
         )
       : [...sceneChars, {
           entity_type: entityType,
@@ -1386,14 +1387,33 @@ export default function DmDashboard() {
     if (!campaignId || !activeScene) return;
     const updated = sceneChars.map((sc) =>
       sc.id === sceneCharId
-        ? { id: sc.id, entity_type: sc.entity_type, entity_id: sc.entity_id, x: sc.x, y: sc.y, z: sc.z, visible: !sc.visible, order: sc.order, token_scale: sc.token_scale ?? 1, move_speed: sc.move_speed ?? 1, facing_offset: sc.facing_offset ?? 0, vision_type: sc.vision_type ?? 'normal', vision_range: sc.vision_range ?? 6.0 }
-        : { id: sc.id, entity_type: sc.entity_type, entity_id: sc.entity_id, x: sc.x, y: sc.y, z: sc.z, visible: !!sc.visible, order: sc.order, token_scale: sc.token_scale ?? 1, move_speed: sc.move_speed ?? 1, facing_offset: sc.facing_offset ?? 0, vision_type: sc.vision_type ?? 'normal', vision_range: sc.vision_range ?? 6.0 }
+        ? { id: sc.id, entity_type: sc.entity_type, entity_id: sc.entity_id, x: sc.x, y: sc.y, z: sc.z, visible: !sc.visible, order: sc.order, token_scale: sc.token_scale ?? 1, move_speed: sc.move_speed ?? 1, facing_offset: sc.facing_offset ?? 0, vision_type: sc.vision_type ?? 'normal', vision_range: sc.vision_range ?? 6.0, statuses: sc.statuses ?? [] }
+        : { id: sc.id, entity_type: sc.entity_type, entity_id: sc.entity_id, x: sc.x, y: sc.y, z: sc.z, visible: !!sc.visible, order: sc.order, token_scale: sc.token_scale ?? 1, move_speed: sc.move_speed ?? 1, facing_offset: sc.facing_offset ?? 0, vision_type: sc.vision_type ?? 'normal', vision_range: sc.vision_range ?? 6.0, statuses: sc.statuses ?? [] }
     );
     try {
       const result = await api.scenes.updateCharacters(campaignId, activeScene.id, updated);
       setSceneChars(result);
     } catch (err) {
       console.error('Failed to toggle visibility:', err);
+    }
+  }, [campaignId, activeScene, sceneChars]);
+
+  const handleToggleStatus = useCallback(async (sceneCharId: string, status: string) => {
+    if (!campaignId || !activeScene) return;
+    const target = sceneChars.find((sc) => sc.id === sceneCharId);
+    if (!target) return;
+    const cur = target.statuses ?? [];
+    const next = cur.includes(status) ? cur.filter((s) => s !== status) : [...cur, status];
+    const updated = sceneChars.map((sc) =>
+      sc.id === sceneCharId
+        ? { id: sc.id, entity_type: sc.entity_type, entity_id: sc.entity_id, x: sc.x, y: sc.y, z: sc.z, visible: !!sc.visible, order: sc.order, token_scale: sc.token_scale ?? 1, move_speed: sc.move_speed ?? 1, facing_offset: sc.facing_offset ?? 0, vision_type: sc.vision_type ?? 'normal', vision_range: sc.vision_range ?? 6.0, statuses: next }
+        : { id: sc.id, entity_type: sc.entity_type, entity_id: sc.entity_id, x: sc.x, y: sc.y, z: sc.z, visible: !!sc.visible, order: sc.order, token_scale: sc.token_scale ?? 1, move_speed: sc.move_speed ?? 1, facing_offset: sc.facing_offset ?? 0, vision_type: sc.vision_type ?? 'normal', vision_range: sc.vision_range ?? 6.0, statuses: sc.statuses ?? [] }
+    );
+    try {
+      const result = await api.scenes.updateCharacters(campaignId, activeScene.id, updated);
+      setSceneChars(result);
+    } catch (err) {
+      console.error('Failed to toggle status:', err);
     }
   }, [campaignId, activeScene, sceneChars]);
 
@@ -1459,12 +1479,22 @@ export default function DmDashboard() {
         { label: '', separator: true, onClick: () => {} },
         { label: 'View character sheet', icon: '📄', onClick: () => setSelectedTokenId(sceneCharId), disabled: !ent },
         { label: '', separator: true, onClick: () => {} },
+        { label: 'Status', icon: '⚠️', onClick: () => {}, disabled: true },
+        ...STATUS_OPTIONS.map((s) => {
+          const has = (sc?.statuses ?? []).includes(s.id);
+          return {
+            label: `${has ? 'Quitar ' : 'Marcar '}${s.label}`,
+            icon: has ? '✓' : '＋',
+            onClick: () => handleToggleStatus(sceneCharId, s.id),
+          };
+        }),
+        { label: '', separator: true, onClick: () => {} },
         ...lightItems,
         { label: '', separator: true, onClick: () => {} },
         { label: 'Remove from scene', icon: '🗑', onClick: () => handleRemoveFromScene(sceneCharId), danger: true },
       ],
     });
-  }, [sceneChars, allEntities, handleToggleVisibility, handleRemoveFromScene, graphRef, handleTokenLightAttach, handleTokenLightDetach, handleCreateAndAttachLight]);
+  }, [sceneChars, allEntities, handleToggleVisibility, handleRemoveFromScene, graphRef, handleTokenLightAttach, handleTokenLightDetach, handleCreateAndAttachLight, handleToggleStatus]);
 
   // Keyboard shortcuts
   useEffect(() => {

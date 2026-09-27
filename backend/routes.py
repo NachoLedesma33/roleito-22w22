@@ -624,6 +624,7 @@ async def join_by_invite_code(
                     "token_scale": getattr(sc, 'token_scale', 1.0),
                     "brightness": getattr(sc, 'brightness', 0.0),
                     "facing_offset": getattr(sc, 'facing_offset', 0.0),
+                    "statuses": json.loads(getattr(sc, 'statuses_json', '[]') or '[]'),
                     "vx": getattr(sc, 'vx', 0.0),
                     "vz": getattr(sc, 'vz', 0.0),
                     "vrot": getattr(sc, 'vrot', 0.0),

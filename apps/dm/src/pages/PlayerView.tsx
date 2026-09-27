@@ -49,6 +49,7 @@ interface PlayerToken {
   facing_offset: number;
   vision_type?: string;
   vision_range?: number;
+  statuses: string[];
   vx?: number;
   vz?: number;
   vrot?: number;
@@ -1162,6 +1163,7 @@ export default function PlayerView() {
                     tokenScale: c.token_scale ?? 1,
                     brightness: c.brightness ?? 0,
                     facingOffset: c.facing_offset ?? 0,
+                    statuses: c.statuses ?? [],
                   };
                 }
                 const interpolated = renderedPosRef.current.get(c.id);
@@ -1176,6 +1178,7 @@ export default function PlayerView() {
                   tokenScale: c.token_scale ?? 1,
                   brightness: c.brightness ?? 0,
                   facingOffset: c.facing_offset ?? 0,
+                  statuses: c.statuses ?? [],
                 };
               })}
               lighting={data.lighting}
