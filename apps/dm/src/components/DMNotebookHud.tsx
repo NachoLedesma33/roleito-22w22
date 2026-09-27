@@ -8,12 +8,12 @@ interface DMNotebookHudProps {
 }
 
 const CATEGORIES = [
-  { value: 'notes', label: 'Notes' },
-  { value: 'rules', label: 'Rules' },
+  { value: 'notes', label: 'Notas' },
+  { value: 'rules', label: 'Reglas' },
   { value: 'lore', label: 'Lore' },
-  { value: 'locations', label: 'Locations' },
-  { value: 'npcs', label: 'NPCs' },
-  { value: 'decisions', label: 'Decisions' },
+  { value: 'locations', label: 'Ubicaciones' },
+  { value: 'npcs', label: 'PNJs' },
+  { value: 'decisions', label: 'Decisiones' },
 ];
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -123,14 +123,14 @@ export default function DMNotebookHud({ campaignId, onClose }: DMNotebookHudProp
 
   if (loading) {
     return (
-      <HudPanel title="DM Notebook" panelId="notebook" onClose={onClose} defaultX={100} defaultY={80} defaultWidth={420}>
-        <p className="text-xs text-[var(--text-secondary)]">Loading...</p>
+      <HudPanel title="Cuaderno del DM" panelId="notebook" onClose={onClose} defaultX={100} defaultY={80} defaultWidth={420}>
+        <p className="text-xs text-[var(--text-secondary)]">Cargando...</p>
       </HudPanel>
     );
   }
 
   return (
-    <HudPanel title="DM Notebook" panelId="notebook" onClose={onClose} defaultX={100} defaultY={80} defaultWidth={440}>
+    <HudPanel title="Cuaderno del DM" panelId="notebook" onClose={onClose} defaultX={100} defaultY={80} defaultWidth={440}>
       <div className="space-y-3">
         {/* Category Filter */}
         <div className="flex items-center gap-1 flex-wrap">
@@ -140,7 +140,7 @@ export default function DMNotebookHud({ campaignId, onClose }: DMNotebookHudProp
               filterCat === 'all' ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
-            All ({notebooks.length})
+            Todas ({notebooks.length})
           </button>
           {CATEGORIES.map((c) => {
             const count = notebooks.filter((n) => n.category === c.value).length;
@@ -164,7 +164,7 @@ export default function DMNotebookHud({ campaignId, onClose }: DMNotebookHudProp
             onClick={handleCreate}
             className="flex-1 text-[10px] px-2 py-1.5 rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors font-medium"
           >
-            + New Note
+            + Nueva nota
           </button>
           {selected && (
             <>
@@ -173,21 +173,21 @@ export default function DMNotebookHud({ campaignId, onClose }: DMNotebookHudProp
                   onClick={handleSave}
                   className="flex-1 text-[10px] px-2 py-1.5 rounded bg-emerald-600 text-white hover:bg-emerald-500 transition-colors font-medium"
                 >
-                  Save
+                  Guardar
                 </button>
               ) : (
                 <button
                   onClick={() => setEditing(true)}
                   className="flex-1 text-[10px] px-2 py-1.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
                 >
-                  Edit
+                  Editar
                 </button>
               )}
               <button
                 onClick={() => handleShowVersions(selected.id)}
                 className="text-[10px] px-2 py-1.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
               >
-                History
+                Historial
               </button>
             </>
           )}
@@ -220,14 +220,14 @@ export default function DMNotebookHud({ campaignId, onClose }: DMNotebookHudProp
               <button
                 onClick={() => handlePin(selected.id, selected.pinned)}
                 className="text-xs"
-                title={selected.pinned ? 'Unpin' : 'Pin'}
+                title={selected.pinned ? 'Desfijar' : 'Fijar'}
               >
                 {selected.pinned ? '📌' : '📍'}
               </button>
               <button
                 onClick={() => handleDelete(selected.id)}
                 className="text-[var(--text-secondary)] hover:text-red-400 text-xs"
-                title="Delete"
+                title="Eliminar"
               >
                 🗑
               </button>
@@ -247,7 +247,7 @@ export default function DMNotebookHud({ campaignId, onClose }: DMNotebookHudProp
               />
             ) : (
               <div className="max-h-64 overflow-y-auto text-xs text-[var(--text-secondary)] whitespace-pre-wrap font-mono leading-relaxed bg-[var(--bg-tertiary)]/30 rounded p-2">
-                {selected.content || 'No content. Click Edit to add.'}
+                {selected.content || 'Sin contenido. Hacé clic en Editar para agregar.'}
               </div>
             )}
 
@@ -259,7 +259,7 @@ export default function DMNotebookHud({ campaignId, onClose }: DMNotebookHudProp
               }}
               className="text-[10px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             >
-              ← Back to list
+              ← Volver a la lista
             </button>
           </div>
         ) : showVersions ? (
@@ -268,11 +268,11 @@ export default function DMNotebookHud({ campaignId, onClose }: DMNotebookHudProp
               onClick={() => setShowVersions(false)}
               className="text-[10px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             >
-              ← Back to note
+              ← Volver a la nota
             </button>
-            <p className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">Version History</p>
+            <p className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">Historial de versiones</p>
             {versions.length === 0 ? (
-              <p className="text-xs text-[var(--text-secondary)]">No previous versions.</p>
+              <p className="text-xs text-[var(--text-secondary)]">No hay versiones anteriores.</p>
             ) : (
               <div className="space-y-1 max-h-48 overflow-y-auto">
                 {versions.map((v) => (
@@ -302,7 +302,7 @@ export default function DMNotebookHud({ campaignId, onClose }: DMNotebookHudProp
           <div className="space-y-0.5 max-h-64 overflow-y-auto">
             {filtered.length === 0 ? (
               <p className="text-xs text-[var(--text-secondary)] text-center py-4">
-                No notes yet. Click "+ New Note" to start.
+                No notes yet. Click "+ Nueva nota" to start.
               </p>
             ) : (
               filtered.map((n) => (

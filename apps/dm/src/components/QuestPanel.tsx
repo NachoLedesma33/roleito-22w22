@@ -64,7 +64,7 @@ export default function QuestPanel({ campaignId, onClose }: QuestPanelProps) {
         });
         setQuests((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Update failed');
+        setError(e instanceof Error ? e.message : 'No se pudo actualizar');
       } finally {
         setBusy(false);
       }
@@ -74,7 +74,7 @@ export default function QuestPanel({ campaignId, onClose }: QuestPanelProps) {
 
   return (
     <HudPanel
-      title="Quest Board"
+      title="Tablón de misiones"
       panelId="quests"
       onClose={onClose}
       defaultX={window.innerWidth - 380}
@@ -94,7 +94,7 @@ export default function QuestPanel({ campaignId, onClose }: QuestPanelProps) {
               : 'bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)]'
           }`}
         >
-          {creating ? 'Cancel' : '＋ New quest'}
+          {creating ? 'Cancelar' : '＋ Nueva misión'}
         </button>
 
         {creating && (
@@ -107,7 +107,7 @@ export default function QuestPanel({ campaignId, onClose }: QuestPanelProps) {
                 setQuests((prev) => [created, ...prev]);
                 setCreating(false);
               } catch (e) {
-                setError(e instanceof Error ? e.message : 'Create failed');
+                setError(e instanceof Error ? e.message : 'No se pudo crear');
               } finally {
                 setBusy(false);
               }
@@ -125,12 +125,12 @@ export default function QuestPanel({ campaignId, onClose }: QuestPanelProps) {
                     STATUS_COLORS[q.status] ?? STATUS_COLORS.draft
                   }`}
                 >
-                  {q.status}
+                  {q.status === 'draft' ? 'Borrador' : q.status === 'active' ? 'Activa' : q.status === 'completed' ? 'Completada' : q.status === 'failed' ? 'Fallida' : q.status}
                 </span>
                 <span className="flex-1 truncate text-xs font-medium">{q.title}</span>
                 <button
                   type="button"
-                  title={q.visible_to_players ? 'Visible to players' : 'Hidden from players'}
+                  title={q.visible_to_players ? 'Visible para jugadores' : 'Oculta para jugadores'}
                   onClick={() => handleToggleVisible(q)}
                   disabled={busy}
                   className="text-[10px] opacity-70 hover:opacity-100"
@@ -139,7 +139,7 @@ export default function QuestPanel({ campaignId, onClose }: QuestPanelProps) {
                 </button>
                 <button
                   type="button"
-                  title="Edit"
+                  title="Editar"
                   onClick={() => setEditingId(editingId === q.id ? null : q.id)}
                   className="text-[10px] opacity-70 hover:opacity-100"
                 >
@@ -147,7 +147,7 @@ export default function QuestPanel({ campaignId, onClose }: QuestPanelProps) {
                 </button>
                 <button
                   type="button"
-                  title="Delete"
+                  title="Eliminar"
                   onClick={() => handleDelete(q)}
                   disabled={busy}
                   className="text-[10px] opacity-70 hover:opacity-100"
@@ -167,7 +167,7 @@ export default function QuestPanel({ campaignId, onClose }: QuestPanelProps) {
                       setQuests((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
                       setEditingId(null);
                     } catch (e) {
-                      setError(e instanceof Error ? e.message : 'Update failed');
+                      setError(e instanceof Error ? e.message : 'No se pudo actualizar');
                     } finally {
                       setBusy(false);
                     }
@@ -202,7 +202,7 @@ export default function QuestPanel({ campaignId, onClose }: QuestPanelProps) {
             </div>
           ))}
           {quests.length === 0 && !creating && (
-            <div className="text-[10px] text-[var(--text-secondary)]">No quests yet.</div>
+            <div className="text-[10px] text-[var(--text-secondary)]">Todavía no hay misiones.</div>
           )}
         </div>
       </div>
@@ -243,14 +243,14 @@ function QuestForm({
       <input
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        placeholder="Quest title"
+        placeholder="Título de la misión"
         required
         className="w-full text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] border border-transparent focus:border-[var(--accent)] outline-none"
       />
       <textarea
         value={description}
         onChange={(e) => setDescription(e.target.value)}
-        placeholder="Description"
+        placeholder="Descripción"
         rows={2}
         className="w-full text-[10px] px-2 py-1 rounded bg-[var(--bg-tertiary)] border border-transparent focus:border-[var(--accent)] outline-none resize-none"
       />
@@ -274,7 +274,7 @@ function QuestForm({
                   prev.map((x, j) => (j === i ? { ...x, label: e.target.value } : x))
                 )
               }
-              placeholder={`Objective ${i + 1}`}
+              placeholder={`Objetivo ${i + 1}`}
               className="flex-1 min-w-0 text-[10px] px-2 py-0.5 rounded bg-[var(--bg-tertiary)] outline-none"
             />
             <button
@@ -291,13 +291,13 @@ function QuestForm({
           onClick={() => setObjectives((prev) => [...prev, { label: '', done: false }])}
           className="text-[10px] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
         >
-          ＋ objective
+          ＋ objetivo
         </button>
       </div>
       <input
         value={reward}
         onChange={(e) => setReward(e.target.value)}
-        placeholder="Reward (e.g. 100 gp)"
+        placeholder="Recompensa (ej: 100 po)"
         className="w-full text-[10px] px-2 py-1 rounded bg-[var(--bg-tertiary)] outline-none"
       />
       <div className="flex items-center gap-3">
@@ -307,10 +307,10 @@ function QuestForm({
             onChange={(e) => setStatus(e.target.value)}
             className="text-[10px] px-1 py-0.5 rounded bg-[var(--bg-tertiary)] outline-none"
           >
-            <option value="draft">draft</option>
-            <option value="active">active</option>
-            <option value="completed">completed</option>
-            <option value="failed">failed</option>
+            <option value="draft">Borrador</option>
+            <option value="active">Activa</option>
+            <option value="completed">Completada</option>
+            <option value="failed">Fallida</option>
           </select>
         </label>
         <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)] cursor-pointer">
@@ -320,7 +320,7 @@ function QuestForm({
             onChange={(e) => setVisible(e.target.checked)}
             className="w-3 h-3 accent-[var(--accent)]"
           />
-          visible
+          visible para jugadores
         </label>
         <div className="flex-1" />
         <button
@@ -328,13 +328,13 @@ function QuestForm({
           onClick={onCancel}
           className="text-[10px] px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
         >
-          Cancel
+          Cancelar
         </button>
         <button
           type="submit"
           className="text-[10px] px-2 py-1 rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)]"
         >
-          Save
+          Guardar
         </button>
       </div>
     </form>

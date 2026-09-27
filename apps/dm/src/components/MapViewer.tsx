@@ -12,18 +12,18 @@ const MARKER_COLORS = [
 ];
 
 const MARKER_TYPES = [
-  { value: 'poi', label: 'POI' },
-  { value: 'battle', label: 'Battle' },
-  { value: 'treasure', label: 'Treasure' },
-  { value: 'danger', label: 'Danger' },
-  { value: 'npc', label: 'NPC' },
-  { value: 'shop', label: 'Shop' },
-  { value: 'camp', label: 'Camp' },
+  { value: 'poi', label: 'Punto de interés' },
+  { value: 'battle', label: 'Batalla' },
+  { value: 'treasure', label: 'Tesoro' },
+  { value: 'danger', label: 'Peligro' },
+  { value: 'npc', label: 'PNJ' },
+  { value: 'shop', label: 'Tienda' },
+  { value: 'camp', label: 'Campamento' },
 ];
 
 const TRANSITION_COLOR = '#fbbf24';
 
-const TRANSITION_TYPES = [{ value: 'transition', label: 'Transition' }];
+const TRANSITION_TYPES = [{ value: 'transition', label: 'Transición' }];
 
 interface MapViewerProps {
   map: Map;
@@ -184,7 +184,7 @@ export default function MapViewer({ map, onClose, scenes, currentSceneId, onTran
           onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}
           className="text-[10px] px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
         >
-          Reset
+          Restablecer
         </button>
 
         <div className="w-px h-5 bg-[var(--bg-tertiary)]" />
@@ -195,7 +195,7 @@ export default function MapViewer({ map, onClose, scenes, currentSceneId, onTran
             <input
               value={newLabel}
               onChange={(e) => setNewLabel(e.target.value)}
-              placeholder="Label"
+              placeholder="Etiqueta"
               className="w-24 text-[10px] px-1.5 py-1 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
               autoFocus
             />

@@ -87,7 +87,7 @@ export default function InitiativeTracker({
           count: 1,
           results: [value],
           total: value,
-          label: 'Initiative',
+          label: 'Iniciativa',
         })
         .catch(() => {});
     },
@@ -103,7 +103,7 @@ export default function InitiativeTracker({
       setSelected([]);
       setSelPool([]);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to start combat');
+      setError(e instanceof Error ? e.message : 'No se pudo iniciar el combate');
     } finally {
       setBusy(false);
     }
@@ -122,7 +122,7 @@ export default function InitiativeTracker({
       setCombat(updated);
       setSelPool([]);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Add failed');
+      setError(e instanceof Error ? e.message : 'No se pudo agregar');
     } finally {
       setBusy(false);
     }
@@ -142,7 +142,7 @@ export default function InitiativeTracker({
         ]);
         setCombat(updated);
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Roll failed');
+        setError(e instanceof Error ? e.message : 'No se pudo tirar');
       } finally {
         setBusy(false);
       }
@@ -174,7 +174,7 @@ export default function InitiativeTracker({
       setCombat(updated);
       setSelected([]);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Batch roll failed');
+      setError(e instanceof Error ? e.message : 'No se pudo tirar en lote');
     } finally {
       setBusy(false);
     }
@@ -188,7 +188,7 @@ export default function InitiativeTracker({
       const updated = await api.combat.next(campaignId, combat.id);
       setCombat(updated);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Next turn failed');
+      setError(e instanceof Error ? e.message : 'No se pudo pasar el turno');
     } finally {
       setBusy(false);
     }
@@ -203,7 +203,7 @@ export default function InitiativeTracker({
       setCombat(null);
       setSelected([]);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'End combat failed');
+      setError(e instanceof Error ? e.message : 'No se pudo terminar el combate');
     } finally {
       setBusy(false);
     }
@@ -234,7 +234,7 @@ export default function InitiativeTracker({
 
   return (
     <HudPanel
-      title={`Initiative — Round ${combat ? combat.round : '-'}`}
+      title={`Iniciativa — Ronda ${combat ? combat.round : '-'}`}
       panelId="initiative"
       onClose={onClose}
       defaultX={window.innerWidth - 360}
@@ -249,11 +249,11 @@ export default function InitiativeTracker({
               disabled={busy}
               className="w-full text-xs px-3 py-2 rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors font-semibold disabled:opacity-50"
             >
-              Start Combat
+              Iniciar combate
             </button>
             <div className="text-[10px] text-[var(--text-secondary)]">
-              Empty combat — now add the tokens that will fight. Roll d6 per
-              combatant — highest first, ties go by roll order.
+              Combate vacío — agregá los tokens que van a pelear. Tirada d6 por
+              combatiente — gana el más alto, empates por orden de tirada.
             </div>
           </>
         )}
@@ -262,7 +262,7 @@ export default function InitiativeTracker({
           <>
             <div className="flex items-center justify-between mb-1 gap-2">
               <span className="text-[10px] text-[var(--text-secondary)]">
-                Round {combat.round} — Turn{' '}
+                Ronda {combat.round} — Turno{' '}
                 {combat.combatants.length
                   ? `${combat.current_turn + 1}/${combat.combatants.length}`
                   : '0/0'}
@@ -273,14 +273,14 @@ export default function InitiativeTracker({
                   disabled={busy}
                   className="text-[10px] px-2 py-1 rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
                 >
-                  Next Turn ▸
+                  Siguiente turno ▸
                 </button>
                 <button
                   onClick={handleEnd}
                   disabled={busy}
                   className="text-[10px] px-2 py-1 rounded bg-red-900/60 text-red-200 hover:bg-red-800 transition-colors disabled:opacity-50"
                 >
-                  End
+                  Finalizar
                 </button>
               </div>
             </div>
@@ -291,7 +291,7 @@ export default function InitiativeTracker({
                 disabled={busy}
                 className="w-full text-[10px] px-2 py-1 rounded bg-[var(--accent)]/20 text-[var(--accent)] hover:bg-[var(--accent)]/30 transition-colors disabled:opacity-50"
               >
-                🎲 Roll d6 × {selected.length} — selected NPCs (in selection order)
+                🎲 Tirada d6 × {selected.length} — PNJs seleccionados (en orden de selección)
               </button>
             )}
 
@@ -300,7 +300,7 @@ export default function InitiativeTracker({
             {poolCandidates.length > 0 && (
               <div className="border-t border-[var(--bg-tertiary)] pt-1.5 mt-1.5">
                 <p className="text-[10px] text-[var(--text-secondary)] mb-1 px-1">
-                  Scene tokens — select who fights
+                  Tokens de la escena — elegí quiénes pelean
                 </p>
                 <div className="space-y-0.5 max-h-28 overflow-y-auto">
                   {poolCandidates.map((c) => {
@@ -322,7 +322,7 @@ export default function InitiativeTracker({
                         />
                         <span className="truncate">{c.name}</span>
                         {c.type === 'character' && (
-                          <span className="ml-auto text-[9px] opacity-60">player roll</span>
+                          <span className="ml-auto text-[9px] opacity-60">tirada del jugador</span>
                         )}
                       </label>
                     );
@@ -333,7 +333,7 @@ export default function InitiativeTracker({
                   disabled={busy || selPool.length === 0}
                   className="w-full mt-1 text-[10px] px-2 py-1 rounded bg-[var(--accent)]/20 text-[var(--accent)] hover:bg-[var(--accent)]/30 transition-colors disabled:opacity-40"
                 >
-                  Add to combat ({selPool.length})
+                  Agregar al combate ({selPool.length})
                 </button>
               </div>
             )}
@@ -363,7 +363,7 @@ export default function InitiativeTracker({
                         checked={isSelected}
                         onChange={() => toggleSelect(key)}
                         className="w-3 h-3 accent-[var(--accent)] shrink-0"
-                        title="Select for batch roll"
+                        title="Seleccionar para tirada en lote"
                       />
                     )}
                     <span className="w-4 text-center text-[10px] text-[var(--text-secondary)] font-mono">
@@ -380,14 +380,14 @@ export default function InitiativeTracker({
                       <span className="truncate font-medium">{src.name}</span>
                       {cc.entity_type === 'character' && cc.pending_roll === 1 && (
                         <span className="text-[9px] text-amber-400 animate-pulse">
-                          ⏳ player roll
+                          ⏳ tirada del jugador
                         </span>
                       )}
                     </div>
                     <button
                       onClick={() => handleRoll(cc)}
                       disabled={busy}
-                      title="Roll d6"
+                      title="Tirar d6"
                       className="w-6 h-5 flex items-center justify-center rounded bg-[var(--bg-tertiary)] hover:bg-[var(--accent)]/30 text-[10px] disabled:opacity-50 shrink-0"
                     >
                       🎲

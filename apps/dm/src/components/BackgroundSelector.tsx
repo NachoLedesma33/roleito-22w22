@@ -17,14 +17,14 @@ interface BackgroundSelectorProps {
 }
 
 const SCENE_LABELS: Record<string, string> = {
-  space: 'Space',
-  forest: 'Forest',
-  dungeon: 'Dungeon / Cave',
-  tavern: 'Tavern / Interior',
-  desert: 'Desert',
-  water: 'Water / Ocean',
-  night: 'Night',
-  unknown: 'Unknown',
+  space: 'Espacio',
+  forest: 'Bosque',
+  dungeon: 'Mazmorra / Cueva',
+  tavern: 'Taberna / Interior',
+  desert: 'Desierto',
+  water: 'Agua / Océano',
+  night: 'Noche',
+  unknown: 'Desconocido',
 }
 
 const SCENE_ICONS: Record<string, string> = {
@@ -79,7 +79,7 @@ export default function BackgroundSelector({
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-[var(--text-primary)]">
-            {SCENE_ICONS[sceneType] || '?'} Background for {SCENE_LABELS[sceneType] || sceneType}
+            {SCENE_ICONS[sceneType] || '?'} Fondo para {SCENE_LABELS[sceneType] || sceneType}
           </h3>
           <button onClick={onClose} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xl">
             &times;
@@ -87,7 +87,7 @@ export default function BackgroundSelector({
         </div>
 
         <p className="text-xs text-[var(--text-secondary)] mb-4">
-          Map detected as <strong>{SCENE_LABELS[sceneType]}</strong>. Choose a matching background:
+          Mapa detectado como <strong>{SCENE_LABELS[sceneType]}</strong>. Elegí un fondo que combine:
         </p>
 
         <div className="grid grid-cols-3 gap-3 mb-4">
@@ -116,7 +116,7 @@ export default function BackgroundSelector({
         </div>
 
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-[10px] text-[var(--text-secondary)]">Dominant colors:</span>
+          <span className="text-[10px] text-[var(--text-secondary)]">Colores dominantes:</span>
           {dominantColors.map((color, i) => (
             <div
               key={i}
@@ -137,19 +137,19 @@ export default function BackgroundSelector({
                 : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] cursor-not-allowed'
             }`}
           >
-            Apply Background
+            Aplicar fondo
           </button>
           <button
             onClick={onUseDefault}
             className="px-4 py-2 rounded text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
           >
-            Use Default
+            Usar predeterminado
           </button>
           <button
             onClick={onClose}
             className="px-4 py-2 rounded text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
           >
-            Skip
+            Saltar
           </button>
         </div>
       </div>

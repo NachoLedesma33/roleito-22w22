@@ -38,7 +38,7 @@ export default function SceneNotesHud({
 
   return (
     <HudPanel
-      title={`Scene Notes${sceneName ? ` — ${sceneName}` : ''}`}
+      title={`Notas de la escena${sceneName ? ` — ${sceneName}` : ''}`}
       panelId="scene-notes"
       onClose={onClose}
       defaultX={window.innerWidth - 340}
@@ -47,18 +47,18 @@ export default function SceneNotesHud({
     >
       {!sceneId && (
         <p className="text-[10px] text-[var(--text-secondary)] italic">
-          No scene selected
+          Sin escena seleccionada
         </p>
       )}
       <textarea
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
         onBlur={handleSave}
-        placeholder="Notes about this scene..."
+        placeholder="Notas sobre esta escena..."
         className="w-full h-40 text-xs bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded p-2 text-[var(--text-primary)] placeholder-[var(--text-secondary)] resize-none focus:outline-none focus:border-[var(--accent)]"
       />
       {saving && (
-        <p className="text-[9px] text-[var(--text-secondary)] mt-1">Saving...</p>
+        <p className="text-[9px] text-[var(--text-secondary)] mt-1">Guardando...</p>
       )}
     </HudPanel>
   );

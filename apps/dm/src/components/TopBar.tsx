@@ -73,7 +73,7 @@ export default function TopBar({ title, titleTo, subtitle, left, children, class
           <button
             onClick={() => scrollRef.current?.scrollBy({ left: -120, behavior: 'smooth' })}
             className="absolute left-0 top-0 bottom-0 w-7 z-10 bg-gradient-to-r from-[var(--bg-primary)] to-transparent flex items-center justify-center text-[var(--accent)] opacity-70 hover:opacity-100 transition-opacity"
-            title="Scroll toolbar left"
+            title="Desplazar barra a la izquierda"
           >
             ‹
           </button>
@@ -82,7 +82,7 @@ export default function TopBar({ title, titleTo, subtitle, left, children, class
           <button
             onClick={() => scrollRef.current?.scrollBy({ left: 120, behavior: 'smooth' })}
             className="absolute right-0 top-0 bottom-0 w-7 z-10 bg-gradient-to-l from-[var(--bg-primary)] to-transparent flex items-center justify-center text-[var(--accent)] opacity-70 hover:opacity-100 transition-opacity"
-            title="Scroll toolbar right"
+            title="Desplazar barra a la derecha"
           >
             ›
           </button>

@@ -30,12 +30,12 @@ export default function SceneSettingsHud({ scene, onUpdate, onClose }: SceneSett
   const mapHeight = (10 * mapScale).toFixed(0);
 
   return (
-    <HudPanel title="Scene Settings" panelId="scene-settings" onClose={onClose} className="w-64">
+    <HudPanel title="Ajustes de escena" panelId="scene-settings" onClose={onClose} className="w-64">
       <div className="space-y-3 p-3">
         {/* Map Scale */}
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">Map Scale</label>
+            <label className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">Escala del mapa</label>
             <span className="text-[10px] text-[var(--accent)] font-mono">{mapScale.toFixed(1)}x</span>
           </div>
           <input
@@ -52,7 +52,7 @@ export default function SceneSettingsHud({ scene, onUpdate, onClose }: SceneSett
             className="w-full h-1 accent-[var(--accent)]"
           />
           <p className="text-[9px] text-[var(--text-secondary)] mt-0.5">
-            {mapWidth} × {mapHeight} units
+            {mapWidth} × {mapHeight} unidades
           </p>
         </div>
 
@@ -60,7 +60,7 @@ export default function SceneSettingsHud({ scene, onUpdate, onClose }: SceneSett
         {isModel && (
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">Floor Offset</label>
+              <label className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">Desplazamiento del piso</label>
               <span className="text-[10px] text-[var(--accent)] font-mono">{modelYOffset.toFixed(3)}</span>
             </div>
             <input
@@ -77,7 +77,7 @@ export default function SceneSettingsHud({ scene, onUpdate, onClose }: SceneSett
               className="w-full h-1 accent-[var(--accent)]"
             />
             <p className="text-[9px] text-[var(--text-secondary)] mt-0.5">
-              Adjust if tokens float above/below the floor
+              Ajustalo si los tokens flotan sobre o bajo el piso
             </p>
           </div>
         )}
@@ -85,8 +85,8 @@ export default function SceneSettingsHud({ scene, onUpdate, onClose }: SceneSett
         {/* Grid Size */}
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">Grid Size</label>
-            <span className="text-[10px] text-[var(--accent)] font-mono">{gridSize > 0 ? `${gridSize}` : 'off'}</span>
+            <label className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">Tamaño de cuadrícula</label>
+            <span className="text-[10px] text-[var(--accent)] font-mono">{gridSize > 0 ? `${gridSize}` : 'apagada'}</span>
           </div>
           <div className="flex gap-1">
             {[0, 1, 2, 5].map((v) => (
@@ -102,7 +102,7 @@ export default function SceneSettingsHud({ scene, onUpdate, onClose }: SceneSett
                     : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
-                {v === 0 ? 'Off' : `${v}`}
+                {v === 0 ? 'Apagada' : `${v}`}
               </button>
             ))}
           </div>
@@ -110,7 +110,7 @@ export default function SceneSettingsHud({ scene, onUpdate, onClose }: SceneSett
 
         {/* Grid Snap */}
         <div className="flex items-center justify-between">
-          <label className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">Grid Snap</label>
+          <label className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">Ajuste a cuadrícula</label>
           <button
             onClick={() => {
               const next = !gridSnap;
@@ -130,7 +130,7 @@ export default function SceneSettingsHud({ scene, onUpdate, onClose }: SceneSett
         </div>
 
         {saving && (
-          <p className="text-[9px] text-[var(--text-secondary)] text-center">Saving...</p>
+          <p className="text-[9px] text-[var(--text-secondary)] text-center">Guardando...</p>
         )}
       </div>
     </HudPanel>

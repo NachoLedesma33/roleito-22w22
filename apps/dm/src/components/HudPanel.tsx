@@ -277,7 +277,7 @@ export default function HudPanel({
           <button
             onClick={handleMinimize}
             className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs leading-none px-1"
-            title="Minimize"
+            title="Minimizar"
           >
             –
           </button>

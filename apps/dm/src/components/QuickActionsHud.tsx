@@ -9,7 +9,7 @@ interface QuickActionsHudProps {
 export default function QuickActionsHud({ campaignId, onClose }: QuickActionsHudProps) {
   return (
     <HudPanel
-      title="Quick Actions"
+      title="Acciones rápidas"
       panelId="quick-actions"
       onClose={onClose}
       defaultX={20}
@@ -21,31 +21,31 @@ export default function QuickActionsHud({ campaignId, onClose }: QuickActionsHud
           to={`/campaigns/${campaignId}/characters/new`}
           className="block text-xs px-2 py-1.5 rounded hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
         >
-          + New Character
+          + Nuevo personaje
         </Link>
         <Link
           to={`/campaigns/${campaignId}/sessions/new`}
           className="block text-xs px-2 py-1.5 rounded hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
         >
-          + New Session
+          + Nueva sesión
         </Link>
         <Link
           to={`/campaigns/${campaignId}/scenes`}
           className="block text-xs px-2 py-1.5 rounded hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
         >
-          Manage Scenes
+          Gestionar escenas
         </Link>
         <Link
           to={`/campaigns/${campaignId}/events`}
           className="block text-xs px-2 py-1.5 rounded hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
         >
-          View Events
+          Ver eventos
         </Link>
         <Link
           to={`/campaigns/${campaignId}/manage`}
           className="block text-xs px-2 py-1.5 rounded hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
         >
-          Campaign Overview
+          Vista general de campaña
         </Link>
       </div>
     </HudPanel>

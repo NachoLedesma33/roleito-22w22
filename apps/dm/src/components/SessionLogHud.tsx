@@ -35,7 +35,7 @@ export default function SessionLogHud({ sessionId, sessionTitle, onClose }: Sess
 
   return (
     <HudPanel
-      title={`Session Log${sessionTitle ? ` — ${sessionTitle}` : ''}`}
+      title={`Bitácora de sesión${sessionTitle ? ` — ${sessionTitle}` : ''}`}
       panelId="session-log"
       onClose={onClose}
       defaultX={window.innerWidth - 340}
@@ -44,13 +44,13 @@ export default function SessionLogHud({ sessionId, sessionTitle, onClose }: Sess
     >
       {!sessionId && (
         <p className="text-[10px] text-[var(--text-secondary)] mb-2 italic">
-          No active session
+          Sin sesión activa
         </p>
       )}
       <div ref={scrollRef} className="space-y-2 max-h-60 overflow-y-auto mb-2">
         {entries.length === 0 && (
           <p className="text-[10px] text-[var(--text-secondary)] italic">
-            No entries yet. Add a note below.
+            Sin entradas todavía. Agregá una nota abajo.
           </p>
         )}
         {entries.map((entry) => (
@@ -66,7 +66,7 @@ export default function SessionLogHud({ sessionId, sessionTitle, onClose }: Sess
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-          placeholder="Add note..."
+          placeholder="Agregar nota..."
           className="flex-1 text-xs px-2 py-1 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent)]"
         />
         <button

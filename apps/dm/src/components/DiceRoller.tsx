@@ -94,7 +94,7 @@ export default function DiceRoller({
   onRollCreated,
 }: DiceRollerProps) {
   const [diceType, setDiceType] = useState(6);
-  const [count, setCount] = useState(1);
+  const [count, setCantidad] = useState(1);
   const [entityKey, setEntityKey] = useState(fixedEntityKey ?? '');
   const [skill, setSkill] = useState('');
   const [lastRoll, setLastRoll] = useState<DiceRoll | null>(null);
@@ -218,7 +218,7 @@ export default function DiceRoller({
 
   return (
     <HudPanel
-      title="Dice Roller"
+      title="Tirada de dados"
       panelId="dice-roller"
       onClose={onClose}
       defaultX={80}
@@ -227,7 +227,7 @@ export default function DiceRoller({
     >
       <div className="space-y-3">
         <div>
-          <p className="text-[10px] text-[var(--text-secondary)] mb-1 uppercase tracking-wide">Die Type</p>
+          <p className="text-[10px] text-[var(--text-secondary)] mb-1 uppercase tracking-wide">Tipo de dado</p>
           <div className="flex gap-1">
             {DICE_TYPES.map((d) => (
               <button
@@ -246,17 +246,17 @@ export default function DiceRoller({
         </div>
 
         <div>
-          <p className="text-[10px] text-[var(--text-secondary)] mb-1 uppercase tracking-wide">Count</p>
+          <p className="text-[10px] text-[var(--text-secondary)] mb-1 uppercase tracking-wide">Cantidad</p>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setCount((c) => Math.max(1, c - 1))}
+              onClick={() => setCantidad((c) => Math.max(1, c - 1))}
               className="w-8 h-8 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-sm font-bold transition-colors"
             >
               −
             </button>
             <span className="flex-1 text-center text-lg font-bold font-mono">{count}</span>
             <button
-              onClick={() => setCount((c) => Math.min(10, c + 1))}
+              onClick={() => setCantidad((c) => Math.min(10, c + 1))}
               className="w-8 h-8 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-sm font-bold transition-colors"
             >
               +
@@ -266,9 +266,9 @@ export default function DiceRoller({
 
         {!fixedEntityKey && (
           <div>
-            <p className="text-[10px] text-[var(--text-secondary)] mb-1 uppercase tracking-wide">Roller Para</p>
+            <p className="text-[10px] text-[var(--text-secondary)] mb-1 uppercase tracking-wide">Tirada para</p>
             <select
-              aria-label="Roller Para"
+              aria-label="Tirada para"
               value={entityKey}
               onChange={(e) => setEntityKey(e.target.value)}
               className="w-full bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-xs rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
@@ -282,7 +282,7 @@ export default function DiceRoller({
                 </optgroup>
               )}
               {npcs.length > 0 && (
-                <optgroup label="NPCs">
+                <optgroup label="PNJs">
                   {npcs.map((n) => (
                     <option key={n.id} value={`npc:${n.id}`}>{n.name}</option>
                   ))}
@@ -327,7 +327,7 @@ export default function DiceRoller({
               : 'bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] active:scale-[0.98]'
           }`}
         >
-          {rolling ? 'Rolling...' : `Roll ${count}d${diceType}`}
+          {rolling ? 'Tirando...' : `Tirar ${count}d${diceType}`}
         </button>
 
         {lastRoll && (
@@ -336,7 +336,7 @@ export default function DiceRoller({
               <p className="text-xs font-semibold text-[var(--accent)] truncate mb-1">{lastRoll.label}</p>
             )}
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">Result</span>
+              <span className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">Resultado</span>
               <span className="text-[10px] text-[var(--text-secondary)]">{lastRoll.count}d{lastRoll.diceType}</span>
             </div>
             <div className="flex items-center gap-1 flex-wrap mb-2">
@@ -360,14 +360,14 @@ export default function DiceRoller({
 
         {isDmMode && (
           <div>
-            <p className="text-[10px] text-[var(--text-secondary)] mb-1 uppercase tracking-wide">History for</p>
+            <p className="text-[10px] text-[var(--text-secondary)] mb-1 uppercase tracking-wide">Historial para</p>
             <select
-              aria-label="History entity"
+              aria-label="Entidad del historial"
               value={historyEntityKey}
               onChange={(e) => setHistoryEntityKey(e.target.value)}
               className="w-full bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-xs rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
             >
-              <option value="all">All rolls</option>
+              <option value="all">Todas las tiradas</option>
               {characters.length > 0 && (
                 <optgroup label="Personajes">
                   {characters.map((c) => (
@@ -376,7 +376,7 @@ export default function DiceRoller({
                 </optgroup>
               )}
               {npcs.length > 0 && (
-                <optgroup label="NPCs">
+                <optgroup label="PNJs">
                   {npcs.map((n) => (
                     <option key={n.id} value={`npc:${n.id}`}>{n.name}</option>
                   ))}
@@ -388,7 +388,7 @@ export default function DiceRoller({
 
         {history.length > 0 && (
           <div>
-            <p className="text-[10px] text-[var(--text-secondary)] mb-1 uppercase tracking-wide">History (max 20)</p>
+            <p className="text-[10px] text-[var(--text-secondary)] mb-1 uppercase tracking-wide">Historial (máx 20)</p>
             <div className="space-y-0.5 max-h-40 overflow-y-auto">
               {history.map((r) => (
                 <div

@@ -148,7 +148,7 @@ export default function RecapPanel({ campaignId, onClose }: RecapPanelProps) {
 
   const handleExport = useCallback(() => {
     const text = aiRecap
-      ? `# AI Recap — Session ${sessions.find((s) => s.id === selectedSessionId)?.number || '?'}\n\n${aiRecap.recap}\n\n## Highlights\n${aiRecap.highlights.map((h) => `- ${h}`).join('\n')}\n\n## Cliffhanger\n${aiRecap.cliffhanger}\n\n## Next Session\n${aiRecap.next_session_hook}`
+      ? `# Resumen IA — Sesión ${sessions.find((s) => s.id === selectedSessionId)?.number || '?'}\n\n${aiRecap.recap}\n\n## Destacados\n${aiRecap.highlights.map((h) => `- ${h}`).join('\n')}\n\n## Gancho final\n${aiRecap.cliffhanger}\n\n## Próxima sesión\n${aiRecap.next_session_hook}`
       : recap;
     const blob = new Blob([text], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
@@ -164,26 +164,26 @@ export default function RecapPanel({ campaignId, onClose }: RecapPanelProps) {
 
   if (loading) {
     return (
-      <HudPanel title="Session Recap" panelId="recap" onClose={onClose} defaultX={200} defaultY={120} defaultWidth={400}>
-        <p className="text-xs text-[var(--text-secondary)]">Loading...</p>
+      <HudPanel title="Resumen de sesión" panelId="recap" onClose={onClose} defaultX={200} defaultY={120} defaultWidth={400}>
+        <p className="text-xs text-[var(--text-secondary)]">Cargando...</p>
       </HudPanel>
     );
   }
 
   return (
-    <HudPanel title="Session Recap" panelId="recap" onClose={onClose} defaultX={200} defaultY={120} defaultWidth={440}>
+    <HudPanel title="Resumen de sesión" panelId="recap" onClose={onClose} defaultX={200} defaultY={120} defaultWidth={440}>
       <div className="space-y-3">
         <div>
-          <p className="text-[10px] text-[var(--text-secondary)] mb-1 uppercase tracking-wide">Session</p>
+          <p className="text-[10px] text-[var(--text-secondary)] mb-1 uppercase tracking-wide">Sesión</p>
           <select
             value={selectedSessionId}
             onChange={(e) => { setSelectedSessionId(e.target.value); setAiRecap(null); setAiError(''); }}
             className="w-full text-xs bg-[var(--bg-tertiary)] text-[var(--text-primary)] rounded px-2 py-1.5 border border-[var(--bg-tertiary)] focus:border-[var(--accent)] focus:outline-none"
           >
-            {sessions.length === 0 && <option value="">No sessions</option>}
+            {sessions.length === 0 && <option value="">Sin sesiones</option>}
             {sessions.map((s) => (
               <option key={s.id} value={s.id}>
-                #{s.number} — {s.title || 'Untitled'} ({s.date})
+                #{s.number} — {s.title || 'Sin título'} ({s.date})
               </option>
             ))}
           </select>
@@ -198,9 +198,9 @@ export default function RecapPanel({ campaignId, onClose }: RecapPanelProps) {
                 ? 'bg-blue-900/50 text-blue-400'
                 : 'bg-[var(--bg-tertiary)]'
             }`}>
-              {selectedSession.status}
+              {selectedSession.status === 'ACTIVE' ? 'Activa' : selectedSession.status === 'COMPLETED' ? 'Completada' : selectedSession.status === 'DRAFT' ? 'Borrador' : selectedSession.status}
             </span>
-            <span>{events.length} events</span>
+            <span>{events.length} eventos</span>
           </div>
         )}
 
@@ -210,7 +210,7 @@ export default function RecapPanel({ campaignId, onClose }: RecapPanelProps) {
             disabled={aiLoading || !selectedSessionId}
             className="flex-1 text-xs px-2 py-1.5 rounded bg-violet-800/60 text-violet-300 hover:bg-violet-800 transition-colors disabled:opacity-50"
           >
-            {aiLoading ? 'Generando...' : 'AI Recap'}
+            {aiLoading ? 'Generando...' : 'Resumen IA'}
           </button>
           {editing ? (
             <>
@@ -218,13 +218,13 @@ export default function RecapPanel({ campaignId, onClose }: RecapPanelProps) {
                 onClick={handleSave}
                 className="flex-1 text-xs px-2 py-1.5 rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors font-medium"
               >
-                Save
+                Guardar
               </button>
               <button
                 onClick={() => setEditing(false)}
                 className="text-xs px-2 py-1.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
               >
-                Cancel
+                Cancelar
               </button>
             </>
           ) : (
@@ -233,13 +233,13 @@ export default function RecapPanel({ campaignId, onClose }: RecapPanelProps) {
                 onClick={() => { setDraft(recap); setEditing(true); }}
                 className="text-xs px-2 py-1.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
               >
-                Edit
+                Editar
               </button>
               <button
                 onClick={handleExport}
                 className="text-xs px-2 py-1.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
               >
-                Export
+                Exportar
               </button>
             </>
           )}
@@ -252,14 +252,14 @@ export default function RecapPanel({ campaignId, onClose }: RecapPanelProps) {
         {aiRecap && (
           <div className="space-y-2">
             <div className="bg-violet-950/30 border border-violet-800/30 rounded-lg p-3">
-              <p className="text-[10px] text-violet-400 uppercase tracking-wide mb-2">AI Recap</p>
+              <p className="text-[10px] text-violet-400 uppercase tracking-wide mb-2">Resumen IA</p>
               <div className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
                 {aiRecap.recap}
               </div>
             </div>
             {aiRecap.highlights.length > 0 && (
               <div className="text-[10px] text-[var(--text-secondary)]">
-                <p className="uppercase tracking-wide mb-1 text-violet-400">Highlights</p>
+                <p className="uppercase tracking-wide mb-1 text-violet-400">Destacados</p>
                 <ul className="space-y-0.5">
                   {aiRecap.highlights.map((h, i) => (
                     <li key={i} className="flex gap-1">
@@ -272,13 +272,13 @@ export default function RecapPanel({ campaignId, onClose }: RecapPanelProps) {
             )}
             {aiRecap.cliffhanger && (
               <div className="text-[10px] bg-amber-950/20 border border-amber-800/30 rounded p-2">
-                <span className="text-amber-400 uppercase tracking-wide">Cliffhanger: </span>
+                <span className="text-amber-400 uppercase tracking-wide">Gancho final: </span>
                 <span className="text-[var(--text-secondary)]">{aiRecap.cliffhanger}</span>
               </div>
             )}
             {aiRecap.next_session_hook && (
               <div className="text-[10px] text-[var(--text-secondary)] italic">
-                Next: {aiRecap.next_session_hook}
+                Siguiente: {aiRecap.next_session_hook}
               </div>
             )}
           </div>
@@ -295,7 +295,7 @@ export default function RecapPanel({ campaignId, onClose }: RecapPanelProps) {
               />
             ) : (
               <div className="max-h-64 overflow-y-auto text-xs text-[var(--text-secondary)] whitespace-pre-wrap font-mono leading-relaxed">
-                {recap || 'No recap available. Click "Edit" or "AI Recap" to generate one.'}
+                {recap || 'No hay resumen disponible. Hacé clic en "Editar" o "Resumen IA" para generar uno.'}
               </div>
             )}
           </div>
@@ -304,7 +304,7 @@ export default function RecapPanel({ campaignId, onClose }: RecapPanelProps) {
         {events.length > 0 && (
           <div>
             <p className="text-[10px] text-[var(--text-secondary)] mb-1 uppercase tracking-wide">
-              Event Breakdown
+              Desglose de eventos
             </p>
             <div className="space-y-0.5">
               {Object.entries(groupEvents(events)).map(([type, evts]) => (
