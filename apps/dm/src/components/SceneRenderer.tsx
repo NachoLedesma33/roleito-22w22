@@ -1,5 +1,5 @@
 import { Suspense, useMemo, useRef, useCallback, useEffect, useState } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
+import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, useTexture, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import TokenSprite from './TokenSprite';
@@ -107,12 +107,70 @@ type DragStarter = (
 
 function SceneBackground({ url, mapScale = 1, modelYOffset = 0 }: { url: string; mapScale?: number; modelYOffset?: number }) {
   const isModel = /\.(glb|gltf)$/i.test(url);
+  const isVideo = /\.(mp4|webm|mov|ogg)$/i.test(url);
 
   if (isModel) {
     return <SceneBackgroundModel url={url} mapScale={mapScale} modelYOffset={modelYOffset} />;
   }
+  if (isVideo) {
+    return <SceneBackgroundVideo url={url} mapScale={mapScale} />;
+  }
 
   return <SceneBackgroundImage url={url} mapScale={mapScale} />;
+}
+
+// Mapa animado: video reproducido en bucle como textura de fondo (VideoTexture).
+// Igual plano/posición que las imágenes; el aspect sale de videoWidth/Height.
+function SceneBackgroundVideo({ url, mapScale = 1 }: { url: string; mapScale?: number }) {
+  const textureRef = useRef<THREE.VideoTexture | null>(null);
+  const [texture, setTexture] = useState<THREE.VideoTexture | null>(null);
+  const [aspect, setAspect] = useState<number | null>(null);
+
+  useEffect(() => {
+    const video = document.createElement('video');
+    video.muted = true;
+    video.loop = true;
+    video.playsInline = true;
+    video.autoplay = true;
+    video.src = url;
+    const tex = new THREE.VideoTexture(video);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    textureRef.current = tex;
+    const onMeta = () => {
+      if (video.videoWidth && video.videoHeight) {
+        setAspect(video.videoWidth / video.videoHeight);
+        setTexture(tex);
+      }
+    };
+    video.addEventListener('loadedmetadata', onMeta);
+    video.play().catch(() => {});
+    return () => {
+      video.removeEventListener('loadedmetadata', onMeta);
+      video.pause();
+      video.src = '';
+      textureRef.current = null;
+      tex.dispose();
+    };
+  }, [url]);
+
+  useFrame(() => {
+    const tex = textureRef.current;
+    if (tex) tex.needsUpdate = true;
+  });
+
+  if (!texture || !aspect) return null;
+  const height = 10 * mapScale;
+  const width = height * aspect;
+  return (
+    <mesh
+      name="scene-background"
+      rotation={[-Math.PI / 2, 0, 0]}
+      position={[0, -0.01, 0]}
+    >
+      <planeGeometry args={[width, height]} />
+      <meshStandardMaterial map={texture} />
+    </mesh>
+  );
 }
 
 function SceneBackgroundImage({ url, mapScale = 1 }: { url: string; mapScale?: number }) {
@@ -740,6 +798,16 @@ export default function SceneRenderer({
     if (!backgroundUrl) return;
     if (/\.(glb|gltf)$/i.test(backgroundUrl)) {
       setImageAspect(1);
+      return;
+    }
+    if (/\.(mp4|webm|mov|ogg)$/i.test(backgroundUrl)) {
+      const video = document.createElement('video');
+      video.muted = true;
+      video.preload = 'metadata';
+      video.onloadedmetadata = () => {
+        if (video.videoWidth && video.videoHeight) setImageAspect(video.videoWidth / video.videoHeight);
+      };
+      video.src = backgroundUrl;
       return;
     }
     const img = new Image();

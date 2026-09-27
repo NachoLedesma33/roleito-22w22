@@ -138,7 +138,11 @@ export default function MapList() {
               {m.file_path ? (
                 <div className="h-40 bg-[var(--bg-tertiary)] flex items-center justify-center overflow-hidden">
                   {staticUrl(m.file_path) ? (
-                    <img src={staticUrl(m.file_path)!} alt={m.name} className="w-full h-full object-cover" />
+                    /\.(mp4|webm|mov|ogg)$/i.test(m.file_path) ? (
+                      <video src={staticUrl(m.file_path)!} muted loop playsInline autoPlay className="w-full h-full object-cover" />
+                    ) : (
+                      <img src={staticUrl(m.file_path)!} alt={m.name} className="w-full h-full object-cover" />
+                    )
                   ) : (
                     <span className="text-[var(--text-secondary)] text-sm">Map image</span>
                   )}
