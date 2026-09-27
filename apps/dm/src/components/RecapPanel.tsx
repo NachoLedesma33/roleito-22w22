@@ -32,7 +32,7 @@ const EVENT_LABELS: Record<string, string> = {
   ACTION: 'Actions',
   DECISION: 'Decisions',
   NPC_ACTION: 'NPC Actions',
-  WORLD_CHANGE: 'World Changes',
+  WORLD_CHANGE: 'Cambios en el mundo',
   other: 'Other',
 };
 

@@ -63,7 +63,7 @@ export default function DMNotebookHud({ campaignId, onClose }: DMNotebookHudProp
     : notebooks.filter((n) => n.category === filterCat);
 
   const handleCreate = useCallback(async () => {
-    const nb = await api.notebooks.create(campaignId, { title: 'New Note', category: 'notes' });
+    const nb = await api.notebooks.create(campaignId, { title: 'Nueva nota', category: 'notes' });
     setNotebooks((prev) => [nb, ...prev]);
     setSelectedId(nb.id);
     setEditing(true);
@@ -290,7 +290,7 @@ export default function DMNotebookHud({ campaignId, onClose }: DMNotebookHudProp
                       onClick={() => handleRestore(selected!.id, v.id)}
                       className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--accent)] text-white opacity-0 group-hover:opacity-100 transition-opacity"
                     >
-                      Restore
+                      Restaurar
                     </button>
                   </div>
                 ))}
@@ -302,7 +302,7 @@ export default function DMNotebookHud({ campaignId, onClose }: DMNotebookHudProp
           <div className="space-y-0.5 max-h-64 overflow-y-auto">
             {filtered.length === 0 ? (
               <p className="text-xs text-[var(--text-secondary)] text-center py-4">
-                No notes yet. Click "+ Nueva nota" to start.
+                Sin notas todavía. Hacé clic en "+ Nueva nota" para empezar.
               </p>
             ) : (
               filtered.map((n) => (

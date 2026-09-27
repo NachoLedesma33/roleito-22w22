@@ -38,7 +38,7 @@ export default function PlayerList() {
       setNewCharId('');
       setShowForm(false);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to create');
+      setError(e instanceof Error ? e.message : 'No se pudo crear');
     } finally {
       setSaving(false);
     }

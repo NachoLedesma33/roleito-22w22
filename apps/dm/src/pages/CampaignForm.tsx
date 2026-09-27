@@ -48,12 +48,12 @@ export default function CampaignForm() {
     }
   };
 
-  if (loading) return <p className="text-[var(--text-secondary)]">Loading...</p>;
+  if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
 
   return (
     <div className="max-w-lg">
       <h1 className="text-2xl font-bold mb-6">
-        {isEdit ? 'Edit Campaign' : 'New Campaign'}
+        {isEdit ? 'Editar campaña' : 'Nueva campaña'}
       </h1>
 
       {error && (

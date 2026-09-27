@@ -49,9 +49,9 @@ export default function NPCDetail() {
     e.target.value = '';
   };
 
-  if (loading) return <p className="text-[var(--text-secondary)]">Loading...</p>;
+  if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
   if (error) return <p className="text-red-400">Error: {error}</p>;
-  if (!npc) return <p className="text-[var(--text-secondary)]">NPC not found</p>;
+  if (!npc) return <p className="text-[var(--text-secondary)]">PNJ no encontrado</p>;
 
   const pUrl = portraitUrl(npc.portrait_path);
 

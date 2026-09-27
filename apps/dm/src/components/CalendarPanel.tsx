@@ -34,7 +34,7 @@ export default function CalendarPanel({ campaignId, onClose }: CalendarPanelProp
       setState(await api.calendar.get(campaignId));
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load calendar');
+      setError(e instanceof Error ? e.message : 'No se pudo cargar el calendario');
     }
   }, [campaignId]);
 

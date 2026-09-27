@@ -430,12 +430,12 @@ export default function DmDashboard() {
     handleItemsChange(graphRef.getItems())
     setToastQueue((prev) => [...prev.slice(-4), {
       id: `clear-${Date.now()}`,
-      rollerName: 'Clear',
+      rollerName: 'Limpiar',
       diceType: 20,
       count: 1,
       results: [toRemove.length],
       total: toRemove.length,
-      label: `walls + doors removed`,
+      label: `paredes y puertas eliminadas`,
       timestamp: Date.now(),
     }])
   }, [graphRef, handleItemsChange])
@@ -448,12 +448,12 @@ export default function DmDashboard() {
     if (toRemove.length === 0) {
       setToastQueue((prev) => [...prev.slice(-4), {
         id: `clearz-${Date.now()}`,
-        rollerName: 'Clear',
+        rollerName: 'Limpiar',
         diceType: 20,
         count: 1,
         results: [0],
         total: 0,
-        label: `no zones to remove`,
+        label: `no hay zonas para eliminar`,
         timestamp: Date.now(),
       }])
       return
@@ -464,12 +464,12 @@ export default function DmDashboard() {
     handleItemsChange(graphRef.getItems())
     setToastQueue((prev) => [...prev.slice(-4), {
       id: `clearz-${Date.now()}`,
-      rollerName: 'Clear',
+      rollerName: 'Limpiar',
       diceType: 20,
       count: 1,
       results: [toRemove.length],
       total: toRemove.length,
-      label: `zones removed`,
+      label: `zonas eliminadas`,
       timestamp: Date.now(),
     }])
   }, [graphRef, handleItemsChange])
@@ -568,12 +568,12 @@ export default function DmDashboard() {
     handleItemsChange(graphRef.getItems())
     setToastQueue((prev) => [...prev.slice(-4), {
       id: `clearf-${Date.now()}`,
-      rollerName: 'Clear',
+      rollerName: 'Limpiar',
       diceType: 20,
       count: 1,
       results: [toRemove.length],
       total: toRemove.length,
-      label: toRemove.length === 0 ? `no fog to remove` : `fog regions removed`,
+      label: toRemove.length === 0 ? `no hay niebla para eliminar` : `regiones de niebla eliminadas`,
       timestamp: Date.now(),
     }])
   }, [graphRef, handleItemsChange])
@@ -586,12 +586,12 @@ export default function DmDashboard() {
     if (toRemove.length === 0) {
       setToastQueue((prev) => [...prev.slice(-4), {
         id: `clearl-${Date.now()}`,
-        rollerName: 'Clear',
+        rollerName: 'Limpiar',
         diceType: 20,
         count: 1,
         results: [0],
         total: 0,
-        label: `no lights to remove`,
+        label: `no hay luces para eliminar`,
         timestamp: Date.now(),
       }])
       return
@@ -655,7 +655,7 @@ export default function DmDashboard() {
     setSelectedTokenId(null)
     setToastQueue((prev) => [...prev.slice(-4), {
       id: `attach-${Date.now()}`,
-      rollerName: 'Light',
+      rollerName: 'Luz',
       diceType: 1,
       count: 1,
       results: [1],
@@ -674,7 +674,7 @@ export default function DmDashboard() {
     setAttachLightMode(null)
     setToastQueue((prev) => [...prev.slice(-4), {
       id: `detach-${Date.now()}`,
-      rollerName: 'Light',
+      rollerName: 'Luz',
       diceType: 1,
       count: 1,
       results: [1],
@@ -701,7 +701,7 @@ export default function DmDashboard() {
     setLightRequests((prev) => prev.filter((r) => r.id !== request.id))
     setToastQueue((prev) => [...prev.slice(-4), {
       id: `grant-${Date.now()}`,
-      rollerName: 'Light',
+      rollerName: 'Luz',
       diceType: 1,
       count: 1,
       results: [1],
@@ -719,7 +719,7 @@ export default function DmDashboard() {
     setLightRequests((prev) => prev.filter((r) => r.id !== request.id))
     setToastQueue((prev) => [...prev.slice(-4), {
       id: `deny-${Date.now()}`,
-      rollerName: 'Light',
+      rollerName: 'Luz',
       diceType: 1,
       count: 1,
       results: [1],
@@ -789,18 +789,18 @@ export default function DmDashboard() {
         handleItemsChange(graphRef.getItems())
         setToastQueue((prev) => [...prev.slice(-4), {
           id: `detect-${Date.now()}`,
-          rollerName: 'Auto-Detect',
+          rollerName: 'Detección',
           diceType: 20,
           count: 1,
           results: [result.wall_count],
           total: result.wall_count,
-          label: `walls + ${result.door_count} doors detected`,
+          label: `paredes + ${result.door_count} puertas detectadas`,
           timestamp: Date.now(),
         }])
       } else {
         setToastQueue((prev) => [...prev.slice(-4), {
           id: `detect-${Date.now()}`,
-          rollerName: 'Auto-Detect',
+          rollerName: 'Detección',
           diceType: 1,
           count: 1,
           results: [1],
@@ -812,7 +812,7 @@ export default function DmDashboard() {
     } catch (err) {
       setToastQueue((prev) => [...prev.slice(-4), {
         id: `detect-err-${Date.now()}`,
-        rollerName: 'Auto-Detect',
+        rollerName: 'Detección',
         diceType: 1,
         count: 1,
         results: [1],
@@ -1137,7 +1137,7 @@ export default function DmDashboard() {
     } catch {
       setToastQueue((prev) => [...prev.slice(-4), {
         id: `lighting-err-${Date.now()}`,
-        rollerName: 'System',
+        rollerName: 'Sistema',
         diceType: 1, count: 1, results: [1], total: 1,
         label: 'No se pudo actualizar la iluminación',
         timestamp: Date.now(),
@@ -1155,7 +1155,7 @@ export default function DmDashboard() {
     setSelectedItemId(lightId)
     setToastQueue((prev) => [...prev.slice(-4), {
       id: `attach-ctx-${Date.now()}`,
-      rollerName: 'Light',
+      rollerName: 'Luz',
       diceType: 1, count: 1, results: [1], total: 1,
       label: 'luz agregada — editá en la barra de herramientas',
       timestamp: Date.now(),
@@ -1171,7 +1171,7 @@ export default function DmDashboard() {
     setContextMenu(null)
     setToastQueue((prev) => [...prev.slice(-4), {
       id: `detach-ctx-${Date.now()}`,
-      rollerName: 'Light',
+      rollerName: 'Luz',
       diceType: 1, count: 1, results: [1], total: 1,
       label: 'luz quitada del token',
       timestamp: Date.now(),
@@ -1193,7 +1193,7 @@ export default function DmDashboard() {
     setSelectedItemId(attached.id)
     setToastQueue((prev) => [...prev.slice(-4), {
       id: `create-attach-${Date.now()}`,
-      rollerName: 'Light',
+      rollerName: 'Luz',
       diceType: 1, count: 1, results: [1], total: 1,
       label: 'luz creada — editá en la barra de herramientas',
       timestamp: Date.now(),
@@ -1280,7 +1280,7 @@ export default function DmDashboard() {
     if (checkWallCollision(normX, normZ, walls, 0.03)) {
       setToastQueue((prev) => [...prev.slice(-4), {
         id: `wall-block-${Date.now()}`,
-        rollerName: 'Wall',
+        rollerName: 'Pared',
         diceType: 1,
         count: 1,
         results: [1],
@@ -1462,7 +1462,7 @@ export default function DmDashboard() {
     for (const lt of attachedLights) {
       const src = (lt.metadata as { source?: { mode?: string; angle?: number } }).source
       const modeLabel = src?.mode === 'directional' ? ` (cone ${src.angle ?? 90}°)` : ` (${src?.mode ?? 'hard'})`
-      lightItems.push({ label: `Edit "${lt.name || 'light'}"${modeLabel}`, icon: '⚙', onClick: () => setSelectedItemId(lt.id) })
+      lightItems.push({ label: `Editar "${lt.name || 'luz'}"${modeLabel}`, icon: '⚙', onClick: () => setSelectedItemId(lt.id) })
       lightItems.push({ label: `Desprender "${lt.name || 'luz'}"`, icon: '🔥', onClick: () => handleTokenLightDetach(lt.id) })
     }
     for (const lt of freeLights) {
@@ -1648,7 +1648,7 @@ export default function DmDashboard() {
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center bg-black text-[var(--text-secondary)]">
-        Loading campaign...
+        Cargando campaña...
       </div>
     );
   }
@@ -1656,7 +1656,7 @@ export default function DmDashboard() {
   if (!campaign) {
     return (
       <div className="h-screen flex items-center justify-center bg-black text-red-400">
-        Campaign not found
+        Campaña no encontrada
       </div>
     );
   }
@@ -1688,7 +1688,7 @@ export default function DmDashboard() {
               {scenes.length === 0 && <option value="">Sin escenas</option>}
               {scenes.map((s, i) => (
                 <option key={s.id} value={s.id}>
-                  {s.name || `Scene ${i + 1}`} {s.status === 'active' ? '(active)' : ''}
+                  {s.name || `Escena ${i + 1}`} {s.status === 'active' ? '(activa)' : ''}
                 </option>
               ))}
             </select>
@@ -1704,18 +1704,18 @@ export default function DmDashboard() {
                   setScenes((prev) => prev.map((s) => s.id === updated.id ? updated : { ...s, status: 'inactive' }));
                   setToastQueue((prev) => [...prev.slice(-4), {
                     id: `sync-${Date.now()}`,
-                    rollerName: 'Sync',
+                    rollerName: 'Sincronización',
                     diceType: 20,
                     count: 1,
                     results: [1],
                     total: 1,
-                    label: `Scene "${updated.name}" synced to players`,
+                    label: `Escena "${updated.name}" sincronizada con los jugadores`,
                     timestamp: Date.now(),
                   }]);
                 } catch {
                   setToastQueue((prev) => [...prev.slice(-4), {
                     id: `sync-err-${Date.now()}`,
-                    rollerName: 'Sync',
+                    rollerName: 'Sincronización',
                     diceType: 20,
                     count: 1,
                     results: [0],
@@ -1732,7 +1732,7 @@ export default function DmDashboard() {
               }`}
               title="Sincronizar esta escena con todos los jugadores"
             >
-              {activeScene?.status === 'active' ? '✓ Synced' : '⟳ Sync'}
+              {activeScene?.status === 'active' ? '✓ Sincronizada' : '⟳ Sincronizar'}
             </button>
             <div className="w-px h-5 bg-[var(--bg-tertiary)] shrink-0" />
             <div className="flex items-center gap-1 shrink-0">
@@ -1758,7 +1758,7 @@ export default function DmDashboard() {
                 onClick={() => setBuildMenuOpen(!buildMenuOpen)}
                 className={`text-xs px-2 py-1 rounded transition-colors ${drawState || zoneDraft || portalDraft || fogMode || rectFogMode || zoneFogActive || lightPlaceMode || attachLightMode ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
               >
-                🧱 Build ▾
+                🧱 Construir ▾
               </button>
               {buildMenuOpen && (
                 <div className="absolute left-0 top-full mt-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg z-50 min-w-[180px]">
@@ -1766,55 +1766,55 @@ export default function DmDashboard() {
                     onClick={() => startDrawMode('wall')}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawState?.mode === 'wall' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
                   >
-                    🧱 Draw Wall
+                    🧱 Dibujar pared
                   </button>
                   <button
                     onClick={() => startDrawMode('door')}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawState?.mode === 'door' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
                   >
-                    🚪 Place Door
+                    🚪 Colocar puerta
                   </button>
                   <button
                     onClick={() => startZoneMode('rect')}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${zoneDraft?.mode === 'rect' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
                   >
-                    ▭ Zone (rect)
+                    ▭ Zona (rect)
                   </button>
                   <button
                     onClick={() => startZoneMode('polygon')}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${zoneDraft?.mode === 'polygon' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
                   >
-                    ⬠ Zone (polygon)
+                    ⬠ Zona (polígono)
                   </button>
                   <button
                     onClick={startPortalMode}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${portalDraft ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
                   >
-                    🚪 Portal (zone↔zone)
+                    🚪 Portal (zona↔zona)
                   </button>
                   <button
                     onClick={startFogMode}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${fogMode ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
                   >
-                    🌫️ Fog (paint)
+                    🌫️ Niebla (pincel)
                   </button>
                   <button
                     onClick={startRectFogMode}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${rectFogMode ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
                   >
-                    ▭ Fog (rect)
+                    ▭ Niebla (rect)
                   </button>
                   <button
                     onClick={startZoneFogMode}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${zoneFogActive ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
                   >
-                    🧩 Zone fog (toggle)
+                    🧩 Niebla de zona (alternar)
                   </button>
                   <button
                     onClick={startLightPlaceMode}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${lightPlaceMode ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
                   >
-                    💡 Light (place)
+                    💡 Luz (colocar)
                   </button>
                   <div className="border-t border-[var(--bg-tertiary)] my-1" />
                   <div className="px-3 py-1">
@@ -1836,19 +1836,19 @@ export default function DmDashboard() {
                       onClick={() => setDetectionMode('blueprint')}
                       className={`flex-1 text-[10px] px-2 py-1 rounded transition-colors ${detectionMode === 'blueprint' ? 'bg-blue-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'}`}
                     >
-                      Blueprint
+                      Plano
                     </button>
                     <button
                       onClick={() => setDetectionMode('textured')}
                       className={`flex-1 text-[10px] px-2 py-1 rounded transition-colors ${detectionMode === 'textured' ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'}`}
                     >
-                      Textured
+                      Texturizado
                     </button>
                     <button
                       onClick={() => setUseAi((v) => !v)}
                       className={`flex-1 text-[10px] px-2 py-1 rounded transition-colors ${useAi ? 'bg-purple-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'}`}
                     >
-                      AI
+                      IA
                     </button>
                   </div>
                   <button
@@ -1856,31 +1856,31 @@ export default function DmDashboard() {
                     disabled={detectingWalls}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${detectingWalls ? 'text-amber-400 animate-pulse' : 'text-[var(--text-secondary)]'}`}
                   >
-                    {detectingWalls ? '⏳ Detecting...' : '🔍 Auto-detect walls'}
+                    {detectingWalls ? '⏳ Detectando...' : '🔍 Detectar paredes'}
                   </button>
                   <button
                     onClick={handleClearAllWalls}
                     className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-red-400"
                   >
-                    🗑️ Clear all walls
+                    🗑️ Limpiar todas las paredes
                   </button>
                   <button
                     onClick={handleClearAllZones}
                     className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-red-400"
                   >
-                    🗑️ Clear all zones
+                    🗑️ Limpiar todas las zonas
                   </button>
                   <button
                     onClick={handleClearAllFog}
                     className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-red-400"
                   >
-                    🗑️ Clear all fog
+                    🗑️ Limpiar toda la niebla
                   </button>
                   <button
                     onClick={handleClearAllLights}
                     className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-red-400"
                   >
-                    🗑️ Clear all lights
+                    🗑️ Limpiar todas las luces
                   </button>
                   <div className="border-t border-[var(--bg-tertiary)] my-1" />
                   <div className="px-3 py-1">
@@ -1919,21 +1919,21 @@ export default function DmDashboard() {
       >
         {drawState && (
           <span className="text-[10px] text-amber-400 shrink-0">
-            {drawState.mode === 'wall' ? '🧱 Click-drag to draw wall' : '🚪 Click-drag to place door'} · ESC to cancel
+            {drawState.mode === 'wall' ? '🧱 Arrastrá para dibujar pared' : '🚪 Arrastrá para colocar puerta'} · ESC cancela
           </span>
         )}
             {zoneDraft && (
               <span className="text-[10px] text-amber-400 shrink-0">
                 {zoneDraft.mode === 'rect'
-                  ? '▭ Click-drag to draw zone rect'
-                  : '⬠ Click to place vertices · click 1st point to close'} · ESC to cancel
+                  ? '▭ Arrastrá para dibujar rect de zona'
+                  : '⬠ Clic para colocar vértices · clic en el 1er punto para cerrar'} · ESC cancela
               </span>
             )}
             {portalDraft && (
               <span className="text-[10px] text-amber-400 shrink-0">
                 {portalDraft.zoneAId
-                  ? '🚪 Click edge of another zone to complete the portal'
-                  : '🚪 Click edge of zone A'} · ESC to cancel
+                  ? '🚪 Clic en el borde de otra zona para completar el portal'
+                  : '🚪 Clic en el borde de la zona A'} · ESC cancela
               </span>
             )}
             {fogMode && (
@@ -1943,13 +1943,13 @@ export default function DmDashboard() {
                     onClick={() => setFogMode((prev) => prev ? { ...prev, reveal: true } : prev)}
                     className={`text-[10px] px-2 py-0.5 rounded transition-colors ${fogMode.reveal ? 'bg-green-600 text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
                   >
-                    Reveal
+                    Revelar
                   </button>
                   <button
                     onClick={() => setFogMode((prev) => prev ? { ...prev, reveal: false } : prev)}
                     className={`text-[10px] px-2 py-0.5 rounded transition-colors ${!fogMode.reveal ? 'bg-red-600 text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
                   >
-                    Hide
+                    Ocultar
                   </button>
                   <input
                     type="range"
@@ -1966,7 +1966,7 @@ export default function DmDashboard() {
                   </span>
                 </div>
                 <span className="text-[10px] text-amber-400 shrink-0">
-                  🌫️ Click-drag to paint fog · ESC to cancel
+                  🌫️ Arrastrá para pintar niebla · ESC cancela
                 </span>
               </>
             )}
@@ -1977,23 +1977,23 @@ export default function DmDashboard() {
                     onClick={() => setRectFogMode((prev) => prev ? { ...prev, reveal: true } : prev)}
                     className={`text-[10px] px-2 py-0.5 rounded transition-colors ${rectFogMode.reveal ? 'bg-green-600 text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
                   >
-                    Reveal
+                    Revelar
                   </button>
                   <button
                     onClick={() => setRectFogMode((prev) => prev ? { ...prev, reveal: false } : prev)}
                     className={`text-[10px] px-2 py-0.5 rounded transition-colors ${!rectFogMode.reveal ? 'bg-red-600 text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
                   >
-                    Hide
+                    Ocultar
                   </button>
                 </div>
                 <span className="text-[10px] text-amber-400 shrink-0">
-                  ▭ Click-drag to draw fog rect · ESC to cancel
+                  ▭ Arrastrá para dibujar rect de niebla · ESC cancela
                 </span>
               </>
             )}
             {zoneFogActive && (
               <span className="text-[10px] text-amber-400 shrink-0">
-                🧩 Click inside a zone to toggle fog · ESC to cancel
+                🧩 Clic dentro de una zona para alternar niebla · ESC cancela
               </span>
             )}
             {lightPlaceMode && (
@@ -2010,15 +2010,15 @@ export default function DmDashboard() {
                   ))}
                 </div>
                 <span className="text-[10px] text-amber-400 shrink-0">
-                  💡 Click to place light · ESC to cancel
+                  💡 Clic para colocar luz · ESC cancela
                 </span>
               </>
             )}
             {attachLightMode && (
               <span className="text-[10px] text-amber-400 shrink-0">
                 {attachLightMode.lightId
-                  ? '🔗 Now click a token to attach this light · ESC to cancel'
-                  : '🔗 Click a light source, then a token · ESC to cancel'}
+                  ? '🔗 Ahora hacé clic en un token para adjuntar esta luz · ESC cancela'
+                  : '🔗 Hacé clic en una fuente de luz y luego en un token · ESC cancela'}
               </span>
             )}
             {attachLightMode?.lightId && (() => {
@@ -2030,7 +2030,7 @@ export default function DmDashboard() {
                     onClick={() => handleLightDetach(attachLightMode.lightId!)}
                     className="text-[10px] px-2 py-0.5 rounded bg-red-600 text-white hover:bg-red-700 transition-colors"
                   >
-                    Detach
+                    Desvincular
                   </button>
                 </div>
               )
@@ -2226,7 +2226,7 @@ export default function DmDashboard() {
           className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0"
           title="Subir fondo de mapa"
         >
-          Upload BG
+          Subir fondo
         </button>
         <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={handleUploadBg} />
 
@@ -2236,7 +2236,7 @@ export default function DmDashboard() {
           className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0 disabled:opacity-40"
           title="Sugerir fondo para el mapa actual"
         >
-          Background
+          Sugerir fondo
         </button>
 
         <div className="relative group shrink-0">
@@ -2263,7 +2263,7 @@ export default function DmDashboard() {
           className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showSceneSettings ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
           title="Ajustes de escena"
         >
-          ⚙ Scene
+          ⚙ Escena
         </button>
 
         <button
@@ -2363,7 +2363,7 @@ export default function DmDashboard() {
               onClick={() => setShowMapMenu((v) => !v)}
               className={`text-[10px] px-1.5 py-1 rounded transition-colors ${showMapMenu ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)]' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
             >
-              Map ▾
+              Mapa ▾
             </button>
             {showMapMenu && (
               <div className="absolute right-0 top-full mt-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg z-50 min-w-[140px]">
@@ -2378,7 +2378,7 @@ export default function DmDashboard() {
                   }}
                   className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-red-400"
                 >
-                  Unlink map
+                  Desvincular mapa
                 </button>
               )}
               {maps.map((m) => (
@@ -2450,7 +2450,7 @@ export default function DmDashboard() {
                   className="flex items-center gap-2 px-3 py-2 rounded text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/50 transition-colors"
                 >
                   <span className="text-xs opacity-60">◆</span>
-                  Overview
+                  Resumen
                 </Link>
                 <Link
                   to={`/campaigns/${campaignId}/characters`}
@@ -2458,7 +2458,7 @@ export default function DmDashboard() {
                   className="flex items-center gap-2 px-3 py-2 rounded text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/50 transition-colors"
                 >
                   <span className="text-xs opacity-60">♦</span>
-                  Characters
+                  Personajes
                 </Link>
                 <Link
                   to={`/campaigns/${campaignId}/sessions`}
@@ -2466,7 +2466,7 @@ export default function DmDashboard() {
                   className="flex items-center gap-2 px-3 py-2 rounded text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/50 transition-colors"
                 >
                   <span className="text-xs opacity-60">♠</span>
-                  Sessions
+                  Sesiones
                 </Link>
                 <Link
                   to={`/campaigns/${campaignId}/scenes`}
@@ -2474,7 +2474,7 @@ export default function DmDashboard() {
                   className="flex items-center gap-2 px-3 py-2 rounded text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/50 transition-colors"
                 >
                   <span className="text-xs opacity-60">▣</span>
-                  Scenes
+                  Escenas
                 </Link>
                 <Link
                   to={`/campaigns/${campaignId}/events`}
@@ -2482,7 +2482,7 @@ export default function DmDashboard() {
                   className="flex items-center gap-2 px-3 py-2 rounded text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/50 transition-colors"
                 >
                   <span className="text-xs opacity-60">•</span>
-                  Events
+                  Eventos
                 </Link>
                 <Link
                   to={`/campaigns/${campaignId}/players`}
@@ -2490,7 +2490,7 @@ export default function DmDashboard() {
                   className="flex items-center gap-2 px-3 py-2 rounded text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/50 transition-colors"
                 >
                   <span className="text-xs opacity-60">○</span>
-                  Players
+                  Jugadores
                 </Link>
                 <Link
                   to={`/campaigns/${campaignId}/maps`}
@@ -2498,7 +2498,7 @@ export default function DmDashboard() {
                   className="flex items-center gap-2 px-3 py-2 rounded text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/50 transition-colors"
                 >
                   <span className="text-xs opacity-60">◇</span>
-                  Images
+                  Imágenes
                 </Link>
                 <Link
                   to={`/campaigns/${campaignId}/assets`}
@@ -2506,7 +2506,7 @@ export default function DmDashboard() {
                   className="flex items-center gap-2 px-3 py-2 rounded text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/50 transition-colors"
                 >
                   <span className="text-xs opacity-60">□</span>
-                  Assets
+                  Recursos
                 </Link>
               </nav>
               <div className="px-4 py-3 border-t border-[var(--bg-tertiary)]">
@@ -2524,7 +2524,7 @@ export default function DmDashboard() {
           {activeScene?.background_path ? (
             <Suspense fallback={
               <div className="w-full h-full flex items-center justify-center text-[var(--text-secondary)]">
-                Loading 3D scene...
+                Cargando escena 3D...
               </div>
             }>
               <SceneRenderer
@@ -2535,7 +2535,7 @@ export default function DmDashboard() {
                   return {
                     id: sc.id,
                     sceneCharId: sc.id,
-                    name: ent?.name || 'Unknown',
+                    name: ent?.name || 'Desconocido',
                     type: sc.entity_type,
                     x: interpolated ? interpolated.x : sc.x,
                     y: sc.y,
@@ -2708,7 +2708,7 @@ export default function DmDashboard() {
               <>
                 <p className="text-[10px] text-[var(--text-secondary)] mb-1 px-1">Disponibles</p>
                 {placingToken && (
-                  <p className="text-[9px] text-amber-400 mb-1 px-1">Click the map to place (Esc cancels)</p>
+                  <p className="text-[9px] text-amber-400 mb-1 px-1">Hacé clic en el mapa para colocar (Esc cancela)</p>
                 )}
                 <div className="space-y-0.5 max-h-32 overflow-y-auto">
                   {allEntities

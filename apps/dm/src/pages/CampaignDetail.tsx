@@ -51,7 +51,7 @@ export default function CampaignDetail() {
     URL.revokeObjectURL(url);
   };
 
-  if (loading) return <p className="text-[var(--text-secondary)]">Loading...</p>;
+  if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
   if (error) return <p className="text-red-400">Error: {error}</p>;
   if (!campaign) return <p className="text-[var(--text-secondary)]">Campaña no encontrada</p>;
 
@@ -73,25 +73,25 @@ export default function CampaignDetail() {
             to={`/campaigns/${campaign.id}`}
             className="text-sm px-3 py-1 rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
           >
-            Open VTT
+            Abrir VTT
           </Link>
           <Link
             to={`/campaigns/${campaign.id}/edit`}
             className="text-sm px-3 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
           >
-            Edit
+            Editar
           </Link>
           <button
             onClick={handleExport}
             className="text-sm px-3 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
           >
-            Export
+            Exportar
           </button>
           <button
             onClick={handleDelete}
             className="text-sm px-3 py-1 rounded bg-[var(--bg-tertiary)] text-red-400 hover:text-red-300 transition-colors"
           >
-            Delete
+            Eliminar
           </button>
         </div>
       </div>

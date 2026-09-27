@@ -106,7 +106,7 @@ export default function AgentPanel() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">AI Agents</h1>
+      <h1 className="text-2xl font-bold mb-6">Agentes de IA</h1>
 
       <div className="flex gap-2 mb-6">
         {(['session', 'lore', 'narrate'] as const).map((tab) => (
@@ -119,7 +119,7 @@ export default function AgentPanel() {
                 : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
-            {tab === 'session' ? 'Session Processor' : tab === 'lore' ? 'Lore Agent' : 'Narrator'}
+            {tab === 'session' ? 'Procesador de sesión' : tab === 'lore' ? 'Agente de Lore' : 'Narrador'}
           </button>
         ))}
       </div>
@@ -143,7 +143,7 @@ export default function AgentPanel() {
             disabled={loading || !sessionId.trim()}
             className="self-start px-4 py-2 rounded bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent-hover)] disabled:opacity-50"
           >
-            {loading ? 'Processing...' : 'Process Session'}
+            {loading ? 'Procesando...' : 'Procesar sesión'}
           </button>
         </div>
       )}
@@ -165,7 +165,7 @@ export default function AgentPanel() {
             disabled={loading || !question.trim()}
             className="self-start px-4 py-2 rounded bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent-hover)] disabled:opacity-50"
           >
-            {loading ? 'Querying...' : 'Ask Lore Agent'}
+            {loading ? 'Consultando...' : 'Consultar al Agente de Lore'}
           </button>
         </div>
       )}
@@ -207,7 +207,7 @@ export default function AgentPanel() {
             disabled={loading}
             className="self-start px-4 py-2 rounded bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent-hover)] disabled:opacity-50"
           >
-            {loading ? 'Generating...' : 'Generate Narration'}
+            {loading ? 'Generando...' : 'Generar narración'}
           </button>
         </div>
       )}

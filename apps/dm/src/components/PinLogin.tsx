@@ -89,7 +89,7 @@ export default function PinLogin() {
         <div className="bg-gray-900 border border-gray-700/60 rounded-xl p-8 w-full max-w-sm space-y-5">
           <div className="text-center">
             <h1 className="text-xl font-bold text-gray-100">Roleito</h1>
-            <p className="text-xs text-gray-500 mt-1">DM Authentication</p>
+            <p className="text-xs text-gray-500 mt-1">Autenticación del DM</p>
           </div>
 
           <div className="space-y-3">

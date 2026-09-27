@@ -226,7 +226,7 @@ export default function MapViewer({ map, onClose, scenes, currentSceneId, onTran
               onClick={() => setPlacing(false)}
               className="text-[10px] px-2 py-1 rounded bg-red-900/50 text-red-300"
             >
-              Cancel
+              Cancelar
             </button>
           </div>
         ) : (
@@ -234,7 +234,7 @@ export default function MapViewer({ map, onClose, scenes, currentSceneId, onTran
             onClick={() => setPlacing(true)}
             className="text-[10px] px-2 py-1 rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)]"
           >
-            + Add Marker
+            + Agregar marcador
           </button>
         )}
       </div>
@@ -267,7 +267,7 @@ export default function MapViewer({ map, onClose, scenes, currentSceneId, onTran
             />
           ) : (
             <div className="w-96 h-96 bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-secondary)]">
-              No image uploaded
+              Sin imagen subida
             </div>
           )}
 
@@ -336,13 +336,13 @@ export default function MapViewer({ map, onClose, scenes, currentSceneId, onTran
                             onClick={() => setEditingMarker(null)}
                             className="flex-1 text-[10px] py-0.5 rounded bg-[var(--accent)] text-white"
                           >
-                            Done
+                            Listo
                           </button>
                           <button
                             onClick={() => handleDeleteMarker(m.id)}
                             className="text-[10px] px-2 py-0.5 rounded bg-red-900/50 text-red-300"
                           >
-                            Del
+                            Quitar
                           </button>
                         </div>
                       </div>
@@ -351,7 +351,7 @@ export default function MapViewer({ map, onClose, scenes, currentSceneId, onTran
                         <p className="text-xs font-bold">{m.label}</p>
                         {m.marker_type === 'transition' && m.target_scene_id && (
                           <p className="text-[10px] text-[var(--text-secondary)]">
-                            → {scenes?.find((s) => s.id === m.target_scene_id)?.name ?? 'unknown scene'}
+                            → {scenes?.find((s) => s.id === m.target_scene_id)?.name ?? 'escena desconocida'}
                           </p>
                         )}
                         <div className="flex gap-1 mt-1">
@@ -360,20 +360,20 @@ export default function MapViewer({ map, onClose, scenes, currentSceneId, onTran
                               onClick={() => onTransit(m.target_scene_id!)}
                               className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)]"
                             >
-                              Travel
+                              Viajar
                             </button>
                           )}
                           <button
                             onClick={() => setEditingMarker(m.id)}
                             className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)]"
                           >
-                            Edit
+                            Editar
                           </button>
                           <button
                             onClick={() => handleDeleteMarker(m.id)}
                             className="text-[10px] px-1.5 py-0.5 rounded bg-red-900/50 text-red-300"
                           >
-                            Delete
+                            Eliminar
                           </button>
                         </div>
                       </div>
@@ -388,7 +388,7 @@ export default function MapViewer({ map, onClose, scenes, currentSceneId, onTran
         {/* Placing hint */}
         {placing && !transitionForm && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-[var(--accent)]/90 text-white text-xs px-3 py-1.5 rounded-full">
-            {newType === 'transition' ? 'Click on map to place the transition' : 'Click on map to place marker'}
+            {newType === 'transition' ? 'Hacé clic en el mapa para colocar la transición' : 'Hacé clic en el mapa para colocar el marcador'}
           </div>
         )}
 
@@ -399,14 +399,14 @@ export default function MapViewer({ map, onClose, scenes, currentSceneId, onTran
               className="bg-[var(--bg-primary)] border border-[var(--bg-tertiary)] rounded-lg p-4 w-72 space-y-3 shadow-xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <p className="text-sm font-bold">Transition to…</p>
+              <p className="text-sm font-bold">Transición a…</p>
               <select
                 value={transTargetId}
                 onChange={(e) => setTransTargetId(e.target.value)}
                 className="w-full text-xs px-2 py-1.5 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
                 autoFocus
               >
-                <option value="">Select scene…</option>
+                <option value="">Seleccionar escena…</option>
                 {destScenes.map((s) => (
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
@@ -418,7 +418,7 @@ export default function MapViewer({ map, onClose, scenes, currentSceneId, onTran
                   onChange={(e) => setTransReturn(e.target.checked)}
                   className="accent-[var(--accent)]"
                 />
-                Create return door on destination
+                Crear puerta de retorno en el destino
               </label>
               <div className="flex gap-2">
                 <button
@@ -426,13 +426,13 @@ export default function MapViewer({ map, onClose, scenes, currentSceneId, onTran
                   disabled={!transTargetId}
                   className="flex-1 text-xs py-1.5 rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  Create
+                  Crear
                 </button>
                 <button
                   onClick={() => setTransitionForm(null)}
                   className="text-xs px-3 py-1.5 rounded bg-red-900/50 text-red-300"
                 >
-                  Cancel
+                  Cancelar
                 </button>
               </div>
             </div>

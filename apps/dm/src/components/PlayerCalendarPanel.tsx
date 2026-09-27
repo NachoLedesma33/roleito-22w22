@@ -15,7 +15,7 @@ export default function PlayerCalendarPanel({ campaignId, onClose }: PlayerCalen
     try {
       setState(await api.calendar.get(campaignId));
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load calendar');
+      setError(e instanceof Error ? e.message : 'No se pudo cargar el calendario');
     }
   }, [campaignId]);
 

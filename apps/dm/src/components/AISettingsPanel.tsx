@@ -141,7 +141,7 @@ export default function AISettingsPanel({ onClose }: AISettingsPanelProps) {
       <div className="space-y-3" data-testid="ai-settings-panel">
         <div>
           <label className="block text-[10px] uppercase tracking-wide text-[var(--text-secondary)] mb-1">
-            Provider
+            Proveedor
           </label>
           <select
             value={settings.provider}
@@ -160,7 +160,7 @@ export default function AISettingsPanel({ onClose }: AISettingsPanelProps) {
         {settings.provider === 'local' && (
           <div data-testid="ai-local-url">
             <label className="block text-[10px] uppercase tracking-wide text-[var(--text-secondary)] mb-1">
-              Ollama URL
+              URL de Ollama
             </label>
             <input
               type="text"
@@ -175,7 +175,7 @@ export default function AISettingsPanel({ onClose }: AISettingsPanelProps) {
         {settings.provider === 'remote' && (
           <div data-testid="ai-remote-url">
             <label className="block text-[10px] uppercase tracking-wide text-[var(--text-secondary)] mb-1">
-              API base URL (OpenAI-compatible)
+              URL base de la API (compatible OpenAI)
             </label>
             <input
               type="text"
@@ -188,7 +188,7 @@ export default function AISettingsPanel({ onClose }: AISettingsPanelProps) {
             <div className="mt-2 p-2 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)]">
               <div className="flex items-center gap-2 mb-1.5">
                 <span className="text-[10px] uppercase tracking-wide text-[var(--text-secondary)]">
-                  API Key
+                  Clave de API
                 </span>
                 <span
                   className={`text-[10px] px-1.5 py-0.5 rounded ${

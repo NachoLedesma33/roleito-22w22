@@ -74,11 +74,11 @@ export function VidaDerived({ max_pv, max_pm, defense }: VidaDerivedProps) {
     <div className="grid grid-cols-3 gap-2 text-center">
       <div className="border border-[var(--bg-tertiary)] rounded p-2">
         <p className="text-sm font-bold text-red-400">{max_pv}</p>
-        <p className="text-xs text-[var(--text-secondary)]">PV Max</p>
+        <p className="text-xs text-[var(--text-secondary)]">PV máx.</p>
       </div>
       <div className="border border-[var(--bg-tertiary)] rounded p-2">
         <p className="text-sm font-bold text-blue-400">{max_pm}</p>
-        <p className="text-xs text-[var(--text-secondary)]">PM Max</p>
+        <p className="text-xs text-[var(--text-secondary)]">PM máx.</p>
       </div>
       <div className="border border-[var(--bg-tertiary)] rounded p-2">
         <p className="text-sm font-bold text-green-400">{defense}</p>

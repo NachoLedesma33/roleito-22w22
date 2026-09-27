@@ -74,7 +74,7 @@ export default function SessionList() {
                     onClick={() => handleDelete(s.id)}
                     className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-red-400 hover:text-red-300"
                   >
-                    Delete
+                    Eliminar
                   </button>
                 </div>
               </div>

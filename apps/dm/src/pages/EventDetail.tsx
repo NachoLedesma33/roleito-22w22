@@ -43,7 +43,7 @@ export default function EventDetail() {
     navigate(-1);
   };
 
-  if (loading) return <p className="text-[var(--text-secondary)]">Loading...</p>;
+  if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
   if (error) return <p className="text-red-400">Error: {error}</p>;
   if (!event) return <p className="text-[var(--text-secondary)]">Evento no encontrado</p>;
 

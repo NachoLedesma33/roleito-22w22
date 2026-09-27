@@ -29,7 +29,7 @@ export default function SessionDetail() {
       const updated = await api.sessions.start(campaignId, sessionId);
       setSession(updated);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to start session');
+      setError(e instanceof Error ? e.message : 'No se pudo iniciar la sesión');
     }
   };
 
@@ -39,13 +39,13 @@ export default function SessionDetail() {
       const updated = await api.sessions.end(campaignId, sessionId);
       setSession(updated);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to end session');
+      setError(e instanceof Error ? e.message : 'No se pudo cerrar la sesión');
     }
   };
 
-  if (loading) return <p className="text-[var(--text-secondary)]">Loading...</p>;
+  if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
   if (error) return <p className="text-red-400">Error: {error}</p>;
-  if (!session) return <p className="text-[var(--text-secondary)]">Session not found</p>;
+  if (!session) return <p className="text-[var(--text-secondary)]">Sesión no encontrada</p>;
 
   return (
     <div className="max-w-2xl">

@@ -232,7 +232,7 @@ export default function PlayerView() {
 
   const fetchSnapshot = useCallback(async (): Promise<JoinData> => {
     const res = await fetch(`${API_BASE}/campaigns/invite/${code}`);
-    if (!res.ok) throw new Error('Invalid invite code');
+    if (!res.ok) throw new Error('Código de invitación inválido');
     return res.json();
   }, [code]);
 
@@ -295,7 +295,7 @@ export default function PlayerView() {
         }
       })
       .catch((err) => {
-        setError(err.message || 'Failed to join campaign');
+        setError(err.message || 'No se pudo unir a la campaña');
         setLoading(false);
       });
   }, [code, fetchSnapshot, fetchMyChar]);
@@ -1024,7 +1024,7 @@ export default function PlayerView() {
   if (error || missingCode || !data) {
     return (
       <div className="h-screen flex items-center justify-center bg-black text-red-400">
-        {error || (missingCode ? 'No invite code provided' : 'Failed to join')}
+        {error || (missingCode ? 'Sin código de invitación' : 'No se pudo unir')}
       </div>
     );
   }
@@ -1129,7 +1129,7 @@ export default function PlayerView() {
             className={`w-2 h-2 rounded-full ${live ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`}
           />
           <span className={live ? 'text-emerald-400' : 'text-amber-400'}>
-            {live ? 'Live' : 'Reconnecting'}
+            {live ? 'En vivo' : 'Reconectando...'}
           </span>
         </span>
       </TopBar>
@@ -1157,7 +1157,7 @@ export default function PlayerView() {
           <Suspense
             fallback={
               <div className="w-full h-full flex items-center justify-center text-gray-400">
-                Loading scene...
+                Cargando escena...
               </div>
             }
           >
@@ -1366,11 +1366,11 @@ export default function PlayerView() {
                     <div className="grid grid-cols-3 gap-1 text-center">
                       <div className="bg-[var(--bg-tertiary)]/50 rounded py-1">
                         <p className="font-bold text-red-400">{myChar.max_pv}</p>
-                        <p className="text-[9px] text-[var(--text-secondary)]">PV Max</p>
+                        <p className="text-[9px] text-[var(--text-secondary)]">PV máx.</p>
                       </div>
                       <div className="bg-[var(--bg-tertiary)]/50 rounded py-1">
                         <p className="font-bold text-blue-400">{myChar.max_pm}</p>
-                        <p className="text-[9px] text-[var(--text-secondary)]">PM Max</p>
+                        <p className="text-[9px] text-[var(--text-secondary)]">PM máx.</p>
                       </div>
                       <div className="bg-[var(--bg-tertiary)]/50 rounded py-1">
                         <p className="font-bold text-green-400">{myChar.defense}</p>

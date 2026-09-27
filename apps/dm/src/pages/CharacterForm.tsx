@@ -123,7 +123,7 @@ export default function CharacterForm() {
     }
   };
 
-  if (loading) return <p className="text-[var(--text-secondary)]">Loading...</p>;
+  if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
 
   return (
     <div className="max-w-lg">
@@ -237,7 +237,7 @@ export default function CharacterForm() {
             >
               {modelPreviewUrl ? (
                 <div className="w-full h-full">
-                  <Suspense fallback={<div className="w-full h-full flex items-center justify-center text-[10px] text-[var(--text-secondary)]">Loading...</div>}>
+                  <Suspense fallback={<div className="w-full h-full flex items-center justify-center text-[10px] text-[var(--text-secondary)]">Cargando...</div>}>
                     <Canvas camera={{ position: [0, 1, 2.5], fov: 40 }}>
                       <ambientLight intensity={1.2} />
                       <directionalLight position={[2, 3, 1]} intensity={1.5} />

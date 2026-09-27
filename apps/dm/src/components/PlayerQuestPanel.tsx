@@ -24,7 +24,7 @@ export default function PlayerQuestPanel({ campaignId, onClose }: PlayerQuestPan
         all.filter((q) => q.visible_to_players && q.status !== 'draft')
       );
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load quests');
+      setError(e instanceof Error ? e.message : 'No se pudieron cargar las misiones');
     }
   }, [campaignId]);
 

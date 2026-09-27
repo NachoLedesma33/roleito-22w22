@@ -25,7 +25,7 @@ export default function QuestPanel({ campaignId, onClose }: QuestPanelProps) {
     try {
       setQuests(await api.quests.list(campaignId));
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load quests');
+      setError(e instanceof Error ? e.message : 'No se pudieron cargar las misiones');
     }
   }, [campaignId]);
 
