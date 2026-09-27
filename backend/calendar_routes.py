@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -46,7 +47,13 @@ async def _ensure_calendar(db: AsyncSession, campaign_id: str) -> CampaignCalend
     cal = result.scalar_one_or_none()
     if cal:
         return cal
-    cal = CampaignCalendar(campaign_id=campaign_id)
+    now = datetime.now()
+    cal = CampaignCalendar(
+        campaign_id=campaign_id,
+        year=now.year,
+        month=now.month,
+        day=now.day,
+    )
     db.add(cal)
     await db.commit()
     await db.refresh(cal)

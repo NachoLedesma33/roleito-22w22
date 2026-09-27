@@ -7,8 +7,17 @@ import {
   updateScene,
 } from '../helpers/api-helpers';
 
+const MONTHS = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+];
+
+function fmtDate(d: Date): string {
+  return `${d.getDate()} de ${MONTHS[d.getMonth()]} de ${d.getFullYear()}`;
+}
+
 test.describe('Calendar & Progress Clocks', () => {
-  test('C1: DM avanza el calendario y el jugador ve la nueva fecha', async ({
+  test('C1: DM avanza el calendario (arranca en la fecha real) y el jugador ve la fecha', async ({
     page,
     campaign,
     request,
@@ -25,12 +34,16 @@ test.describe('Calendar & Progress Clocks', () => {
     await page.goto(`/campaigns/${campaign.id}`);
     await expect(page.getByText('On Scene (1)')).toBeVisible({ timeout: 10_000 });
     await page.getByTitle('Calendar & Clocks').click();
-    await expect(page.getByText('1 de Enero de 1')).toBeVisible();
+    await expect(page.getByText(fmtDate(new Date()))).toBeVisible();
 
     await page.getByTitle('Avanzar un día').click();
-    await expect(page.getByText('2 de Enero de 1')).toBeVisible();
+    await expect(
+      page.getByText(fmtDate(new Date(Date.now() + 24 * 3600 * 1000)))
+    ).toBeVisible();
     await page.getByTitle('Avanzar una semana').click();
-    await expect(page.getByText('9 de Enero de 1')).toBeVisible();
+    await expect(
+      page.getByText(fmtDate(new Date(Date.now() + 8 * 24 * 3600 * 1000)))
+    ).toBeVisible();
 
     // El jugador ve la misma fecha.
     const ctx = await browser.newContext();
@@ -39,7 +52,9 @@ test.describe('Calendar & Progress Clocks', () => {
     await p.getByRole('button', { name: /Aria/ }).click();
     await expect(p.getByTestId('player-role')).toContainText('Aria', { timeout: 10_000 });
     await p.getByTitle('Calendario').click();
-    await expect(p.getByText('9 de Enero de 1')).toBeVisible();
+    await expect(
+      p.getByText(fmtDate(new Date(Date.now() + 8 * 24 * 3600 * 1000)))
+    ).toBeVisible();
     await ctx.close();
   });
 

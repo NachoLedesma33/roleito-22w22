@@ -1,5 +1,6 @@
 import asyncio
 import math
+from datetime import datetime, timedelta
 
 import pytest
 from httpx import AsyncClient, ASGITransport
@@ -612,24 +613,33 @@ async def test_quests_crud(client):
 async def test_calendar_advance_and_clocks(client):
     camp = (await client.post("/api/campaigns", json={"name": "Cal Camp"})).json()
     cid = camp["id"]
+    now = datetime.now()
+    date_now = now.date()
 
-    # GET crea el calendario con valores por defecto.
+    # GET crea el calendario con la fecha REAL actual.
     st = (await client.get(f"/api/campaigns/{cid}/calendar")).json()
-    assert st["year"] == 1 and st["month"] == 1 and st["day"] == 1
+    assert st["year"] == date_now.year and st["month"] == date_now.month and st["day"] == date_now.day
     assert len(st["month_names"]) == 12
     assert st["clocks"] == []
 
-    # + 31 días → día 1 del mes 2 (enero tiene 31 días).
+    # +31 días.
     st = (await client.put(f"/api/campaigns/{cid}/calendar", json={"add_days": 31})).json()
-    assert st["month"] == 2 and st["day"] == 1
+    exp = (date_now + timedelta(days=31))
+    assert st["year"] == exp.year and st["month"] == exp.month and st["day"] == exp.day
 
-    # 360 días más → 391 días totales → año 2, día 27 de enero.
+    # +360 días más.
     st = (await client.put(f"/api/campaigns/{cid}/calendar", json={"add_days": 360})).json()
-    assert st["year"] == 2 and st["month"] == 1 and st["day"] == 27
+    exp = (date_now + timedelta(days=31 + 360))
+    assert st["year"] == exp.year and st["month"] == exp.month and st["day"] == exp.day
 
-    # Retroceder 1 → 26 de enero del año 2.
+    # Retroceder 1.
     st = (await client.put(f"/api/campaigns/{cid}/calendar", json={"add_days": -1})).json()
-    assert st["year"] == 2 and st["month"] == 1 and st["day"] == 26
+    exp = (date_now + timedelta(days=31 + 360 - 1))
+    assert st["year"] == exp.year and st["month"] == exp.month and st["day"] == exp.day
+
+    # Un mismo calendario persiste (no se resetea a "hoy").
+    st = (await client.get(f"/api/campaigns/{cid}/calendar")).json()
+    assert st["day"] == exp.day and st["month"] == exp.month
 
     # Clocks CRUD.
     res = await client.post(
