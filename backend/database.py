@@ -1,6 +1,7 @@
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from models import Base
+from datetime import datetime
 from pathlib import Path
 import logging
 
@@ -62,6 +63,12 @@ DATA_MIGRATIONS = [
     # Rotaciones legacy almacenadas en grados (|r| > π) → radianes. Toda la
     # convención runtime es en radianes; idempotente (tras convertir |r| ≤ π).
     "UPDATE scene_characters SET rotation = rotation * pi() / 180 WHERE ABS(rotation) > pi()",
+    # Calendarios legacy: filas creadas antes del fix de init quedaron con
+    # year=1 (default del modelo, nunca inicializado con fecha real).
+    # Re-sincronizar a la fecha real; no toca filas avanzadas manualmente
+    # (year >= 2) ni filas nuevas (year = año real).
+    f"UPDATE campaign_calendars SET year = {datetime.now().year}, month = {datetime.now().month}, day = {datetime.now().day} "
+    "WHERE year = 1",
 ]
 
 
