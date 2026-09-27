@@ -30,7 +30,7 @@ export default function TTSPanel() {
       const data = await res.json();
       setConfig(data);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to load config');
+      setError(e instanceof Error ? e.message : 'No se pudo cargar la configuración');
     }
   };
 
@@ -40,7 +40,7 @@ export default function TTSPanel() {
       const data = await res.json();
       setVoices(data);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to load voices');
+      setError(e instanceof Error ? e.message : 'No se pudieron cargar las voces');
     }
   };
 
@@ -59,7 +59,7 @@ export default function TTSPanel() {
 
       if (!res.ok) {
         const body = await res.json();
-        throw new Error(body.detail || 'TTS generation failed');
+        throw new Error(body.detail || 'No se pudo generar el audio');
       }
 
       const durationMs = res.headers.get('X-TTS-Duration-Ms');
@@ -74,7 +74,7 @@ export default function TTSPanel() {
         audioRef.current.play();
       }
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed');
+      setError(e instanceof Error ? e.message : 'No se pudo');
     } finally {
       setLoading(false);
     }
@@ -89,7 +89,7 @@ export default function TTSPanel() {
         body: JSON.stringify(config),
       });
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to save config');
+      setError(e instanceof Error ? e.message : 'No se pudo guardar la configuración');
     }
   };
 
@@ -123,12 +123,12 @@ export default function TTSPanel() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">TTS — Text to Speech</h1>
+      <h1 className="text-2xl font-bold mb-6">TTS — Texto a voz</h1>
 
       <div className="grid gap-4 mb-6">
         <div>
           <label className="block text-sm text-[var(--text-secondary)] mb-1">
-            Narration Text
+            Texto de narración
           </label>
           <textarea
             value={text}
@@ -145,12 +145,12 @@ export default function TTSPanel() {
             disabled={loading || !text.trim()}
             className="self-start px-4 py-2 rounded bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent-hover)] disabled:opacity-50"
           >
-            {loading ? 'Generating...' : 'Generate Speech'}
+            {loading ? 'Generando...' : 'Generar audio'}
           </button>
 
           {duration !== null && (
             <span className="text-xs text-[var(--text-secondary)] self-center">
-              Duration: {(duration / 1000).toFixed(1)}s
+              Duración: {(duration / 1000).toFixed(1)}s
             </span>
           )}
         </div>
@@ -213,18 +213,18 @@ export default function TTSPanel() {
           </div>
         </div>
         <p className="text-xs text-[var(--text-secondary)] mt-3">
-          Voces neurales de Microsoft Edge, gratuitas y sin límites. Acento rioplatense argentino. Clic en un ejemplo para cargar el texto y la voz; luego "Generate Speech".
+          Voces neurales de Microsoft Edge, gratuitas y sin límites. Acento rioplatense argentino. Clic en un ejemplo para cargar el texto y la voz; luego "Generar audio".
         </p>
       </div>
 
       <div className="border border-[var(--bg-tertiary)] rounded-lg p-4">
-        <h2 className="text-lg font-semibold mb-4">Configuration</h2>
+        <h2 className="text-lg font-semibold mb-4">Configuración</h2>
 
         {config && (
           <div className="grid gap-4">
             <div>
               <label className="block text-sm text-[var(--text-secondary)] mb-1">
-                Provider
+                Proveedor
               </label>
               <select
                 value={config.provider}
@@ -232,13 +232,13 @@ export default function TTSPanel() {
                 className="w-full bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-3 py-2 text-sm"
               >
                 <option value="edge">Edge TTS (Gratis, Neural)</option>
-                <option value="mock">Mock (Testing)</option>
+                <option value="mock">Mock (Pruebas)</option>
               </select>
             </div>
 
             <div>
               <label className="block text-sm text-[var(--text-secondary)] mb-1">
-                Voice
+                Voz
               </label>
               <select
                 value={config.voice}
@@ -255,7 +255,7 @@ export default function TTSPanel() {
 
             <div>
               <label className="block text-sm text-[var(--text-secondary)] mb-1">
-                Speed: {config.speed.toFixed(1)}x
+                Velocidad: {config.speed.toFixed(1)}x
               </label>
               <input
                 type="range"
@@ -270,7 +270,7 @@ export default function TTSPanel() {
 
             <div>
               <label className="block text-sm text-[var(--text-secondary)] mb-1">
-                Language
+                Idioma
               </label>
               <select
                 value={config.language}
@@ -278,7 +278,7 @@ export default function TTSPanel() {
                 className="w-full bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-3 py-2 text-sm"
               >
                 <option value="es">Español</option>
-                <option value="en">English</option>
+                <option value="en">Inglés</option>
               </select>
             </div>
 
@@ -286,7 +286,7 @@ export default function TTSPanel() {
               onClick={handleConfigSave}
               className="self-start px-4 py-2 rounded bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-sm font-medium hover:bg-[var(--bg-tertiary)]/80"
             >
-              Save Config
+              Guardar configuración
             </button>
           </div>
         )}

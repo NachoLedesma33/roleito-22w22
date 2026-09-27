@@ -53,7 +53,7 @@ export default function CharacterDetail() {
   }, [campaignId, characterId]);
 
   const handleDelete = async () => {
-    if (!campaignId || !characterId || !confirm('Delete this character?')) return;
+    if (!campaignId || !characterId || !confirm('¿Eliminar este personaje?')) return;
     await api.characters.delete(campaignId, characterId);
     navigate(`/campaigns/${campaignId}/characters`);
   };
@@ -65,7 +65,7 @@ export default function CharacterDetail() {
       const updated = await api.characters.uploadPortrait(campaignId, characterId, file);
       setCharacter(updated);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      setError(err instanceof Error ? err.message : 'No se pudo subir');
     }
     e.target.value = '';
   };
@@ -77,7 +77,7 @@ export default function CharacterDetail() {
       const updated = await api.characters.uploadModel(campaignId, characterId, file);
       setCharacter(updated);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      setError(err instanceof Error ? err.message : 'No se pudo subir');
     }
     e.target.value = '';
   };

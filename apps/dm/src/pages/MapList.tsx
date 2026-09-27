@@ -40,7 +40,7 @@ export default function MapList() {
       setShowForm(false);
       setTimeout(() => fileInput.current?.click(), 100);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to create');
+      setError(e instanceof Error ? e.message : 'No se pudo crear');
     } finally {
       setSaving(false);
     }

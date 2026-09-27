@@ -60,7 +60,7 @@ export default function AgentPanel() {
       );
       setResult(data);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed');
+      setError(e instanceof Error ? e.message : 'No se pudo');
     } finally {
       setLoading(false);
     }
@@ -77,7 +77,7 @@ export default function AgentPanel() {
       );
       setResult(data);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed');
+      setError(e instanceof Error ? e.message : 'No se pudo');
     } finally {
       setLoading(false);
     }
@@ -98,7 +98,7 @@ export default function AgentPanel() {
       );
       setResult(data);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed');
+      setError(e instanceof Error ? e.message : 'No se pudo');
     } finally {
       setLoading(false);
     }
@@ -129,7 +129,7 @@ export default function AgentPanel() {
       {activeTab === 'session' && (
         <div className="grid gap-4 mb-6">
           <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-1">Session ID</label>
+            <label className="block text-sm text-[var(--text-secondary)] mb-1">ID de sesión</label>
             <input
               type="text"
               value={sessionId}
@@ -151,7 +151,7 @@ export default function AgentPanel() {
       {activeTab === 'lore' && (
         <div className="grid gap-4 mb-6">
           <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-1">Question</label>
+            <label className="block text-sm text-[var(--text-secondary)] mb-1">Pregunta</label>
             <input
               type="text"
               value={question}
@@ -173,7 +173,7 @@ export default function AgentPanel() {
       {activeTab === 'narrate' && (
         <div className="grid gap-4 mb-6">
           <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-1">Scene Description</label>
+            <label className="block text-sm text-[var(--text-secondary)] mb-1">Descripción de la escena</label>
             <textarea
               value={sceneDesc}
               onChange={(e) => setSceneDesc(e.target.value)}
@@ -183,7 +183,7 @@ export default function AgentPanel() {
             />
           </div>
           <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-1">Current Action</label>
+            <label className="block text-sm text-[var(--text-secondary)] mb-1">Acción actual</label>
             <input
               type="text"
               value={currentAction}
@@ -193,12 +193,12 @@ export default function AgentPanel() {
             />
           </div>
           <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-1">Mood Hint</label>
+            <label className="block text-sm text-[var(--text-secondary)] mb-1">Pista de ambiente</label>
             <input
               type="text"
               value={moodHint}
               onChange={(e) => setMoodHint(e.target.value)}
-              placeholder="tense, mysterious, calm..."
+              placeholder="tenso, misterioso, tranquilo..."
               className="w-full bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-3 py-2 text-sm"
             />
           </div>
@@ -246,13 +246,13 @@ function SessionResult({ data }: { data: SessionProcessResult }) {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-semibold mb-1">Summary</h3>
+        <h3 className="text-sm font-semibold mb-1">Resumen</h3>
         <p className="text-sm text-[var(--text-secondary)]">{data.summary}</p>
       </div>
 
       {data.events.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold mb-1">Events ({data.events.length})</h3>
+          <h3 className="text-sm font-semibold mb-1">Eventos ({data.events.length})</h3>
           <div className="space-y-1">
             {data.events.map((e, i) => (
               <div key={i} className="text-xs flex items-center gap-2">
@@ -272,7 +272,7 @@ function SessionResult({ data }: { data: SessionProcessResult }) {
 
       {data.thread_hooks.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold mb-1">Thread Hooks</h3>
+          <h3 className="text-sm font-semibold mb-1">Ganchos de hilo</h3>
           <ul className="text-xs text-[var(--text-secondary)] space-y-1">
             {data.thread_hooks.map((t, i) => <li key={i}>• {t}</li>)}
           </ul>

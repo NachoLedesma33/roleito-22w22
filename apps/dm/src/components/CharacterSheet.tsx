@@ -113,7 +113,7 @@ export default function CharacterSheet({
   }, [campaignId, entity.id, entityType, onUpdate]);
 
   const addItem = () => {
-    const newItem: InventoryItem = { id: genId(), name: 'New Item', description: '', quantity: 1 };
+    const newItem: InventoryItem = { id: genId(), name: 'Nuevo objeto', description: '', quantity: 1 };
     handleSaveInventory([...inventory, newItem]);
   };
 
@@ -126,7 +126,7 @@ export default function CharacterSheet({
   };
 
   const addSpell = () => {
-    const newSpell: Spell = { id: genId(), name: 'New Spell', description: '', level: 1, cost_pm: 1 };
+    const newSpell: Spell = { id: genId(), name: 'Nuevo conjuro', description: '', level: 1, cost_pm: 1 };
     handleSaveSpells([...spells, newSpell]);
   };
 
@@ -140,7 +140,7 @@ export default function CharacterSheet({
 
   return (
     <HudPanel
-      title={`${entity.name} — Sheet`}
+      title={`${entity.name} — Ficha`}
       panelId={`char-${entity.id}`}
       onClose={onClose}
       defaultX={120}
@@ -155,7 +155,7 @@ export default function CharacterSheet({
           <button
             onClick={() => fileInput.current?.click()}
             className="w-16 h-16 rounded-lg overflow-hidden shrink-0 border-2 border-dashed border-[var(--bg-tertiary)] hover:border-[var(--accent)] transition-colors cursor-pointer"
-            title="Click to upload portrait"
+            title="Hacé clic para subir retrato"
           >
             {pUrl ? (
               <img src={pUrl} alt={entity.name} className="w-full h-full object-cover" />
@@ -170,7 +170,7 @@ export default function CharacterSheet({
             <p className="text-[10px] text-[var(--text-secondary)]">
               {entityType === 'character'
                 ? `${(entity as Character).race} ${(entity as Character).class_}`
-                : `NPC · ${entity.status}`}
+                : `PNJ · ${entity.status === 'alive' ? 'Vivo' : entity.status === 'dead' ? 'Muerto' : entity.status}`}
             </p>
             <div className="flex items-center gap-1 mt-1">
               <span className={`text-[10px] px-1.5 py-0.5 rounded ${
@@ -178,7 +178,7 @@ export default function CharacterSheet({
                 entity.status === 'dead' ? 'bg-red-900/50 text-red-400' :
                 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'
               }`}>
-                {entity.status}
+                {entity.status === 'alive' ? 'Vivo' : entity.status === 'dead' ? 'Muerto' : entity.status}
               </span>
             </div>
           </div>
@@ -202,11 +202,11 @@ export default function CharacterSheet({
         {/* Derived Stats */}
         <div className="grid grid-cols-3 gap-1.5">
           <div className="text-center bg-[var(--bg-tertiary)]/50 rounded py-1">
-            <p className="text-[9px] text-[var(--text-secondary)]">Max PV</p>
+            <p className="text-[9px] text-[var(--text-secondary)]">PV máx.</p>
             <p className="text-xs font-bold text-red-400">{entity.max_pv}</p>
           </div>
           <div className="text-center bg-[var(--bg-tertiary)]/50 rounded py-1">
-            <p className="text-[9px] text-[var(--text-secondary)]">Max PM</p>
+            <p className="text-[9px] text-[var(--text-secondary)]">PM máx.</p>
             <p className="text-xs font-bold text-blue-400">{entity.max_pm}</p>
           </div>
           <div className="text-center bg-[var(--bg-tertiary)]/50 rounded py-1">
@@ -269,7 +269,7 @@ export default function CharacterSheet({
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
-              {t}
+              {{ stats: 'Características', inventory: 'Inventario', spells: 'Conjuros' }[t]}
             </button>
           ))}
         </div>
@@ -278,7 +278,7 @@ export default function CharacterSheet({
         {tab === 'stats' && (
           <div className="space-y-2">
             <div>
-              <p className="text-[10px] text-[var(--text-secondary)] mb-1 uppercase tracking-wide">Description</p>
+              <p className="text-[10px] text-[var(--text-secondary)] mb-1 uppercase tracking-wide">Descripción</p>
               {editingDesc ? (
                 <div>
                   <textarea
@@ -292,13 +292,13 @@ export default function CharacterSheet({
                       onClick={handleSaveDescription}
                       className="text-[10px] px-2 py-0.5 rounded bg-[var(--accent)] text-white"
                     >
-                      Save
+                      Guardar
                     </button>
                     <button
                       onClick={() => { setEditingDesc(false); setDescDraft(entity.description); }}
                       className="text-[10px] px-2 py-0.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)]"
                     >
-                      Cancel
+                      Cancelar
                     </button>
                   </div>
                 </div>
@@ -307,7 +307,7 @@ export default function CharacterSheet({
                   onClick={() => setEditingDesc(true)}
                   className="text-xs text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)] transition-colors whitespace-pre-wrap"
                 >
-                  {entity.description || 'Click to add description...'}
+                  {entity.description || 'Hacé clic para agregar descripción...'}
                 </p>
               )}
             </div>
@@ -323,20 +323,20 @@ export default function CharacterSheet({
                   checked={item.equipped || false}
                   onChange={(e) => updateItem(item.id, 'equipped', e.target.checked)}
                   className="w-3 h-3"
-                  title="Equipped"
+                  title="Equipado"
                 />
                 <input
                   value={item.name}
                   onChange={(e) => updateItem(item.id, 'name', e.target.value)}
                   className="flex-1 text-xs bg-transparent text-[var(--text-primary)] focus:outline-none"
-                  placeholder="Item name"
+                  placeholder="Nombre del objeto"
                 />
                 <input
                   type="number"
                   value={item.quantity}
                   onChange={(e) => updateItem(item.id, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
                   className="w-10 text-center text-[10px] bg-[var(--bg-primary)] border border-[var(--bg-tertiary)] rounded text-[var(--text-primary)] focus:outline-none"
-                  title="Quantity"
+                  title="Cantidad"
                 />
                 <button
                   onClick={() => removeItem(item.id)}
@@ -350,7 +350,7 @@ export default function CharacterSheet({
               onClick={addItem}
               className="w-full text-[10px] py-1.5 rounded border border-dashed border-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] transition-colors"
             >
-              + Add Item
+              + Agregar objeto
             </button>
           </div>
         )}
@@ -365,7 +365,7 @@ export default function CharacterSheet({
                     value={spell.name}
                     onChange={(e) => updateSpell(spell.id, 'name', e.target.value)}
                     className="flex-1 text-xs bg-transparent text-[var(--text-primary)] focus:outline-none"
-                    placeholder="Spell name"
+                    placeholder="Nombre del conjuro"
                   />
                   <span className="text-[10px] text-blue-300">{spell.cost_pm} PM</span>
                   <button
@@ -381,7 +381,7 @@ export default function CharacterSheet({
               onClick={addSpell}
               className="w-full text-[10px] py-1.5 rounded border border-dashed border-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] transition-colors"
             >
-              + Add Spell
+              + Agregar conjuro
             </button>
           </div>
         )}

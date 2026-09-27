@@ -82,7 +82,7 @@ export default function DMNotebookHud({ campaignId, onClose }: DMNotebookHudProp
   }, [campaignId, selectedId, titleDraft, contentDraft]);
 
   const handleDelete = useCallback(async (id: string) => {
-    if (!confirm('Delete this note?')) return;
+    if (!confirm('¿Eliminar esta nota?')) return;
     await api.notebooks.delete(campaignId, id);
     setNotebooks((prev) => prev.filter((n) => n.id !== id));
     if (selectedId === id) {

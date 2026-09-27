@@ -34,7 +34,7 @@ export default function CampaignDetail() {
   }, [id]);
 
   const handleDelete = async () => {
-    if (!id || !confirm('Delete this campaign?')) return;
+    if (!id || !confirm('¿Eliminar esta campaña?')) return;
     await api.campaigns.delete(id);
     navigate('/');
   };

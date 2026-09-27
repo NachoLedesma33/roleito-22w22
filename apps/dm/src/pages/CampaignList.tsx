@@ -45,7 +45,7 @@ export default function CampaignList() {
   }, []);
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this campaign?')) return;
+    if (!confirm('¿Eliminar esta campaña?')) return;
     await api.campaigns.delete(id);
     setCampaigns((prev) => prev.filter((c) => c.id !== id));
     setSelectedIds((prev) => {

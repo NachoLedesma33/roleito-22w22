@@ -32,7 +32,7 @@ export default function NPCDetail() {
   }, [campaignId, npcId]);
 
   const handleDelete = async () => {
-    if (!campaignId || !npcId || !confirm('Delete this NPC?')) return;
+    if (!campaignId || !npcId || !confirm('¿Eliminar este PNJ?')) return;
     await api.npcs.delete(campaignId, npcId);
     navigate(`/campaigns/${campaignId}/npcs`);
   };
@@ -44,7 +44,7 @@ export default function NPCDetail() {
       const updated = await api.npcs.uploadPortrait(campaignId, npcId, file);
       setNpc(updated);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      setError(err instanceof Error ? err.message : 'No se pudo subir');
     }
     e.target.value = '';
   };

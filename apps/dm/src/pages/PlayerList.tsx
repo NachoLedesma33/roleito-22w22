@@ -45,7 +45,7 @@ export default function PlayerList() {
   };
 
   const handleDelete = async (playerId: string) => {
-    if (!campaignId || !confirm('Remove this player?')) return;
+    if (!campaignId || !confirm('¿Quitar este jugador?')) return;
     await api.players.delete(campaignId, playerId);
     setPlayers((prev) => prev.filter((p) => p.id !== playerId));
   };

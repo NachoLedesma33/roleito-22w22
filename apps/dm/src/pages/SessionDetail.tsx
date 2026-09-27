@@ -18,7 +18,7 @@ export default function SessionDetail() {
   }, [campaignId, sessionId]);
 
   const handleDelete = async () => {
-    if (!campaignId || !sessionId || !confirm('Delete this session?')) return;
+    if (!campaignId || !sessionId || !confirm('¿Eliminar esta sesión?')) return;
     await api.sessions.delete(campaignId, sessionId);
     navigate(`/campaigns/${campaignId}/sessions`);
   };

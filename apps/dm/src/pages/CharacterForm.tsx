@@ -77,7 +77,7 @@ export default function CharacterForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !campaignId) {
-      setError('Name is required');
+      setError('El nombre es obligatorio');
       return;
     }
     setSaving(true);
@@ -117,7 +117,7 @@ export default function CharacterForm() {
         navigate(`/campaigns/${campaignId}/characters/${char.id}`);
       }
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to save');
+      setError(e instanceof Error ? e.message : 'No se pudo guardar');
     } finally {
       setSaving(false);
     }

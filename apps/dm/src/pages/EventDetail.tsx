@@ -23,7 +23,7 @@ export default function EventDetail() {
       const updated = await api.events.approve(eventId);
       setEvent(updated);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to approve');
+      setError(e instanceof Error ? e.message : 'No se pudo aprobar');
     }
   };
 
@@ -33,19 +33,19 @@ export default function EventDetail() {
       const updated = await api.events.reject(eventId);
       setEvent(updated);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to reject');
+      setError(e instanceof Error ? e.message : 'No se pudo rechazar');
     }
   };
 
   const handleDelete = async () => {
-    if (!eventId || !confirm('Delete this event?')) return;
+    if (!eventId || !confirm('¿Eliminar este evento?')) return;
     await api.events.delete(eventId);
     navigate(-1);
   };
 
   if (loading) return <p className="text-[var(--text-secondary)]">Loading...</p>;
   if (error) return <p className="text-red-400">Error: {error}</p>;
-  if (!event) return <p className="text-[var(--text-secondary)]">Event not found</p>;
+  if (!event) return <p className="text-[var(--text-secondary)]">Evento no encontrado</p>;
 
   return (
     <div className="max-w-2xl">

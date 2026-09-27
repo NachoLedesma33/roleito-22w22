@@ -43,7 +43,7 @@ export default function SessionForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!date.trim() || !campaignId) {
-      setError('Date is required');
+      setError('La fecha es obligatoria');
       return;
     }
     setSaving(true);
@@ -58,7 +58,7 @@ export default function SessionForm() {
         navigate(`/campaigns/${campaignId}/sessions/${sess.id}`);
       }
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to save');
+      setError(e instanceof Error ? e.message : 'No se pudo guardar');
     } finally {
       setSaving(false);
     }

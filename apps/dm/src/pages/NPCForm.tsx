@@ -45,7 +45,7 @@ export default function NPCForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !campaignId) {
-      setError('Name is required');
+      setError('El nombre es obligatorio');
       return;
     }
     setSaving(true);

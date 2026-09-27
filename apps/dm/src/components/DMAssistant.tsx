@@ -110,8 +110,8 @@ export default function DMAssistant({ campaignId, onClose }: DMAssistantProps) {
                   </div>
                   {msg.confidence !== undefined && (
                     <div className="text-[9px] text-[var(--text-secondary)] mt-1">
-                      Confidence: {Math.round(msg.confidence * 100)}%
-                      {msg.source && ` · Source: ${msg.source}`}
+                      Confianza: {Math.round(msg.confidence * 100)}%
+                      {msg.source && ` · Fuente: ${msg.source}`}
                     </div>
                   )}
                 </div>

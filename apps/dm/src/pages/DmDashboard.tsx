@@ -419,7 +419,7 @@ export default function DmDashboard() {
   }, [graphRef, handleItemsChange])
 
   const handleClearAllWalls = useCallback(() => {
-    if (!confirm('Delete ALL walls and doors?')) return
+    if (!confirm('¿Eliminar TODAS las paredes y puertas?')) return
     const items = graphRef.getItems()
     const toRemove = items.filter(
       (item: SceneItem) => item.metadata?.type === 'wall' || item.metadata?.type === 'door'
@@ -771,7 +771,7 @@ export default function DmDashboard() {
       count: 1,
       results: [1],
       total: 1,
-      label: res.applied === 'reveal' ? 'fog cleared for zone' : 'fog covering zone',
+      label: res.applied === 'reveal' ? 'niebla despejada de la zona' : 'niebla cubriendo la zona',
       timestamp: Date.now(),
     }])
   }, [activeScene, graphRef, handleItemsChange])
@@ -2113,7 +2113,7 @@ export default function DmDashboard() {
                     value={selectedLight.source.falloff ?? (selectedLight.source.mode === 'hard' ? 1 : 0.6)}
                     onChange={(e) => handleLightSourceChange({ falloff: parseFloat(e.target.value) })}
                     className="w-14 h-1"
-                    title={selectedLight.source.mode === 'hard' ? 'Bright edge position' : 'Bright→dim falloff'}
+                    title={selectedLight.source.mode === 'hard' ? 'Posición del borde brillante' : 'Caída brillante→tenue'}
                   />
                   <span className="w-8">{(selectedLight.source.falloff ?? (selectedLight.source.mode === 'hard' ? 1 : 0.6)).toFixed(2)}</span>
                 </label>
@@ -2241,7 +2241,7 @@ export default function DmDashboard() {
 
         <div className="relative group shrink-0">
           <button className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
-            {activeScene?.lighting || 'neutral'} ▾
+            {{ neutral: 'Neutra', dark: 'Oscura', dim: 'Tenue', bright: 'Brillante', torchlight: 'Antorcha' }[activeScene?.lighting || 'neutral'] || activeScene?.lighting || 'Neutra'} ▾
           </button>
           <div className="absolute right-0 top-full mt-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
             {['neutral', 'dark', 'dim', 'bright', 'torchlight'].map((mode) => (
@@ -2252,7 +2252,7 @@ export default function DmDashboard() {
                   activeScene?.lighting === mode ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'
                 }`}
               >
-                {mode}
+                {{ neutral: 'Neutra', dark: 'Oscura', dim: 'Tenue', bright: 'Brillante', torchlight: 'Antorcha' }[mode] || mode}
               </button>
             ))}
           </div>
@@ -2604,8 +2604,8 @@ export default function DmDashboard() {
                 <p className="text-lg mb-2">Sin escena seleccionada</p>
                 <p className="text-sm">
                   {scenes.length === 0
-                    ? 'Create a scene to get started.'
-                    : 'Select a scene or upload a map background.'}
+                    ? 'Creá una escena para empezar.'
+                    : 'Seleccioná una escena o subí un fondo de mapa.'}
                 </p>
               </div>
             </div>

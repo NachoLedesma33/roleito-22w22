@@ -26,7 +26,7 @@ export default function AssetList() {
       const asset = await api.assets.upload(campaignId, file, file.name);
       setAssets((prev) => [...prev, asset]);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      setError(err instanceof Error ? err.message : 'No se pudo subir');
     } finally {
       setUploading(false);
       e.target.value = '';

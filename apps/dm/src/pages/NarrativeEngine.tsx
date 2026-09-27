@@ -23,7 +23,7 @@ export default function NarrativeEngine() {
       });
       setResult(res);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Parse failed');
+      setError(e instanceof Error ? e.message : 'No se pudo analizar');
     } finally {
       setLoading(false);
     }
@@ -38,7 +38,7 @@ export default function NarrativeEngine() {
           : prev,
       );
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Approve failed');
+      setError(e instanceof Error ? e.message : 'No se pudo aprobar');
     }
   };
 
@@ -51,7 +51,7 @@ export default function NarrativeEngine() {
           : prev,
       );
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Reject failed');
+      setError(e instanceof Error ? e.message : 'No se pudo rechazar');
     }
   };
 
@@ -69,12 +69,12 @@ export default function NarrativeEngine() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Narrative Engine</h1>
+      <h1 className="text-2xl font-bold mb-6">Motor narrativo</h1>
 
       <div className="grid gap-4 mb-6">
         <div>
           <label className="block text-sm text-[var(--text-secondary)] mb-1">
-            Session ID
+            ID de sesión
           </label>
           <input
             type="text"
@@ -87,20 +87,20 @@ export default function NarrativeEngine() {
 
         <div>
           <label className="block text-sm text-[var(--text-secondary)] mb-1">
-            Scene Name (optional)
+            Nombre de la escena (opcional)
           </label>
           <input
             type="text"
             value={sceneName}
             onChange={(e) => setSceneName(e.target.value)}
-            placeholder="e.g. Vault entrance"
+            placeholder="ej: entrada de la bóveda"
             className="w-full bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-3 py-2 text-sm"
           />
         </div>
 
         <div>
           <label className="block text-sm text-[var(--text-secondary)] mb-1">
-            DM Narration
+            Narración del DM
           </label>
           <textarea
             value={text}
@@ -116,7 +116,7 @@ export default function NarrativeEngine() {
           disabled={loading || !text.trim() || !sessionId.trim()}
           className="self-start px-4 py-2 rounded bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent-hover)] disabled:opacity-50"
         >
-          {loading ? 'Parsing...' : 'Parse Narrative'}
+          {loading ? 'Analizando...' : 'Analizar narración'}
         </button>
       </div>
 
@@ -126,14 +126,14 @@ export default function NarrativeEngine() {
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">
-              Extracted Events ({result.events.length})
+              Eventos extraídos ({result.events.length})
             </h2>
             {result.events.length > 0 && (
               <button
                 onClick={handleApproveAll}
                 className="text-xs px-3 py-1.5 rounded bg-green-900/50 text-green-400 hover:bg-green-900/80"
               >
-                Approve All
+                Aprobar todas
               </button>
             )}
           </div>
@@ -150,8 +150,8 @@ export default function NarrativeEngine() {
 
           {result.events.length === 0 ? (
             <div className="text-center py-12 text-[var(--text-secondary)]">
-              <p className="text-lg mb-2">No events extracted</p>
-              <p className="text-sm">Try more descriptive narration.</p>
+              <p className="text-lg mb-2">No se extrajeron eventos</p>
+              <p className="text-sm">Probá una narración más descriptiva.</p>
             </div>
           ) : (
             <div className="grid gap-3">
@@ -169,15 +169,15 @@ export default function NarrativeEngine() {
                       <p className="text-sm">{evt.description}</p>
                       <div className="flex gap-4 mt-1 text-xs text-[var(--text-secondary)]">
                         {evt.actor_id && <span>Actor: {evt.actor_id}</span>}
-                        {evt.target_id && <span>Target: {evt.target_id}</span>}
+                        {evt.target_id && <span>Objetivo: {evt.target_id}</span>}
                         {evt.location_id && (
-                          <span>Location: {evt.location_id}</span>
+                          <span>Ubicación: {evt.location_id}</span>
                         )}
                       </div>
                       {(evt.unresolved_actors.length > 0 ||
                         evt.unresolved_targets.length > 0) && (
                         <div className="mt-2 text-xs text-yellow-400">
-                          Unresolved:{' '}
+                          Sin resolver:{' '}
                           {[...evt.unresolved_actors, ...evt.unresolved_targets].join(
                             ', ',
                           )}
@@ -189,13 +189,13 @@ export default function NarrativeEngine() {
                         onClick={() => handleApprove(evt.event_id)}
                         className="text-xs px-2 py-1 rounded bg-green-900/50 text-green-400 hover:bg-green-900/80"
                       >
-                        Approve
+                        Aprobar
                       </button>
                       <button
                         onClick={() => handleReject(evt.event_id)}
                         className="text-xs px-2 py-1 rounded bg-red-900/50 text-red-400 hover:bg-red-900/80"
                       >
-                        Reject
+                        Rechazar
                       </button>
                     </div>
                   </div>
