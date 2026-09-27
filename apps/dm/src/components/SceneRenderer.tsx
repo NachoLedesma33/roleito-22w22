@@ -634,6 +634,8 @@ function DraggableToken({
     [entity, isMovable, onClick]
   );
 
+  const invisible = (entity.statuses ?? []).includes('invisible');
+
   return (
     <group ref={groupRef} position={[entity.x, entity.y, entity.z]}>
       {entity.modelUrl ? (
@@ -647,6 +649,7 @@ function DraggableToken({
           isSelected={isSelected}
           tokenScale={entity.tokenScale ?? 1}
           brightness={entity.brightness ?? 0}
+          invisible={invisible}
           onPointerDown={handlePointerDown}
           onContextMenu={(e) => {
             const domEvent = e as unknown as PointerEvent;
@@ -662,6 +665,7 @@ function DraggableToken({
           portraitUrl={entity.portraitUrl}
           isSelected={isSelected}
           tokenScale={entity.tokenScale ?? 1}
+          invisible={invisible}
           onPointerDown={handlePointerDown}
           onContextMenu={(e) => {
             const domEvent = e as unknown as PointerEvent;
@@ -709,24 +713,51 @@ function StatusAura({
   statuses: string[];
   tokenScale: number;
 }) {
-  const active = statuses
-    .map((s) => ({ id: s, color: STATUS_COLORS[s] }))
-    .filter((x) => x.color)
+  const ringRefs = useRef<THREE.Mesh[]>([]);
+  const flameRef = useRef<THREE.Mesh>(null);
+  const rings = statuses
+    .map((id) => ({ id, color: STATUS_COLORS[id] }))
+    .filter((x) => x.color && x.id !== 'burning')
     .slice(0, 3);
-  if (active.length === 0) return null;
+  const onFire = statuses.includes('burning');
+  const flameBaseY = 0.9 * tokenScale;
+
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    ringRefs.current.forEach((ring, i) => {
+      const id = rings[i]?.id ?? '';
+      const mat = ring.material as THREE.MeshBasicMaterial;
+      if (id === 'bleeding') {
+        ring.scale.setScalar(1 + Math.sin(t * 3 + i) * 0.12);
+        mat.opacity = 0.35 + Math.sin(t * 6 + i) * 0.15;
+      } else if (id === 'stunned' || id === 'concentrating') {
+        const dir = id === 'concentrating' ? -1 : 1;
+        const speed = id === 'concentrating' ? 0.7 : 2.1;
+        ring.rotation.z = t * speed * dir;
+      }
+    });
+    if (flameRef.current) {
+      flameRef.current.position.y = flameBaseY + Math.sin(t * 7) * 0.05 * tokenScale;
+      flameRef.current.scale.setScalar(1 + Math.sin(t * 11) * 0.18);
+    }
+  });
+
   return (
     <group>
-      {active.map((st, i) => {
+      {rings.map((st, i) => {
         const outer = (0.62 - i * 0.16) * tokenScale;
         const inner = Math.max(0.05, outer - 0.14 * tokenScale);
+        const spinArc =
+          st.id === 'concentrating' ? 5.2 : st.id === 'stunned' ? 2.6 : Math.PI * 2;
         return (
           <mesh
             key={st.id}
+            ref={(el) => { if (el) ringRefs.current[i] = el; }}
             position={[0, 0.06 + i * 0.02, 0]}
             rotation={[-Math.PI / 2, 0, 0]}
             renderOrder={55}
           >
-            <ringGeometry args={[inner, outer, 48]} />
+            <ringGeometry args={[inner, outer, 48, 1, 0, spinArc]} />
             <meshBasicMaterial
               color={st.color}
               transparent
@@ -738,6 +769,18 @@ function StatusAura({
           </mesh>
         );
       })}
+      {onFire && (
+        <mesh ref={flameRef} position={[0, flameBaseY, 0]} renderOrder={55}>
+          <coneGeometry args={[0.15 * tokenScale, 0.35 * tokenScale, 8]} />
+          <meshBasicMaterial
+            color="#f97316"
+            transparent
+            opacity={0.85}
+            depthWrite={false}
+            toneMapped={false}
+          />
+        </mesh>
+      )}
     </group>
   );
 }

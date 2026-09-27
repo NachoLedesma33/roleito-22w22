@@ -18,6 +18,7 @@ interface TokenSpriteProps {
   isSelected?: boolean;
   isDragging?: boolean;
   tokenScale?: number;
+  invisible?: boolean;
   onPointerDown?: (e: THREE.Event, id: string) => void;
   onContextMenu?: (e: THREE.Event) => void;
 }
@@ -31,6 +32,7 @@ export default function TokenSprite({
   isSelected,
   isDragging,
   tokenScale = 1,
+  invisible = false,
   onPointerDown,
   onContextMenu,
 }: TokenSpriteProps) {
@@ -74,12 +76,12 @@ export default function TokenSprite({
           {texture ? (
             <mesh position={[0, 0.6 * tokenScale, 0]}>
               <circleGeometry args={[radius, 32]} />
-              <meshStandardMaterial map={texture} emissiveMap={texture} emissive={new THREE.Color(0xffffff)} emissiveIntensity={0.3} />
+              <meshStandardMaterial map={texture} emissiveMap={texture} emissive={new THREE.Color(0xffffff)} emissiveIntensity={0.3} transparent={invisible} opacity={invisible ? 0.25 : 1} depthWrite={!invisible} />
             </mesh>
           ) : (
             <mesh position={[0, 0.6 * tokenScale, 0]}>
               <circleGeometry args={[radius, 32]} />
-              <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.4} />
+              <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.4} transparent={invisible} opacity={invisible ? 0.25 : 1} depthWrite={!invisible} />
             </mesh>
           )}
           {!texture && (

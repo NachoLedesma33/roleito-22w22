@@ -1,6 +1,6 @@
 # Condiciones y Auras — Plan de implementación
 
-> Estado: PROPUESTO — esperando aprobación del DM antes de codear.
+> Estado: EN IMPLEMENTACIÓN — Fase A ✓ (60342dd) y Fase B ✓ (commit pendiente). Pendiente Fase C (config + e2e).
 > Relación con rumbo normal: pendiente de aprobación; no bloquea otras fases.
 
 ## Objetivo
@@ -62,16 +62,22 @@ ciego, ardiendo, invisible, etc.) de forma legible en el VTT:
 
 ## Fases (1 commit por fase, "ir de a poco")
 
-### Fase A — Aura estática + badges en fichas
+### Fase A — Aura estática + badges en fichas ✓ (60342dd)
 1. `statusMarkers.ts`: + `invisible` (color `#a1a1aa` o violeta) → 9 condiciones.
 2. `SceneRenderer.tsx`: componente `StatusAura` (anillo estático multi-estado, escala por `tokenScale`).
 3. `CharacterSheet.tsx` + `PlayerView.tsx`: fila de badges con color + tooltip label.
 4. Verificación: typecheck, vitest (si aplica), pytest (`status.spec` ya cubre API), e2e status offline→online visual.
 
-### Fase B — Animaciones + invisible
+### Fase B — Animaciones + invisible ✓
 5. `StatusAura` animado: pulso (sangrado), giro (aturdido/concentrando), llama (ardiendo).
 6. Condición `invisible`: opacity en sprite/gltf; semántica del toggle 👁 documentada.
 7. Verificación: perf con N tokens (objetivo: sin caída de fps con 20 tokens animados), typecheck, e2e snapshot.
+
+**Decisiones tomadas en B:**
+- **Perf gate NO aplicado**: animación = 1 `useFrame` por aura, ≤4 meshes por token (anillos concéntricos + llama). Con 20 tokens ≈ 80 meshes livianos — trivial para GPU. Si aparece caída de fps ACUMULADA, re-activar gate (">10 tokens con status → solo badge").
+- **Spin**: anillo con arco — `stunned` 2.6 rad girando rápido (2.1 rad/s), `concentrating` 5.2 rad lento (0.7 rad/s, dirección inversa). Arco completo para el resto (rotación invisible → estático).
+- **Llama (ardiendo)**: cono `#f97316` flotando a `0.9·tokenScale`, flicker de escala (1±0.18) + bobbing (0.05·tokenScale). NO anillo para `burning` (evita clutter); flame + badge.
+- **Invisible**: `opacity 0.25` + `depthWrite false` en materiales sprite y gltf (traverse); badges y aura SE MANTIENEN visibles (es el indicador de que está invisible). Toggle 👁 = presencia (server-side), condición = visual. Combinables.
 
 ### Fase C — Polish (solo si pide el DM)
 8. Config por condición: mostrar solo badge / badge+aura / aura+animación, intensidad.
@@ -79,7 +85,7 @@ ciego, ardiendo, invisible, etc.) de forma legible en el VTT:
 10. ADR corto en `docs/adr/` si la semántica invisible lo amerita.
 
 ## Riesgos
-- **Perf 3D**: muchas auras animadas → nivel de detalle: >10 tokens con status → solo badge (sin animación). Gate en Fase B.
+- **Perf 3D**: muchas auras animadas → decidido en Fase B: sin gate por ahora (ops triviales); re-activar si fps cae con muchos tokens.
 - **conflicto invisible vs luz/fog**: token invisible sigue afectado por iluminación (no es "etéreo" salvo que se pida).
 - **Drag/drop y aura**: aura en grupo hijo no interfiere con raycasting del token (pointer-events en el mesh del modelo, aura con `raycast` deshabilitado).
 

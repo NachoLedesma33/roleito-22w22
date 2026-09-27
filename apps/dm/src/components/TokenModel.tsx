@@ -12,6 +12,7 @@ interface TokenModelProps {
   isSelected?: boolean;
   tokenScale?: number;
   brightness?: number;
+  invisible?: boolean;
   onPointerDown?: (e: THREE.Event, id: string) => void;
   onContextMenu?: (e: THREE.Event) => void;
 }
@@ -25,6 +26,7 @@ const TokenModel = memo(function TokenModel({
   isSelected,
   tokenScale = 1,
   brightness = 0,
+  invisible = false,
   onPointerDown,
   onContextMenu,
 }: TokenModelProps) {
@@ -40,12 +42,17 @@ const TokenModel = memo(function TokenModel({
     cloneRef.current = clone;
   }
 
-  if (cloneRef.current && brightness > 0) {
+  if (cloneRef.current) {
     cloneRef.current.traverse((child) => {
       if (child instanceof THREE.Mesh && child.material instanceof THREE.Material) {
         const mat = child.material as THREE.MeshStandardMaterial;
-        mat.emissive = mat.emissive || new THREE.Color(0, 0, 0);
-        mat.emissiveIntensity = Math.min(brightness, 0.5);
+        mat.transparent = invisible;
+        mat.opacity = invisible ? 0.25 : 1;
+        mat.depthWrite = !invisible;
+        if (brightness > 0) {
+          mat.emissive = mat.emissive || new THREE.Color(0, 0, 0);
+          mat.emissiveIntensity = Math.min(brightness, 0.5);
+        }
       }
     });
   }
