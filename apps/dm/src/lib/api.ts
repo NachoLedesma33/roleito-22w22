@@ -358,6 +358,24 @@ export interface QuestResponse {
   updated_at: string;
 }
 
+export interface ProgressClock {
+  id: string;
+  campaign_id: string;
+  title: string;
+  segments_total: number;
+  segments_filled: number;
+  visible_to_players: boolean;
+  created_at: string;
+}
+
+export interface CalendarState {
+  year: number;
+  month: number;
+  day: number;
+  month_names: string[];
+  clocks: ProgressClock[];
+}
+
 export interface QuestInput {
   title: string;
   description: string;
@@ -891,5 +909,40 @@ export const api = {
       }),
     remove: (campaignId: string, questId: string) =>
       request<{ ok: boolean }>(`/campaigns/${campaignId}/quests/${questId}`, { method: 'DELETE' }),
+  },
+  calendar: {
+    get: (campaignId: string) =>
+      request<CalendarState>(`/campaigns/${campaignId}/calendar`),
+    advance: (campaignId: string, addDays: number) =>
+      request<CalendarState>(`/campaigns/${campaignId}/calendar`, {
+        method: 'PUT',
+        body: JSON.stringify({ add_days: addDays }),
+      }),
+    createClock: (
+      campaignId: string,
+      data: { title: string; segments_total: number; visible_to_players?: boolean }
+    ) =>
+      request<ProgressClock>(`/campaigns/${campaignId}/clocks`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    updateClock: (
+      campaignId: string,
+      clockId: string,
+      data: Partial<{
+        title: string;
+        segments_total: number;
+        segments_filled: number;
+        visible_to_players: boolean;
+      }>
+    ) =>
+      request<ProgressClock>(`/campaigns/${campaignId}/clocks/${clockId}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    removeClock: (campaignId: string, clockId: string) =>
+      request<{ ok: boolean }>(`/campaigns/${campaignId}/clocks/${clockId}`, {
+        method: 'DELETE',
+      }),
   },
 };

@@ -606,3 +606,71 @@ async def test_quests_crud(client):
     assert res.status_code == 404
     res = await client.post("/api/campaigns/no-such/quests", json={"title": "x"})
     assert res.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_calendar_advance_and_clocks(client):
+    camp = (await client.post("/api/campaigns", json={"name": "Cal Camp"})).json()
+    cid = camp["id"]
+
+    # GET crea el calendario con valores por defecto.
+    st = (await client.get(f"/api/campaigns/{cid}/calendar")).json()
+    assert st["year"] == 1 and st["month"] == 1 and st["day"] == 1
+    assert len(st["month_names"]) == 12
+    assert st["clocks"] == []
+
+    # + 31 días → día 1 del mes 2 (enero tiene 31 días).
+    st = (await client.put(f"/api/campaigns/{cid}/calendar", json={"add_days": 31})).json()
+    assert st["month"] == 2 and st["day"] == 1
+
+    # 360 días más → 391 días totales → año 2, día 27 de enero.
+    st = (await client.put(f"/api/campaigns/{cid}/calendar", json={"add_days": 360})).json()
+    assert st["year"] == 2 and st["month"] == 1 and st["day"] == 27
+
+    # Retroceder 1 → 26 de enero del año 2.
+    st = (await client.put(f"/api/campaigns/{cid}/calendar", json={"add_days": -1})).json()
+    assert st["year"] == 2 and st["month"] == 1 and st["day"] == 26
+
+    # Clocks CRUD.
+    res = await client.post(
+        f"/api/campaigns/{cid}/clocks",
+        json={"title": "Ritual de invocación", "segments_total": 6},
+    )
+    assert res.status_code == 200, res.text
+    clock = res.json()
+    assert clock["segments_total"] == 6 and clock["segments_filled"] == 0
+    assert clock["visible_to_players"] is True
+
+    # Tick +3.
+    res = await client.put(
+        f"/api/campaigns/{cid}/clocks/{clock['id']}",
+        json={"segments_filled": 3},
+    )
+    assert res.status_code == 200
+    assert res.json()["segments_filled"] == 3
+
+    # Ocultar al jugador.
+    res = await client.put(
+        f"/api/campaigns/{cid}/clocks/{clock['id']}",
+        json={"visible_to_players": False},
+    )
+    assert res.status_code == 200
+    assert res.json()["visible_to_players"] is False
+    assert res.json()["segments_filled"] == 3  # el tick persiste
+
+    # GET público devuelve todo; el filtro lo hace el cliente.
+    st = (await client.get(f"/api/campaigns/{cid}/calendar")).json()
+    assert len(st["clocks"]) == 1
+    assert st["clocks"][0]["segments_filled"] == 3
+
+    # Eliminar clock.
+    res = await client.delete(f"/api/campaigns/{cid}/clocks/{clock['id']}")
+    assert res.status_code == 200
+    st = (await client.get(f"/api/campaigns/{cid}/calendar")).json()
+    assert st["clocks"] == []
+
+    # 404s.
+    res = await client.get("/api/campaigns/no-such/calendar")
+    assert res.status_code == 404
+    res = await client.put(f"/api/campaigns/{cid}/clocks/nope", json={"segments_filled": 1})
+    assert res.status_code == 404

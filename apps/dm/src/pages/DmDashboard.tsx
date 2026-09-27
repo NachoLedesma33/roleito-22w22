@@ -28,6 +28,7 @@ import RecapPanel from '@/components/RecapPanel';
 import CharacterSheet from '@/components/CharacterSheet';
 import InitiativeTracker from '@/components/InitiativeTracker';
 import QuestPanel from '@/components/QuestPanel';
+import CalendarPanel from '@/components/CalendarPanel';
 import { STATUS_OPTIONS } from '@/lib/statusMarkers';
 import MapViewer from '@/components/MapViewer';
 import DMNotebookHud from '@/components/DMNotebookHud';
@@ -75,6 +76,7 @@ export default function DmDashboard() {
   const [showDiceRoller, setShowDiceRoller] = useState(false);
   const [showInitiative, setShowInitiative] = useState(false);
   const [showQuests, setShowQuests] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
   const [showRecap, setShowRecap] = useState(false);
   const [viewingMap, setViewingMap] = useState<GameMap | null>(null);
   const [maps, setMaps] = useState<GameMap[]>([]);
@@ -1520,6 +1522,8 @@ export default function DmDashboard() {
             setShowInitiative(false);
           } else if (showQuests) {
             setShowQuests(false);
+          } else if (showCalendar) {
+            setShowCalendar(false);
           } else if (showRecap) {
             setShowRecap(false);
           } else if (showNotebook) {
@@ -2291,6 +2295,14 @@ export default function DmDashboard() {
         </button>
 
         <button
+          onClick={() => setShowCalendar(!showCalendar)}
+          className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showCalendar ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+          title="Calendar & Clocks"
+        >
+          📅
+        </button>
+
+        <button
           onClick={() => setShowDiceRoller(!showDiceRoller)}
           className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showDiceRoller ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
           title="Roll dice (D)"
@@ -2914,6 +2926,12 @@ export default function DmDashboard() {
             <QuestPanel
               campaignId={campaignId}
               onClose={() => setShowQuests(false)}
+            />
+          )}
+          {showCalendar && campaignId && (
+            <CalendarPanel
+              campaignId={campaignId}
+              onClose={() => setShowCalendar(false)}
             />
           )}
           {showRecap && campaignId && (

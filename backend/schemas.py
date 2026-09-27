@@ -525,6 +525,44 @@ class QuestOut(BaseModel):
         from_attributes = True
 
 
+class CalendarUpdate(BaseModel):
+    add_days: int = Field(default=0, ge=-366, le=366)
+
+
+class ProgressClockIn(BaseModel):
+    title: str
+    segments_total: int = Field(default=4, ge=2, le=12)
+    visible_to_players: bool = True
+
+
+class ProgressClockUpdate(BaseModel):
+    title: Optional[str] = None
+    segments_total: Optional[int] = Field(default=None, ge=2, le=12)
+    segments_filled: Optional[int] = Field(default=None, ge=0, le=12)
+    visible_to_players: Optional[bool] = None
+
+
+class ProgressClockOut(BaseModel):
+    id: str
+    campaign_id: str
+    title: str
+    segments_total: int
+    segments_filled: int
+    visible_to_players: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class CalendarState(BaseModel):
+    year: int
+    month: int
+    day: int
+    month_names: list[str]
+    clocks: list[ProgressClockOut]
+
+
 class MapMarkerCreate(BaseModel):
     label: str = ""
     marker_type: str = "poi"

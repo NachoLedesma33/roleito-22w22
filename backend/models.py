@@ -2,10 +2,21 @@ from sqlalchemy import Column, String, Integer, Float, Text, DateTime, ForeignKe
 from sqlalchemy.orm import DeclarativeBase, relationship
 from datetime import datetime
 import uuid
+import json
 
 
 def gen_id() -> str:
     return str(uuid.uuid4())
+
+
+DEFAULT_MONTH_NAMES = [
+    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+]
+
+
+def default_months_json() -> str:
+    return json.dumps(DEFAULT_MONTH_NAMES)
 
 
 class Base(DeclarativeBase):
@@ -353,6 +364,31 @@ class Quest(Base):
     visible_to_players = Column(Integer, default=1)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class CampaignCalendar(Base):
+    __tablename__ = "campaign_calendars"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    campaign_id = Column(String, ForeignKey("campaigns.id"), nullable=False, unique=True)
+    year = Column(Integer, default=1)
+    month = Column(Integer, default=1)
+    day = Column(Integer, default=1)
+    month_names_json = Column(Text, default=default_months_json)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class ProgressClock(Base):
+    __tablename__ = "progress_clocks"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    campaign_id = Column(String, ForeignKey("campaigns.id"), nullable=False)
+    title = Column(String, nullable=False)
+    segments_total = Column(Integer, default=4)
+    segments_filled = Column(Integer, default=0)
+    visible_to_players = Column(Integer, default=1)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 class DM(Base):

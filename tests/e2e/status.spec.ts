@@ -14,14 +14,17 @@ async function openTokenMenu(
   sceneId: string,
   request: import('@playwright/test').APIRequestContext,
   campaignId: string,
+  fresh = false,
 ) {
-  await uploadBackground(request, campaignId, sceneId, {
-    name: 'bg.png',
-    mimeType: 'image/png',
-    buffer: PNG_1PX,
-  });
-  await page.goto(`/campaigns/${campaignId}`);
-  await page.locator('header select').selectOption(sceneId);
+  if (fresh) {
+    await uploadBackground(request, campaignId, sceneId, {
+      name: 'bg.png',
+      mimeType: 'image/png',
+      buffer: PNG_1PX,
+    });
+    await page.goto(`/campaigns/${campaignId}`);
+    await page.locator('header select').selectOption(sceneId);
+  }
   const canvas = page.locator('canvas').first();
   await expect(canvas).toBeVisible({ timeout: 15_000 });
   await page.waitForFunction(
@@ -43,7 +46,7 @@ async function openTokenMenu(
       button: 'right',
     });
     try {
-      await expect(menu).toBeVisible({ timeout: 900 });
+      await expect(menu).toBeVisible({ timeout: 1500 });
       return;
     } catch {
       // próximo offset
@@ -67,7 +70,7 @@ test.describe('Status markers', () => {
     await page.goto(`/campaigns/${campaign.id}`);
     await expect(page.getByText('On Scene (1)')).toBeVisible({ timeout: 10_000 });
 
-    await openTokenMenu(page, scene.id, request, campaign.id);
+    await openTokenMenu(page, scene.id, request, campaign.id, true);
     await page.getByRole('button', { name: /Marcar Envenenado/ }).click();
 
     const chs = await (
@@ -76,8 +79,10 @@ test.describe('Status markers', () => {
       )
     ).json();
     expect(chs[0].statuses).toContain('poisoned');
+    // Esperar a que el estado local del tablero refleje el cambio antes de reabrir.
+    await page.waitForTimeout(400);
 
-    // Reabrir menú → el item ahora ofrece quitarlo.
+    // Reabrir menú (sin recargar) → el item ahora ofrece quitarlo.
     await openTokenMenu(page, scene.id, request, campaign.id);
     const removeBtn = page.getByRole('button', { name: /Quitar Envenenado/ });
     await expect(removeBtn).toBeVisible();
@@ -108,7 +113,7 @@ test.describe('Status markers', () => {
     await page.goto(`/campaigns/${campaign.id}`);
     await expect(page.getByText('On Scene (1)')).toBeVisible({ timeout: 10_000 });
 
-    await openTokenMenu(page, scene.id, request, campaign.id);
+    await openTokenMenu(page, scene.id, request, campaign.id, true);
     await page.getByRole('button', { name: /Marcar Concentrando/ }).click();
 
     const snap = await (

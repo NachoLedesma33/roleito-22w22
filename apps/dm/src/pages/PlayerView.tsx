@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import SceneRenderer from '@/components/SceneRenderer';
 import DiceRoller, { rollDice } from '@/components/DiceRoller';
 import PlayerQuestPanel from '@/components/PlayerQuestPanel';
+import PlayerCalendarPanel from '@/components/PlayerCalendarPanel';
 import HudPanel from '@/components/HudPanel';
 import TopBar from '@/components/TopBar';
 import MinimizedBar from '@/components/MinimizedBar';
@@ -192,6 +193,7 @@ export default function PlayerView() {
   const [notesSaving, setNotesSaving] = useState(false);
   const [showDiceRoller, setShowDiceRoller] = useState(false);
   const [showQuests, setShowQuests] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
   const [toastQueue, setToastQueue] = useState<ToastRoll[]>([]);
   const [pendingRoll, setPendingRoll] = useState<{
     combat_id: string;
@@ -1105,6 +1107,20 @@ export default function PlayerView() {
             🎯
           </button>
         )}
+        {choice?.kind === 'character' && (
+          <button
+            type="button"
+            onClick={() => setShowCalendar(!showCalendar)}
+            className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${
+              showCalendar
+                ? 'bg-emerald-600 text-white'
+                : 'bg-gray-800 text-gray-400 hover:text-gray-200 hover:bg-gray-700'
+            }`}
+            title="Calendario"
+          >
+            📅
+          </button>
+        )}
         <span
           className="flex items-center gap-1.5 text-[10px] shrink-0"
           title={live ? 'Sincronizado' : 'Reconectando...'}
@@ -1508,6 +1524,13 @@ export default function PlayerView() {
         <PlayerQuestPanel
           campaignId={data.campaign_id}
           onClose={() => setShowQuests(false)}
+        />
+      )}
+
+      {showCalendar && data && (
+        <PlayerCalendarPanel
+          campaignId={data.campaign_id}
+          onClose={() => setShowCalendar(false)}
         />
       )}
 
