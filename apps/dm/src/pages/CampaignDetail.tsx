@@ -53,7 +53,7 @@ export default function CampaignDetail() {
 
   if (loading) return <p className="text-[var(--text-secondary)]">Loading...</p>;
   if (error) return <p className="text-red-400">Error: {error}</p>;
-  if (!campaign) return <p className="text-[var(--text-secondary)]">Campaign not found</p>;
+  if (!campaign) return <p className="text-[var(--text-secondary)]">Campaña no encontrada</p>;
 
   const activeSession = sessions.find((s) => s.status === 'ACTIVE');
   const completedSessions = sessions.filter((s) => s.status === 'COMPLETED').length;
@@ -99,14 +99,14 @@ export default function CampaignDetail() {
       {/* Status Cards */}
       <div className="grid grid-cols-4 gap-3 mb-8">
         <StatusCard
-          label="Active Session"
-          value={activeSession ? `#${activeSession.number}` : 'None'}
+          label="Sesión activa"
+          value={activeSession ? `#${activeSession.number}` : 'Ninguna'}
           accent={!!activeSession}
         />
-        <StatusCard label="Characters" value={String(characters.length)} />
-        <StatusCard label="NPCs" value={String(npcs.length)} />
+        <StatusCard label="Personajes" value={String(characters.length)} />
+        <StatusCard label="PNJs" value={String(npcs.length)} />
         <StatusCard
-          label="Canon Events"
+          label="Eventos canónicos"
           value={String(worldState?.total_canon_events || 0)}
         />
       </div>
@@ -121,7 +121,7 @@ export default function CampaignDetail() {
             <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
             <div>
               <p className="text-sm font-medium text-green-400">
-                Session #{activeSession.number} in progress
+                Sesión #{activeSession.number} en progreso
               </p>
               <p className="text-xs text-[var(--text-secondary)]">
                 {activeSession.title || activeSession.date}
@@ -137,30 +137,30 @@ export default function CampaignDetail() {
           to={`/campaigns/${campaign.id}/sessions`}
           className="border border-[var(--bg-tertiary)] rounded-lg p-4 hover:border-[var(--accent)] transition-colors"
         >
-          <p className="text-xs text-[var(--text-secondary)] mb-1">Sessions</p>
+          <p className="text-xs text-[var(--text-secondary)] mb-1">Sesiones</p>
           <p className="text-lg font-bold">{sessions.length}</p>
           <p className="text-[10px] text-[var(--text-secondary)] mt-1">
-            {completedSessions} completed · {draftSessions} drafts
+            {completedSessions} completadas · {draftSessions} borradores
           </p>
         </Link>
         <Link
           to={`/campaigns/${campaign.id}/characters`}
           className="border border-[var(--bg-tertiary)] rounded-lg p-4 hover:border-[var(--accent)] transition-colors"
         >
-          <p className="text-xs text-[var(--text-secondary)] mb-1">Characters</p>
+          <p className="text-xs text-[var(--text-secondary)] mb-1">Personajes</p>
           <p className="text-lg font-bold">{characters.length}</p>
           <p className="text-[10px] text-[var(--text-secondary)] mt-1">
-            {characters.filter((c) => c.status === 'alive').length} alive
+            {characters.filter((c) => c.status === 'alive').length} vivos
           </p>
         </Link>
         <Link
           to={`/campaigns/${campaign.id}/npcs`}
           className="border border-[var(--bg-tertiary)] rounded-lg p-4 hover:border-[var(--accent)] transition-colors"
         >
-          <p className="text-xs text-[var(--text-secondary)] mb-1">NPCs</p>
+          <p className="text-xs text-[var(--text-secondary)] mb-1">PNJs</p>
           <p className="text-lg font-bold">{npcs.length}</p>
           <p className="text-[10px] text-[var(--text-secondary)] mt-1">
-            {npcs.filter((n) => n.status === 'alive').length} alive
+            {npcs.filter((n) => n.status === 'alive').length} vivos
           </p>
         </Link>
       </div>
@@ -169,12 +169,12 @@ export default function CampaignDetail() {
       {characters.length > 0 && (
         <section className="mb-8">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold">Party</h2>
+            <h2 className="text-lg font-semibold">Grupo</h2>
             <Link
               to={`/campaigns/${campaign.id}/characters`}
               className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)]"
             >
-              View all
+              Ver todo
             </Link>
           </div>
           <div className="grid gap-2">
@@ -206,12 +206,12 @@ export default function CampaignDetail() {
       {sessions.length > 0 && (
         <section>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold">Recent Sessions</h2>
+            <h2 className="text-lg font-semibold">Sesiones recientes</h2>
             <Link
               to={`/campaigns/${campaign.id}/sessions`}
               className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)]"
             >
-              View all
+              Ver todo
             </Link>
           </div>
           <div className="grid gap-2">
@@ -225,7 +225,7 @@ export default function CampaignDetail() {
                   #{s.number}
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium">{s.title || `Session ${s.number}`}</p>
+                  <p className="text-sm font-medium">{s.title || `Sesión ${s.number}`}</p>
                   <p className="text-xs text-[var(--text-secondary)]">{s.date}</p>
                 </div>
                 <SessionStatusBadge status={s.status} />
@@ -261,7 +261,7 @@ function SessionStatusBadge({ status }: { status: string }) {
   };
   return (
     <span className={`text-xs px-2 py-0.5 rounded ${styles[status] || styles.DRAFT}`}>
-      {status}
+      {status === 'DRAFT' ? 'Borrador' : status === 'ACTIVE' ? 'Activa' : status === 'COMPLETED' ? 'Completada' : status === 'ARCHIVED' ? 'Archivada' : status}
     </span>
   );
 }

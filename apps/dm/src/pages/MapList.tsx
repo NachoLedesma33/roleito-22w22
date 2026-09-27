@@ -53,7 +53,7 @@ export default function MapList() {
       const updated = await api.maps.upload(campaignId, pendingMapId, file);
       setMaps((prev) => prev.map((m) => (m.id === pendingMapId ? updated : m)));
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      setError(err instanceof Error ? err.message : 'No se pudo subir');
     } finally {
       setPendingMapId(null);
       e.target.value = '';
@@ -61,22 +61,22 @@ export default function MapList() {
   };
 
   const handleDelete = async (mapId: string) => {
-    if (!campaignId || !confirm('Delete this map?')) return;
+    if (!campaignId || !confirm('¿Eliminar este mapa?')) return;
     await api.maps.delete(campaignId, mapId);
     setMaps((prev) => prev.filter((m) => m.id !== mapId));
   };
 
-  if (loading) return <p className="text-[var(--text-secondary)]">Loading...</p>;
+  if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
 
   return (
     <div className="max-w-3xl">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Image Library</h1>
+        <h1 className="text-2xl font-bold">Biblioteca de imágenes</h1>
         <button
           onClick={() => setShowForm(!showForm)}
           className="px-4 py-2 text-sm rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
         >
-          {showForm ? 'Cancel' : 'New Map'}
+          {showForm ? 'Cancelar' : 'Nuevo mapa'}
         </button>
       </div>
 
@@ -93,24 +93,24 @@ export default function MapList() {
       {showForm && (
         <form onSubmit={handleCreate} className="border border-[var(--bg-tertiary)] rounded-lg p-4 mb-6 space-y-3">
           <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-1">Map Name</label>
+            <label className="block text-sm text-[var(--text-secondary)] mb-1">Nombre del mapa</label>
             <input
               type="text"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               className="w-full px-3 py-2 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
-              placeholder="World Map, Dungeon Floor 1..."
+              placeholder="Mapa del mundo, Mazmorra Piso 1..."
               autoFocus
             />
           </div>
           <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-1">Description</label>
+            <label className="block text-sm text-[var(--text-secondary)] mb-1">Descripción</label>
             <input
               type="text"
               value={newDesc}
               onChange={(e) => setNewDesc(e.target.value)}
               className="w-full px-3 py-2 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
-              placeholder="Optional description"
+              placeholder="Descripción opcional"
             />
           </div>
           <button
@@ -118,15 +118,15 @@ export default function MapList() {
             disabled={saving || !newName.trim()}
             className="px-4 py-2 rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
           >
-            {saving ? 'Creating...' : 'Create & Upload Image'}
+            {saving ? 'Creando...' : 'Crear y subir imagen'}
           </button>
         </form>
       )}
 
       {maps.length === 0 ? (
         <div className="text-center py-20 text-[var(--text-secondary)]">
-          <p className="text-lg mb-2">No maps yet</p>
-          <p className="text-sm">Upload maps for your sessions.</p>
+          <p className="text-lg mb-2">Todavía no hay mapas</p>
+          <p className="text-sm">Subí mapas para tus sesiones.</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4">
@@ -144,12 +144,12 @@ export default function MapList() {
                       <img src={staticUrl(m.file_path)!} alt={m.name} className="w-full h-full object-cover" />
                     )
                   ) : (
-                    <span className="text-[var(--text-secondary)] text-sm">Map image</span>
+                    <span className="text-[var(--text-secondary)] text-sm">Imagen del mapa</span>
                   )}
                 </div>
               ) : (
                 <div className="h-40 bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-secondary)] text-sm">
-                  No image uploaded
+                  Sin imagen subida
                 </div>
               )}
               <div className="p-3">
@@ -159,13 +159,13 @@ export default function MapList() {
                     {m.description && (
                       <p className="text-xs text-[var(--text-secondary)] mt-1">{m.description}</p>
                     )}
-                    <p className="text-[10px] text-[var(--text-secondary)] mt-1 opacity-60">{m.map_type}</p>
+                    <p className="text-[10px] text-[var(--text-secondary)] mt-1 opacity-60">{m.map_type === 'world' ? 'Mundo' : m.map_type}</p>
                   </div>
                   <button
                     onClick={() => handleDelete(m.id)}
                     className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-red-400 hover:text-red-300"
                   >
-                    Delete
+                    Eliminar
                   </button>
                 </div>
               </div>

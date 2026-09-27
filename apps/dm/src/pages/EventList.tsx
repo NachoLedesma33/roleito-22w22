@@ -23,7 +23,7 @@ export default function EventList() {
       const updated = await api.events.approve(eventId);
       setEvents((prev) => prev.map((e) => (e.id === eventId ? updated : e)));
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to approve');
+      setError(e instanceof Error ? e.message : 'No se pudo aprobar');
     }
   };
 
@@ -32,34 +32,34 @@ export default function EventList() {
       const updated = await api.events.reject(eventId);
       setEvents((prev) => prev.map((e) => (e.id === eventId ? updated : e)));
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to reject');
+      setError(e instanceof Error ? e.message : 'No se pudo rechazar');
     }
   };
 
   const handleDelete = async (eventId: string) => {
-    if (!confirm('Delete this event?')) return;
+    if (!confirm('¿Eliminar este evento?')) return;
     try {
       await api.events.delete(eventId);
       setEvents((prev) => prev.filter((e) => e.id !== eventId));
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to delete');
+      setError(e instanceof Error ? e.message : 'No se pudo eliminar');
     }
   };
 
-  if (loading) return <p className="text-[var(--text-secondary)]">Loading...</p>;
+  if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">
-          Events {sessionId ? `(Session)` : `(Campaign)`}
+          Eventos {sessionId ? `(Sesión)` : `(Campaña)`}
         </h1>
         {sessionId && campaignId && (
           <Link
             to={`/campaigns/${campaignId}/sessions/${sessionId}`}
             className="text-sm text-[var(--accent)] hover:text-[var(--accent-hover)]"
           >
-            Back to Session
+            Volver a la sesión
           </Link>
         )}
       </div>
@@ -68,8 +68,8 @@ export default function EventList() {
 
       {events.length === 0 ? (
         <div className="text-center py-20 text-[var(--text-secondary)]">
-          <p className="text-lg mb-2">No events yet</p>
-          <p className="text-sm">Events will appear as sessions are processed.</p>
+          <p className="text-lg mb-2">Todavía no hay eventos</p>
+          <p className="text-sm">Los eventos aparecerán cuando se procesen las sesiones.</p>
         </div>
       ) : (
         <div className="grid gap-3">
@@ -86,7 +86,7 @@ export default function EventList() {
                   </div>
                   <p className="text-sm">{ev.description || ev.type}</p>
                   <p className="text-xs text-[var(--text-secondary)] mt-1">
-                    Actor: {ev.actor_id} · Session: {ev.session_id.slice(0, 8)}...
+                    Actor: {ev.actor_id} · Sesión: {ev.session_id.slice(0, 8)}...
                   </p>
                 </div>
                 <div className="flex gap-2 ml-4">
@@ -96,13 +96,13 @@ export default function EventList() {
                         onClick={() => handleApprove(ev.id)}
                         className="text-xs px-2 py-1 rounded bg-green-900/50 text-green-400 hover:bg-green-900/80"
                       >
-                        Approve
+                        Aprobar
                       </button>
                       <button
                         onClick={() => handleReject(ev.id)}
                         className="text-xs px-2 py-1 rounded bg-red-900/50 text-red-400 hover:bg-red-900/80"
                       >
-                        Reject
+                        Rechazar
                       </button>
                     </>
                   )}
@@ -110,7 +110,7 @@ export default function EventList() {
                     onClick={() => handleDelete(ev.id)}
                     className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-red-400 hover:text-red-300"
                   >
-                    Delete
+                    Eliminar
                   </button>
                 </div>
               </div>
@@ -157,7 +157,7 @@ function CanonBadge({ status }: { status: string }) {
   };
   return (
     <span className={`text-[10px] px-1.5 py-0.5 rounded ${styles[status] || styles.PROPOSED}`}>
-      {status}
+      {status === 'CANON' ? 'Canónico' : status === 'PROPOSED' ? 'Propuesto' : status === 'UNCONFIRMED' ? 'Sin confirmar' : status === 'REJECTED' ? 'Rechazado' : status === 'DM_ONLY' ? 'Solo DM' : status}
     </span>
   );
 }

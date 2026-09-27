@@ -70,47 +70,47 @@ export default function NPCForm() {
         navigate(`/campaigns/${campaignId}/npcs/${npc.id}`);
       }
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to save');
+      setError(e instanceof Error ? e.message : 'No se pudo guardar');
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <p className="text-[var(--text-secondary)]">Loading...</p>;
+  if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
 
   return (
     <div className="max-w-lg">
       <h1 className="text-2xl font-bold mb-6">
-        {isEdit ? 'Edit NPC' : 'New NPC'}
+        {isEdit ? 'Editar PNJ' : 'Nuevo PNJ'}
       </h1>
 
       {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-1">Name</label>
+          <label className="block text-sm text-[var(--text-secondary)] mb-1">Nombre</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full px-3 py-2 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
-            placeholder="NPC name"
+            placeholder="Nombre del PNJ"
             autoFocus
           />
         </div>
 
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-1">Description</label>
+          <label className="block text-sm text-[var(--text-secondary)] mb-1">Descripción</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             className="w-full px-3 py-2 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] h-24 resize-none"
-            placeholder="Who is this NPC?"
+            placeholder="¿Quién es este PNJ?"
           />
         </div>
 
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-2">Attributes (VIDA)</label>
+          <label className="block text-sm text-[var(--text-secondary)] mb-2">Atributos (VIDA)</label>
           <VidaAttrsInput
             vigor={vigor}
             intelligence={intelligence}
@@ -126,7 +126,7 @@ export default function NPCForm() {
         </div>
 
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-2">Stats</label>
+          <label className="block text-sm text-[var(--text-secondary)] mb-2">Características</label>
           <div className="grid grid-cols-3 gap-3">
             <NumberInput label="Max PV" value={maxPv} onChange={setMaxPv} />
             <NumberInput label="Max PM" value={maxPm} onChange={setMaxPm} />
@@ -140,14 +140,14 @@ export default function NPCForm() {
             disabled={saving}
             className="px-4 py-2 rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
           >
-            {saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Create NPC'}
+            {saving ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear PNJ'}
           </button>
           <button
             type="button"
             onClick={() => navigate(-1)}
             className="px-4 py-2 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
           >
-            Cancel
+            Cancelar
           </button>
         </div>
       </form>

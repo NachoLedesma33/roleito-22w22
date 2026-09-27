@@ -117,8 +117,8 @@ export default function SceneDetail() {
     setSceneChars(result);
   };
 
-  if (loading) return <p className="text-[var(--text-secondary)]">Loading...</p>;
-  if (!scene) return <p className="text-red-400">Scene not found</p>;
+  if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
+  if (!scene) return <p className="text-red-400">Escena no encontrada</p>;
 
   const allEntities = [
     ...characters.map((c) => ({ type: 'character' as const, id: c.id, name: c.name, sub: `${c.race} ${c.class_}`, portrait_path: c.portrait_path })),
@@ -143,28 +143,28 @@ export default function SceneDetail() {
                 value={desc}
                 onChange={(e) => setDesc(e.target.value)}
                 className="px-3 py-1 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-secondary)] text-sm flex-1"
-                placeholder="Description"
+                placeholder="Descripción"
               />
               <select
                 value={lighting}
                 onChange={(e) => setLighting(e.target.value)}
                 className="px-2 py-1 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] text-sm"
               >
-                <option value="neutral">Neutral</option>
-                <option value="dark">Dark</option>
-                <option value="dim">Dim</option>
-                <option value="bright">Bright</option>
-                <option value="torchlight">Torchlight</option>
+                <option value="neutral">Neutra</option>
+                <option value="dark">Oscura</option>
+                <option value="dim">Tenue</option>
+                <option value="bright">Brillante</option>
+                <option value="torchlight">Antorcha</option>
               </select>
-              <button onClick={handleSave} className="px-3 py-1 rounded bg-[var(--accent)] text-white text-sm">Save</button>
-              <button onClick={() => setEditing(false)} className="px-3 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] text-sm">Cancel</button>
+              <button onClick={handleSave} className="px-3 py-1 rounded bg-[var(--accent)] text-white text-sm">Guardar</button>
+              <button onClick={() => setEditing(false)} className="px-3 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] text-sm">Cancelar</button>
             </div>
           ) : (
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold">{scene.name}</h1>
               {scene.description && <span className="text-[var(--text-secondary)] text-sm">{scene.description}</span>}
               <span className={`text-xs px-2 py-0.5 rounded ${scene.status === 'active' ? 'bg-green-900/30 text-green-400' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'}`}>
-                {scene.status}
+                {scene.status === 'active' ? 'Activa' : 'Inactiva'}
               </span>
             </div>
           )}
@@ -172,14 +172,14 @@ export default function SceneDetail() {
         <div className="flex gap-2">
           {!editing && (
             <button onClick={() => setEditing(true)} className="px-3 py-1 text-sm rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
-              Edit
+              Editar
             </button>
           )}
           <button onClick={handleToggleActive} className={`px-3 py-1 text-sm rounded ${scene.status === 'active' ? 'bg-red-900/30 text-red-400' : 'bg-green-900/30 text-green-400'}`}>
-            {scene.status === 'active' ? 'Deactivate' : 'Activate'}
+            {scene.status === 'active' ? 'Desactivar' : 'Activar'}
           </button>
           <button onClick={() => fileInput.current?.click()} className="px-3 py-1 text-sm rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
-            Upload Background
+            Subir fondo
           </button>
           <input ref={fileInput} type="file" accept="image/*,.glb,.gltf" className="hidden" onChange={handleUploadBg} />
         </div>
@@ -188,7 +188,7 @@ export default function SceneDetail() {
       <div className="grid grid-cols-[1fr_280px] gap-4">
         <div className="border border-[var(--bg-tertiary)] rounded-lg overflow-hidden bg-black aspect-video">
           {scene.background_path ? (
-            <Suspense fallback={<div className="w-full h-full flex items-center justify-center text-[var(--text-secondary)]">Loading 3D...</div>}>
+            <Suspense fallback={<div className="w-full h-full flex items-center justify-center text-[var(--text-secondary)]">Cargando 3D...</div>}>
               <SceneRenderer
                 backgroundUrl={staticUrl(scene.background_path)!}
                 characters={sceneChars.map((sc) => {
@@ -196,7 +196,7 @@ export default function SceneDetail() {
                   return {
                     id: sc.id,
                     sceneCharId: sc.id,
-                    name: ent?.name || 'Unknown',
+                    name: ent?.name || 'Desconocido',
                     type: sc.entity_type,
                     x: sc.x,
                     y: sc.y,
@@ -215,8 +215,8 @@ export default function SceneDetail() {
           ) : (
             <div className="w-full h-full flex items-center justify-center text-[var(--text-secondary)]">
               <div className="text-center">
-                <p className="text-lg mb-2">No background image</p>
-                <p className="text-sm mb-4">Upload a map or pick from Image Library.</p>
+                <p className="text-lg mb-2">Sin imagen de fondo</p>
+                <p className="text-sm mb-4">Subí un mapa o elegilo de la Biblioteca de imágenes.</p>
                 {maps.length > 0 && (
                   <div className="flex gap-2 justify-center flex-wrap">
                     {maps.filter((m) => m.file_path).map((m) => (
@@ -237,9 +237,9 @@ export default function SceneDetail() {
 
         <div className="space-y-3">
           <div className="border border-[var(--bg-tertiary)] rounded-lg p-3">
-            <h3 className="text-sm font-medium mb-2">On Scene ({sceneChars.length})</h3>
+            <h3 className="text-sm font-medium mb-2">En escena ({sceneChars.length})</h3>
             {sceneChars.length === 0 ? (
-              <p className="text-xs text-[var(--text-secondary)]">No entities placed</p>
+              <p className="text-xs text-[var(--text-secondary)]">Sin entidades colocadas</p>
             ) : (
               <div className="space-y-1">
                 {sceneChars.map((sc) => {
@@ -247,7 +247,7 @@ export default function SceneDetail() {
                   return (
                     <div key={sc.id} className="flex items-center justify-between text-xs py-1 px-2 rounded bg-[var(--bg-tertiary)]">
                       <span>
-                        <span className="opacity-50">[{sc.entity_type}]</span> {ent?.name || 'Unknown'}
+                        <span className="opacity-50">[{sc.entity_type}]</span> {ent?.name || 'Desconocido'}
                       </span>
                       <button
                         onClick={() => handleRemoveFromScene(sc.id)}
@@ -263,7 +263,7 @@ export default function SceneDetail() {
           </div>
 
           <div className="border border-[var(--bg-tertiary)] rounded-lg p-3">
-            <h3 className="text-sm font-medium mb-2">Available</h3>
+            <h3 className="text-sm font-medium mb-2">Disponibles</h3>
             <div className="space-y-1 max-h-60 overflow-y-auto">
               {allEntities.filter((e) => !onSceneIds.has(e.id)).map((ent) => (
                 <button
@@ -274,19 +274,19 @@ export default function SceneDetail() {
                   <span>
                     <span className="opacity-50">[{ent.type}]</span> {ent.name}
                   </span>
-                  <span className="text-[var(--accent)]">+ Add</span>
+                  <span className="text-[var(--accent)]">+ Agregar</span>
                 </button>
               ))}
             </div>
           </div>
 
           <div className="border border-[var(--bg-tertiary)] rounded-lg p-3">
-            <h3 className="text-sm font-medium mb-2">Scene Notes</h3>
+            <h3 className="text-sm font-medium mb-2">Notas de la escena</h3>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               onBlur={handleSave}
-              placeholder="Notes about this scene..."
+              placeholder="Notas sobre esta escena..."
               className="w-full h-32 text-xs bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded p-2 text-[var(--text-primary)] placeholder-[var(--text-secondary)] resize-none focus:outline-none focus:border-[var(--accent)]"
             />
           </div>

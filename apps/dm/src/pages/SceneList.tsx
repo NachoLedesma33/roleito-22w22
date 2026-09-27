@@ -38,46 +38,46 @@ export default function SceneList() {
   };
 
   const handleDelete = async (sceneId: string) => {
-    if (!campaignId || !confirm('Delete this scene?')) return;
+    if (!campaignId || !confirm('¿Eliminar esta escena?')) return;
     await api.scenes.delete(campaignId, sceneId);
     setScenes((prev) => prev.filter((s) => s.id !== sceneId));
   };
 
-  if (loading) return <p className="text-[var(--text-secondary)]">Loading...</p>;
+  if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
 
   return (
     <div className="max-w-3xl">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Scenes</h1>
+        <h1 className="text-2xl font-bold">Escenas</h1>
         <button
           onClick={() => setShowForm(!showForm)}
           className="px-4 py-2 text-sm rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
         >
-          {showForm ? 'Cancel' : 'New Scene'}
+          {showForm ? 'Cancelar' : 'Nueva escena'}
         </button>
       </div>
 
       {showForm && (
         <form onSubmit={handleCreate} className="border border-[var(--bg-tertiary)] rounded-lg p-4 mb-6 space-y-3">
           <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-1">Scene Name</label>
+            <label className="block text-sm text-[var(--text-secondary)] mb-1">Nombre de la escena</label>
             <input
               type="text"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               className="w-full px-3 py-2 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
-              placeholder="Tavern, Forest, Dungeon..."
+              placeholder="Taberna, Bosque, Mazmorra..."
               autoFocus
             />
           </div>
           <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-1">Description</label>
+            <label className="block text-sm text-[var(--text-secondary)] mb-1">Descripción</label>
             <input
               type="text"
               value={newDesc}
               onChange={(e) => setNewDesc(e.target.value)}
               className="w-full px-3 py-2 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
-              placeholder="Optional description"
+              placeholder="Descripción opcional"
             />
           </div>
           <button
@@ -85,15 +85,15 @@ export default function SceneList() {
             disabled={saving || !newName.trim()}
             className="px-4 py-2 rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
           >
-            {saving ? 'Creating...' : 'Create Scene'}
+            {saving ? 'Creando...' : 'Crear escena'}
           </button>
         </form>
       )}
 
       {scenes.length === 0 ? (
         <div className="text-center py-20 text-[var(--text-secondary)]">
-          <p className="text-lg mb-2">No scenes yet</p>
-          <p className="text-sm">Create scenes to render in 3D.</p>
+          <p className="text-lg mb-2">Todavía no hay escenas</p>
+          <p className="text-sm">Creá escenas para renderizar en 3D.</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4">
@@ -104,7 +104,7 @@ export default function SceneList() {
               onClick={() => navigate(`/campaigns/${campaignId}/scenes/${s.id}`)}
             >
               <div className="h-32 bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-secondary)] text-sm">
-                {s.background_path ? '🗺 Scene' : 'No background'}
+                {s.background_path ? '🗺 Escena' : 'Sin fondo'}
               </div>
               <div className="p-3">
                 <div className="flex items-start justify-between">
@@ -115,10 +115,10 @@ export default function SceneList() {
                     )}
                     <div className="flex gap-2 mt-2">
                       <span className={`text-[10px] px-1.5 py-0.5 rounded ${s.status === 'active' ? 'bg-green-900/30 text-green-400' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'}`}>
-                        {s.status}
+                        {s.status === 'active' ? 'Activa' : s.status}
                       </span>
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)]">
-                        {s.lighting}
+                        {s.lighting === 'neutral' ? 'Neutra' : s.lighting === 'dark' ? 'Oscura' : s.lighting === 'dim' ? 'Tenue' : s.lighting === 'bright' ? 'Brillante' : s.lighting === 'torchlight' ? 'Antorcha' : s.lighting}
                       </span>
                     </div>
                   </div>
@@ -126,7 +126,7 @@ export default function SceneList() {
                     onClick={(e) => { e.stopPropagation(); handleDelete(s.id); }}
                     className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-red-400 hover:text-red-300"
                   >
-                    Delete
+                    Eliminar
                   </button>
                 </div>
               </div>

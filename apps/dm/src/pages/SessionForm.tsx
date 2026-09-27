@@ -64,12 +64,12 @@ export default function SessionForm() {
     }
   };
 
-  if (loading) return <p className="text-[var(--text-secondary)]">Loading...</p>;
+  if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
 
   return (
     <div className="max-w-lg">
       <h1 className="text-2xl font-bold mb-6">
-        {isEdit ? 'Edit Session' : 'New Session'}
+        {isEdit ? 'Editar sesión' : 'Nueva sesión'}
       </h1>
 
       {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
@@ -77,7 +77,7 @@ export default function SessionForm() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-1">Number</label>
+            <label className="block text-sm text-[var(--text-secondary)] mb-1">Número</label>
             <input
               type="number"
               min={1}
@@ -87,7 +87,7 @@ export default function SessionForm() {
             />
           </div>
           <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-1">Date</label>
+            <label className="block text-sm text-[var(--text-secondary)] mb-1">Fecha</label>
             <input
               type="date"
               value={date}
@@ -98,34 +98,34 @@ export default function SessionForm() {
         </div>
 
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-1">Title</label>
+          <label className="block text-sm text-[var(--text-secondary)] mb-1">Título</label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="w-full px-3 py-2 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
-            placeholder="Session title..."
+            placeholder="Título de la sesión..."
             autoFocus
           />
         </div>
 
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-1">Raw Notes</label>
+          <label className="block text-sm text-[var(--text-secondary)] mb-1">Notas crudas</label>
           <textarea
             value={rawNotes}
             onChange={(e) => setRawNotes(e.target.value)}
             className="w-full px-3 py-2 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] h-32 resize-none"
-            placeholder="Session notes, events, decisions..."
+            placeholder="Notas de la sesión, eventos, decisiones..."
           />
         </div>
 
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-1">Summary</label>
+          <label className="block text-sm text-[var(--text-secondary)] mb-1">Resumen</label>
           <textarea
             value={summary}
             onChange={(e) => setSummary(e.target.value)}
             className="w-full px-3 py-2 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] h-24 resize-none"
-            placeholder="Session summary..."
+            placeholder="Resumen de la sesión..."
           />
         </div>
 
@@ -135,14 +135,14 @@ export default function SessionForm() {
             disabled={saving}
             className="px-4 py-2 rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
           >
-            {saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Session'}
+            {saving ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear sesión'}
           </button>
           <button
             type="button"
             onClick={() => navigate(-1)}
             className="px-4 py-2 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
           >
-            Cancel
+            Cancelar
           </button>
         </div>
       </form>

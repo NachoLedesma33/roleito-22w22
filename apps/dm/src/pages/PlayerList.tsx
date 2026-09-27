@@ -58,21 +58,21 @@ export default function PlayerList() {
       });
       setPlayers((prev) => prev.map((p) => (p.id === playerId ? updated : p)));
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to assign');
+      setError(e instanceof Error ? e.message : 'No se pudo asignar');
     }
   };
 
-  if (loading) return <p className="text-[var(--text-secondary)]">Loading...</p>;
+  if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
 
   return (
     <div className="max-w-2xl">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Players</h1>
+        <h1 className="text-2xl font-bold">Jugadores</h1>
         <button
           onClick={() => setShowForm(!showForm)}
           className="px-4 py-2 text-sm rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
         >
-          {showForm ? 'Cancel' : 'Add Player'}
+          {showForm ? 'Cancelar' : 'Agregar jugador'}
         </button>
       </div>
 
@@ -81,24 +81,24 @@ export default function PlayerList() {
       {showForm && (
         <form onSubmit={handleCreate} className="border border-[var(--bg-tertiary)] rounded-lg p-4 mb-6 space-y-3">
           <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-1">Player Name</label>
+            <label className="block text-sm text-[var(--text-secondary)] mb-1">Nombre del jugador</label>
             <input
               type="text"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               className="w-full px-3 py-2 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
-              placeholder="Player name"
+              placeholder="Nombre del jugador"
               autoFocus
             />
           </div>
           <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-1">Assign Character</label>
+            <label className="block text-sm text-[var(--text-secondary)] mb-1">Asignar personaje</label>
             <select
               value={newCharId}
               onChange={(e) => setNewCharId(e.target.value)}
               className="w-full px-3 py-2 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
             >
-              <option value="">No character assigned</option>
+              <option value="">Sin personaje asignado</option>
               {characters.map((c) => (
                 <option key={c.id} value={c.id}>{c.name} ({c.race} {c.class_})</option>
               ))}
@@ -109,15 +109,15 @@ export default function PlayerList() {
             disabled={saving || !newName.trim()}
             className="px-4 py-2 rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
           >
-            {saving ? 'Adding...' : 'Add Player'}
+            {saving ? 'Agregando...' : 'Agregar jugador'}
           </button>
         </form>
       )}
 
       {players.length === 0 ? (
         <div className="text-center py-20 text-[var(--text-secondary)]">
-          <p className="text-lg mb-2">No players yet</p>
-          <p className="text-sm">Add players and assign them characters.</p>
+          <p className="text-lg mb-2">Todavía no hay jugadores</p>
+          <p className="text-sm">Agregá jugadores y asignales personajes.</p>
         </div>
       ) : (
         <div className="grid gap-3">
@@ -138,7 +138,7 @@ export default function PlayerList() {
                       <p className="text-xs text-[var(--text-secondary)]">
                         {assignedChar
                           ? `${assignedChar.name} (${assignedChar.race} ${assignedChar.class_})`
-                          : 'No character assigned'}
+                          : 'Sin personaje asignado'}
                       </p>
                     </div>
                   </div>
@@ -148,7 +148,7 @@ export default function PlayerList() {
                       onChange={(e) => handleAssign(p.id, e.target.value)}
                       className="text-xs px-2 py-1 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)]"
                     >
-                      <option value="">Unassigned</option>
+                      <option value="">Sin asignar</option>
                       {characters.map((c) => (
                         <option key={c.id} value={c.id}>{c.name}</option>
                       ))}
@@ -157,7 +157,7 @@ export default function PlayerList() {
                       onClick={() => handleDelete(p.id)}
                       className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-red-400 hover:text-red-300"
                     >
-                      Remove
+                      Quitar
                     </button>
                   </div>
                 </div>

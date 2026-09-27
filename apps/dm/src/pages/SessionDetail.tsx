@@ -56,7 +56,7 @@ export default function SessionDetail() {
               #{session.number}
             </div>
             <div>
-              <h1 className="text-2xl font-bold">{session.title || `Session ${session.number}`}</h1>
+              <h1 className="text-2xl font-bold">{session.title || `Sesión ${session.number}`}</h1>
               <p className="text-[var(--text-secondary)]">{session.date}</p>
             </div>
           </div>
@@ -67,7 +67,7 @@ export default function SessionDetail() {
               onClick={handleStart}
               className="text-sm px-3 py-1 rounded bg-green-900/50 text-green-400 hover:bg-green-900/80 transition-colors"
             >
-              Start
+              Iniciar
             </button>
           )}
           {session.status === 'ACTIVE' && (
@@ -75,20 +75,20 @@ export default function SessionDetail() {
               onClick={handleEnd}
               className="text-sm px-3 py-1 rounded bg-blue-900/50 text-blue-400 hover:bg-blue-900/80 transition-colors"
             >
-              End
+              Finalizar
             </button>
           )}
           <Link
             to={`/campaigns/${campaignId}/sessions/${sessionId}/edit`}
             className="text-sm px-3 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
           >
-            Edit
+            Editar
           </Link>
           <button
             onClick={handleDelete}
             className="text-sm px-3 py-1 rounded bg-[var(--bg-tertiary)] text-red-400 hover:text-red-300 transition-colors"
           >
-            Delete
+            Eliminar
           </button>
         </div>
       </div>
@@ -96,33 +96,33 @@ export default function SessionDetail() {
       <div className="flex items-center gap-3 mb-6">
         <StatusBadge status={session.status} />
         <span className="text-xs text-[var(--text-secondary)]">
-          Created {new Date(session.created_at).toLocaleString()}
+          Creada {new Date(session.created_at).toLocaleString()}
         </span>
       </div>
 
       <div className="space-y-6">
         {session.summary && (
           <section>
-            <h2 className="text-lg font-semibold mb-3">Summary</h2>
+            <h2 className="text-lg font-semibold mb-3">Resumen</h2>
             <p className="text-[var(--text-secondary)] whitespace-pre-wrap">{session.summary}</p>
           </section>
         )}
 
         {session.raw_notes && (
           <section>
-            <h2 className="text-lg font-semibold mb-3">Raw Notes</h2>
+            <h2 className="text-lg font-semibold mb-3">Notas crudas</h2>
             <p className="text-[var(--text-secondary)] whitespace-pre-wrap">{session.raw_notes}</p>
           </section>
         )}
 
         {!session.summary && !session.raw_notes && (
           <div className="text-center py-12 text-[var(--text-secondary)]">
-            <p>No notes or summary yet.</p>
+            <p>Todavía no hay notas ni resumen.</p>
             <Link
               to={`/campaigns/${campaignId}/sessions/${sessionId}/edit`}
               className="text-[var(--accent)] hover:text-[var(--accent-hover)] text-sm mt-2 inline-block"
             >
-              Add notes
+              Agregar notas
             </Link>
           </div>
         )}

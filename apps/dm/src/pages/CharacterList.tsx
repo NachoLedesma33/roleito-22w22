@@ -18,30 +18,30 @@ export default function CharacterList() {
   }, [campaignId]);
 
   const handleDelete = async (charId: string) => {
-    if (!campaignId || !confirm('Delete this character?')) return;
+    if (!campaignId || !confirm('¿Eliminar este personaje?')) return;
     await api.characters.delete(campaignId, charId);
     setCharacters((prev) => prev.filter((c) => c.id !== charId));
   };
 
-  if (loading) return <p className="text-[var(--text-secondary)]">Loading...</p>;
+  if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
   if (error) return <p className="text-red-400">Error: {error}</p>;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Characters</h1>
+        <h1 className="text-2xl font-bold">Personajes</h1>
         <Link
           to={`/campaigns/${campaignId}/characters/new`}
           className="px-4 py-2 text-sm rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
         >
-          New Character
+          Nuevo personaje
         </Link>
       </div>
 
       {characters.length === 0 ? (
         <div className="text-center py-20 text-[var(--text-secondary)]">
-          <p className="text-lg mb-2">No characters yet</p>
-          <p className="text-sm">Create your first character to begin.</p>
+          <p className="text-lg mb-2">Todavía no hay personajes</p>
+          <p className="text-sm">Creá tu primer personaje para empezar.</p>
         </div>
       ) : (
         <div className="grid gap-4">
@@ -64,7 +64,7 @@ export default function CharacterList() {
                         {c.name}
                       </h2>
                       <p className="text-xs text-[var(--text-secondary)]">
-                        {c.race} {c.class_} · {c.type}
+                        {c.race} {c.class_} · {c.type === 'player' ? 'Jugador' : c.type === 'creature' ? 'Criatura' : c.type}
                       </p>
                     </div>
                   </div>
@@ -75,13 +75,13 @@ export default function CharacterList() {
                     c.status === 'dead' ? 'bg-red-900/50 text-red-400' :
                     'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'
                   }`}>
-                    {c.status}
+                    {c.status === 'alive' ? 'Vivo' : c.status === 'dead' ? 'Muerto' : c.status}
                   </span>
                   <button
                     onClick={() => handleDelete(c.id)}
                     className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-red-400 hover:text-red-300"
                   >
-                    Delete
+                    Eliminar
                   </button>
                 </div>
               </div>

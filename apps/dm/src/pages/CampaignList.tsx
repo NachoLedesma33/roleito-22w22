@@ -137,7 +137,7 @@ export default function CampaignList() {
     setBulkAction('edit');
   };
 
-  if (loading) return <p className="text-[var(--text-secondary)]">Loading...</p>;
+  if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
   if (error) return <p className="text-red-400">Error: {error}</p>;
 
   const hasSelection = selectedIds.size > 0;
@@ -146,19 +146,19 @@ export default function CampaignList() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Campaigns</h1>
+        <h1 className="text-2xl font-bold">Campañas</h1>
         <div className="flex gap-3">
           <button
             onClick={handleImport}
             className="px-4 py-2 text-sm rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
           >
-            Import
+            Importar
           </button>
           <Link
             to="/campaigns/new"
             className="px-4 py-2 text-sm rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
           >
-            New Campaign
+            Nueva campaña
           </Link>
         </div>
       </div>
@@ -166,37 +166,37 @@ export default function CampaignList() {
       {hasSelection && (
         <div className="mb-4 p-3 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--accent)] flex items-center gap-4">
           <span className="text-sm text-[var(--text-primary)]">
-            {selectedIds.size} selected
+            {selectedIds.size} seleccionadas
           </span>
           <button
             onClick={handleBulkDelete}
             className="text-xs px-3 py-1.5 rounded bg-red-900/50 text-red-400 hover:bg-red-900/80 transition-colors"
           >
-            Delete
+            Eliminar
           </button>
           <button
             onClick={handleBulkExportAll}
             className="text-xs px-3 py-1.5 rounded bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
           >
-            Export (combined)
+            Exportar (combinado)
           </button>
           <button
             onClick={handleBulkExportIndividual}
             className="text-xs px-3 py-1.5 rounded bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
           >
-            Export (individual)
+            Exportar (individual)
           </button>
           <button
             onClick={openBulkEdit}
             className="text-xs px-3 py-1.5 rounded bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
           >
-            Edit
+            Editar
           </button>
           <button
             onClick={clearSelection}
             className="text-xs px-3 py-1.5 rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
           >
-            Clear
+            Limpiar
           </button>
         </div>
       )}
@@ -204,21 +204,21 @@ export default function CampaignList() {
       {bulkAction === 'edit' && (
         <div className="mb-4 p-4 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--accent)]">
           <h3 className="text-sm font-medium text-[var(--text-primary)] mb-3">
-            Edit {selectedIds.size} campaign(s)
+            Editar {selectedIds.size} campaña(s)
           </h3>
           <div className="space-y-3">
             <input
               type="text"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
-              placeholder="New name (leave empty to keep)"
+              placeholder="Nuevo nombre (vacío = mantener)"
               className="w-full px-3 py-2 text-sm rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent)]"
             />
             <input
               type="text"
               value={editDescription}
               onChange={(e) => setEditDescription(e.target.value)}
-              placeholder="New description (leave empty to keep)"
+              placeholder="Nueva descripción (vacío = mantener)"
               className="w-full px-3 py-2 text-sm rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent)]"
             />
             <div className="flex gap-2">
@@ -226,13 +226,13 @@ export default function CampaignList() {
                 onClick={handleBulkEdit}
                 className="px-3 py-1.5 text-sm rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
               >
-                Apply
+                Aplicar
               </button>
               <button
                 onClick={() => setBulkAction(null)}
                 className="px-3 py-1.5 text-sm rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
               >
-                Cancel
+                Cancelar
               </button>
             </div>
           </div>
@@ -241,8 +241,8 @@ export default function CampaignList() {
 
       {campaigns.length === 0 ? (
         <div className="text-center py-20 text-[var(--text-secondary)]">
-          <p className="text-lg mb-2">No campaigns yet</p>
-          <p className="text-sm">Create one or import an existing campaign.</p>
+          <p className="text-lg mb-2">Todavía no hay campañas</p>
+          <p className="text-sm">Creá una o importá una campaña existente.</p>
         </div>
       ) : (
         <div className="grid gap-4">
@@ -254,7 +254,7 @@ export default function CampaignList() {
               className="w-4 h-4 rounded border-[var(--bg-tertiary)] text-[var(--accent)] focus:ring-[var(--accent)]"
             />
             <span className="text-xs text-[var(--text-secondary)]">
-              {allSelected ? 'Deselect all' : 'Select all'}
+              {allSelected ? 'Deseleccionar todas' : 'Seleccionar todas'}
             </span>
           </div>
           {campaigns.map((c) => (
@@ -286,7 +286,7 @@ export default function CampaignList() {
                     </p>
                   )}
                   <p className="text-xs text-[var(--text-secondary)] mt-2 opacity-60">
-                    Updated {new Date(c.updated_at).toLocaleDateString()}
+                    Actualizada {new Date(c.updated_at).toLocaleDateString()}
                   </p>
                 </Link>
                 <div className="flex gap-2 ml-4">
@@ -294,19 +294,19 @@ export default function CampaignList() {
                     to={`/campaigns/${c.id}/manage`}
                     className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                   >
-                    Manage
+                    Gestionar
                   </Link>
                   <button
                     onClick={() => handleExport(c.id)}
                     className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                   >
-                    Export
+                    Exportar
                   </button>
                   <button
                     onClick={() => handleDelete(c.id)}
                     className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-red-400 hover:text-red-300"
                   >
-                    Delete
+                    Eliminar
                   </button>
                 </div>
               </div>

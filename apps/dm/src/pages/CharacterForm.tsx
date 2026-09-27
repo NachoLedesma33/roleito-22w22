@@ -128,39 +128,39 @@ export default function CharacterForm() {
   return (
     <div className="max-w-lg">
       <h1 className="text-2xl font-bold mb-6">
-        {isEdit ? 'Edit Character' : 'New Character'}
+        {isEdit ? 'Editar personaje' : 'Nuevo personaje'}
       </h1>
 
       {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-1">Name</label>
+          <label className="block text-sm text-[var(--text-secondary)] mb-1">Nombre</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full px-3 py-2 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
-            placeholder="Character name"
+            placeholder="Nombre del personaje"
             autoFocus
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-1">Type</label>
+            <label className="block text-sm text-[var(--text-secondary)] mb-1">Tipo</label>
             <select
               value={type}
               onChange={(e) => setType(e.target.value)}
               className="w-full px-3 py-2 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
             >
-              <option value="player">Player</option>
-              <option value="npc">NPC</option>
-              <option value="creature">Creature</option>
+              <option value="player">Jugador</option>
+              <option value="npc">PNJ</option>
+              <option value="creature">Criatura</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-1">Race</label>
+            <label className="block text-sm text-[var(--text-secondary)] mb-1">Raza</label>
             <input
               type="text"
               value={race}
@@ -172,7 +172,7 @@ export default function CharacterForm() {
         </div>
 
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-1">Class</label>
+          <label className="block text-sm text-[var(--text-secondary)] mb-1">Clase</label>
           <input
             type="text"
             value={className}
@@ -183,17 +183,17 @@ export default function CharacterForm() {
         </div>
 
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-1">Description</label>
+          <label className="block text-sm text-[var(--text-secondary)] mb-1">Descripción</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             className="w-full px-3 py-2 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] h-24 resize-none"
-            placeholder="Character description..."
+            placeholder="Descripción del personaje..."
           />
         </div>
 
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-1">Portrait</label>
+          <label className="block text-sm text-[var(--text-secondary)] mb-1">Retrato</label>
           <div className="flex items-center gap-4">
             <button
               type="button"
@@ -221,14 +221,14 @@ export default function CharacterForm() {
               }}
             />
             <div className="text-xs text-[var(--text-secondary)]">
-              <p>{portraitFile ? portraitFile.name : 'No file selected'}</p>
-              <p className="mt-1">Optional. Upload a portrait for this character.</p>
+              <p>{portraitFile ? portraitFile.name : 'No hay archivo seleccionado'}</p>
+              <p className="mt-1">Opcional. Subí un retrato para este personaje.</p>
             </div>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-1">3D Model (.glb)</label>
+          <label className="block text-sm text-[var(--text-secondary)] mb-1">Modelo 3D (.glb)</label>
           <div className="flex items-start gap-4">
             <button
               type="button"
@@ -265,15 +265,15 @@ export default function CharacterForm() {
               }}
             />
             <div className="text-xs text-[var(--text-secondary)]">
-              <p>{modelFile ? modelFile.name : 'No file selected'}</p>
-              <p className="mt-1">Optional. Upload a .glb 3D model. If set, renders as 3D token in scene.</p>
+              <p>{modelFile ? modelFile.name : 'No hay archivo seleccionado'}</p>
+              <p className="mt-1">Opcional. Subí un modelo 3D .glb. Si se setea, se renderiza como token 3D en la escena.</p>
               {modelPreviewUrl && (
                 <button
                   type="button"
                   onClick={() => { setModelFile(null); setModelPreviewUrl(null); }}
                   className="mt-1 text-red-400 hover:text-red-300"
                 >
-                  Remove model
+                  Quitar modelo
                 </button>
               )}
             </div>
@@ -281,7 +281,7 @@ export default function CharacterForm() {
         </div>
 
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-2">Attributes (VIDA)</label>
+          <label className="block text-sm text-[var(--text-secondary)] mb-2">Atributos (VIDA)</label>
           <VidaAttrsInput
             vigor={vigor}
             intelligence={intelligence}
@@ -297,7 +297,7 @@ export default function CharacterForm() {
         </div>
 
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-2">Stats</label>
+          <label className="block text-sm text-[var(--text-secondary)] mb-2">Características</label>
           <div className="grid grid-cols-3 gap-3">
             <NumberInput label="Max PV" value={maxPv} onChange={setMaxPv} />
             <NumberInput label="Max PM" value={maxPm} onChange={setMaxPm} />
@@ -311,14 +311,14 @@ export default function CharacterForm() {
             disabled={saving}
             className="px-4 py-2 rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
           >
-            {saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Character'}
+            {saving ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear personaje'}
           </button>
           <button
             type="button"
             onClick={() => navigate(-1)}
             className="px-4 py-2 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
           >
-            Cancel
+            Cancelar
           </button>
         </div>
       </form>

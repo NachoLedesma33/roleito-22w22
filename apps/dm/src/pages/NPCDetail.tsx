@@ -62,7 +62,7 @@ export default function NPCDetail() {
           <button
             onClick={() => fileInput.current?.click()}
             className="w-16 h-16 rounded-full bg-[var(--bg-tertiary)] flex items-center justify-center text-2xl font-bold text-[var(--text-secondary)] overflow-hidden shrink-0 hover:ring-2 hover:ring-[var(--accent)] transition-all cursor-pointer"
-            title="Click to upload portrait"
+            title="Hacé clic para subir retrato"
           >
             {pUrl ? (
               <img src={pUrl} alt={npc.name} className="w-full h-full object-cover" />
@@ -78,7 +78,7 @@ export default function NPCDetail() {
               npc.status === 'dead' ? 'bg-red-900/50 text-red-400' :
               'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'
             }`}>
-              {npc.status}
+              {npc.status === 'alive' ? 'Vivo' : npc.status === 'dead' ? 'Muerto' : npc.status}
             </span>
           </div>
         </div>
@@ -87,13 +87,13 @@ export default function NPCDetail() {
             to={`/campaigns/${campaignId}/npcs/${npcId}/edit`}
             className="text-sm px-3 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
           >
-            Edit
+            Editar
           </Link>
           <button
             onClick={handleDelete}
             className="text-sm px-3 py-1 rounded bg-[var(--bg-tertiary)] text-red-400 hover:text-red-300 transition-colors"
           >
-            Delete
+            Eliminar
           </button>
         </div>
       </div>
@@ -104,17 +104,17 @@ export default function NPCDetail() {
 
       <div className="space-y-6">
         <section>
-          <h2 className="text-lg font-semibold mb-3">Attributes (VIDA)</h2>
+          <h2 className="text-lg font-semibold mb-3">Atributos (VIDA)</h2>
           <VidaAttrs vigor={npc.vigor} intelligence={npc.intelligence} dexterity={npc.dexterity} cunning={npc.cunning} />
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold mb-3">Derived Stats</h2>
+          <h2 className="text-lg font-semibold mb-3">Características derivadas</h2>
           <VidaDerived max_pv={npc.max_pv} max_pm={npc.max_pm} defense={npc.defense} />
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold mb-3">Current State</h2>
+          <h2 className="text-lg font-semibold mb-3">Estado actual</h2>
           <div className="space-y-3">
             <VidaBar current={npc.current_pv} max={npc.max_pv} label="PV (Puntos de Vida)" color="bg-red-500" />
             <VidaBar current={npc.current_pm} max={npc.max_pm} label="PM (Puntos de Mente)" color="bg-blue-500" />
@@ -122,29 +122,29 @@ export default function NPCDetail() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold mb-3">Recovery</h2>
+          <h2 className="text-lg font-semibold mb-3">Recuperación</h2>
           <div className="grid grid-cols-2 gap-3">
             <div className="border border-[var(--bg-tertiary)] rounded-lg p-3">
-              <p className="text-xs text-[var(--text-secondary)]">Physical Regen</p>
+              <p className="text-xs text-[var(--text-secondary)]">Regeneración física</p>
               <p className="text-sm mt-1">{REGEN_TEXT[npc.vigor]}</p>
             </div>
             <div className="border border-[var(--bg-tertiary)] rounded-lg p-3">
-              <p className="text-xs text-[var(--text-secondary)]">Mental Regen</p>
+              <p className="text-xs text-[var(--text-secondary)]">Regeneración mental</p>
               <p className="text-sm mt-1">{REGEN_TEXT[npc.intelligence]}</p>
             </div>
           </div>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold mb-3">Info</h2>
+          <h2 className="text-lg font-semibold mb-3">Información</h2>
           <div className="grid grid-cols-2 gap-3">
             <div className="border border-[var(--bg-tertiary)] rounded-lg p-3">
-              <p className="text-xs text-[var(--text-secondary)]">Knowledge</p>
+              <p className="text-xs text-[var(--text-secondary)]">Conocimiento</p>
               <p className="text-sm mt-1">{npc.knowledge_scope}</p>
             </div>
             <div className="border border-[var(--bg-tertiary)] rounded-lg p-3">
-              <p className="text-xs text-[var(--text-secondary)]">Location</p>
-              <p className="text-sm mt-1">{npc.current_location_id || 'None'}</p>
+              <p className="text-xs text-[var(--text-secondary)]">Ubicación</p>
+              <p className="text-sm mt-1">{npc.current_location_id || 'Ninguna'}</p>
             </div>
           </div>
         </section>

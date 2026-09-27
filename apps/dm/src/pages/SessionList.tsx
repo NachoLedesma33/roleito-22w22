@@ -17,30 +17,30 @@ export default function SessionList() {
   }, [campaignId]);
 
   const handleDelete = async (sessionId: string) => {
-    if (!campaignId || !confirm('Delete this session?')) return;
+    if (!campaignId || !confirm('¿Eliminar esta sesión?')) return;
     await api.sessions.delete(campaignId, sessionId);
     setSessions((prev) => prev.filter((s) => s.id !== sessionId));
   };
 
-  if (loading) return <p className="text-[var(--text-secondary)]">Loading...</p>;
+  if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
   if (error) return <p className="text-red-400">Error: {error}</p>;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Sessions</h1>
+        <h1 className="text-2xl font-bold">Sesiones</h1>
         <Link
           to={`/campaigns/${campaignId}/sessions/new`}
           className="px-4 py-2 text-sm rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
         >
-          New Session
+          Nueva sesión
         </Link>
       </div>
 
       {sessions.length === 0 ? (
         <div className="text-center py-20 text-[var(--text-secondary)]">
-          <p className="text-lg mb-2">No sessions yet</p>
-          <p className="text-sm">Create your first session to start tracking your campaign.</p>
+          <p className="text-lg mb-2">Todavía no hay sesiones</p>
+          <p className="text-sm">Creá tu primera sesión para empezar a registrar tu campaña.</p>
         </div>
       ) : (
         <div className="grid gap-3">
@@ -60,7 +60,7 @@ export default function SessionList() {
                     </div>
                     <div>
                       <h2 className="font-semibold hover:text-[var(--accent)] transition-colors">
-                        {s.title || `Session ${s.number}`}
+                        {s.title || `Sesión ${s.number}`}
                       </h2>
                       <p className="text-xs text-[var(--text-secondary)]">
                         {s.date}
@@ -100,7 +100,7 @@ function StatusBadge({ status }: { status: string }) {
   };
   return (
     <span className={`text-xs px-2 py-0.5 rounded ${styles[status] || styles.DRAFT}`}>
-      {status}
+      {status === 'DRAFT' ? 'Borrador' : status === 'ACTIVE' ? 'Activa' : status === 'COMPLETED' ? 'Completada' : status === 'ARCHIVED' ? 'Archivada' : status}
     </span>
   );
 }
