@@ -1,6 +1,6 @@
 import { Suspense, useMemo, useRef, useCallback, useEffect, useState } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { OrbitControls, useTexture, useGLTF } from '@react-three/drei';
+import { OrbitControls, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import TokenSprite from './TokenSprite';
 import TokenModel from './TokenModel';
@@ -125,6 +125,7 @@ function SceneBackgroundVideo({ url, mapScale = 1 }: { url: string; mapScale?: n
   const textureRef = useRef<THREE.VideoTexture | null>(null);
   const [texture, setTexture] = useState<THREE.VideoTexture | null>(null);
   const [aspect, setAspect] = useState<number | null>(null);
+  const gl = useThree((state) => state.gl);
 
   useEffect(() => {
     const video = document.createElement('video');
@@ -135,6 +136,7 @@ function SceneBackgroundVideo({ url, mapScale = 1 }: { url: string; mapScale?: n
     video.src = url;
     const tex = new THREE.VideoTexture(video);
     tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = gl.capabilities.getMaxAnisotropy();
     textureRef.current = tex;
     const onMeta = () => {
       if (video.videoWidth && video.videoHeight) {
@@ -151,7 +153,7 @@ function SceneBackgroundVideo({ url, mapScale = 1 }: { url: string; mapScale?: n
       textureRef.current = null;
       tex.dispose();
     };
-  }, [url]);
+  }, [url, gl]);
 
   useFrame(() => {
     const tex = textureRef.current;
@@ -174,9 +176,26 @@ function SceneBackgroundVideo({ url, mapScale = 1 }: { url: string; mapScale?: n
 }
 
 function SceneBackgroundImage({ url, mapScale = 1 }: { url: string; mapScale?: number }) {
-  const texture = useTexture(url);
-  const img = texture.image as HTMLImageElement;
-  const aspect = img.width / img.height;
+  const gl = useThree((state) => state.gl);
+  const [texture, setTexture] = useState<THREE.Texture | null>(null);
+  const [aspect, setAspect] = useState<number | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    const tex = new THREE.TextureLoader().load(url, (loaded) => {
+      if (!alive) return;
+      const img = loaded.image as HTMLImageElement;
+      if (img.width && img.height) setAspect(img.width / img.height);
+      setTexture(loaded);
+    });
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = gl.capabilities.getMaxAnisotropy();
+    return () => {
+      alive = false;
+    };
+  }, [url, gl]);
+
+  if (!texture || !aspect) return null;
   const height = 10 * mapScale;
   const width = height * aspect;
   return (
