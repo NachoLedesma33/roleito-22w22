@@ -75,7 +75,7 @@ ciego, ardiendo, invisible, etc.) de forma legible en el VTT:
 
 **Rework iconos (decisiones post-C):**
 - **Nada geométrico**: anillos concéntricos, arcos giratorios y llama-cono ELIMINADOS. usuario: "no quiero formas geométricas, quiero iconos correspondientes arriba del personaje".
-- **StatusIconMarkers** (reemplaza StatusAura + TokenStatusBadges): fila de chips circulares billboardeados sobre el token (`y = 1.3·tokenScale`, separación `0.52·tokenScale`, radio `0.22·tokenScale`), cada chip con el color característico de la marca + emoji del icono (`STATUS_ICONS` en statusMarkers). Máx 5 visibles (slice).
+- **StatusIconMarkers** (reemplaza StatusAura + TokenStatusBadges): fila de chips circulares billboardeados sobre el token (ancla `topY`: altura real del modelo 3D medida por Box3 en TokenModel (`onHeight` → Character3D) multiplicada por tokenScale y +6%, sprite → 1.3·tokenScale; separación `0.52·tokenScale`, radio `0.22·tokenScale`), cada chip con el color característico de la marca + emoji del icono (`STATUS_ICONS` en statusMarkers). Máx 5 visibles (slice).**Anclaje a modelo real**: TokenModel reporta `box.max.y - box.min.y` vía prop `onHeight`; Character3D guarda en estado `modelH` y calcula `topY` — iconos/partículas quedan a la altura de la cabeza aunque el modelo sea alto (ej: Ignatus).
 - Icons: Ciego 🙈, Ardiendo 🔥, Sangrando 🩸, Envenenado ☠️, Concentrando 🧘, Aturdido 💫, Derribado 🛌, Restringido ⛓️, Invisible 👻.
 - `STATUS_CONFIG` (aura/anim/intensity/spinArc/spinDir) ELIMINADA — statusMarkers queda `{id, label, color, icon}`.
 - Invisible intacto: opacity 0.25 modelo + chip 👻 visible (indicador).
@@ -86,7 +86,7 @@ ciego, ardiendo, invisible, etc.) de forma legible en el VTT:
 - **Aturdido**: además de las 4 ⭐, dos anillos torus elípticos #eab308 (color del icono) que se tambalean (rotation.x oscila ±0.55, escala x/z elíptica contrafase, rotación y propia) alrededor de la cabeza.
 - **Envenenado**: 8 puff verdes expandiéndose (sin(π·age)) alrededor del cuerpo, deriva lenta.
 - **Concentrando**: 10 motas azules alrededor de la cabeza, suben con twinkle.
-- **Aturdido**: 4 estrellas ⭐ billboardeadas orbitando la cabeza (radio 0.42·scale, y 1.12·scale, 2.2 rad/s).
+- **Aturdido**: 4 estrellas ⭐ billboardeadas orbitando la cabeza (radio 0.18·scale, y = topY − 0.08·scale, 2.2 rad/s).
 - **Restringido**: 4 cadenas de eslabones torus (metal #94a3b8) en esquinas del token, del cuerpo al suelo con sway. **v2: eslabones convergen todos a un punto central a la mitad de la altura del modelo (0.5·scale) — quaternion setFromUnitVectors(eje Z torus → dirección base→centro) + sag parabólico; eslabón maestro torus #64748b en el punto de unión.**
 - **Derribado**: 3 "z" blancas ascendiendo en cascada con fade.
 - **Ciego**: 6 wisps grises lentos alrededor de la cabeza (alpha 0.55).
