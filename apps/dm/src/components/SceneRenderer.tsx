@@ -899,7 +899,7 @@ function RestraintChains({ scale }: { scale: number }) {
     [-0.3, -0.3],
   ];
   const baseDir = new THREE.Vector3(0, 0, 1);
-  const LINKS = 4;
+  const LINKS = 5;
   return (
     <group ref={grp}>
       {anchors.map(([ax, az], i) => {
@@ -919,9 +919,10 @@ function RestraintChains({ scale }: { scale: number }) {
                 <mesh
                   key={l}
                   position={[x0 * (1 - t), t * midH - sag, z0 * (1 - t)]}
-                  rotation={[e.x, e.y, e.z + l * 0.6]}
+                  rotation={[e.x, e.y, e.z + (l % 2) * (Math.PI / 2)]}
+                  scale={[1.6, 1, 1]}
                 >
-                  <torusGeometry args={[0.06 * scale, 0.016 * scale, 8, 12]} />
+                  <torusGeometry args={[0.055 * scale, 0.019 * scale, 8, 14]} />
                   <meshStandardMaterial color="#94a3b8" metalness={0.6} roughness={0.45} />
                 </mesh>
               );

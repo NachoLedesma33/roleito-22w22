@@ -87,7 +87,7 @@ ciego, ardiendo, invisible, etc.) de forma legible en el VTT:
 - **Envenenado**: 8 puff verdes expandiéndose (sin(π·age)) alrededor del cuerpo, deriva lenta.
 - **Concentrando**: 10 motas azules alrededor de la cabeza, suben con twinkle.
 - **Aturdido**: 4 estrellas ⭐ billboardeadas orbitando la cabeza (radio 0.18·scale, y = topY − 0.08·scale, 2.2 rad/s).
-- **Restringido**: 4 cadenas de eslabones torus (metal #94a3b8) en esquinas del token, del cuerpo al suelo con sway. **v2: eslabones convergen todos a un punto central a la mitad de la altura del modelo (0.5·scale) — quaternion setFromUnitVectors(eje Z torus → dirección base→centro) + sag parabólico; eslabón maestro torus #64748b en el punto de unión.**
+- **Restringido**: 4 cadenas de eslabones torus (metal #94a3b8) en esquinas del token, del cuerpo al suelo con sway. **v2: eslabones convergen todos a un punto central a la mitad de la altura del modelo (0.5·scale) — quaternion setFromUnitVectors(eje Z torus → dirección base→centro) + sag parabólico; eslabón maestro torus #64748b en el punto de unión. v3: eslabones ELÍPTICOS** — torus con scale local `[1.6,1,1]` (elongados tipo eslabón real), alternando 90° por eslabón (`(l % 2) · π/2`) para que se toquen/entrelacen como cadena; 5 eslabones por cadena, tube 0.019·scale.
 - **Derribado**: 3 "z" blancas ascendiendo en cascada con fade.
 - **Ciego**: 6 wisps grises lentos alrededor de la cabeza (alpha 0.55).
 - **Invisible**: 12 destellos violetas parpadeando (twinkle cuadrado) alrededor del cuerpo translúcido.
