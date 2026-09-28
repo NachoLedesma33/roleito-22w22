@@ -85,12 +85,13 @@ ciego, ardiendo, invisible, etc.) de forma legible en el VTT:
 - **Ardiendo**: 3 capas aditivas (blending Additive): núcleo amarillo #fde047 (8, rápido), medio ámbar #fbbf24 (12), exterior naranja #f97316 (10, lento) — superposición = glow de fuego real.
 - **Aturdido**: además de las 4 ⭐, dos anillos torus elípticos #eab308 (color del icono) que se tambalean (rotation.x oscila ±0.55, escala x/z elíptica contrafase, rotación y propia) alrededor de la cabeza.
 - **Envenenado**: 8 puff verdes expandiéndose (sin(π·age)) alrededor del cuerpo, deriva lenta.
-- **Concentrando**: 10 motas azules alrededor de la cabeza, suben con twinkle.
+- **Concentrando**: aura tipo supersaiyán — 3 capas aditivas ascendiendo de todo el cuerpo (núcleo blanco #ffffff rápido, medio celeste #bfdbfe, exterior azul #3b82f6 lento), vaivén senoidal + swirl, superposición = energy flare.
 - **Aturdido**: 4 estrellas ⭐ billboardeadas orbitando la cabeza (radio 0.18·scale, y = topY − 0.08·scale, 2.2 rad/s).
 - **Restringido**: 4 cadenas de eslabones torus (metal #94a3b8) en esquinas del token, del cuerpo al suelo con sway. **v2: eslabones convergen todos a un punto central a la mitad de la altura del modelo (0.5·scale) — quaternion setFromUnitVectors(eje Z torus → dirección base→centro) + sag parabólico; eslabón maestro torus #64748b en el punto de unión. v3: eslabones ELÍPTICOS** — torus con scale local `[1.6,1,1]` (elongados tipo eslabón real), alternando 90° por eslabón (`(l % 2) · π/2`) para que se toquen/entrelacen como cadena; 5 eslabones por cadena, tube 0.019·scale.
 - **Derribado**: 3 "z" blancas ascendiendo en cascada con fade.
 - **Ciego**: 6 wisps grises lentos alrededor de la cabeza (alpha 0.55).
 - **Invisible**: 12 destellos violetas parpadeando (twinkle cuadrado) alrededor del cuerpo translúcido.
+- **Muerto**: 10 partículas alma pálidas (#a5b4fc) ascendiendo lento del cuerpo con sway, fade en punta — espíritu que abandona el cuerpo. Icono 💀.
 - **Motor**: `ParticleField` genérico = instancedMesh pool (1 draw call por campo), respawn automático, fade por escala. Sin gate de perf (ops triviales).
 
 ### Fase C — Polish ✓ (commit pendiente)

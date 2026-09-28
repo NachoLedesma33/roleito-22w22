@@ -979,6 +979,11 @@ function StatusEffects({ statuses, tokenScale, topY }: { statuses: string[]; tok
     { color: '#fbbf24', count: 12, size: 0.05, vy: 0.3, life: 0.62 },
     { color: '#fde047', count: 8, size: 0.034, vy: 0.42, life: 0.5 },
   ] as const;
+  const auraLayers = [
+    { color: '#3b82f6', count: 16, size: 0.05, vy: 0.5, life: 0.5 },
+    { color: '#bfdbfe', count: 12, size: 0.035, vy: 0.75, life: 0.38 },
+    { color: '#ffffff', count: 8, size: 0.025, vy: 1.0, life: 0.28 },
+  ] as const;
   return (
     <group>
       {statuses.includes('bleeding') && (
@@ -1063,33 +1068,36 @@ function StatusEffects({ statuses, tokenScale, topY }: { statuses: string[]; tok
           }}
         />
       )}
-      {statuses.includes('concentrating') && (
-        <ParticleField
-          count={10}
-          color="#60a5fa"
-          size={0.035}
-          scale={s}
-          spawn={(p, _t, scale) => {
-            const a = Math.random() * Math.PI * 2;
-            const r = 0.1 + Math.random() * 0.45;
-            p.x = Math.cos(a) * r * scale;
-            p.z = Math.sin(a) * r * scale;
-            p.y = (topY - 0.3 * scale) + Math.random() * 0.4 * scale;
-            p.vx = (Math.random() - 0.5) * 0.03;
-            p.vy = 0.2 * scale + Math.random() * 0.1 * scale;
-            p.vz = (Math.random() - 0.5) * 0.03;
-            p.maxLife = 0.8 + Math.random() * 0.4;
-            p.sizeMul = 0.8 + Math.random() * 0.4;
-          }}
-          step={(p, dt, t, _s) => {
-            const a = Math.min(p.age / p.maxLife, 1);
-            p.x += (p.vx + Math.sin(t * 9 + p.phase) * 0.015) * dt;
-            p.y += p.vy * dt;
-            p.z += p.vz * dt;
-            return { x: p.x, y: p.y, z: p.z, s: Math.sin(Math.PI * a) * (0.6 + 0.4 * Math.sin(t * 5 + p.phase)) };
-          }}
-        />
-      )}
+      {statuses.includes('concentrating') &&
+        auraLayers.map((L) => (
+          <ParticleField
+            key={L.color}
+            count={L.count}
+            color={L.color}
+            size={L.size}
+            scale={s}
+            additive
+            spawn={(p, _t, scale) => {
+              const a = Math.random() * Math.PI * 2;
+              const r = Math.random() * 0.5 * scale;
+              p.x = Math.cos(a) * r;
+              p.z = Math.sin(a) * r;
+              p.y = 0.05 * scale + Math.random() * 0.55 * scale;
+              p.vx = (Math.random() - 0.5) * 0.15;
+              p.vy = L.vy * scale + Math.random() * 0.15 * scale;
+              p.vz = (Math.random() - 0.5) * 0.15;
+              p.maxLife = L.life * (0.75 + Math.random() * 0.5);
+              p.sizeMul = 0.7 + Math.random() * 0.6;
+            }}
+            step={(p, dt, t, _s) => {
+              const a = Math.min(p.age / p.maxLife, 1);
+              p.x += (p.vx + Math.sin(t * 10 + p.age * 6) * 0.06) * dt;
+              p.y += p.vy * dt;
+              p.z += p.vz * dt;
+              return { x: p.x, y: p.y, z: p.z, s: Math.sin(Math.PI * a) };
+            }}
+          />
+        ))}
       {statuses.includes('blinded') && (
         <ParticleField
           count={6}
@@ -1141,6 +1149,33 @@ function StatusEffects({ statuses, tokenScale, topY }: { statuses: string[]; tok
             p.y += p.vy * dt;
             p.z += p.vz * dt;
             return { x: p.x, y: p.y, z: p.z, s: Math.max(0.15, Math.abs(Math.sin(t * 3 + p.phase))) * (1 - a) };
+          }}
+        />
+      )}
+      {statuses.includes('dead') && (
+        <ParticleField
+          count={10}
+          color="#a5b4fc"
+          size={0.05}
+          scale={s}
+          spawn={(p, _t, scale) => {
+            const a = Math.random() * Math.PI * 2;
+            const r = Math.random() * 0.32 * scale;
+            p.x = Math.cos(a) * r;
+            p.z = Math.sin(a) * r;
+            p.y = 0.08 * scale + Math.random() * 0.5 * scale;
+            p.vx = (Math.random() - 0.5) * 0.04;
+            p.vy = 0.12 * scale + Math.random() * 0.08 * scale;
+            p.vz = (Math.random() - 0.5) * 0.04;
+            p.maxLife = 1.3 + Math.random() * 0.5;
+            p.sizeMul = 0.8 + Math.random() * 0.5;
+          }}
+          step={(p, dt, t, _s) => {
+            const a = Math.min(p.age / p.maxLife, 1);
+            p.x += (p.vx + Math.sin(t * 4 + p.phase) * 0.02) * dt;
+            p.y += p.vy * dt;
+            p.z += p.vz * dt;
+            return { x: p.x, y: p.y, z: p.z, s: Math.sin(Math.PI * a) * 0.85 };
           }}
         />
       )}
