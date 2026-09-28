@@ -2547,6 +2547,7 @@ export default function DmDashboard() {
                     tokenScale: sc.token_scale ?? 1,
                     brightness: sc.brightness ?? 0,
                     facingOffset: sc.facing_offset ?? 0,
+                    statuses: sc.statuses ?? [],
                   };
                 })}
                 items={sceneItems}
