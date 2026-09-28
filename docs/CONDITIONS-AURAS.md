@@ -1,6 +1,6 @@
 # Condiciones y Auras — Plan de implementación
 
-> Estado: COMPLETO — Fase A ✓ (60342dd), Fase B ✓ (f466262), Fase C ✓ (commit pendiente).
+> Estado: COMPLETO — Fase A ✓ (60342dd), Fase B ✓ (f466262), Fase C ✓ (108f05c). **Rework visual `6253474` (pendiente): auras geométricas (anillos/llama) y esferas badge REEMPLAZADAS por iconos emoji flotantes sobre el token, chip con color característico de cada marca.**
 > Relación con rumbo normal: pendiente de aprobación; no bloquea otras fases.
 
 ## Objetivo
@@ -73,18 +73,19 @@ ciego, ardiendo, invisible, etc.) de forma legible en el VTT:
 6. Condición `invisible`: opacity en sprite/gltf; semántica del toggle 👁 documentada.
 7. Verificación: perf con N tokens (objetivo: sin caída de fps con 20 tokens animados), typecheck, e2e snapshot.
 
-**Decisiones tomadas en B:**
-- **Perf gate NO aplicado**: animación = 1 `useFrame` por aura, ≤4 meshes por token (anillos concéntricos + llama). Con 20 tokens ≈ 80 meshes livianos — trivial para GPU. Si aparece caída de fps ACUMULADA, re-activar gate (">10 tokens con status → solo badge").
-- **Spin**: anillo con arco — `stunned` 2.6 rad girando rápido (2.1 rad/s), `concentrating` 5.2 rad lento (0.7 rad/s, dirección inversa). Arco completo para el resto (rotación invisible → estático).
-- **Llama (ardiendo)**: cono `#f97316` flotando a `0.9·tokenScale`, flicker de escala (1±0.18) + bobbing (0.05·tokenScale). NO anillo para `burning` (evita clutter); flame + badge.
-- **Invisible**: `opacity 0.25` + `depthWrite false` en materiales sprite y gltf (traverse); badges y aura SE MANTIENEN visibles (es el indicador de que está invisible). Toggle 👁 = presencia (server-side), condición = visual. Combinables.
+**Rework iconos (decisiones post-C):**
+- **Nada geométrico**: anillos concéntricos, arcos giratorios y llama-cono ELIMINADOS. usuario: "no quiero formas geométricas, quiero iconos correspondientes arriba del personaje".
+- **StatusIconMarkers** (reemplaza StatusAura + TokenStatusBadges): fila de chips circulares billboardeados sobre el token (`y = 1.3·tokenScale`, separación `0.52·tokenScale`, radio `0.22·tokenScale`), cada chip con el color característico de la marca + emoji del icono (`STATUS_ICONS` en statusMarkers). Máx 5 visibles (slice).
+- Icons: Ciego 🙈, Ardiendo 🔥, Sangrando 🩸, Envenenado ☠️, Concentrando 🧘, Aturdido 💫, Derribado 🛌, Restringido ⛓️, Invisible 👻.
+- `STATUS_CONFIG` (aura/anim/intensity/spinArc/spinDir) ELIMINADA — statusMarkers queda `{id, label, color, icon}`.
+- Invisible intacto: opacity 0.25 modelo + chip 👻 visible (indicador).
 
 ### Fase C — Polish ✓ (commit pendiente)
 8. Config por condición: mostrar solo badge / badge+aura / aura+animación, intensidad.
 9. Test: extender `tests/e2e/status.spec.ts` (marcar via API, assert snapshot en players).
 10. ADR corto en `docs/adr/` si la semántica invisible lo amerita.
 
-**Decisiones tomadas en C:**
+**Decisiones tomadas en C:** *(config geométrica — SUPERSEDIDA por rework iconos, ver abajo; apply: config por condición = editar statusMarkers, cero cambios en renderer, sigue vigente)*
 - **Config en `statusMarkers.ts`** (STATUS_CONFIG derivada de STATUS_OPTIONS): campos `aura` ('ring'|'flame'|'none'), `anim` ('pulse'|'spin'|'none'), `intensity`, `spinArc` (rad), `spinDir`. StatusAura consume la config — agrego una condición nueva = editar statusMarkers, cero cambios en renderer.
 - Valores por condición: burning=flame; bleeding=pulse; concentrating=spin lento (arc 5.2, dir −1, intensity 0.33); stunned=spin rápido (arc 2.6, intensity 1.4); resto estático ring.
 - **ADR NO escrito**: semántica invisible ya documentada en este doc (Fase B) — el ADR no aporta; se evita ruido.

@@ -1,6 +1,6 @@
 import { Suspense, useMemo, useRef, useCallback, useEffect, useState } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { OrbitControls, useGLTF } from '@react-three/drei';
+import { Billboard, OrbitControls, Text, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import TokenSprite from './TokenSprite';
 import TokenModel from './TokenModel';
@@ -21,7 +21,7 @@ import type { ZoneDraft } from './ZoneDrawer';
 import type { ZoneGeometry } from './ZonePortal';
 import { SceneItem } from '@core/domain/types';
 import type { DrawState } from './WallDrawer';
-import { STATUS_COLORS, STATUS_CONFIG } from '@/lib/statusMarkers';
+import { STATUS_COLORS, STATUS_ICONS } from '@/lib/statusMarkers';
 
 interface SceneEntity {
   id: string;
@@ -673,11 +673,7 @@ function DraggableToken({
           }}
         />
       )}
-      <TokenStatusBadges
-        statuses={entity.statuses ?? []}
-        tokenScale={entity.tokenScale ?? 1}
-      />
-      <StatusAura
+      <StatusIconMarkers
         statuses={entity.statuses ?? []}
         tokenScale={entity.tokenScale ?? 1}
       />
@@ -685,110 +681,43 @@ function DraggableToken({
   );
 }
 
-function TokenStatusBadges({
+function StatusIconMarkers({
   statuses,
   tokenScale,
 }: {
   statuses: string[];
   tokenScale: number;
 }) {
-  if (statuses.length === 0) return null;
-  const n = statuses.length;
+  const visible = statuses.filter((s) => STATUS_ICONS[s]).slice(0, 5);
+  if (visible.length === 0) return null;
+  const n = visible.length;
   return (
-    <group position={[0, 1.15 * tokenScale, 0]}>
-      {statuses.map((s, i) => (
-        <mesh key={s} position={[(i - (n - 1) / 2) * 0.4 * tokenScale, 0, 0]}>
-          <sphereGeometry args={[0.17 * tokenScale, 12, 12]} />
-          <meshBasicMaterial color={STATUS_COLORS[s] ?? '#e5e7eb'} />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-
-function StatusAura({
-  statuses,
-  tokenScale,
-}: {
-  statuses: string[];
-  tokenScale: number;
-}) {
-  const ringRefs = useRef<THREE.Mesh[]>([]);
-  const flameMeshes = useRef<THREE.Mesh[]>([]);
-  const rings = statuses
-    .map((id) => ({ id, cfg: STATUS_CONFIG[id] }))
-    .filter((x) => x.cfg && x.cfg.aura === 'ring')
-    .slice(0, 3);
-  const flames = statuses
-    .map((id) => ({ id, cfg: STATUS_CONFIG[id] }))
-    .filter((x) => x.cfg && x.cfg.aura === 'flame');
-  const flameBaseY = 0.9 * tokenScale;
-
-  useFrame(({ clock }) => {
-    const t = clock.elapsedTime;
-    ringRefs.current.forEach((ring, i) => {
-      const cfg = rings[i]?.cfg;
-      if (!cfg) return;
-      const mat = ring.material as THREE.MeshBasicMaterial;
-      if (cfg.anim === 'pulse') {
-        ring.scale.setScalar(1 + Math.sin(t * 3 + i) * 0.12 * cfg.intensity);
-        mat.opacity = 0.35 + Math.sin(t * 6 + i) * 0.15 * cfg.intensity;
-      } else if (cfg.anim === 'spin') {
-        ring.rotation.z = t * 2.1 * cfg.intensity * cfg.spinDir;
-      }
-    });
-    flameMeshes.current.forEach((flame, i) => {
-      const cfg = flames[i]?.cfg;
-      if (!cfg) return;
-      flame.position.y = flameBaseY + Math.sin(t * 7 + i * 2) * 0.05 * tokenScale * cfg.intensity;
-      flame.scale.setScalar(1 + Math.sin(t * 11 + i * 3) * 0.18 * cfg.intensity);
-    });
-  });
-
-  return (
-    <group>
-      {rings.map((st, i) => {
-        const outer = (0.62 - i * 0.16) * tokenScale;
-        const inner = Math.max(0.05, outer - 0.14 * tokenScale);
-        const spinArc = rings[i].cfg.anim === 'spin' ? rings[i].cfg.spinArc : Math.PI * 2;
-        return (
-          <mesh
-            key={st.id}
-            ref={(el) => { if (el) ringRefs.current[i] = el; }}
-            position={[0, 0.06 + i * 0.02, 0]}
-            rotation={[-Math.PI / 2, 0, 0]}
-            renderOrder={55}
-          >
-            <ringGeometry args={[inner, outer, 48, 1, 0, spinArc]} />
+    <Billboard position={[0, 1.3 * tokenScale, 0]}>
+      {visible.map((s, i) => (
+        <group key={s} position={[(i - (n - 1) / 2) * 0.52 * tokenScale, 0, 0]}>
+          <mesh renderOrder={60}>
+            <circleGeometry args={[0.22 * tokenScale, 24]} />
             <meshBasicMaterial
-              color={STATUS_COLORS[st.id]}
+              color={STATUS_COLORS[s]}
               transparent
-              opacity={0.5}
+              opacity={0.85}
               depthWrite={false}
               side={THREE.DoubleSide}
               toneMapped={false}
             />
           </mesh>
-        );
-      })}
-      {flames.map((st, i) => (
-        <mesh
-          key={st.id}
-          ref={(el) => { if (el) flameMeshes.current[i] = el; }}
-          position={[0, flameBaseY, 0]}
-          renderOrder={55}
-        >
-          <coneGeometry args={[0.15 * tokenScale, 0.35 * tokenScale, 8]} />
-          <meshBasicMaterial
-            color={STATUS_COLORS[st.id] ?? '#f97316'}
-            transparent
-            opacity={0.85}
-            depthWrite={false}
-            toneMapped={false}
-          />
-        </mesh>
+          <Text
+            fontSize={0.22 * tokenScale}
+            anchorX="center"
+            anchorY="middle"
+            position={[0, 0, 0.01]}
+            renderOrder={61}
+          >
+            {STATUS_ICONS[s]}
+          </Text>
+        </group>
       ))}
-    </group>
+    </Billboard>
   );
 }
 
