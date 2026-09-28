@@ -847,23 +847,23 @@ function StunOrbit({ scale }: { scale: number }) {
       b.scale.set(1 - 0.22 * Math.sin(t * 1.2 + 2), 1, 1 + 0.26 * Math.sin(t * 1.2 + 2));
     }
   });
-  const r = 0.42 * scale;
-  const ringR = 0.6 * scale;
+  const r = 0.22 * scale;
+  const ringR = 0.3 * scale;
   return (
     <group ref={grp} position={[0, 1.12 * scale, 0]}>
       <mesh ref={ringARef} renderOrder={57}>
-        <torusGeometry args={[ringR, 0.014 * scale, 8, 40]} />
+        <torusGeometry args={[ringR, 0.01 * scale, 8, 40]} />
         <meshBasicMaterial color="#eab308" transparent opacity={0.55} depthWrite={false} toneMapped={false} />
       </mesh>
       <mesh ref={ringBRef} renderOrder={57}>
-        <torusGeometry args={[ringR * 0.8, 0.014 * scale, 8, 40]} />
+        <torusGeometry args={[ringR * 0.8, 0.01 * scale, 8, 40]} />
         <meshBasicMaterial color="#eab308" transparent opacity={0.4} depthWrite={false} toneMapped={false} />
       </mesh>
       {[0, 1, 2, 3].map((i) => {
         const a = (i / 4) * Math.PI * 2;
         return (
           <Billboard key={i} position={[Math.cos(a) * r, 0, Math.sin(a) * r]}>
-            <Text fontSize={0.2 * scale} anchorX="center" anchorY="middle">
+            <Text fontSize={0.11 * scale} anchorX="center" anchorY="middle">
               ⭐
             </Text>
           </Billboard>
