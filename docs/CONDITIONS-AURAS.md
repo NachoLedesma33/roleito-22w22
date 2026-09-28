@@ -80,6 +80,18 @@ ciego, ardiendo, invisible, etc.) de forma legible en el VTT:
 - `STATUS_CONFIG` (aura/anim/intensity/spinArc/spinDir) ELIMINADA — statusMarkers queda `{id, label, color, icon}`.
 - Invisible intacto: opacity 0.25 modelo + chip 👻 visible (indicador).
 
+**Partículas características (commit `6dedce7`+1):** cada marca anima con partículas fijas al token/modelo (hijos del group del Character3D → siguen al token). Todo dimensionado por tokenScale, nunca absoluto.
+- **Sangrando**: gotitas rojas brotan del icono (y≈1.28·scale), caen pocos px (vy −0.16·scale/s), vida ~0.7s, fade sin llegar al suelo.
+- **Ardiendo**: 14 partículas naranjas desde el cuerpo (radio 0.3·scale), ascienden (0.3·scale/s) con vaivén senoidal.
+- **Envenenado**: 8 puff verdes expandiéndose (sin(π·age)) alrededor del cuerpo, deriva lenta.
+- **Concentrando**: 10 motas azules alrededor de la cabeza, suben con twinkle.
+- **Aturdido**: 4 estrellas ⭐ billboardeadas orbitando la cabeza (radio 0.42·scale, y 1.12·scale, 2.2 rad/s).
+- **Restringido**: 4 cadenas de eslabones torus (metal #94a3b8) en esquinas del token, del cuerpo al suelo con sway.
+- **Derribado**: 3 "z" blancas ascendiendo en cascada con fade.
+- **Ciego**: 6 wisps grises lentos alrededor de la cabeza (alpha 0.55).
+- **Invisible**: 12 destellos violetas parpadeando (twinkle cuadrado) alrededor del cuerpo translúcido.
+- **Motor**: `ParticleField` genérico = instancedMesh pool (1 draw call por campo), respawn automático, fade por escala. Sin gate de perf (ops triviales).
+
 ### Fase C — Polish ✓ (commit pendiente)
 8. Config por condición: mostrar solo badge / badge+aura / aura+animación, intensidad.
 9. Test: extender `tests/e2e/status.spec.ts` (marcar via API, assert snapshot en players).

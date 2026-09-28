@@ -677,6 +677,10 @@ function DraggableToken({
         statuses={entity.statuses ?? []}
         tokenScale={entity.tokenScale ?? 1}
       />
+      <StatusEffects
+        statuses={entity.statuses ?? []}
+        tokenScale={entity.tokenScale ?? 1}
+      />
     </group>
   );
 }
@@ -718,6 +722,360 @@ function StatusIconMarkers({
         </group>
       ))}
     </Billboard>
+  );
+}
+
+interface Particle {
+  age: number;
+  maxLife: number;
+  x: number;
+  y: number;
+  z: number;
+  vx: number;
+  vy: number;
+  vz: number;
+  phase: number;
+  sizeMul: number;
+}
+
+type ParticleSpawn = (p: Particle, t: number, scale: number) => void;
+type ParticleStep = (p: Particle, dt: number, t: number, scale: number) => {
+  x: number;
+  y: number;
+  z: number;
+  s: number;
+};
+
+function ParticleField({
+  count,
+  color,
+  size,
+  scale,
+  spawn,
+  step,
+}: {
+  count: number;
+  color: string;
+  size: number;
+  scale: number;
+  spawn: ParticleSpawn;
+  step: ParticleStep;
+}) {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const parts = useRef<Particle[]>([]);
+  if (parts.current.length === 0) {
+    for (let i = 0; i < count; i++) {
+      const p: Particle = {
+        age: 0,
+        maxLife: 1,
+        x: 0,
+        y: 0,
+        z: 0,
+        vx: 0,
+        vy: 0,
+        vz: 0,
+        phase: Math.random() * Math.PI * 2,
+        sizeMul: 1,
+      };
+      spawn(p, 0, scale);
+      p.age = Math.random() * p.maxLife;
+      parts.current.push(p);
+    }
+  }
+  const lastT = useRef(0);
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    const dt = Math.min(t - lastT.current, 0.05) || 0.016;
+    lastT.current = t;
+    const mesh = meshRef.current;
+    if (!mesh) return;
+    parts.current.forEach((p, i) => {
+      p.age += dt;
+      if (p.age >= p.maxLife) {
+        spawn(p, t, scale);
+        p.age = 0;
+      }
+      const r = step(p, dt, t, scale);
+      dummy.position.set(r.x, r.y, r.z);
+      dummy.scale.setScalar(Math.max(size * scale * p.sizeMul * r.s, 0.0001));
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+  });
+
+  return (
+    <instancedMesh
+      ref={meshRef}
+      args={[undefined as unknown as THREE.BufferGeometry, undefined as unknown as THREE.Material, count]}
+      frustumCulled={false}
+      renderOrder={58}
+    >
+      <sphereGeometry args={[1, 6, 4]} />
+      <meshBasicMaterial color={color} transparent opacity={0.85} depthWrite={false} toneMapped={false} />
+    </instancedMesh>
+  );
+}
+
+function StunOrbit({ scale }: { scale: number }) {
+  const grp = useRef<THREE.Group>(null);
+  useFrame(({ clock }) => {
+    if (grp.current) grp.current.rotation.y = clock.elapsedTime * 2.2;
+  });
+  const r = 0.42 * scale;
+  return (
+    <group ref={grp} position={[0, 1.12 * scale, 0]}>
+      {[0, 1, 2, 3].map((i) => {
+        const a = (i / 4) * Math.PI * 2;
+        return (
+          <Billboard key={i} position={[Math.cos(a) * r, 0, Math.sin(a) * r]}>
+            <Text fontSize={0.2 * scale} anchorX="center" anchorY="middle">
+              ⭐
+            </Text>
+          </Billboard>
+        );
+      })}
+    </group>
+  );
+}
+
+function RestraintChains({ scale }: { scale: number }) {
+  const grp = useRef<THREE.Group>(null);
+  useFrame(({ clock }) => {
+    if (grp.current) {
+      grp.current.rotation.z = Math.sin(clock.elapsedTime * 2.5) * 0.05;
+      grp.current.rotation.x = Math.sin(clock.elapsedTime * 1.7 + 1) * 0.04;
+    }
+  });
+  const anchors: [number, number][] = [
+    [0.3, 0.3],
+    [-0.3, 0.3],
+    [0.3, -0.3],
+    [-0.3, -0.3],
+  ];
+  return (
+    <group ref={grp}>
+      {anchors.map(([ax, az], i) => (
+        <group key={i} position={[ax * scale, 0, az * scale]}>
+          {[0, 1, 2].map((l) => (
+            <mesh
+              key={l}
+              position={[0, (0.09 + l * 0.13) * scale, 0]}
+              rotation={[0, 0, (i + l) * 0.7]}
+            >
+              <torusGeometry args={[0.085 * scale, 0.02 * scale, 8, 14]} />
+              <meshStandardMaterial color="#94a3b8" metalness={0.6} roughness={0.45} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+    </group>
+  );
+}
+
+function SleepZ({ scale }: { scale: number }) {
+  const refs = useRef<(THREE.Mesh | null)[]>([]);
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    refs.current.forEach((m, i) => {
+      if (!m) return;
+      const cyc = (t * 0.55 + i * 0.33) % 1;
+      m.position.y = (1.18 + cyc * 0.42) * scale;
+      m.position.x = (-0.12 + i * 0.11 + Math.sin(cyc * Math.PI) * 0.03) * scale;
+      m.scale.setScalar(0.75 + 0.45 * cyc);
+      const mat = m.material as THREE.Material;
+      mat.transparent = true;
+      mat.opacity = Math.sin(Math.PI * cyc);
+    });
+  });
+  return (
+    <group>
+      {[0, 1, 2].map((i) => (
+        <Text
+          key={i}
+          ref={(el) => { if (el) refs.current[i] = el; }}
+          fontSize={0.19 * scale}
+          anchorX="center"
+          anchorY="middle"
+          position={[0, 0, 0]}
+          color="#ffffff"
+        >
+          z
+        </Text>
+      ))}
+    </group>
+  );
+}
+
+function StatusEffects({ statuses, tokenScale }: { statuses: string[]; tokenScale: number }) {
+  const s = tokenScale;
+  return (
+    <group>
+      {statuses.includes('bleeding') && (
+        <ParticleField
+          count={10}
+          color="#ef4444"
+          size={0.045}
+          scale={s}
+          spawn={(p, _t, scale) => {
+            p.x = (Math.random() - 0.5) * 0.4 * scale;
+            p.y = 1.28 * scale + (Math.random() - 0.5) * 0.12 * scale;
+            p.z = (Math.random() - 0.5) * 0.22 * scale;
+            p.vx = (Math.random() - 0.5) * 0.06;
+            p.vy = -0.16 * scale - Math.random() * 0.1 * scale;
+            p.vz = (Math.random() - 0.5) * 0.05;
+            p.maxLife = 0.5 + Math.random() * 0.35;
+            p.sizeMul = 0.75 + Math.random() * 0.5;
+          }}
+          step={(p, dt, _t, _s) => {
+            const a = Math.min(p.age / p.maxLife, 1);
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            p.z += p.vz * dt;
+            return { x: p.x, y: p.y, z: p.z, s: Math.sin(Math.PI * a) * 0.9 };
+          }}
+        />
+      )}
+      {statuses.includes('burning') && (
+        <ParticleField
+          count={14}
+          color="#f97316"
+          size={0.06}
+          scale={s}
+          spawn={(p, _t, scale) => {
+            const a = Math.random() * Math.PI * 2;
+            const r = Math.random() * 0.3 * scale;
+            p.x = Math.cos(a) * r;
+            p.z = Math.sin(a) * r;
+            p.y = 0.05 * scale + Math.random() * 0.5 * scale;
+            p.vx = (Math.random() - 0.5) * 0.2;
+            p.vy = 0.3 * scale + Math.random() * 0.18 * scale;
+            p.vz = (Math.random() - 0.5) * 0.2;
+            p.maxLife = 0.5 + Math.random() * 0.45;
+            p.sizeMul = 0.7 + Math.random() * 0.7;
+          }}
+          step={(p, dt, t, _s) => {
+            const a = Math.min(p.age / p.maxLife, 1);
+            p.x += (p.vx + Math.sin(t * 12 + p.age * 8) * 0.03) * dt;
+            p.y += p.vy * dt;
+            p.z += p.vz * dt;
+            return { x: p.x, y: p.y, z: p.z, s: Math.sin(Math.PI * a) };
+          }}
+        />
+      )}
+      {statuses.includes('poisoned') && (
+        <ParticleField
+          count={8}
+          color="#22c55e"
+          size={0.09}
+          scale={s}
+          spawn={(p, _t, scale) => {
+            const a = Math.random() * Math.PI * 2;
+            const r = Math.random() * 0.35 * scale;
+            p.x = Math.cos(a) * r;
+            p.z = Math.sin(a) * r;
+            p.y = 0.08 * scale + Math.random() * 0.7 * scale;
+            p.vx = (Math.random() - 0.5) * 0.04;
+            p.vy = 0.06 * scale + Math.random() * 0.04 * scale;
+            p.vz = (Math.random() - 0.5) * 0.04;
+            p.maxLife = 1.1 + Math.random() * 0.5;
+            p.sizeMul = 1;
+          }}
+          step={(p, dt, _t, _s) => {
+            const a = Math.min(p.age / p.maxLife, 1);
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            p.z += p.vz * dt;
+            return { x: p.x, y: p.y, z: p.z, s: Math.sin(Math.PI * a) };
+          }}
+        />
+      )}
+      {statuses.includes('concentrating') && (
+        <ParticleField
+          count={10}
+          color="#60a5fa"
+          size={0.035}
+          scale={s}
+          spawn={(p, _t, scale) => {
+            const a = Math.random() * Math.PI * 2;
+            const r = 0.1 + Math.random() * 0.45;
+            p.x = Math.cos(a) * r * scale;
+            p.z = Math.sin(a) * r * scale;
+            p.y = (0.9 + Math.random() * 0.5) * scale;
+            p.vx = (Math.random() - 0.5) * 0.03;
+            p.vy = 0.2 * scale + Math.random() * 0.1 * scale;
+            p.vz = (Math.random() - 0.5) * 0.03;
+            p.maxLife = 0.8 + Math.random() * 0.4;
+            p.sizeMul = 0.8 + Math.random() * 0.4;
+          }}
+          step={(p, dt, t, _s) => {
+            const a = Math.min(p.age / p.maxLife, 1);
+            p.x += (p.vx + Math.sin(t * 9 + p.phase) * 0.015) * dt;
+            p.y += p.vy * dt;
+            p.z += p.vz * dt;
+            return { x: p.x, y: p.y, z: p.z, s: Math.sin(Math.PI * a) * (0.6 + 0.4 * Math.sin(t * 5 + p.phase)) };
+          }}
+        />
+      )}
+      {statuses.includes('blinded') && (
+        <ParticleField
+          count={6}
+          color="#9ca3af"
+          size={0.05}
+          scale={s}
+          spawn={(p, _t, scale) => {
+            const a = Math.random() * Math.PI * 2;
+            const r = Math.random() * 0.35 * scale;
+            p.x = Math.cos(a) * r;
+            p.z = Math.sin(a) * r;
+            p.y = (0.95 + Math.random() * 0.4) * scale;
+            p.vx = (Math.random() - 0.5) * 0.02;
+            p.vy = 0.05 * scale;
+            p.vz = (Math.random() - 0.5) * 0.02;
+            p.maxLife = 1.4 + Math.random() * 0.5;
+            p.sizeMul = 1;
+          }}
+          step={(p, dt, t, _s) => {
+            const a = Math.min(p.age / p.maxLife, 1);
+            p.x += (p.vx + Math.cos(t * 0.7 + p.phase) * 0.01) * dt;
+            p.y += p.vy * dt;
+            p.z += p.vz * dt;
+            return { x: p.x, y: p.y, z: p.z, s: Math.sin(Math.PI * a) * 0.55 };
+          }}
+        />
+      )}
+      {statuses.includes('invisible') && (
+        <ParticleField
+          count={12}
+          color="#c4b5fd"
+          size={0.03}
+          scale={s}
+          spawn={(p, _t, scale) => {
+            const a = Math.random() * Math.PI * 2;
+            const r = Math.random() * 0.42 * scale;
+            p.x = Math.cos(a) * r;
+            p.z = Math.sin(a) * r;
+            p.y = 0.05 * scale + Math.random() * 1.3 * scale;
+            p.vx = (Math.random() - 0.5) * 0.04;
+            p.vy = 0.1 * scale;
+            p.vz = (Math.random() - 0.5) * 0.04;
+            p.maxLife = 1 + Math.random() * 0.5;
+            p.sizeMul = 0.6 + Math.random() * 0.6;
+          }}
+          step={(p, dt, t, _s) => {
+            const a = Math.min(p.age / p.maxLife, 1);
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            p.z += p.vz * dt;
+            return { x: p.x, y: p.y, z: p.z, s: Math.max(0.15, Math.abs(Math.sin(t * 3 + p.phase))) * (1 - a) };
+          }}
+        />
+      )}
+      {statuses.includes('stunned') && <StunOrbit scale={s} />}
+      {statuses.includes('restrained') && <RestraintChains scale={s} />}
+      {statuses.includes('prone') && <SleepZ scale={s} />}
+    </group>
   );
 }
 
