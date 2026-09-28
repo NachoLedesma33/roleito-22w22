@@ -753,6 +753,7 @@ function ParticleField({
   scale,
   spawn,
   step,
+  additive = false,
 }: {
   count: number;
   color: string;
@@ -760,6 +761,7 @@ function ParticleField({
   scale: number;
   spawn: ParticleSpawn;
   step: ParticleStep;
+  additive?: boolean;
 }) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
@@ -813,19 +815,50 @@ function ParticleField({
       renderOrder={58}
     >
       <sphereGeometry args={[1, 6, 4]} />
-      <meshBasicMaterial color={color} transparent opacity={0.85} depthWrite={false} toneMapped={false} />
+      <meshBasicMaterial
+        color={color}
+        transparent
+        opacity={0.85}
+        depthWrite={false}
+        toneMapped={false}
+        blending={additive ? THREE.AdditiveBlending : THREE.NormalBlending}
+      />
     </instancedMesh>
   );
 }
 
 function StunOrbit({ scale }: { scale: number }) {
   const grp = useRef<THREE.Group>(null);
+  const ringARef = useRef<THREE.Mesh>(null);
+  const ringBRef = useRef<THREE.Mesh>(null);
   useFrame(({ clock }) => {
-    if (grp.current) grp.current.rotation.y = clock.elapsedTime * 2.2;
+    const t = clock.elapsedTime;
+    if (grp.current) grp.current.rotation.y = t * 2.2;
+    const a = ringARef.current;
+    if (a) {
+      a.rotation.x = Math.PI / 2 + Math.sin(t * 1.15 + 0.5) * 0.55;
+      a.rotation.y = t * 0.7;
+      a.scale.set(1 + 0.28 * Math.sin(t * 1.35), 1, 1 - 0.22 * Math.sin(t * 1.35));
+    }
+    const b = ringBRef.current;
+    if (b) {
+      b.rotation.x = Math.PI / 2 + Math.cos(t * 0.95 + 1.7) * 0.45;
+      b.rotation.y = -t * 0.5;
+      b.scale.set(1 - 0.22 * Math.sin(t * 1.2 + 2), 1, 1 + 0.26 * Math.sin(t * 1.2 + 2));
+    }
   });
   const r = 0.42 * scale;
+  const ringR = 0.6 * scale;
   return (
     <group ref={grp} position={[0, 1.12 * scale, 0]}>
+      <mesh ref={ringARef} renderOrder={57}>
+        <torusGeometry args={[ringR, 0.014 * scale, 8, 40]} />
+        <meshBasicMaterial color="#eab308" transparent opacity={0.55} depthWrite={false} toneMapped={false} />
+      </mesh>
+      <mesh ref={ringBRef} renderOrder={57}>
+        <torusGeometry args={[ringR * 0.8, 0.014 * scale, 8, 40]} />
+        <meshBasicMaterial color="#eab308" transparent opacity={0.4} depthWrite={false} toneMapped={false} />
+      </mesh>
       {[0, 1, 2, 3].map((i) => {
         const a = (i / 4) * Math.PI * 2;
         return (
@@ -848,28 +881,46 @@ function RestraintChains({ scale }: { scale: number }) {
       grp.current.rotation.x = Math.sin(clock.elapsedTime * 1.7 + 1) * 0.04;
     }
   });
+  const midH = 0.5 * scale;
   const anchors: [number, number][] = [
     [0.3, 0.3],
     [-0.3, 0.3],
     [0.3, -0.3],
     [-0.3, -0.3],
   ];
+  const baseDir = new THREE.Vector3(0, 0, 1);
+  const LINKS = 4;
   return (
     <group ref={grp}>
-      {anchors.map(([ax, az], i) => (
-        <group key={i} position={[ax * scale, 0, az * scale]}>
-          {[0, 1, 2].map((l) => (
-            <mesh
-              key={l}
-              position={[0, (0.09 + l * 0.13) * scale, 0]}
-              rotation={[0, 0, (i + l) * 0.7]}
-            >
-              <torusGeometry args={[0.085 * scale, 0.02 * scale, 8, 14]} />
-              <meshStandardMaterial color="#94a3b8" metalness={0.6} roughness={0.45} />
-            </mesh>
-          ))}
-        </group>
-      ))}
+      {anchors.map(([ax, az], i) => {
+        const x0 = ax * scale;
+        const z0 = az * scale;
+        const dir = new THREE.Vector3(-x0, midH, -z0).normalize();
+        const q = new THREE.Quaternion().setFromUnitVectors(baseDir, dir);
+        const e = new THREE.Euler().setFromQuaternion(q);
+        return (
+          <group key={i}>
+            {Array.from({ length: LINKS }, (_, l) => {
+              const t = l / (LINKS - 1);
+              const sag = Math.sin(t * Math.PI) * 0.035 * scale;
+              return (
+                <mesh
+                  key={l}
+                  position={[x0 * (1 - t), t * midH - sag, z0 * (1 - t)]}
+                  rotation={[e.x, e.y, e.z + l * 0.6]}
+                >
+                  <torusGeometry args={[0.06 * scale, 0.016 * scale, 8, 12]} />
+                  <meshStandardMaterial color="#94a3b8" metalness={0.6} roughness={0.45} />
+                </mesh>
+              );
+            })}
+          </group>
+        );
+      })}
+      <mesh position={[0, midH, 0]} renderOrder={58}>
+        <torusGeometry args={[0.07 * scale, 0.022 * scale, 8, 16]} />
+        <meshStandardMaterial color="#64748b" metalness={0.7} roughness={0.35} />
+      </mesh>
     </group>
   );
 }
@@ -910,6 +961,11 @@ function SleepZ({ scale }: { scale: number }) {
 
 function StatusEffects({ statuses, tokenScale }: { statuses: string[]; tokenScale: number }) {
   const s = tokenScale;
+  const fireLayers = [
+    { color: '#f97316', count: 10, size: 0.07, vy: 0.2, life: 0.75 },
+    { color: '#fbbf24', count: 12, size: 0.05, vy: 0.3, life: 0.62 },
+    { color: '#fde047', count: 8, size: 0.034, vy: 0.42, life: 0.5 },
+  ] as const;
   return (
     <group>
       {statuses.includes('bleeding') && (
@@ -937,33 +993,36 @@ function StatusEffects({ statuses, tokenScale }: { statuses: string[]; tokenScal
           }}
         />
       )}
-      {statuses.includes('burning') && (
-        <ParticleField
-          count={14}
-          color="#f97316"
-          size={0.06}
-          scale={s}
-          spawn={(p, _t, scale) => {
-            const a = Math.random() * Math.PI * 2;
-            const r = Math.random() * 0.3 * scale;
-            p.x = Math.cos(a) * r;
-            p.z = Math.sin(a) * r;
-            p.y = 0.05 * scale + Math.random() * 0.5 * scale;
-            p.vx = (Math.random() - 0.5) * 0.2;
-            p.vy = 0.3 * scale + Math.random() * 0.18 * scale;
-            p.vz = (Math.random() - 0.5) * 0.2;
-            p.maxLife = 0.5 + Math.random() * 0.45;
-            p.sizeMul = 0.7 + Math.random() * 0.7;
-          }}
-          step={(p, dt, t, _s) => {
-            const a = Math.min(p.age / p.maxLife, 1);
-            p.x += (p.vx + Math.sin(t * 12 + p.age * 8) * 0.03) * dt;
-            p.y += p.vy * dt;
-            p.z += p.vz * dt;
-            return { x: p.x, y: p.y, z: p.z, s: Math.sin(Math.PI * a) };
-          }}
-        />
-      )}
+      {statuses.includes('burning') &&
+        fireLayers.map((L) => (
+          <ParticleField
+            key={L.color}
+            count={L.count}
+            color={L.color}
+            size={L.size}
+            scale={s}
+            additive
+            spawn={(p, _t, scale) => {
+              const a = Math.random() * Math.PI * 2;
+              const r = Math.random() * 0.28 * scale;
+              p.x = Math.cos(a) * r;
+              p.z = Math.sin(a) * r;
+              p.y = 0.04 * scale + Math.random() * 0.45 * scale;
+              p.vx = (Math.random() - 0.5) * 0.18;
+              p.vy = L.vy * scale + Math.random() * 0.12 * scale;
+              p.vz = (Math.random() - 0.5) * 0.18;
+              p.maxLife = L.life * (0.8 + Math.random() * 0.45);
+              p.sizeMul = 0.7 + Math.random() * 0.6;
+            }}
+            step={(p, dt, t, _s) => {
+              const a = Math.min(p.age / p.maxLife, 1);
+              p.x += (p.vx + Math.sin(t * 14 + p.age * 9) * 0.035) * dt;
+              p.y += p.vy * dt;
+              p.z += p.vz * dt;
+              return { x: p.x, y: p.y, z: p.z, s: Math.sin(Math.PI * a) };
+            }}
+          />
+        ))}
       {statuses.includes('poisoned') && (
         <ParticleField
           count={8}

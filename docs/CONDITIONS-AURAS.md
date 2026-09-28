@@ -82,11 +82,12 @@ ciego, ardiendo, invisible, etc.) de forma legible en el VTT:
 
 **Partículas características (commit `6dedce7`+1):** cada marca anima con partículas fijas al token/modelo (hijos del group del Character3D → siguen al token). Todo dimensionado por tokenScale, nunca absoluto.
 - **Sangrando**: gotitas rojas brotan del icono (y≈1.28·scale), caen pocos px (vy −0.16·scale/s), vida ~0.7s, fade sin llegar al suelo.
-- **Ardiendo**: 14 partículas naranjas desde el cuerpo (radio 0.3·scale), ascienden (0.3·scale/s) con vaivén senoidal.
+- **Ardiendo**: 3 capas aditivas (blending Additive): núcleo amarillo #fde047 (8, rápido), medio ámbar #fbbf24 (12), exterior naranja #f97316 (10, lento) — superposición = glow de fuego real.
+- **Aturdido**: además de las 4 ⭐, dos anillos torus elípticos #eab308 (color del icono) que se tambalean (rotation.x oscila ±0.55, escala x/z elíptica contrafase, rotación y propia) alrededor de la cabeza.
 - **Envenenado**: 8 puff verdes expandiéndose (sin(π·age)) alrededor del cuerpo, deriva lenta.
 - **Concentrando**: 10 motas azules alrededor de la cabeza, suben con twinkle.
 - **Aturdido**: 4 estrellas ⭐ billboardeadas orbitando la cabeza (radio 0.42·scale, y 1.12·scale, 2.2 rad/s).
-- **Restringido**: 4 cadenas de eslabones torus (metal #94a3b8) en esquinas del token, del cuerpo al suelo con sway.
+- **Restringido**: 4 cadenas de eslabones torus (metal #94a3b8) en esquinas del token, del cuerpo al suelo con sway. **v2: eslabones convergen todos a un punto central a la mitad de la altura del modelo (0.5·scale) — quaternion setFromUnitVectors(eje Z torus → dirección base→centro) + sag parabólico; eslabón maestro torus #64748b en el punto de unión.**
 - **Derribado**: 3 "z" blancas ascendiendo en cascada con fade.
 - **Ciego**: 6 wisps grises lentos alrededor de la cabeza (alpha 0.55).
 - **Invisible**: 12 destellos violetas parpadeando (twinkle cuadrado) alrededor del cuerpo translúcido.
