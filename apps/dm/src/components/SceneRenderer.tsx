@@ -635,6 +635,11 @@ function DraggableToken({
   );
 
   const invisible = (entity.statuses ?? []).includes('invisible');
+  const [modelH, setModelH] = useState(0);
+  const tokenScale = entity.tokenScale ?? 1;
+  const topY = entity.modelUrl
+    ? (modelH > 0 ? modelH * tokenScale * 1.06 : 1.15 * tokenScale)
+    : 1.3 * tokenScale;
 
   return (
     <group ref={groupRef} position={[entity.x, entity.y, entity.z]}>
@@ -650,6 +655,7 @@ function DraggableToken({
           tokenScale={entity.tokenScale ?? 1}
           brightness={entity.brightness ?? 0}
           invisible={invisible}
+          onHeight={setModelH}
           onPointerDown={handlePointerDown}
           onContextMenu={(e) => {
             const domEvent = e as unknown as PointerEvent;
@@ -675,11 +681,13 @@ function DraggableToken({
       )}
       <StatusIconMarkers
         statuses={entity.statuses ?? []}
-        tokenScale={entity.tokenScale ?? 1}
+        tokenScale={tokenScale}
+        topY={topY}
       />
       <StatusEffects
         statuses={entity.statuses ?? []}
-        tokenScale={entity.tokenScale ?? 1}
+        tokenScale={tokenScale}
+        topY={topY}
       />
     </group>
   );
@@ -688,15 +696,17 @@ function DraggableToken({
 function StatusIconMarkers({
   statuses,
   tokenScale,
+  topY,
 }: {
   statuses: string[];
   tokenScale: number;
+  topY: number;
 }) {
   const visible = statuses.filter((s) => STATUS_ICONS[s]).slice(0, 5);
   if (visible.length === 0) return null;
   const n = visible.length;
   return (
-    <Billboard position={[0, 1.3 * tokenScale, 0]}>
+    <Billboard position={[0, topY, 0]}>
       {visible.map((s, i) => (
         <group key={s} position={[(i - (n - 1) / 2) * 0.52 * tokenScale, 0, 0]}>
           <mesh renderOrder={60}>
@@ -827,7 +837,7 @@ function ParticleField({
   );
 }
 
-function StunOrbit({ scale }: { scale: number }) {
+function StunOrbit({ scale, y }: { scale: number; y: number }) {
   const grp = useRef<THREE.Group>(null);
   const ringARef = useRef<THREE.Mesh>(null);
   const ringBRef = useRef<THREE.Mesh>(null);
@@ -847,23 +857,23 @@ function StunOrbit({ scale }: { scale: number }) {
       b.scale.set(1 - 0.22 * Math.sin(t * 1.2 + 2), 1, 1 + 0.26 * Math.sin(t * 1.2 + 2));
     }
   });
-  const r = 0.22 * scale;
-  const ringR = 0.3 * scale;
+  const r = 0.18 * scale;
+  const ringR = 0.24 * scale;
   return (
-    <group ref={grp} position={[0, 1.12 * scale, 0]}>
+    <group ref={grp} position={[0, y, 0]}>
       <mesh ref={ringARef} renderOrder={57}>
-        <torusGeometry args={[ringR, 0.01 * scale, 8, 40]} />
+        <torusGeometry args={[ringR, 0.008 * scale, 8, 40]} />
         <meshBasicMaterial color="#eab308" transparent opacity={0.55} depthWrite={false} toneMapped={false} />
       </mesh>
       <mesh ref={ringBRef} renderOrder={57}>
-        <torusGeometry args={[ringR * 0.8, 0.01 * scale, 8, 40]} />
+        <torusGeometry args={[ringR * 0.8, 0.008 * scale, 8, 40]} />
         <meshBasicMaterial color="#eab308" transparent opacity={0.4} depthWrite={false} toneMapped={false} />
       </mesh>
       {[0, 1, 2, 3].map((i) => {
         const a = (i / 4) * Math.PI * 2;
         return (
           <Billboard key={i} position={[Math.cos(a) * r, 0, Math.sin(a) * r]}>
-            <Text fontSize={0.11 * scale} anchorX="center" anchorY="middle">
+            <Text fontSize={0.09 * scale} anchorX="center" anchorY="middle">
               ⭐
             </Text>
           </Billboard>
@@ -897,6 +907,8 @@ function RestraintChains({ scale }: { scale: number }) {
         const z0 = az * scale;
         const dir = new THREE.Vector3(-x0, midH, -z0).normalize();
         const q = new THREE.Quaternion().setFromUnitVectors(baseDir, dir);
+        const q90 = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2);
+        q.multiply(q90);
         const e = new THREE.Euler().setFromQuaternion(q);
         return (
           <group key={i}>
@@ -925,14 +937,14 @@ function RestraintChains({ scale }: { scale: number }) {
   );
 }
 
-function SleepZ({ scale }: { scale: number }) {
+function SleepZ({ scale, y }: { scale: number; y: number }) {
   const refs = useRef<(THREE.Mesh | null)[]>([]);
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
     refs.current.forEach((m, i) => {
       if (!m) return;
       const cyc = (t * 0.55 + i * 0.33) % 1;
-      m.position.y = (1.18 + cyc * 0.42) * scale;
+      m.position.y = y + cyc * 0.42 * scale;
       m.position.x = (-0.12 + i * 0.11 + Math.sin(cyc * Math.PI) * 0.03) * scale;
       m.scale.setScalar(0.75 + 0.45 * cyc);
       const mat = m.material as THREE.Material;
@@ -959,7 +971,7 @@ function SleepZ({ scale }: { scale: number }) {
   );
 }
 
-function StatusEffects({ statuses, tokenScale }: { statuses: string[]; tokenScale: number }) {
+function StatusEffects({ statuses, tokenScale, topY }: { statuses: string[]; tokenScale: number; topY: number }) {
   const s = tokenScale;
   const fireLayers = [
     { color: '#f97316', count: 10, size: 0.07, vy: 0.2, life: 0.75 },
@@ -976,7 +988,7 @@ function StatusEffects({ statuses, tokenScale }: { statuses: string[]; tokenScal
           scale={s}
           spawn={(p, _t, scale) => {
             p.x = (Math.random() - 0.5) * 0.4 * scale;
-            p.y = 1.28 * scale + (Math.random() - 0.5) * 0.12 * scale;
+            p.y = topY + (Math.random() - 0.5) * 0.12 * scale;
             p.z = (Math.random() - 0.5) * 0.22 * scale;
             p.vx = (Math.random() - 0.5) * 0.06;
             p.vy = -0.16 * scale - Math.random() * 0.1 * scale;
@@ -1061,7 +1073,7 @@ function StatusEffects({ statuses, tokenScale }: { statuses: string[]; tokenScal
             const r = 0.1 + Math.random() * 0.45;
             p.x = Math.cos(a) * r * scale;
             p.z = Math.sin(a) * r * scale;
-            p.y = (0.9 + Math.random() * 0.5) * scale;
+            p.y = (topY - 0.3 * scale) + Math.random() * 0.4 * scale;
             p.vx = (Math.random() - 0.5) * 0.03;
             p.vy = 0.2 * scale + Math.random() * 0.1 * scale;
             p.vz = (Math.random() - 0.5) * 0.03;
@@ -1088,7 +1100,7 @@ function StatusEffects({ statuses, tokenScale }: { statuses: string[]; tokenScal
             const r = Math.random() * 0.35 * scale;
             p.x = Math.cos(a) * r;
             p.z = Math.sin(a) * r;
-            p.y = (0.95 + Math.random() * 0.4) * scale;
+            p.y = (topY - 0.2 * scale) + Math.random() * 0.35 * scale;
             p.vx = (Math.random() - 0.5) * 0.02;
             p.vy = 0.05 * scale;
             p.vz = (Math.random() - 0.5) * 0.02;
@@ -1115,7 +1127,7 @@ function StatusEffects({ statuses, tokenScale }: { statuses: string[]; tokenScal
             const r = Math.random() * 0.42 * scale;
             p.x = Math.cos(a) * r;
             p.z = Math.sin(a) * r;
-            p.y = 0.05 * scale + Math.random() * 1.3 * scale;
+            p.y = 0.05 * scale + Math.random() * (topY - 0.05 * scale);
             p.vx = (Math.random() - 0.5) * 0.04;
             p.vy = 0.1 * scale;
             p.vz = (Math.random() - 0.5) * 0.04;
@@ -1131,9 +1143,9 @@ function StatusEffects({ statuses, tokenScale }: { statuses: string[]; tokenScal
           }}
         />
       )}
-      {statuses.includes('stunned') && <StunOrbit scale={s} />}
+      {statuses.includes('stunned') && <StunOrbit scale={s} y={topY - 0.08 * s} />}
       {statuses.includes('restrained') && <RestraintChains scale={s} />}
-      {statuses.includes('prone') && <SleepZ scale={s} />}
+      {statuses.includes('prone') && <SleepZ scale={s} y={topY + 0.1 * s} />}
     </group>
   );
 }

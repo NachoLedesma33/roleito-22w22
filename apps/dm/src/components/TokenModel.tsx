@@ -13,6 +13,7 @@ interface TokenModelProps {
   tokenScale?: number;
   brightness?: number;
   invisible?: boolean;
+  onHeight?: (height: number) => void;
   onPointerDown?: (e: THREE.Event, id: string) => void;
   onContextMenu?: (e: THREE.Event) => void;
 }
@@ -27,6 +28,7 @@ const TokenModel = memo(function TokenModel({
   tokenScale = 1,
   brightness = 0,
   invisible = false,
+  onHeight,
   onPointerDown,
   onContextMenu,
 }: TokenModelProps) {
@@ -40,6 +42,7 @@ const TokenModel = memo(function TokenModel({
     const box = new THREE.Box3().setFromObject(clone);
     clone.position.y = -box.min.y;
     cloneRef.current = clone;
+    onHeight?.(box.max.y - box.min.y);
   }
 
   if (cloneRef.current) {
