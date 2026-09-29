@@ -1454,6 +1454,22 @@ function BloomPass({ strength = 0.55, radius = 0.6, threshold = 1.1 }: { strengt
   return null;
 }
 
+const GHOST_HEAD_GEO = new THREE.LatheGeometry(
+  [
+    new THREE.Vector2(0.0, 0.42),
+    new THREE.Vector2(0.22, 0.38),
+    new THREE.Vector2(0.36, 0.24),
+    new THREE.Vector2(0.4, 0.08),
+    new THREE.Vector2(0.36, -0.06),
+    new THREE.Vector2(0.3, -0.16),
+    new THREE.Vector2(0.18, -0.24),
+    new THREE.Vector2(0.0, -0.28),
+  ],
+  36
+);
+const GHOST_EYE_GEO = new THREE.SphereGeometry(0.07, 16, 12);
+const GHOST_MOUTH_GEO = new THREE.SphereGeometry(0.1, 16, 12);
+
 function SpiritSwarm({ scale, topY }: { scale: number; topY: number }) {
   // Estela de almas: 320 partículas chicas; nacen en la base, suben en espiral
   // serpenteante encogiéndose y disipándose (fade-out) hacia arriba.
@@ -1537,10 +1553,57 @@ function SpiritSwarm({ scale, topY }: { scale: number; topY: number }) {
     });
     return m;
   }, [scale, topY]);
+  const faceRefs = useRef<(THREE.Group | null)[]>([]);
+  const faceMats = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
   useFrame(({ clock }) => {
-    if (trailMat) trailMat.uniforms.uTime.value = clock.elapsedTime;
+    const t = clock.elapsedTime;
+    if (trailMat) trailMat.uniforms.uTime.value = t;
+    // Caras fantasmales cabalgando la misma hélice del flujo de almas
+    faceRefs.current.forEach((g, i) => {
+      if (!g) return;
+      const p = (t * 0.22 + i * 0.13 + 0.07) % 1;
+      const ang = p * 6.28318 * 1.6;
+      const rad = (0.14 + 0.34 * p) * scale + Math.sin(t * 1.1 + i) * 0.05 * scale;
+      const sn = Math.sin(ang * 2.0 + i * 2.0);
+      g.position.x = Math.cos(ang) * rad + sn * 0.07 * scale * (1.0 - 0.6 * p);
+      g.position.z = Math.sin(ang) * rad + Math.cos(ang * 1.7 + i * 3.0) * 0.07 * scale * (1.0 - 0.6 * p);
+      g.position.y = THREE.MathUtils.lerp(0.06 * scale, topY + 0.3 * scale, p) + Math.sin(t * 2.6 + i * 2.3) * 0.06 * scale;
+      // mismo ciclo de vida que la estela: nacen, crecen, se encogen al disiparse
+      const fin = Math.min(p / 0.14, 1);
+      const fout = 1 - Math.max((p - 0.6) / 0.4, 0);
+      const fade = Math.min(fin, fout);
+      const breathe = 0.9 + 0.1 * Math.sin(t * 3 + i * 1.7);
+      const s = 0.34 * scale * (1 - 0.55 * p) * fade * breathe;
+      g.scale.set(s, s, s);
+      g.rotation.z = t * (0.5 + i * 0.12); // giro lento fantasmal
+      g.rotation.x = Math.sin(t * 1.5 + i) * 0.2;
+      const mat = faceMats.current[i];
+      if (mat) mat.opacity = 0.85 * fade;
+    });
   });
-  return <points geometry={trailGeo} material={trailMat} renderOrder={56} frustumCulled={false} />;
+  return (
+    <group>
+      <points geometry={trailGeo} material={trailMat} renderOrder={56} frustumCulled={false} />
+      {[0, 1, 2, 3, 4].map((i) => (
+        <Billboard key={i}>
+          <group ref={(el) => { faceRefs.current[i] = el; }}>
+            <mesh geometry={GHOST_HEAD_GEO} renderOrder={56}>
+              <meshBasicMaterial ref={(el) => { faceMats.current[i] = el; }} color="#8a2be2" transparent opacity={0.85} depthWrite={false} toneMapped={false} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
+            </mesh>
+            <mesh geometry={GHOST_EYE_GEO} position={[-0.15, 0.1, 0.36]} renderOrder={56}>
+              <meshBasicMaterial color="#170f2e" transparent opacity={0.95} depthWrite={false} />
+            </mesh>
+            <mesh geometry={GHOST_EYE_GEO} position={[0.15, 0.1, 0.36]} renderOrder={56}>
+              <meshBasicMaterial color="#170f2e" transparent opacity={0.95} depthWrite={false} />
+            </mesh>
+            <mesh geometry={GHOST_MOUTH_GEO} position={[0, -0.14, 0.34]} scale={[1.3, 0.7, 0.5]} renderOrder={56}>
+              <meshBasicMaterial color="#170f2e" transparent opacity={0.95} depthWrite={false} />
+            </mesh>
+          </group>
+        </Billboard>
+      ))}
+    </group>
+  );
 }
 
 function FireTongues({ scale }: { scale: number }) {
