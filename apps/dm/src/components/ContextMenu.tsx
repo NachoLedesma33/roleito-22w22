@@ -38,12 +38,13 @@ export default function ContextMenu({ x, y, items, onClose }: ContextMenuProps) 
 
   // Adjust position to stay within viewport
   const adjustedX = Math.min(x, window.innerWidth - 200);
-  const adjustedY = Math.min(y, window.innerHeight - items.length * 36 - 16);
+  const itemsHeight = items.length * 36 + 16;
+  const adjustedY = Math.max(8, Math.min(y, window.innerHeight - Math.min(itemsHeight, window.innerHeight * 0.7) - 8));
 
   return (
     <div
       ref={menuRef}
-      className="fixed z-50 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded-lg shadow-xl py-1 min-w-[180px] animate-in fade-in"
+      className="fixed z-50 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded-lg shadow-xl py-1 min-w-[180px] max-h-[70vh] overflow-y-auto animate-in fade-in"
       style={{ left: adjustedX, top: adjustedY }}
     >
       {items.map((item, i) =>

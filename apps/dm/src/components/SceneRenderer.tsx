@@ -1209,6 +1209,204 @@ function StatusEffects({ statuses, tokenScale, topY }: { statuses: string[]; tok
           }}
         />
       )}
+      {statuses.includes('frozen') && (
+        <>
+          <ParticleField
+            count={12}
+            color="#bae6fd"
+            size={0.04}
+            scale={s}
+            additive
+            spawn={(p, _t, scale) => {
+              const a = Math.random() * Math.PI * 2;
+              const r = 0.32 * scale + Math.random() * 0.22 * scale;
+              p.x = Math.cos(a) * r;
+              p.z = Math.sin(a) * r;
+              p.y = 0.15 * scale + Math.random() * topY * 0.8;
+              p.vx = 0;
+              p.vy = (Math.random() - 0.5) * 0.05 * scale;
+              p.vz = 0;
+              p.maxLife = 0.9 + Math.random() * 0.4;
+              p.sizeMul = 0.7 + Math.random() * 0.5;
+            }}
+            step={(p, dt, t, _s) => {
+              const a = Math.min(p.age / p.maxLife, 1);
+              p.y += p.vy * dt;
+              p.x += Math.cos(t * 1.4 + p.phase) * 0.35 * dt;
+              p.z += Math.sin(t * 1.4 + p.phase) * 0.35 * dt;
+              return { x: p.x, y: p.y, z: p.z, s: Math.sin(Math.PI * a) * (0.5 + 0.5 * Math.abs(Math.sin(t * 6 + p.phase))) };
+            }}
+          />
+          <ParticleField
+            count={7}
+            color="#e0f2fe"
+            size={0.06}
+            scale={s}
+            spawn={(p, _t, scale) => {
+              const a = Math.random() * Math.PI * 2;
+              const r = Math.random() * 0.4 * scale;
+              p.x = Math.cos(a) * r;
+              p.z = Math.sin(a) * r;
+              p.y = 0.05 * scale + Math.random() * 0.35 * scale;
+              p.vx = (Math.random() - 0.5) * 0.04;
+              p.vy = 0.05 * scale;
+              p.vz = (Math.random() - 0.5) * 0.04;
+              p.maxLife = 1.3 + Math.random() * 0.4;
+              p.sizeMul = 1;
+            }}
+            step={(p, dt, _t, _s) => {
+              const a = Math.min(p.age / p.maxLife, 1);
+              p.x += p.vx * dt;
+              p.y += p.vy * dt;
+              p.z += p.vz * dt;
+              return { x: p.x, y: p.y, z: p.z, s: Math.sin(Math.PI * a) * 0.75 };
+            }}
+          />
+        </>
+      )}
+      {statuses.includes('cursed') && (
+        <>
+          <CursedSigil scale={s} topY={topY} />
+          <ParticleField
+            count={8}
+            color="#a855f7"
+            size={0.045}
+            scale={s}
+            additive
+            spawn={(p, _t, scale) => {
+              const a = Math.random() * Math.PI * 2;
+              const r = 0.3 * scale + Math.random() * 0.25 * scale;
+              p.x = Math.cos(a) * r;
+              p.z = Math.sin(a) * r;
+              p.y = 0.1 * scale + Math.random() * topY * 0.7;
+              p.vx = 0;
+              p.vy = 0.16 * scale;
+              p.vz = 0;
+              p.maxLife = 1 + Math.random() * 0.5;
+              p.sizeMul = 0.7 + Math.random() * 0.5;
+            }}
+            step={(p, dt, t, _s) => {
+              const a = Math.min(p.age / p.maxLife, 1);
+              p.x += Math.cos(t * 3 + p.phase) * 0.06 * dt;
+              p.y += p.vy * dt;
+              p.z += Math.sin(t * 3 + p.phase) * 0.06 * dt;
+              return { x: p.x, y: p.y, z: p.z, s: Math.sin(Math.PI * a) * (0.6 + 0.4 * Math.abs(Math.sin(t * 7 + p.phase))) };
+            }}
+          />
+        </>
+      )}
+      {statuses.includes('sick') && (
+        <ParticleField
+          count={8}
+          color="#a3e635"
+          size={0.09}
+          scale={s}
+          spawn={(p, _t, scale) => {
+            const a = Math.random() * Math.PI * 2;
+            const r = Math.random() * 0.3 * scale;
+            p.x = Math.cos(a) * r;
+            p.z = Math.sin(a) * r;
+            p.y = 0.06 * scale + Math.random() * 0.6 * scale;
+            p.vx = (Math.random() - 0.5) * 0.04;
+            p.vy = 0.08 * scale + Math.random() * 0.06 * scale;
+            p.vz = (Math.random() - 0.5) * 0.04;
+            p.maxLife = 1.5 + Math.random() * 0.5;
+            p.sizeMul = 1;
+          }}
+          step={(p, dt, t, _s) => {
+            const a = Math.min(p.age / p.maxLife, 1);
+            p.x += (p.vx + Math.sin(t * 2.5 + p.phase) * 0.03) * dt;
+            p.y += p.vy * dt;
+            p.z += p.vz * dt;
+            return { x: p.x, y: p.y, z: p.z, s: Math.sin(Math.PI * a) * (0.7 + 0.3 * Math.sin(t * 3 + p.phase)) };
+          }}
+        />
+      )}
+      {statuses.includes('petrified') && (
+        <ParticleField
+          count={10}
+          color="#9ca3af"
+          size={0.035}
+          scale={s}
+          spawn={(p, _t, scale) => {
+            const a = Math.random() * Math.PI * 2;
+            const r = 0.3 * scale + Math.random() * 0.2 * scale;
+            p.x = Math.cos(a) * r;
+            p.z = Math.sin(a) * r;
+            p.y = Math.random() * topY * 0.85;
+            p.vx = (Math.random() - 0.5) * 0.03;
+            p.vy = -0.03 * scale;
+            p.vz = (Math.random() - 0.5) * 0.03;
+            p.maxLife = 1.6 + Math.random() * 0.5;
+            p.sizeMul = 0.8 + Math.random() * 0.4;
+          }}
+          step={(p, dt, t, _s) => {
+            const a = Math.min(p.age / p.maxLife, 1);
+            p.x += (p.vx + Math.cos(t * 0.8 + p.phase) * 0.015) * dt;
+            p.y += p.vy * dt;
+            p.z += (p.vz + Math.sin(t * 0.8 + p.phase) * 0.015) * dt;
+            return { x: p.x, y: p.y, z: p.z, s: Math.sin(Math.PI * a) * (0.5 + 0.2 * Math.sin(t * 2 + p.phase)) };
+          }}
+        />
+      )}
+      {statuses.includes('charmed') && (
+        <>
+          <CharmHearts scale={s} topY={topY} />
+          <ParticleField
+            count={6}
+            color="#f9a8d4"
+            size={0.04}
+            scale={s}
+            additive
+            spawn={(p, _t, scale) => {
+              const a = Math.random() * Math.PI * 2;
+              const r = 0.4 * scale;
+              p.x = Math.cos(a) * r;
+              p.z = Math.sin(a) * r;
+              p.y = topY + (Math.random() - 0.5) * 0.3 * scale;
+              p.vx = (Math.random() - 0.5) * 0.05;
+              p.vy = 0.1 * scale;
+              p.vz = (Math.random() - 0.5) * 0.05;
+              p.maxLife = 0.8 + Math.random() * 0.4;
+              p.sizeMul = 0.7 + Math.random() * 0.6;
+            }}
+            step={(p, dt, t, _s) => {
+              const a = Math.min(p.age / p.maxLife, 1);
+              p.x += p.vx * dt;
+              p.y += p.vy * dt;
+              p.z += p.vz * dt;
+              return { x: p.x, y: p.y, z: p.z, s: Math.sin(Math.PI * a) * (0.5 + 0.5 * Math.abs(Math.sin(t * 6 + p.phase))) };
+            }}
+          />
+        </>
+      )}
+      {statuses.includes('silenced') && <SilenceWaves scale={s} topY={topY} />}
+      {statuses.includes('blessed') && (
+        <ParticleField
+          count={14}
+          color="#fde68a"
+          size={0.035}
+          scale={s}
+          additive
+          spawn={(p, _t, scale) => {
+            p.x = (Math.random() - 0.5) * 1.1 * scale;
+            p.z = (Math.random() - 0.5) * 1.1 * scale;
+            p.y = topY + 0.5 * scale + Math.random() * 0.3 * scale;
+            p.vx = (Math.random() - 0.5) * 0.04;
+            p.vy = -(0.25 + Math.random() * 0.25) * scale;
+            p.vz = (Math.random() - 0.5) * 0.04;
+            p.maxLife = 0.8 + Math.random() * 0.4;
+            p.sizeMul = 0.6 + Math.random() * 0.8;
+          }}
+          step={(p, dt, t, _s) => {
+            const a = Math.min(p.age / p.maxLife, 1);
+            p.x += (p.vx + Math.sin(t * 6 + p.phase) * 0.03) * dt;
+            p.y += p.vy * dt;
+            p.z += p.vz * dt;
+            return { x: p.x, y: p.y, z: p.z, s: Math.sin(Math.PI * a) * Math.abs(Math.sin(t * 9 + p.phase)) };
+          }}
+        />
+      )}
       {statuses.includes('restrained') && <RestraintChains scale={s} />}
       {statuses.includes('prone') && <SleepZ scale={s} y={topY + 0.1 * s} />}
     </group>
@@ -1278,6 +1476,112 @@ function ElectricAura({ scale, topY }: { scale: number; topY: number }) {
         );
       })}
     </group>
+  );
+}
+
+function CursedSigil({ scale, topY }: { scale: number; topY: number }) {
+  const grp = useRef<THREE.Group>(null);
+  const ringARef = useRef<THREE.Mesh>(null);
+  const ringBRef = useRef<THREE.Mesh>(null);
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    if (grp.current) grp.current.rotation.y = t * 1.1;
+    if (ringARef.current) {
+      ringARef.current.rotation.x = Math.PI / 2 + Math.sin(t * 0.9) * 0.4;
+      ringARef.current.rotation.z = t * 1.6;
+    }
+    if (ringBRef.current) {
+      ringBRef.current.rotation.x = Math.PI / 2 + Math.cos(t * 0.7 + 1.2) * 0.35;
+      ringBRef.current.rotation.z = -t * 1.1;
+    }
+  });
+  const r = 0.55 * scale;
+  return (
+    <group ref={grp} position={[0, topY - 0.05 * scale, 0]}>
+      <mesh ref={ringARef} renderOrder={57}>
+        <torusGeometry args={[r, 0.012 * scale, 8, 40]} />
+        <meshBasicMaterial color="#8b5cf6" transparent opacity={0.65} depthWrite={false} toneMapped={false} />
+      </mesh>
+      <mesh ref={ringBRef} renderOrder={57}>
+        <torusGeometry args={[r * 0.75, 0.01 * scale, 8, 40]} />
+        <meshBasicMaterial color="#a78bfa" transparent opacity={0.45} depthWrite={false} toneMapped={false} />
+      </mesh>
+      <Billboard position={[0, 0.12 * scale, 0]}>
+        <Text fontSize={0.14 * scale} anchorX="center" anchorY="middle">
+          🔮
+        </Text>
+      </Billboard>
+    </group>
+  );
+}
+
+function CharmHearts({ scale, topY }: { scale: number; topY: number }) {
+  const refs = useRef<(THREE.Group | null)[]>([]);
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    refs.current.forEach((g, i) => {
+      if (!g) return;
+      const cyc = (t * 0.5 + i * 0.37) % 1;
+      g.position.y = topY - 0.1 * scale + cyc * 0.55 * scale;
+      g.position.x = Math.sin(t * 1.8 + i * 2.1) * 0.18 * scale;
+      const s = 0.7 + 0.4 * Math.abs(Math.sin(t * 4 + i * 1.3));
+      g.scale.set(s, s, s);
+    });
+  });
+  return (
+    <group>
+      {[0, 1, 2].map((i) => (
+        <group key={i} ref={(el) => { refs.current[i] = el; }}>
+          <Billboard>
+            <Text fontSize={0.16 * scale} anchorX="center" anchorY="middle">
+              💗
+            </Text>
+          </Billboard>
+        </group>
+      ))}
+    </group>
+  );
+}
+
+function SilenceWaves({ scale, topY }: { scale: number; topY: number }) {
+  const refs = useRef<(THREE.Mesh | null)[]>([]);
+  const mats = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    refs.current.forEach((m, i) => {
+      if (!m) return;
+      const cyc = (t * 0.8 + i * 0.33) % 1;
+      const base = (0.42 + i * 0.14) * scale;
+      m.scale.set(base * (0.7 + cyc * 1.5), base * (0.7 + cyc * 1.5), 1);
+      const mat = mats.current[i];
+      if (mat) mat.opacity = (1 - cyc) * 0.55;
+    });
+  });
+  const arcShape = useMemo(() => {
+    const sh = new THREE.Shape();
+    const a0 = -0.62;
+    const a1 = 0.62;
+    sh.absarc(0, 0, 1, a0, a1, false);
+    sh.absarc(0, 0, 0.84, a1, a0, true);
+    return sh;
+  }, []);
+  return (
+    <Billboard position={[0, topY + 0.02 * scale, 0]}>
+      {[0, 1, 2].map((i) => (
+        <mesh key={i} ref={(el) => { refs.current[i] = el; }} position={[0, 0, 0.01 * i]} renderOrder={56}>
+          <shapeGeometry args={[arcShape]} />
+          <meshBasicMaterial
+            ref={(el) => { mats.current[i] = el; }}
+            color="#94a3b8"
+            transparent
+            opacity={0.5}
+            depthWrite={false}
+            toneMapped={false}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      ))}
+    </Billboard>
   );
 }
 

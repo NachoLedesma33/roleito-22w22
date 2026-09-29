@@ -93,6 +93,14 @@ ciego, ardiendo, invisible, etc.) de forma legible en el VTT:
 - **Invisible**: 12 destellos violetas parpadeando (twinkle cuadrado) alrededor del cuerpo translúcido.
 - **Muerto**: 10 partículas alma pálidas (#a5b4fc) ascendiendo lento del cuerpo con sway, fade en punta — espíritu que abandona el cuerpo. Icono 💀.
 - **Electrificado**: rayos ⚡ aditivos — 8 rayos forma relámpago (Shape zigzag, #fde047 con núcleo blanco #ffffff alternado, ×0.55) en 2 bandas del cuerpo (topY·0.28 y topY·0.7), flicker senoidal por fase (escala y + opacity por rayo), grupo rota 0.7 rad/s + 14 chispas blancas radiales volando hacia afuera con fade. Icono ⚡.
+- **Helado**: motas de hielo #bae6fd aditivas orbitando/derivando en espiral lenta (12) con twinkle + 7 puffos de aliento frío #e0f2fe que crecen/encogen en la base del cuerpo. Icono ❄️.
+- **Maldito**: sigilo de 2 anillos torus púrpura (#8b5cf6/#a78bfa) contrarrotantes y tambaleantes + 🔮 flotante billboard + 8 zarcillos de humo #a855f7 ascendiendo en hélice. Icono 🔮.
+- **Enfermo**: 8 burbujas verdosas #a3e635 translúcidas subiendo lento con wobble (crecen/encogen senoidal). Icono 🤢.
+- **Petrificado**: 10 motas de polvo piedra #9ca3af derivando y asentándose lento (vy negativo), estática gris. Icono 🗿.
+- **Encantado**: 3 corazones 💗 billboard subiendo en bucle con sway + latido de escala + 6 motas rosas #f9a8d4 aditivas twinkle en la cabeza. Icono 💞.
+- **Silenciado**: 3 ondas de sonido rotas (arcos Shape, billboardeados) #94a3b8 pulsando hacia afuera desde la cabeza con fade. Icono 🔇.
+- **Bendecido**: lluvia dorada — 14 destellos #fde68a aditivos cayendo desde arriba del token con sway y sparkle. Icono ✨.
+- **Menú contextual agrupado**: sección "Activas" (quitar rápido) + 4 categorías (Físico/Control/Mente/Sobrenatural) — evita lista plana de 18 ítems.
 - **Motor**: `ParticleField` genérico = instancedMesh pool (1 draw call por campo), respawn automático, fade por escala. Sin gate de perf (ops triviales).
 
 ### Fase C — Polish ✓ (commit pendiente)

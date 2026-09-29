@@ -29,7 +29,7 @@ import CharacterSheet from '@/components/CharacterSheet';
 import InitiativeTracker from '@/components/InitiativeTracker';
 import QuestPanel from '@/components/QuestPanel';
 import CalendarPanel from '@/components/CalendarPanel';
-import { STATUS_OPTIONS } from '@/lib/statusMarkers';
+import { STATUS_OPTIONS, STATUS_GROUPS } from '@/lib/statusMarkers';
 import MapViewer from '@/components/MapViewer';
 import DMNotebookHud from '@/components/DMNotebookHud';
 import AISettingsPanel from '@/components/AISettingsPanel';
@@ -1472,6 +1472,27 @@ export default function DmDashboard() {
     }
     lightItems.push({ label: 'Crear nueva luz', icon: '✨', onClick: () => handleCreateAndAttachLight(sceneCharId) })
 
+    // Estado: sección "Activas" (quitar rápido) + categorías para marcar — evita lista plana de 18.
+    const buildStatusMenuItems = (statusIds: string[]): ContextMenuItem[] => {
+      const items: ContextMenuItem[] = [];
+      const active = STATUS_OPTIONS.filter((s) => statusIds.includes(s.id));
+      if (active.length > 0) {
+        items.push({ label: '· Activas', icon: '✦', disabled: true, onClick: () => {} });
+        for (const s of active) {
+          items.push({ label: `Quitar ${s.label}`, icon: '✓', onClick: () => handleToggleStatus(sceneCharId, s.id) });
+        }
+      }
+      for (const g of STATUS_GROUPS) {
+        const rest = STATUS_OPTIONS.filter((s) => s.group === g.key && !statusIds.includes(s.id));
+        if (rest.length === 0) continue;
+        items.push({ label: `· ${g.label}`, icon: '▸', disabled: true, onClick: () => {} });
+        for (const s of rest) {
+          items.push({ label: `Marcar ${s.label}`, icon: '＋', onClick: () => handleToggleStatus(sceneCharId, s.id) });
+        }
+      }
+      return items;
+    };
+
     setContextMenu({
       x: clientX,
       y: clientY,
@@ -1482,14 +1503,7 @@ export default function DmDashboard() {
         { label: 'Ver ficha de personaje', icon: '📄', onClick: () => setSelectedTokenId(sceneCharId), disabled: !ent },
         { label: '', separator: true, onClick: () => {} },
         { label: 'Estado', icon: '⚠️', onClick: () => {}, disabled: true },
-        ...STATUS_OPTIONS.map((s) => {
-          const has = (sc?.statuses ?? []).includes(s.id);
-          return {
-            label: `${has ? 'Quitar ' : 'Marcar '}${s.label}`,
-            icon: has ? '✓' : '＋',
-            onClick: () => handleToggleStatus(sceneCharId, s.id),
-          };
-        }),
+        ...buildStatusMenuItems(sc?.statuses ?? []),
         { label: '', separator: true, onClick: () => {} },
         ...lightItems,
         { label: '', separator: true, onClick: () => {} },
