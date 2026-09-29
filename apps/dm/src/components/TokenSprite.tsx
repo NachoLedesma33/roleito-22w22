@@ -19,6 +19,7 @@ interface TokenSpriteProps {
   isDragging?: boolean;
   tokenScale?: number;
   invisible?: boolean;
+  petrified?: boolean;
   onPointerDown?: (e: THREE.Event, id: string) => void;
   onContextMenu?: (e: THREE.Event) => void;
 }
@@ -33,6 +34,7 @@ export default function TokenSprite({
   isDragging,
   tokenScale = 1,
   invisible = false,
+  petrified = false,
   onPointerDown,
   onContextMenu,
 }: TokenSpriteProps) {
@@ -76,12 +78,12 @@ export default function TokenSprite({
           {texture ? (
             <mesh position={[0, 0.6 * tokenScale, 0]}>
               <circleGeometry args={[radius, 32]} />
-              <meshStandardMaterial map={texture} emissiveMap={texture} emissive={new THREE.Color(0xffffff)} emissiveIntensity={0.3} transparent={invisible} opacity={invisible ? 0.25 : 1} depthWrite={!invisible} />
+              <meshStandardMaterial map={texture} emissiveMap={texture} emissive={new THREE.Color(petrified ? 0x4a4f57 : 0xffffff)} emissiveIntensity={petrified ? 0.15 : 0.3} color={petrified ? '#9ca3af' : '#ffffff'} transparent={invisible} opacity={invisible ? 0.25 : 1} depthWrite={!invisible} />
             </mesh>
           ) : (
             <mesh position={[0, 0.6 * tokenScale, 0]}>
               <circleGeometry args={[radius, 32]} />
-              <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.4} transparent={invisible} opacity={invisible ? 0.25 : 1} depthWrite={!invisible} />
+              <meshStandardMaterial color={petrified ? '#9ca3af' : color} emissive={petrified ? '#4a4f57' : color} emissiveIntensity={petrified ? 0.15 : 0.4} transparent={invisible} opacity={invisible ? 0.25 : 1} depthWrite={!invisible} />
             </mesh>
           )}
           {!texture && (

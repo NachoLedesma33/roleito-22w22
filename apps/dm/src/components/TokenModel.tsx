@@ -1,4 +1,4 @@
-import { useRef, useCallback, memo } from 'react';
+import { useRef, useMemo, useCallback, memo } from 'react';
 import { Text, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
@@ -13,6 +13,7 @@ interface TokenModelProps {
   tokenScale?: number;
   brightness?: number;
   invisible?: boolean;
+  petrified?: boolean;
   onHeight?: (height: number) => void;
   onPointerDown?: (e: THREE.Event, id: string) => void;
   onContextMenu?: (e: THREE.Event) => void;
@@ -28,6 +29,7 @@ const TokenModel = memo(function TokenModel({
   tokenScale = 1,
   brightness = 0,
   invisible = false,
+  petrified = false,
   onHeight,
   onPointerDown,
   onContextMenu,
@@ -38,6 +40,8 @@ const TokenModel = memo(function TokenModel({
   // Per-instance clone — created once, never recreated
   const cloneRef = useRef<THREE.Group | null>(null);
   const hitHeightRef = useRef(0);
+  const origMatsRef = useRef<WeakMap<THREE.MeshStandardMaterial, { c: THREE.Color; e: THREE.Color; ei: number }>>(new WeakMap());
+  const STONE = useMemo(() => new THREE.Color('#9ca3af'), []);
   if (!cloneRef.current) {
     const clone = scene.clone(true);
     const box = new THREE.Box3().setFromObject(clone);
@@ -48,6 +52,14 @@ const TokenModel = memo(function TokenModel({
     clone.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         (child as unknown as { raycast: () => void }).raycast = () => {};
+        const mat = child.material as THREE.MeshStandardMaterial;
+        if (mat && mat.isMaterial && !origMatsRef.current.has(mat)) {
+          origMatsRef.current.set(mat, {
+            c: mat.color.clone(),
+            e: mat.emissive.clone(),
+            ei: mat.emissiveIntensity,
+          });
+        }
       }
     });
     hitHeightRef.current = box.max.y - box.min.y;
@@ -64,6 +76,18 @@ const TokenModel = memo(function TokenModel({
         if (brightness > 0) {
           mat.emissive = mat.emissive || new THREE.Color(0, 0, 0);
           mat.emissiveIntensity = Math.min(brightness, 0.5);
+        }
+        if (petrified) {
+          mat.color.copy(STONE);
+          mat.emissive.setRGB(0.13, 0.14, 0.16);
+          mat.emissiveIntensity = 0.2;
+        } else {
+          const orig = origMatsRef.current.get(mat);
+          if (orig) {
+            mat.color.copy(orig.c);
+            mat.emissive.copy(orig.e);
+            mat.emissiveIntensity = orig.ei;
+          }
         }
       }
     });

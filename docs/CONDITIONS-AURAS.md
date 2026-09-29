@@ -81,8 +81,8 @@ ciego, ardiendo, invisible, etc.) de forma legible en el VTT:
 - Invisible intacto: opacity 0.25 modelo + chip 👻 visible (indicador).
 
 **Partículas características (commit `6dedce7`+1):** cada marca anima con partículas fijas al token/modelo (hijos del group del Character3D → siguen al token). Todo dimensionado por tokenScale, nunca absoluto.
-- **Sangrando**: gotitas rojas brotan del icono (y≈1.28·scale), caen pocos px (vy −0.16·scale/s), vida ~0.7s, fade sin llegar al suelo.
-- **Ardiendo**: 3 capas aditivas (blending Additive): núcleo amarillo #fde047 (8, rápido), medio ámbar #fbbf24 (12), exterior naranja #f97316 (10, lento) — superposición = glow de fuego real.
+- **Sangrando**: 12 salpicaduras #ef4444 disparadas radialmente del cuerpo (velocidad 0.5–1.0·scale) con gravedad (curva balística), vuelan más allá de la mitad del token y se desvanecen.
+- **Ardiendo**: 8 llamas cónicas puntia­gudas (4 exteriores naranjas #f97316/#fb923c + 4 núcleo #fbbf24/#fde047) con flicker descontrolado (2 senoidales por llama: escala y ±, rotación z/x, posición serpenteante) + 10 ascuas naranjas ascendiendo. Blending aditivo.
 - **Aturdido**: además de las 4 ⭐, dos anillos torus elípticos #eab308 (color del icono) que se tambalean (rotation.x oscila ±0.55, escala x/z elíptica contrafase, rotación y propia) alrededor de la cabeza.
 - **Envenenado**: 8 puff verdes expandiéndose (sin(π·age)) alrededor del cuerpo, deriva lenta.
 - **Concentrando**: aura tipo supersaiyán — 3 capas aditivas ascendiendo de todo el cuerpo (núcleo blanco #ffffff rápido, medio celeste #bfdbfe, exterior azul #3b82f6 lento), vaivén senoidal + swirl, superposición = energy flare.
@@ -93,10 +93,10 @@ ciego, ardiendo, invisible, etc.) de forma legible en el VTT:
 - **Invisible**: 12 destellos violetas parpadeando (twinkle cuadrado) alrededor del cuerpo translúcido.
 - **Muerto**: 10 partículas alma pálidas (#a5b4fc) ascendiendo lento del cuerpo con sway, fade en punta — espíritu que abandona el cuerpo. Icono 💀.
 - **Electrificado**: rayos ⚡ aditivos — 8 rayos forma relámpago (Shape zigzag, #fde047 con núcleo blanco #ffffff alternado, ×0.55) en 2 bandas del cuerpo (topY·0.28 y topY·0.7), flicker senoidal por fase (escala y + opacity por rayo), grupo rota 0.7 rad/s + 14 chispas blancas radiales volando hacia afuera con fade. Icono ⚡.
-- **Helado**: motas de hielo #bae6fd aditivas orbitando/derivando en espiral lenta (12) con twinkle + 7 puffos de aliento frío #e0f2fe que crecen/encogen en la base del cuerpo. Icono ❄️.
-- **Maldito**: sigilo de 2 anillos torus púrpura (#8b5cf6/#a78bfa) contrarrotantes y tambaleantes + 🔮 flotante billboard + 8 zarcillos de humo #a855f7 ascendiendo en hélice. Icono 🔮.
+- **Helado**: 9 copos de nieve (Shape 12 puntas hexagonales, diminutos 0.055·scale) cayendo con spin y sway + 7 puffos de aliento frío #e0f2fe creciendo/encogiendo en la base.
+- **Maldito**: 4 espíritus malditos (Shape fantasma: cúpula + cola ondulada, cara con ojos/boca huecos) #a855f7 aditivos que EMERGEN del cuerpo, vuelan en bucle serpenteante alrededor (sway lateral + bob) y vuelven a entrar — ciclo infinito con fase por espíritu.
 - **Enfermo**: 8 burbujas verdosas #a3e635 translúcidas subiendo lento con wobble (crecen/encogen senoidal). Icono 🤢.
-- **Petrificado**: 10 motas de polvo piedra #9ca3af derivando y asentándose lento (vy negativo), estática gris. Icono 🗿.
+- **Petrificado**: el modelo se vuelve color piedra (#9ca3af, emissive gris tenue — originales guardados en WeakMap y restaurados al quitar) + 10 motas de polvo derivando/asentándose.
 - **Encantado**: 3 corazones 💗 billboard subiendo en bucle con sway + latido de escala + 6 motas rosas #f9a8d4 aditivas twinkle en la cabeza. Icono 💞.
 - **Silenciado**: 3 ondas de sonido rotas (arcos Shape, billboardeados) #94a3b8 pulsando hacia afuera desde la cabeza con fade. Icono 🔇.
 - **Bendecido**: lluvia dorada — 14 destellos #fde68a aditivos cayendo desde arriba del token con sway y sparkle. Icono ✨.
