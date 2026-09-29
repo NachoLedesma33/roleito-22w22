@@ -1426,88 +1426,139 @@ function ElectricAura({ scale, topY }: { scale: number; topY: number }) {
   );
 }
 
+const GHOST_EYE_GEO = new THREE.SphereGeometry(0.09, 16, 12);
+const GHOST_MOUTH_GEO = new THREE.SphereGeometry(0.11, 16, 12);
+
 function SpiritSwarm({ scale, topY }: { scale: number; topY: number }) {
-  const refs = useRef<(THREE.Mesh | null)[]>([]);
-  const ghostShape = useMemo(() => {
-    const sh = new THREE.Shape();
-    // Cúpula (cabeza) + base ondulada (cola del fantasma)
-    sh.absarc(0, -0.02, 0.5, Math.PI, 0, true);
-    sh.lineTo(-0.5, -0.44);
-    sh.lineTo(-0.38, -0.56);
-    sh.lineTo(-0.24, -0.44);
-    sh.lineTo(-0.1, -0.56);
-    sh.lineTo(0.04, -0.44);
-    sh.lineTo(0.18, -0.56);
-    sh.lineTo(0.32, -0.44);
-    sh.lineTo(0.44, -0.56);
-    sh.lineTo(0.5, -0.44);
-    sh.closePath();
-    // Cara maldita: ojos + boca (huecos)
-    const eyeL = new THREE.Path();
-    eyeL.absellipse(-0.17, 0.02, 0.05, 0.07, 0, Math.PI * 2, true);
-    const eyeR = new THREE.Path();
-    eyeR.absellipse(0.17, 0.02, 0.05, 0.07, 0, Math.PI * 2, true);
-    const mouth = new THREE.Path();
-    mouth.absellipse(0, -0.16, 0.06, 0.04, 0, Math.PI * 2, true);
-    sh.holes.push(eyeL, eyeR, mouth);
-    return sh;
+  const ghostRefs = useRef<(THREE.Group | null)[]>([]);
+  // Cuerpo 3D de fantasma: lathe de alto poligonaje (48 segmentos radiales)
+  const ghostGeo = useMemo(() => {
+    const pts: THREE.Vector2[] = [
+      new THREE.Vector2(0.0, 0.66),
+      new THREE.Vector2(0.16, 0.58),
+      new THREE.Vector2(0.3, 0.44),
+      new THREE.Vector2(0.44, 0.24),
+      new THREE.Vector2(0.5, 0.04),
+      new THREE.Vector2(0.46, -0.14),
+      new THREE.Vector2(0.49, -0.26),
+      new THREE.Vector2(0.42, -0.38),
+      new THREE.Vector2(0.45, -0.5),
+      new THREE.Vector2(0.35, -0.6),
+      new THREE.Vector2(0.24, -0.68),
+    ];
+    return new THREE.LatheGeometry(pts, 48);
   }, []);
+  // Estela de almas: 240 partículas fluyendo en hélice alrededor del cuerpo
+  const trailGeo = useMemo(() => {
+    const N = 240;
+    const g = new THREE.BufferGeometry();
+    const pos = new Float32Array(N * 3);
+    const off = new Float32Array(N);
+    const seed = new Float32Array(N);
+    const size = new Float32Array(N);
+    for (let i = 0; i < N; i++) {
+      off[i] = i / N;
+      seed[i] = Math.random() * Math.PI * 2;
+      size[i] = 0.7 + Math.random() * 0.6;
+    }
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.setAttribute('aOffset', new THREE.BufferAttribute(off, 1));
+    g.setAttribute('aSeed', new THREE.BufferAttribute(seed, 1));
+    g.setAttribute('aSize', new THREE.BufferAttribute(size, 1));
+    return g;
+  }, []);
+  const trailMat = useMemo(() => {
+    const m = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      toneMapped: false,
+      blending: THREE.AdditiveBlending,
+      uniforms: {
+        uTime: { value: 0 },
+        uScale: { value: scale },
+        uTopY: { value: topY },
+        uPixelRatio: { value: window.devicePixelRatio || 1 },
+        uColor: { value: new THREE.Color('#a855f7') },
+      },
+      vertexShader: `
+        attribute float aOffset;
+        attribute float aSeed;
+        attribute float aSize;
+        uniform float uTime;
+        uniform float uScale;
+        uniform float uTopY;
+        uniform float uPixelRatio;
+        varying float vAlpha;
+        void main() {
+          float p = fract(uTime * 0.18 + aOffset);
+          float ang = p * 6.28318 * 2.0;
+          float rad = (0.5 * uScale) * (1.0 - 0.15 * p) + sin(uTime * 0.9 + aSeed) * 0.07 * uScale;
+          vec3 posH = vec3(cos(ang) * rad, mix(0.1 * uScale, uTopY + 0.28 * uScale, p), sin(ang) * rad);
+          // ruido ondulante orgánico (curl-ish) en el plano de la hélice
+          float w1 = sin(uTime * 2.1 + aSeed + posH.y * 2.4) * 0.1 * uScale;
+          float w2 = cos(uTime * 1.7 + aSeed * 1.7 - posH.y * 3.1) * 0.1 * uScale;
+          posH.x += w1 * cos(ang) - w2 * sin(ang);
+          posH.z += w1 * sin(ang) + w2 * cos(ang);
+          posH.y += sin(uTime * 2.9 + aSeed * 2.3) * 0.09 * uScale;
+          // fade-in al nacer, fade-out al disiparse
+          float fin = smoothstep(0.0, 0.16, p);
+          float fout = 1.0 - smoothstep(0.74, 1.0, p);
+          vAlpha = fin * fout;
+          vec4 mv = modelViewMatrix * vec4(posH, 1.0);
+          gl_Position = projectionMatrix * mv;
+          float tw = 0.6 + 0.4 * sin(uTime * 4.0 + aSeed * 3.0);
+          gl_PointSize = clamp(aSize * 0.16 * uScale * tw * uPixelRatio * (170.0 / -mv.z), 0.5, 60.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 uColor;
+        varying float vAlpha;
+        void main() {
+          float d = length(gl_PointCoord - 0.5);
+          float soft = smoothstep(0.45, 0.12, d); // borde difuso, sin recortes cuadrados
+          float core = smoothstep(0.2, 0.0, d);
+          vec3 col = uColor * (0.5 + 1.5 * core);
+          gl_FragColor = vec4(col, vAlpha * soft * 0.85);
+        }
+      `,
+    });
+    return m;
+  }, [scale, topY]);
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
-    refs.current.forEach((m, i) => {
-      if (!m) return;
-      const cyc = (t * 0.2 + i * 0.29) % 1;
-      const r = 0.55 * scale;
-      let ang: number;
-      let yB: number;
-      if (cyc < 0.14) {
-        const p = cyc / 0.14;
-        ang = i * 1.1 + p * 1.2;
-        yB = topY * 0.5 + 0.3 * scale - 0.35 * scale * (1 - p);
-        const rf = 0.15 + 0.85 * p;
-        m.position.x = Math.cos(ang) * r * rf;
-        m.position.z = Math.sin(ang) * r * rf;
-        m.position.y = yB;
-        m.scale.set(0.5 * scale * p, 0.5 * scale * p, 1);
-      } else if (cyc < 0.86) {
-        const p = (cyc - 0.14) / 0.72;
-        ang = i * 1.1 + p * Math.PI * 2;
-        yB = topY * 0.5 + 0.3 * scale + Math.sin(p * Math.PI * 2) * 0.28 * scale;
-        const pS = 0.85 + 0.15 * Math.sin(t * 5 + i * 1.7);
-        m.position.x = Math.cos(ang) * r + Math.sin(t * 6 + i * 1.3) * 0.1 * scale;
-        m.position.z = Math.sin(ang) * r;
-        m.position.y = yB;
-        m.scale.set(0.5 * scale * pS, 0.5 * scale * pS, 1);
-      } else {
-        const p = (cyc - 0.86) / 0.14;
-        ang = i * 1.1 + p * Math.PI * 2;
-        yB = topY * 0.5 + 0.3 * scale - 0.35 * scale * p;
-        const rf = 1 - 0.85 * p;
-        m.position.x = Math.cos(ang) * r * rf;
-        m.position.z = Math.sin(ang) * r * rf;
-        m.position.y = yB;
-        m.scale.set(0.5 * scale * (1 - p), 0.5 * scale * (1 - p), 1);
-      }
-      m.rotation.z = Math.sin(ang * 2) * 0.25;
+    if (trailMat) trailMat.uniforms.uTime.value = t;
+    ghostRefs.current.forEach((g, i) => {
+      if (!g) return;
+      const phase = i * 1.4;
+      const cyc = t * (0.45 + (i % 2) * 0.07) + phase;
+      const r = 0.52 * scale + Math.sin(t * 1.2 + phase) * 0.1 * scale;
+      g.position.x = Math.cos(cyc) * r + Math.sin(t * 3.3 + phase) * 0.08 * scale;
+      g.position.z = Math.sin(cyc) * r;
+      g.position.y = topY * 0.5 + Math.sin(t * 1.6 + phase * 1.3) * 0.22 * scale + Math.sin(t * 5.2 + phase) * 0.05 * scale;
+      g.rotation.y = cyc; // cara mirando hacia afuera del giro
+      g.rotation.z = Math.sin(t * 2.1 + phase) * 0.16;
     });
   });
+  const EYES = [-0.16, 0.16];
   return (
     <group>
+      <points geometry={trailGeo} material={trailMat} renderOrder={56} frustumCulled={false} />
       {[0, 1, 2, 3].map((i) => (
-        <Billboard key={i}>
-          <mesh ref={(el) => { refs.current[i] = el; }} renderOrder={56}>
-            <shapeGeometry args={[ghostShape]} />
-            <meshBasicMaterial
-              color="#a855f7"
-              transparent
-              opacity={0.85}
-              depthWrite={false}
-              toneMapped={false}
-              side={THREE.DoubleSide}
-              blending={THREE.AdditiveBlending}
-            />
-          </mesh>
-        </Billboard>
+        <group key={i} ref={(el) => { ghostRefs.current[i] = el; }}>
+          <group scale={0.42 * scale}>
+            <mesh geometry={ghostGeo} renderOrder={56}>
+              <meshBasicMaterial color="#a855f7" transparent opacity={0.8} depthWrite={false} toneMapped={false} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
+            </mesh>
+            {EYES.map((x) => (
+              <mesh key={x} geometry={GHOST_EYE_GEO} position={[x, 0.08, 0.5]} renderOrder={56}>
+                <meshBasicMaterial color="#170f2e" transparent opacity={0.95} depthWrite={false} />
+              </mesh>
+            ))}
+            <mesh geometry={GHOST_MOUTH_GEO} position={[0, -0.2, 0.5]} scale={[1.5, 0.85, 0.55]} renderOrder={56}>
+              <meshBasicMaterial color="#170f2e" transparent opacity={0.95} depthWrite={false} />
+            </mesh>
+          </group>
+        </group>
       ))}
     </group>
   );
@@ -1515,36 +1566,42 @@ function SpiritSwarm({ scale, topY }: { scale: number; topY: number }) {
 
 function FireTongues({ scale }: { scale: number }) {
   const refs = useRef<(THREE.Mesh | null)[]>([]);
+  const mats = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
     refs.current.forEach((m, i) => {
       if (!m) return;
-      const flick = Math.abs(Math.sin(t * (11 + (i % 4) * 2.2) + i * 1.9));
-      const jitter = Math.abs(Math.sin(t * 23 + i * 3.1));
-      const s = 0.55 + 0.9 * flick + 0.35 * jitter;
-      m.scale.set(1, s, 1);
-      m.rotation.z = Math.sin(t * 8 + i * 2.4) * 0.3 + Math.sin(t * 19 + i) * 0.12;
-      m.rotation.x = Math.sin(t * 7 + i * 1.1) * 0.18;
       const outer = i < 4;
-      const rad = outer ? 0.16 * scale : 0.09 * scale;
-      m.position.x = Math.cos(i * 1.05) * rad + Math.sin(t * 11 + i) * 0.03 * scale;
-      m.position.z = Math.sin(i * 1.05) * rad + Math.cos(t * 9 + i) * 0.03 * scale;
-      m.position.y = 0.02 * scale + flick * 0.05 * scale;
+      // Cada llama asciende en ciclo y se ondula al subir (despertar → disiparse)
+      const p = (t * (outer ? 0.55 : 0.68) + i * (outer ? 0.13 : 0.21)) % 1;
+      const flick = Math.abs(Math.sin(t * (12 + (i % 4) * 2.4) + i * 1.9));
+      const jitter = Math.abs(Math.sin(t * 27 + i * 3.1));
+      const spread = 0.1 * scale + p * 0.24 * scale;
+      const ang = i * 1.05;
+      const sway = 0.05 * scale * (0.3 + p);
+      m.position.x = Math.cos(ang) * spread + Math.sin(t * 10 + i * 1.4) * sway;
+      m.position.z = Math.sin(ang) * spread + Math.cos(t * 8 + i * 0.9) * sway;
+      m.position.y = 0.03 * scale + p * (outer ? 0.62 : 0.52) * scale + flick * 0.04 * scale;
+      m.scale.set(1, 0.7 + 1.0 * flick + 0.4 * jitter, 1);
+      m.rotation.z = (Math.sin(t * 9 + i * 2.4) * 0.34 + Math.sin(t * 21 + i) * 0.12) * (0.5 + p);
+      m.rotation.x = Math.sin(t * 7.5 + i * 1.1) * 0.2 * (0.5 + p);
+      const mat = mats.current[i];
+      if (mat) mat.opacity = 0.9 * (1 - Math.pow(p, 3)) * (0.45 + 0.55 * flick);
     });
   });
   const COLORS = ['#f97316', '#fb923c', '#fbbf24', '#fde047'];
   return (
     <group>
       {[0, 1, 2, 3].map((i) => (
-        <mesh key={i} ref={(el) => { refs.current[i] = el; }} position={[0, 0.02 * scale, 0]} renderOrder={56}>
+        <mesh key={i} ref={(el) => { refs.current[i] = el; }} renderOrder={56}>
           <coneGeometry args={[0.07 * scale, 0.55 * scale, 6]} />
-          <meshBasicMaterial color={COLORS[i]} transparent opacity={0.85} depthWrite={false} toneMapped={false} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} />
+          <meshBasicMaterial ref={(el) => { mats.current[i] = el; }} color={COLORS[i]} transparent opacity={0.85} depthWrite={false} toneMapped={false} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} />
         </mesh>
       ))}
       {[4, 5, 6, 7].map((i) => (
-        <mesh key={i} ref={(el) => { refs.current[i] = el; }} position={[0, 0.02 * scale, 0]} renderOrder={56}>
+        <mesh key={i} ref={(el) => { refs.current[i] = el; }} renderOrder={56}>
           <coneGeometry args={[0.045 * scale, 0.32 * scale, 6]} />
-          <meshBasicMaterial color={COLORS[i % 4]} transparent opacity={0.9} depthWrite={false} toneMapped={false} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} />
+          <meshBasicMaterial ref={(el) => { mats.current[i] = el; }} color={COLORS[i % 4]} transparent opacity={0.9} depthWrite={false} toneMapped={false} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} />
         </mesh>
       ))}
     </group>
