@@ -92,6 +92,7 @@ ciego, ardiendo, invisible, etc.) de forma legible en el VTT:
 - **Ciego**: 6 wisps grises lentos alrededor de la cabeza (alpha 0.55).
 - **Invisible**: 12 destellos violetas parpadeando (twinkle cuadrado) alrededor del cuerpo translúcido.
 - **Muerto**: 10 partículas alma pálidas (#a5b4fc) ascendiendo lento del cuerpo con sway, fade en punta — espíritu que abandona el cuerpo. Icono 💀.
+- **Electrificado**: rayos ⚡ aditivos — 8 rayos forma relámpago (Shape zigzag, #fde047 con núcleo blanco #ffffff alternado, ×0.55) en 2 bandas del cuerpo (topY·0.28 y topY·0.7), flicker senoidal por fase (escala y + opacity por rayo), grupo rota 0.7 rad/s + 14 chispas blancas radiales volando hacia afuera con fade. Icono ⚡.
 - **Motor**: `ParticleField` genérico = instancedMesh pool (1 draw call por campo), respawn automático, fade por escala. Sin gate de perf (ops triviales).
 
 ### Fase C — Polish ✓ (commit pendiente)

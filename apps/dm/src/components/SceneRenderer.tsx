@@ -1180,8 +1180,103 @@ function StatusEffects({ statuses, tokenScale, topY }: { statuses: string[]; tok
         />
       )}
       {statuses.includes('stunned') && <StunOrbit scale={s} y={topY - 0.08 * s} />}
+      {statuses.includes('shocked') && <ElectricAura scale={s} topY={topY} />}
+      {statuses.includes('shocked') && (
+        <ParticleField
+          count={14}
+          color="#ffffff"
+          size={0.03}
+          scale={s}
+          spawn={(p, _t, scale) => {
+            const a = Math.random() * Math.PI * 2;
+            const r = 0.35 * scale;
+            p.x = Math.cos(a) * r;
+            p.z = Math.sin(a) * r;
+            p.y = 0.1 * scale + Math.random() * topY * 0.75;
+            const v = 0.9 * scale + Math.random() * 0.5 * scale;
+            p.vx = Math.cos(a) * v;
+            p.vz = Math.sin(a) * v;
+            p.vy = (Math.random() - 0.5) * 0.3 * scale;
+            p.maxLife = 0.3 + Math.random() * 0.3;
+            p.sizeMul = 0.6 + Math.random() * 0.6;
+          }}
+          step={(p, dt, _t, _s) => {
+            const a = Math.min(p.age / p.maxLife, 1);
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            p.z += p.vz * dt;
+            return { x: p.x, y: p.y, z: p.z, s: (1 - a) * 0.9 };
+          }}
+        />
+      )}
       {statuses.includes('restrained') && <RestraintChains scale={s} />}
       {statuses.includes('prone') && <SleepZ scale={s} y={topY + 0.1 * s} />}
+    </group>
+  );
+}
+
+function ElectricAura({ scale, topY }: { scale: number; topY: number }) {
+  const grp = useRef<THREE.Group>(null);
+  const bolts = useRef<(THREE.Mesh | null)[]>([]);
+  const mats = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    if (grp.current) grp.current.rotation.y = t * 0.7;
+    bolts.current.forEach((m, i) => {
+      if (!m) return;
+      const flick = Math.abs(Math.sin(t * (9 + (i % 4) * 2.5) + i * 1.7));
+      const on = flick > 0.4 - (i % 3) * 0.08;
+      m.scale.set(0.8, 0.55 * scale * (on ? 0.85 + 0.35 * flick : 0.2), 0.8);
+      const mat = mats.current[i];
+      if (mat) mat.opacity = on ? 0.3 + 0.7 * flick : 0.06;
+    });
+  });
+  const boltShape = useMemo(() => {
+    const sh = new THREE.Shape();
+    sh.moveTo(0.1, 0.5);
+    sh.lineTo(0.22, -0.1);
+    sh.lineTo(0.02, -0.18);
+    sh.lineTo(0.16, -0.5);
+    sh.lineTo(-0.16, 0.04);
+    sh.lineTo(-0.04, 0.16);
+    sh.lineTo(-0.1, 0.5);
+    sh.closePath();
+    return sh;
+  }, []);
+  const boltsArr = [
+    ...[0, 1, 2, 3].map((i) => ({ a: (i / 4) * Math.PI * 2 + 0.4, y: topY * 0.28, j: i })),
+    ...[0, 1, 2, 3].map((i) => ({ a: (i / 4) * Math.PI * 2 + 1.1, y: topY * 0.7, j: i + 4 })),
+  ];
+  return (
+    <group ref={grp}>
+      {boltsArr.map((b, i) => {
+        const r = 0.42 * scale + (i % 2) * 0.08 * scale;
+        const px = Math.cos(b.a) * r;
+        const pz = Math.sin(b.a) * r;
+        const ry = Math.PI / 2 - b.a;
+        const core = i % 2 === 1;
+        return (
+          <group key={i} position={[px, b.y, pz]} rotation={[0, ry, 0]}>
+            <mesh
+              ref={(el) => { bolts.current[i] = el; }}
+              rotation={[0, 0, (b.j % 2 === 0 ? 1 : -1) * (0.25 + (b.j % 3) * 0.15)]}
+              renderOrder={56}
+            >
+              <shapeGeometry args={[boltShape]} />
+              <meshBasicMaterial
+                ref={(el) => { mats.current[i] = el; }}
+                color={core ? '#ffffff' : '#fde047'}
+                transparent
+                opacity={0.8}
+                depthWrite={false}
+                toneMapped={false}
+                side={THREE.DoubleSide}
+                blending={THREE.AdditiveBlending}
+              />
+            </mesh>
+          </group>
+        );
+      })}
     </group>
   );
 }

@@ -11,6 +11,7 @@ export const STATUS_OPTIONS: StatusOption[] = [
   { id: 'burning', label: 'Ardiendo', color: '#f97316', icon: '🔥' },
   { id: 'bleeding', label: 'Sangrando', color: '#ef4444', icon: '🩸' },
   { id: 'poisoned', label: 'Envenenado', color: '#22c55e', icon: '☠️' },
+  { id: 'shocked', label: 'Electrificado', color: '#facc15', icon: '⚡' },
   { id: 'concentrating', label: 'Concentrando', color: '#3b82f6', icon: '🧘' },
   { id: 'stunned', label: 'Aturdido', color: '#eab308', icon: '💫' },
   { id: 'prone', label: 'Derribado', color: '#a855f7', icon: '🛌' },
