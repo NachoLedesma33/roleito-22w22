@@ -1514,11 +1514,12 @@ function SpiritSwarm({ scale, topY }: { scale: number; topY: number }) {
         uniform float uPixelRatio;
         varying float vAlpha;
         void main() {
-          // Trail: nacen cerca de la base (p=0), suben en espiral serpenteante,
+          // Trail: nacen en la base con radio ANCHO (envuelve al modelo sin
+          // clipping), suben en espiral serpenteante cerrándose (forma tornada),
           // se encogen y disipan al llegar arriba (p=1 = fin de vida).
           float p = fract(uTime * 0.22 + aOffset);
           float ang = p * 6.28318 * 1.6;
-          float rad = (0.14 + 0.34 * p) * uScale + sin(uTime * 1.1 + aSeed) * 0.05 * uScale;
+          float rad = (0.85 - 0.35 * p) * uScale + sin(uTime * 1.1 + aSeed) * 0.05 * uScale;
           vec3 posH = vec3(0.0, mix(0.06 * uScale, uTopY + 0.3 * uScale, p), 0.0);
           posH.x += cos(ang) * rad;
           posH.z += sin(ang) * rad;
@@ -1535,7 +1536,7 @@ function SpiritSwarm({ scale, topY }: { scale: number; topY: number }) {
           gl_Position = projectionMatrix * mv;
           float tw = 0.6 + 0.4 * sin(uTime * 4.5 + aSeed * 3.0);
           float shrink = 1.0 - 0.62 * p; // encogerse a medida que suben
-          gl_PointSize = clamp(aSize * 0.13 * uScale * shrink * tw * uPixelRatio * (170.0 / -mv.z), 0.5, 50.0);
+          gl_PointSize = clamp(aSize * 0.17 * uScale * shrink * tw * uPixelRatio * (170.0 / -mv.z), 0.5, 50.0);
         }
       `,
       fragmentShader: `
@@ -1563,7 +1564,7 @@ function SpiritSwarm({ scale, topY }: { scale: number; topY: number }) {
       if (!g) return;
       const p = (t * 0.22 + i * 0.13 + 0.07) % 1;
       const ang = p * 6.28318 * 1.6;
-      const rad = (0.14 + 0.34 * p) * scale + Math.sin(t * 1.1 + i) * 0.05 * scale;
+      const rad = (0.85 - 0.35 * p) * scale + Math.sin(t * 1.1 + i) * 0.05 * scale;
       const sn = Math.sin(ang * 2.0 + i * 2.0);
       g.position.x = Math.cos(ang) * rad + sn * 0.07 * scale * (1.0 - 0.6 * p);
       g.position.z = Math.sin(ang) * rad + Math.cos(ang * 1.7 + i * 3.0) * 0.07 * scale * (1.0 - 0.6 * p);
@@ -1573,7 +1574,7 @@ function SpiritSwarm({ scale, topY }: { scale: number; topY: number }) {
       const fout = 1 - Math.max((p - 0.6) / 0.4, 0);
       const fade = Math.min(fin, fout);
       const breathe = 0.9 + 0.1 * Math.sin(t * 3 + i * 1.7);
-      const s = 0.34 * scale * (1 - 0.55 * p) * fade * breathe;
+      const s = 0.42 * scale * (1 - 0.55 * p) * fade * breathe;
       g.scale.set(s, s, s);
       g.rotation.z = t * (0.5 + i * 0.12); // giro lento fantasmal
       g.rotation.x = Math.sin(t * 1.5 + i) * 0.2;
