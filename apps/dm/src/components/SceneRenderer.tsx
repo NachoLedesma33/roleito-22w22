@@ -715,9 +715,9 @@ function StatusIconMarkers({
   return (
     <Billboard position={[0, topY, 0]}>
       {visible.map((s, i) => (
-        <group key={s} position={[(i - (n - 1) / 2) * 0.52 * tokenScale, 0, 0]}>
+        <group key={s} position={[(i - (n - 1) / 2) * 0.42 * tokenScale, 0, 0]}>
           <mesh renderOrder={60}>
-            <circleGeometry args={[0.22 * tokenScale, 24]} />
+            <circleGeometry args={[0.16 * tokenScale, 24]} />
             <meshBasicMaterial
               color={STATUS_COLORS[s]}
               transparent
@@ -728,7 +728,7 @@ function StatusIconMarkers({
             />
           </mesh>
           <Text
-            fontSize={0.22 * tokenScale}
+            fontSize={0.16 * tokenScale}
             anchorX="center"
             anchorY="middle"
             position={[0, 0, 0.01]}
@@ -966,7 +966,7 @@ function SleepZ({ scale, y }: { scale: number; y: number }) {
         <Text
           key={i}
           ref={(el) => { if (el) refs.current[i] = el; }}
-          fontSize={0.19 * scale}
+          fontSize={0.15 * scale}
           anchorX="center"
           anchorY="middle"
           position={[0, 0, 0]}
@@ -1018,7 +1018,7 @@ function StatusEffects({ statuses, tokenScale, topY }: { statuses: string[]; tok
       )}
       {statuses.includes('burning') && (
         <>
-          <FireTongues scale={s} />
+          <FireParticles scale={s} />
           <ParticleField
             count={10}
             color="#fdba74"
@@ -1607,46 +1607,121 @@ function SpiritSwarm({ scale, topY }: { scale: number; topY: number }) {
   );
 }
 
-function FireTongues({ scale }: { scale: number }) {
-  const refs = useRef<(THREE.Mesh | null)[]>([]);
-  const mats = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
+function makeFlameTexture(): THREE.Texture {
+  const c = document.createElement('canvas');
+  c.width = 64;
+  c.height = 64;
+  const g = c.getContext('2d');
+  if (!g) return new THREE.Texture();
+  // nube de llama: core blanco caliente → bordes naranjas con alfa suave
+  const grad = g.createRadialGradient(32, 42, 2, 32, 42, 30);
+  grad.addColorStop(0, 'rgba(255,255,255,1)');
+  grad.addColorStop(0.35, 'rgba(255,224,130,0.85)');
+  grad.addColorStop(0.7, 'rgba(255,140,50,0.4)');
+  grad.addColorStop(1, 'rgba(255,70,0,0)');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 64, 64);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+function FireParticles({ scale }: { scale: number }) {
+  const lightRef = useRef<THREE.PointLight>(null);
+  const noiseRef = useRef(0.5);
+  const geo = useMemo(() => {
+    const N = 110;
+    const g = new THREE.BufferGeometry();
+    const pos = new Float32Array(N * 3);
+    const off = new Float32Array(N);
+    const seed = new Float32Array(N);
+    const size = new Float32Array(N);
+    for (let i = 0; i < N; i++) {
+      off[i] = i / N;
+      seed[i] = Math.random() * Math.PI * 2;
+      size[i] = 0.7 + Math.random() * 0.7;
+    }
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.setAttribute('aOffset', new THREE.BufferAttribute(off, 1));
+    g.setAttribute('aSeed', new THREE.BufferAttribute(seed, 1));
+    g.setAttribute('aSize', new THREE.BufferAttribute(size, 1));
+    return g;
+  }, []);
+  const mat = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      toneMapped: false,
+      blending: THREE.AdditiveBlending,
+      uniforms: {
+        uTime: { value: 0 },
+        uScale: { value: scale },
+        uPixelRatio: { value: window.devicePixelRatio || 1 },
+        uMap: { value: makeFlameTexture() },
+      },
+      vertexShader: `
+        attribute float aOffset;
+        attribute float aSeed;
+        attribute float aSize;
+        uniform float uTime;
+        uniform float uScale;
+        uniform float uPixelRatio;
+        varying float vP;
+        varying float vTw;
+        void main() {
+          float p = fract(uTime * 0.55 + aOffset);
+          vP = p;
+          // nace pegado a la base y sube: vaivén de viento creciente con la altura
+          float h = mix(0.02 * uScale, 1.4 * uScale, p);
+          float w1 = sin(uTime * 7.0 + aSeed * 6.28) + sin(uTime * 13.0 + aSeed * 3.7);
+          float w2 = cos(uTime * 6.0 + aSeed * 4.2) + sin(uTime * 11.0 + aSeed * 9.3);
+          float sway = (0.07 + 0.06 * p) * uScale;
+          vec3 posH = vec3(w1 * sway, h, w2 * sway);
+          posH.x += sin(p * 20.0 + aSeed) * 0.03 * uScale;
+          posH.z += cos(p * 17.0 + aSeed) * 0.03 * uScale;
+          vec4 mv = modelViewMatrix * vec4(posH, 1.0);
+          gl_Position = projectionMatrix * mv;
+          float tw = 0.65 + 0.35 * sin(uTime * 22.0 + aSeed * 9.0);
+          vTw = tw;
+          float shrink = 1.0 - 0.55 * p; // encoger al subir
+          gl_PointSize = clamp(aSize * 0.36 * uScale * shrink * tw * uPixelRatio * (170.0 / -mv.z), 0.5, 70.0);
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D uMap;
+        varying float vP;
+        varying float vTw;
+        void main() {
+          vec4 tex = texture2D(uMap, gl_PointCoord);
+          float a = tex.a;
+          if (a < 0.02) discard;
+          // ramp de vida: blanco → amarillo → naranja → rojo → humo gris
+          vec3 col;
+          col = mix(vec3(2.6, 2.4, 1.9), vec3(2.2, 1.9, 0.4), smoothstep(0.0, 0.18, vP));
+          col = mix(col, vec3(1.8, 0.75, 0.12), smoothstep(0.14, 0.4, vP));
+          col = mix(col, vec3(0.95, 0.28, 0.05), smoothstep(0.4, 0.72, vP));
+          col = mix(col, vec3(0.35, 0.3, 0.32), smoothstep(0.72, 0.95, vP));
+          // fade-in breve al nacer + fade-out antes de morir
+          float fin = smoothstep(0.0, 0.06, vP);
+          float fout = 1.0 - smoothstep(0.72, 0.98, vP);
+          gl_FragColor = vec4(col * tex.rgb, a * vTw * fin * fout);
+        }
+      `,
+    });
+  }, [scale]);
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
-    refs.current.forEach((m, i) => {
-      if (!m) return;
-      const outer = i < 4;
-      // Cada llama asciende en ciclo y se ondula al subir (despertar → disiparse)
-      const p = (t * (outer ? 0.55 : 0.68) + i * (outer ? 0.13 : 0.21)) % 1;
-      const flick = Math.abs(Math.sin(t * (12 + (i % 4) * 2.4) + i * 1.9));
-      const jitter = Math.abs(Math.sin(t * 27 + i * 3.1));
-      const spread = 0.1 * scale + p * 0.24 * scale;
-      const ang = i * 1.05;
-      const sway = 0.05 * scale * (0.3 + p);
-      m.position.x = Math.cos(ang) * spread + Math.sin(t * 10 + i * 1.4) * sway;
-      m.position.z = Math.sin(ang) * spread + Math.cos(t * 8 + i * 0.9) * sway;
-      m.position.y = 0.03 * scale + p * (outer ? 0.62 : 0.52) * scale + flick * 0.04 * scale;
-      m.scale.set(1, 0.7 + 1.0 * flick + 0.4 * jitter, 1);
-      m.rotation.z = (Math.sin(t * 9 + i * 2.4) * 0.34 + Math.sin(t * 21 + i) * 0.12) * (0.5 + p);
-      m.rotation.x = Math.sin(t * 7.5 + i * 1.1) * 0.2 * (0.5 + p);
-      const mat = mats.current[i];
-      if (mat) mat.opacity = 0.9 * (1 - Math.pow(p, 3)) * (0.45 + 0.55 * flick);
-    });
+    if (mat) mat.uniforms.uTime.value = t;
+    // parpadeo de luz: senos + ruido suavizado (low-pass)
+    noiseRef.current = THREE.MathUtils.lerp(noiseRef.current, Math.random(), 0.12);
+    if (lightRef.current) {
+      lightRef.current.intensity = 2.2 + Math.sin(t * 7.3) * 0.7 + Math.sin(t * 13.7) * 0.35 + noiseRef.current * 1.1;
+    }
   });
-  const COLORS = ['#f97316', '#fb923c', '#fbbf24', '#fde047'];
   return (
     <group>
-      {[0, 1, 2, 3].map((i) => (
-        <mesh key={i} ref={(el) => { refs.current[i] = el; }} renderOrder={56}>
-          <coneGeometry args={[0.07 * scale, 0.55 * scale, 6]} />
-          <meshBasicMaterial ref={(el) => { mats.current[i] = el; }} color={COLORS[i]} transparent opacity={0.85} depthWrite={false} toneMapped={false} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} />
-        </mesh>
-      ))}
-      {[4, 5, 6, 7].map((i) => (
-        <mesh key={i} ref={(el) => { refs.current[i] = el; }} renderOrder={56}>
-          <coneGeometry args={[0.045 * scale, 0.32 * scale, 6]} />
-          <meshBasicMaterial ref={(el) => { mats.current[i] = el; }} color={COLORS[i % 4]} transparent opacity={0.9} depthWrite={false} toneMapped={false} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} />
-        </mesh>
-      ))}
+      <points geometry={geo} material={mat} renderOrder={56} frustumCulled={false} />
+      <pointLight ref={lightRef} color="#ff8c00" position={[0, 0.05 * scale, 0]} distance={4.5} decay={2} intensity={2.2} />
     </group>
   );
 }
@@ -1709,7 +1784,7 @@ function CharmHearts({ scale, topY }: { scale: number; topY: number }) {
       {[0, 1, 2].map((i) => (
         <group key={i} ref={(el) => { refs.current[i] = el; }}>
           <Billboard>
-            <Text fontSize={0.16 * scale} anchorX="center" anchorY="middle">
+            <Text fontSize={0.12 * scale} anchorX="center" anchorY="middle">
               💗
             </Text>
           </Billboard>
