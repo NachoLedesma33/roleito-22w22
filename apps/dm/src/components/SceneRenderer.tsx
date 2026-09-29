@@ -2,6 +2,10 @@ import { Suspense, useMemo, useRef, useCallback, useEffect, useState } from 'rea
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { Billboard, OrbitControls, Text, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import TokenSprite from './TokenSprite';
 import TokenModel from './TokenModel';
 import ItemRenderer from './ItemRenderer';
@@ -1426,31 +1430,35 @@ function ElectricAura({ scale, topY }: { scale: number; topY: number }) {
   );
 }
 
-const GHOST_EYE_GEO = new THREE.SphereGeometry(0.09, 16, 12);
-const GHOST_MOUTH_GEO = new THREE.SphereGeometry(0.11, 16, 12);
+function BloomPass({ strength = 0.55, radius = 0.6, threshold = 1.1 }: { strength?: number; radius?: number; threshold?: number }) {
+  const { gl, scene, camera, size } = useThree();
+  const composerRef = useRef<EffectComposer | null>(null);
+  const composer = useMemo(() => {
+    const c = new EffectComposer(gl);
+    c.renderTarget1.samples = 4;
+    c.renderTarget2.samples = 4;
+    c.addPass(new RenderPass(scene, camera));
+    c.addPass(new UnrealBloomPass(new THREE.Vector2(size.width, size.height), strength, radius, threshold));
+    c.addPass(new OutputPass());
+    composerRef.current = c;
+    return c;
+  }, [gl, scene, camera, size.width, size.height, strength, radius, threshold]);
+  useEffect(() => {
+    composerRef.current?.setSize(size.width, size.height);
+  }, [size.width, size.height]);
+  useEffect(() => () => {
+    composerRef.current?.dispose();
+    composerRef.current = null;
+  }, []);
+  useFrame(() => composer.render(), 1);
+  return null;
+}
 
 function SpiritSwarm({ scale, topY }: { scale: number; topY: number }) {
-  const ghostRefs = useRef<(THREE.Group | null)[]>([]);
-  // Cuerpo 3D de fantasma: lathe de alto poligonaje (48 segmentos radiales)
-  const ghostGeo = useMemo(() => {
-    const pts: THREE.Vector2[] = [
-      new THREE.Vector2(0.0, 0.66),
-      new THREE.Vector2(0.16, 0.58),
-      new THREE.Vector2(0.3, 0.44),
-      new THREE.Vector2(0.44, 0.24),
-      new THREE.Vector2(0.5, 0.04),
-      new THREE.Vector2(0.46, -0.14),
-      new THREE.Vector2(0.49, -0.26),
-      new THREE.Vector2(0.42, -0.38),
-      new THREE.Vector2(0.45, -0.5),
-      new THREE.Vector2(0.35, -0.6),
-      new THREE.Vector2(0.24, -0.68),
-    ];
-    return new THREE.LatheGeometry(pts, 48);
-  }, []);
-  // Estela de almas: 240 partículas fluyendo en hélice alrededor del cuerpo
+  // Estela de almas: 320 partículas chicas; nacen en la base, suben en espiral
+  // serpenteante encogiéndose y disipándose (fade-out) hacia arriba.
   const trailGeo = useMemo(() => {
-    const N = 240;
+    const N = 320;
     const g = new THREE.BufferGeometry();
     const pos = new Float32Array(N * 3);
     const off = new Float32Array(N);
@@ -1459,7 +1467,7 @@ function SpiritSwarm({ scale, topY }: { scale: number; topY: number }) {
     for (let i = 0; i < N; i++) {
       off[i] = i / N;
       seed[i] = Math.random() * Math.PI * 2;
-      size[i] = 0.7 + Math.random() * 0.6;
+      size[i] = 0.6 + Math.random() * 0.8;
     }
     g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     g.setAttribute('aOffset', new THREE.BufferAttribute(off, 1));
@@ -1478,7 +1486,7 @@ function SpiritSwarm({ scale, topY }: { scale: number; topY: number }) {
         uScale: { value: scale },
         uTopY: { value: topY },
         uPixelRatio: { value: window.devicePixelRatio || 1 },
-        uColor: { value: new THREE.Color('#a855f7') },
+        uColor: { value: new THREE.Color('#8a2be2') },
       },
       vertexShader: `
         attribute float aOffset;
@@ -1490,24 +1498,28 @@ function SpiritSwarm({ scale, topY }: { scale: number; topY: number }) {
         uniform float uPixelRatio;
         varying float vAlpha;
         void main() {
-          float p = fract(uTime * 0.18 + aOffset);
-          float ang = p * 6.28318 * 2.0;
-          float rad = (0.5 * uScale) * (1.0 - 0.15 * p) + sin(uTime * 0.9 + aSeed) * 0.07 * uScale;
-          vec3 posH = vec3(cos(ang) * rad, mix(0.1 * uScale, uTopY + 0.28 * uScale, p), sin(ang) * rad);
-          // ruido ondulante orgánico (curl-ish) en el plano de la hélice
-          float w1 = sin(uTime * 2.1 + aSeed + posH.y * 2.4) * 0.1 * uScale;
-          float w2 = cos(uTime * 1.7 + aSeed * 1.7 - posH.y * 3.1) * 0.1 * uScale;
-          posH.x += w1 * cos(ang) - w2 * sin(ang);
-          posH.z += w1 * sin(ang) + w2 * cos(ang);
-          posH.y += sin(uTime * 2.9 + aSeed * 2.3) * 0.09 * uScale;
-          // fade-in al nacer, fade-out al disiparse
-          float fin = smoothstep(0.0, 0.16, p);
-          float fout = 1.0 - smoothstep(0.74, 1.0, p);
+          // Trail: nacen cerca de la base (p=0), suben en espiral serpenteante,
+          // se encogen y disipan al llegar arriba (p=1 = fin de vida).
+          float p = fract(uTime * 0.22 + aOffset);
+          float ang = p * 6.28318 * 1.6;
+          float rad = (0.14 + 0.34 * p) * uScale + sin(uTime * 1.1 + aSeed) * 0.05 * uScale;
+          vec3 posH = vec3(0.0, mix(0.06 * uScale, uTopY + 0.3 * uScale, p), 0.0);
+          posH.x += cos(ang) * rad;
+          posH.z += sin(ang) * rad;
+          // serpenteo orgánico a lo largo del recorrido
+          float sn = sin(ang * 2.0 + aSeed * 2.0);
+          posH.x += sn * 0.07 * uScale * (1.0 - 0.6 * p);
+          posH.z += cos(ang * 1.7 + aSeed * 3.0) * 0.07 * uScale * (1.0 - 0.6 * p);
+          posH.y += sin(uTime * 2.6 + aSeed * 2.3) * 0.06 * uScale;
+          // fade-in al nacer, fade-out hacia el final (arriba)
+          float fin = smoothstep(0.0, 0.14, p);
+          float fout = 1.0 - smoothstep(0.6, 1.0, p);
           vAlpha = fin * fout;
           vec4 mv = modelViewMatrix * vec4(posH, 1.0);
           gl_Position = projectionMatrix * mv;
-          float tw = 0.6 + 0.4 * sin(uTime * 4.0 + aSeed * 3.0);
-          gl_PointSize = clamp(aSize * 0.16 * uScale * tw * uPixelRatio * (170.0 / -mv.z), 0.5, 60.0);
+          float tw = 0.6 + 0.4 * sin(uTime * 4.5 + aSeed * 3.0);
+          float shrink = 1.0 - 0.62 * p; // encogerse a medida que suben
+          gl_PointSize = clamp(aSize * 0.13 * uScale * shrink * tw * uPixelRatio * (170.0 / -mv.z), 0.5, 50.0);
         }
       `,
       fragmentShader: `
@@ -1515,53 +1527,20 @@ function SpiritSwarm({ scale, topY }: { scale: number; topY: number }) {
         varying float vAlpha;
         void main() {
           float d = length(gl_PointCoord - 0.5);
-          float soft = smoothstep(0.45, 0.12, d); // borde difuso, sin recortes cuadrados
-          float core = smoothstep(0.2, 0.0, d);
-          vec3 col = uColor * (0.5 + 1.5 * core);
-          gl_FragColor = vec4(col, vAlpha * soft * 0.85);
+          // borde difuso: alfa 0 lejos del centro → sin recortes ni fondo negro
+          float soft = smoothstep(0.5, 0.16, d);
+          // núcleo overbright (>1) para que UnrealBloom lo capte sin lavar el color
+          vec3 col = uColor * (0.35 + 2.2 * smoothstep(0.28, 0.0, d));
+          gl_FragColor = vec4(col, vAlpha * soft);
         }
       `,
     });
     return m;
   }, [scale, topY]);
   useFrame(({ clock }) => {
-    const t = clock.elapsedTime;
-    if (trailMat) trailMat.uniforms.uTime.value = t;
-    ghostRefs.current.forEach((g, i) => {
-      if (!g) return;
-      const phase = i * 1.4;
-      const cyc = t * (0.45 + (i % 2) * 0.07) + phase;
-      const r = 0.52 * scale + Math.sin(t * 1.2 + phase) * 0.1 * scale;
-      g.position.x = Math.cos(cyc) * r + Math.sin(t * 3.3 + phase) * 0.08 * scale;
-      g.position.z = Math.sin(cyc) * r;
-      g.position.y = topY * 0.5 + Math.sin(t * 1.6 + phase * 1.3) * 0.22 * scale + Math.sin(t * 5.2 + phase) * 0.05 * scale;
-      g.rotation.y = cyc; // cara mirando hacia afuera del giro
-      g.rotation.z = Math.sin(t * 2.1 + phase) * 0.16;
-    });
+    if (trailMat) trailMat.uniforms.uTime.value = clock.elapsedTime;
   });
-  const EYES = [-0.16, 0.16];
-  return (
-    <group>
-      <points geometry={trailGeo} material={trailMat} renderOrder={56} frustumCulled={false} />
-      {[0, 1, 2, 3].map((i) => (
-        <group key={i} ref={(el) => { ghostRefs.current[i] = el; }}>
-          <group scale={0.42 * scale}>
-            <mesh geometry={ghostGeo} renderOrder={56}>
-              <meshBasicMaterial color="#a855f7" transparent opacity={0.8} depthWrite={false} toneMapped={false} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
-            </mesh>
-            {EYES.map((x) => (
-              <mesh key={x} geometry={GHOST_EYE_GEO} position={[x, 0.08, 0.5]} renderOrder={56}>
-                <meshBasicMaterial color="#170f2e" transparent opacity={0.95} depthWrite={false} />
-              </mesh>
-            ))}
-            <mesh geometry={GHOST_MOUTH_GEO} position={[0, -0.2, 0.5]} scale={[1.5, 0.85, 0.55]} renderOrder={56}>
-              <meshBasicMaterial color="#170f2e" transparent opacity={0.95} depthWrite={false} />
-            </mesh>
-          </group>
-        </group>
-      ))}
-    </group>
-  );
+  return <points geometry={trailGeo} material={trailMat} renderOrder={56} frustumCulled={false} />;
 }
 
 function FireTongues({ scale }: { scale: number }) {
@@ -2026,6 +2005,7 @@ export default function SceneRenderer({
         minDistance={3}
         maxDistance={maxDistance}
       />
+      <BloomPass />
     </Canvas>
   );
 }
