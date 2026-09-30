@@ -320,6 +320,31 @@ async def bulk_export_campaigns(
         relationships_r = await db.execute(
             select(Relationship).where(Relationship.campaign_id == cid)
         )
+        maps_r = await db.execute(select(Map).where(Map.campaign_id == cid))
+        map_rows = maps_r.all()
+        scenes_r = await db.execute(select(Scene).where(Scene.campaign_id == cid))
+        scene_rows = scenes_r.all()
+        scene_chars_r = await db.execute(
+            select(SceneCharacter).where(
+                SceneCharacter.scene_id.in_([s._mapping["id"] for s in scene_rows])
+            )
+        )
+        markers_r = await db.execute(
+            select(MapMarker).where(
+                MapMarker.map_id.in_([m._mapping["id"] for m in map_rows])
+            )
+        )
+        notebooks_r = await db.execute(
+            select(DMNotebook).where(DMNotebook.campaign_id == cid)
+        )
+        notebook_rows = notebooks_r.all()
+        versions_r = await db.execute(
+            select(DMNotebookVersion).where(
+                DMNotebookVersion.notebook_id.in_(
+                    [n._mapping["id"] for n in notebook_rows]
+                )
+            )
+        )
 
         exports.append({
             "campaign": CampaignResponse.model_validate(campaign).model_dump(mode="json"),
@@ -329,6 +354,12 @@ async def bulk_export_campaigns(
             "locations": [dict(r._mapping) for r in locations_r.all()],
             "events": [dict(r._mapping) for r in events_r.all()],
             "relationships": [dict(r._mapping) for r in relationships_r.all()],
+            "maps": [dict(r._mapping) for r in map_rows],
+            "scenes": [dict(r._mapping) for r in scene_rows],
+            "scene_characters": [dict(r._mapping) for r in scene_chars_r.all()],
+            "map_markers": [dict(r._mapping) for r in markers_r.all()],
+            "notebooks": [dict(r._mapping) for r in notebook_rows],
+            "notebook_versions": [dict(r._mapping) for r in versions_r.all()],
         })
 
     return {"campaigns": exports}
@@ -368,6 +399,28 @@ async def export_campaign(
     def to_dict(obj):
         return {k: v for k, v in vars(obj).items() if not k.startswith("_sa_")}
 
+    maps_r = await db.execute(select(Map).where(Map.campaign_id == campaign_id))
+    maps = maps_r.scalars().all()
+    scenes_r = await db.execute(select(Scene).where(Scene.campaign_id == campaign_id))
+    scenes = scenes_r.scalars().all()
+    scene_chars_r = await db.execute(
+        select(SceneCharacter).where(
+            SceneCharacter.scene_id.in_([s.id for s in scenes])
+        )
+    )
+    markers_r = await db.execute(
+        select(MapMarker).where(MapMarker.map_id.in_([m.id for m in maps]))
+    )
+    notebooks_r = await db.execute(
+        select(DMNotebook).where(DMNotebook.campaign_id == campaign_id)
+    )
+    notebooks = notebooks_r.scalars().all()
+    versions_r = await db.execute(
+        select(DMNotebookVersion).where(
+            DMNotebookVersion.notebook_id.in_([n.id for n in notebooks])
+        )
+    )
+
     return CampaignExport(
         campaign=CampaignResponse.model_validate(campaign),
         sessions=[to_dict(s) for s in sessions_r.scalars().all()],
@@ -376,6 +429,12 @@ async def export_campaign(
         locations=[to_dict(l) for l in locations_r.scalars().all()],
         events=[to_dict(e) for e in events_r.scalars().all()],
         relationships=[to_dict(r) for r in relationships_r.scalars().all()],
+        maps=[to_dict(m) for m in maps],
+        scenes=[to_dict(s) for s in scenes],
+        scene_characters=[to_dict(sc) for sc in scene_chars_r.scalars().all()],
+        map_markers=[to_dict(mk) for mk in markers_r.scalars().all()],
+        notebooks=[to_dict(n) for n in notebooks],
+        notebook_versions=[to_dict(v) for v in versions_r.scalars().all()],
     )
 
 
@@ -516,6 +575,114 @@ async def import_campaign(
             ),
         )
         db.add(new_rel)
+
+    for m in data.maps:
+        old_id = m.get("id", "")
+        new_map = Map(
+            campaign_id=campaign.id,
+            name=m.get("name", "Mapa importado"),
+            description=m.get("description", ""),
+            file_path=m.get("file_path", ""),
+            thumbnail_path=m.get("thumbnail_path"),
+            map_type=m.get("map_type", "world"),
+        )
+        db.add(new_map)
+        await db.flush()
+        id_map[old_id] = new_map.id
+
+    for s in data.scenes:
+        old_id = s.get("id", "")
+        new_scene = Scene(
+            campaign_id=campaign.id,
+            name=s.get("name", "Escena importada"),
+            description=s.get("description", ""),
+            background_path=s.get("background_path"),
+            map_id=id_map.get(s.get("map_id", ""), s.get("map_id")),
+            lighting=s.get("lighting", "neutral"),
+            audio_path=s.get("audio_path"),
+            status=s.get("status", "inactive"),
+            notes=s.get("notes", ""),
+            entrance_x=s.get("entrance_x", 0.0),
+            entrance_z=s.get("entrance_z", 0.0),
+            map_scale=s.get("map_scale", 1.0),
+            model_y_offset=s.get("model_y_offset", 0.0),
+            grid_size=s.get("grid_size", 0.0),
+            grid_snap=s.get("grid_snap", 0),
+            items_json=s.get("items_json", "[]"),
+        )
+        db.add(new_scene)
+        await db.flush()
+        id_map[old_id] = new_scene.id
+
+    for sc in data.scene_characters:
+        new_sc = SceneCharacter(
+            scene_id=id_map.get(sc.get("scene_id", ""), sc.get("scene_id")),
+            entity_type=sc.get("entity_type", "character"),
+            entity_id=id_map.get(sc.get("entity_id", ""), sc.get("entity_id")),
+            x=sc.get("x", 0.0),
+            y=sc.get("y", 0.0),
+            z=sc.get("z", 0.0),
+            visible=sc.get("visible", 1),
+            order=sc.get("order", 0),
+            rotation=sc.get("rotation", 0.0),
+            token_scale=sc.get("token_scale", 1.0),
+            move_speed=sc.get("move_speed", 1.0),
+            brightness=sc.get("brightness", 0.0),
+            vx=sc.get("vx", 0.0),
+            vz=sc.get("vz", 0.0),
+            vrot=sc.get("vrot", 0.0),
+            last_move_at=sc.get("last_move_at", 0.0),
+            facing_offset=sc.get("facing_offset", 0.0),
+            vision_type=sc.get("vision_type", "normal"),
+            vision_range=sc.get("vision_range", 6.0),
+            statuses_json=sc.get("statuses_json", "[]"),
+        )
+        db.add(new_sc)
+        await db.flush()
+        id_map[sc.get("id", "")] = new_sc.id
+
+    for mk in data.map_markers:
+        new_mk = MapMarker(
+            map_id=id_map.get(mk.get("map_id", ""), mk.get("map_id")),
+            label=mk.get("label", ""),
+            marker_type=mk.get("marker_type", "poi"),
+            target_scene_id=id_map.get(
+                mk.get("target_scene_id", ""), mk.get("target_scene_id")
+            ),
+            x=mk.get("x", 0.5),
+            y=mk.get("y", 0.5),
+            color=mk.get("color", "#60a5fa"),
+            description=mk.get("description", ""),
+        )
+        db.add(new_mk)
+        await db.flush()
+        id_map[mk.get("id", "")] = new_mk.id
+
+    for nb in data.notebooks:
+        old_id = nb.get("id", "")
+        new_nb = DMNotebook(
+            campaign_id=campaign.id,
+            title=nb.get("title", ""),
+            content=nb.get("content", ""),
+            category=nb.get("category", "notes"),
+            pinned=nb.get("pinned", 0),
+        )
+        db.add(new_nb)
+        await db.flush()
+        id_map[old_id] = new_nb.id
+
+    for nv in data.notebook_versions:
+        new_nv = DMNotebookVersion(
+            notebook_id=id_map.get(
+                nv.get("notebook_id", ""), nv.get("notebook_id")
+            ),
+            title=nv.get("title", ""),
+            content=nv.get("content", ""),
+            version_number=nv.get("version_number", 1),
+        )
+        db.add(new_nv)
+        await db.flush()
+        id_map[nv.get("id", "")] = new_nv.id
 
     await db.commit()
     await db.refresh(campaign)

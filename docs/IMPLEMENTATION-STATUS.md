@@ -366,7 +366,8 @@ Reference: `ROADMAP.md` (22,082 bytes)
 - AI/TTS infrastructure decoupled
 
 ## Gaps
-- Import cubre entidades core; scenes/maps/notebook/memory no se exportan aún
+- Import cubre entidades core + VTT (scenes/maps/notebook con remap); assets binarios y combat/dice/quests/calendar NO se exportan
+- Ref IDs dentro de `items_json` de escena pasan crudos (sin remap interno)
 - No real-time sync (WebSocket); polling 16ms en PlayerView
 - `apps/player` / `apps/renderer` placeholders (vista jugador vive en apps/dm por decisión AGENTS.md)
 - AI agents reales: orchestrator stub (fase 12)
@@ -387,7 +388,7 @@ Based on dependency analysis and documentation completeness:
 
 | Priority | System | Rationale |
 |----------|--------|-----------|
-| 1 | Export/import scenes+maps+notebook | Ampliar roundtrip a todo el contenido |
+| 1 | Assets binarios en export (copy/zip) | Portabilidad completa de campaña |
 | 2 | Asset Browser | DM workflow |
 | 3 | AI Map Analysis | Automation |
 | 4 | Real-time sync (WebSocket) | Base multiplayer |

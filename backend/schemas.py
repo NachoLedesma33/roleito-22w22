@@ -42,6 +42,12 @@ class CampaignExport(BaseModel):
     locations: list[dict] = []
     events: list[dict] = []
     relationships: list[dict] = []
+    maps: list[dict] = []
+    scenes: list[dict] = []
+    scene_characters: list[dict] = []
+    map_markers: list[dict] = []
+    notebooks: list[dict] = []
+    notebook_versions: list[dict] = []
 
 
 class CampaignImport(BaseModel):
@@ -55,6 +61,12 @@ class CampaignImport(BaseModel):
     locations: list[dict] = []
     events: list[dict] = []
     relationships: list[dict] = []
+    maps: list[dict] = []
+    scenes: list[dict] = []
+    scene_characters: list[dict] = []
+    map_markers: list[dict] = []
+    notebooks: list[dict] = []
+    notebook_versions: list[dict] = []
 
 
 class CharacterCreate(BaseModel):

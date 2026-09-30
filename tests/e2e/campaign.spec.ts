@@ -230,4 +230,73 @@ test.describe('Campaign Import', () => {
       headers: authHeaders,
     });
   });
+
+  test('C10: import roundtrip incluye escenas, mapas y notebook con remap', async ({ request, authHeaders }) => {
+    const name = `Importado VTT ${Date.now()}`;
+    const payload = {
+      campaign: {
+        id: 'camp-old',
+        name,
+        description: '',
+        created_at: '2026-01-01T00:00:00',
+        updated_at: '2026-01-01T00:00:00',
+        current_session_id: null,
+        current_location_id: null,
+        settings_json: {},
+        invite_code: null,
+      },
+      sessions: [],
+      characters: [{ id: 'char-old', name: 'Ardan', type: 'player', description: '', class: 'guerrero', race: '', status: 'alive', vigor: '10', intelligence: '10', dexterity: '10', cunning: '10', max_pv: 12, max_pm: 6, defense: 8 }],
+      npcs: [],
+      locations: [],
+      events: [],
+      relationships: [],
+      maps: [{ id: 'map-old', name: 'Mapa del bosque', description: '', file_path: 'data/assets/maps/bosque.png', thumbnail_path: null, map_type: 'dungeon' }],
+      scenes: [{ id: 'scene-old', name: 'Bosque', description: '', background_path: 'data/assets/bg/bosque.png', map_id: 'map-old', lighting: 'neutral', audio_path: null, status: 'active', notes: 'nota escena', entrance_x: 1.5, entrance_z: -2.0, map_scale: 1.0, model_y_offset: 0.0, grid_size: 0.5, grid_snap: 0, items_json: '[{"id":"item-1","type":"wall","x":1}]' }],
+      scene_characters: [{ id: 'sc-old', scene_id: 'scene-old', entity_type: 'character', entity_id: 'char-old', x: 3.0, y: 0.0, z: 3.0, visible: 1, order: 0, rotation: 0.0, token_scale: 1.0, move_speed: 1.0, brightness: 0.0, vx: 0.0, vz: 0.0, vrot: 0.0, last_move_at: 0.0, facing_offset: 0.0, vision_type: 'normal', vision_range: 6.0, statuses_json: '[]' }],
+      map_markers: [{ id: 'mk-old', map_id: 'map-old', label: 'Entrada', marker_type: 'transition', target_scene_id: 'scene-old', x: 0.5, y: 0.5, color: '#60a5fa', description: '' }],
+      notebooks: [{ id: 'nb-old', title: 'Plan sesión', content: 'matar dragón', category: 'notes', pinned: 1 }],
+      notebook_versions: [{ id: 'nv-old', notebook_id: 'nb-old', title: 'Plan sesión', content: 'matar dragón', version_number: 1 }],
+    };
+
+    const importRes = await request.post('http://localhost:8000/api/campaigns/import', {
+      headers: authHeaders,
+      data: payload,
+    });
+    expect(importRes.status()).toBe(200);
+    const imported = await importRes.json();
+
+    const exportRes = await request.get(`http://localhost:8000/api/campaigns/${imported.id}/export`, {
+      headers: authHeaders,
+    });
+    expect(exportRes.status()).toBe(200);
+    const exp = await exportRes.json();
+
+    expect(exp.maps).toHaveLength(1);
+    expect(exp.scenes).toHaveLength(1);
+    expect(exp.scene_characters).toHaveLength(1);
+    expect(exp.map_markers).toHaveLength(1);
+    expect(exp.notebooks).toHaveLength(1);
+    expect(exp.notebook_versions).toHaveLength(1);
+
+    const [map] = exp.maps;
+    const [scene] = exp.scenes;
+    const [sc] = exp.scene_characters;
+    const [mk] = exp.map_markers;
+    const [nb] = exp.notebooks;
+    const [nv] = exp.notebook_versions;
+
+    expect(scene.map_id).toBe(map.id);
+    expect(sc.scene_id).toBe(scene.id);
+    expect(sc.entity_id).toBe(exp.characters[0].id);
+    expect(sc.entity_id).not.toBe('char-old');
+    expect(mk.map_id).toBe(map.id);
+    expect(mk.target_scene_id).toBe(scene.id);
+    expect(nv.notebook_id).toBe(nb.id);
+    expect(scene.items_json).toContain('item-1');
+
+    await request.delete(`http://localhost:8000/api/campaigns/${imported.id}`, {
+      headers: authHeaders,
+    });
+  });
 });
