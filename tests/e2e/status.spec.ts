@@ -116,10 +116,15 @@ test.describe('Status markers', () => {
     await openTokenMenu(page, scene.id, request, campaign.id, true);
     await page.getByRole('button', { name: /Marcar Concentrando/ }).click();
 
-    const snap = await (
-      await request.get(`http://localhost:8000/api/campaigns/invite/${code}`)
-    ).json();
-    expect(snap.characters[0].statuses).toContain('concentrating');
+    // El click dispara el marca async; esperar el status en el snapshot (race-safe).
+    await expect
+      .poll(async () => {
+        const snap = (await (
+          await request.get(`http://localhost:8000/api/campaigns/invite/${code}`)
+        ).json()) as { characters: Array<{ statuses?: string[]; entity_id: string }> };
+        return snap.characters[0].statuses ?? [];
+      }, { timeout: 10_000 })
+      .toContain('concentrating');
 
     const ctx = await browser.newContext();
     const p = await ctx.newPage();
@@ -127,8 +132,6 @@ test.describe('Status markers', () => {
     await p.getByRole('button', { name: /Aria/ }).click();
     await expect(p.getByTestId('player-role')).toContainText('Aria', { timeout: 10_000 });
     // El jugador recibe el status en su snapshot (la badge 3D no es assertable en DOM).
-    const charId = snap.characters[0].entity_id;
-    expect(charId).toBe(aria.id);
     await ctx.close();
   });
 

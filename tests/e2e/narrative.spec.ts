@@ -15,7 +15,7 @@ async function createLocation(
   return res.json();
 }
 
-test.describe('Narrative Engine', () => {
+test.describe('Motor narrativo', () => {
   test('NE1: parse endpoint returns events from DM narration', async ({ request, campaign }) => {
     const session = await createSession(request, campaign.id, { number: 1, title: 'Test Session' });
 
@@ -177,11 +177,11 @@ test.describe('Narrative Engine', () => {
 
     const navLink = page.locator('a[href*="/narrative"]');
     await expect(navLink).toBeVisible();
-    await expect(navLink).toContainText('Narrative');
+    await expect(navLink).toContainText('Narrativa');
 
     await navLink.click();
     await expect(page).toHaveURL(new RegExp(`/campaigns/${campaign.id}/narrative`));
-    await expect(page.getByRole('heading', { name: 'Narrative Engine' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Motor narrativo' })).toBeVisible();
   });
 
   test('NE11: narrative engine UI parse flow', async ({ page, campaign, request }) => {
@@ -194,9 +194,9 @@ test.describe('Narrative Engine', () => {
     await page.locator('input[placeholder="session-..."]').fill(session.id);
     await page.locator('textarea').fill('Ardan abre la puerta de la bóveda.');
 
-    await page.getByRole('button', { name: 'Parse Narrative' }).click();
+    await page.getByRole('button', { name: 'Analizar narración' }).click();
 
-    await expect(page.getByText('Extracted Events')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('Eventos extraídos')).toBeVisible({ timeout: 10_000 });
   });
 
   test('NE12: narrative engine approve all button', async ({ page, campaign, request }) => {
@@ -209,13 +209,13 @@ test.describe('Narrative Engine', () => {
     await page.locator('input[placeholder="session-..."]').fill(session.id);
     await page.locator('textarea').fill('Ardan encuentra una llave y abre la puerta.');
 
-    await page.getByRole('button', { name: 'Parse Narrative' }).click();
-    await expect(page.getByText('Extracted Events')).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('button', { name: 'Analizar narración' }).click();
+    await expect(page.getByText('Eventos extraídos')).toBeVisible({ timeout: 10_000 });
 
-    const approveAllBtn = page.getByRole('button', { name: 'Approve All' });
+    const approveAllBtn = page.getByRole('button', { name: 'Aprobar todas' });
     if (await approveAllBtn.isVisible()) {
       await approveAllBtn.click();
-      await expect(page.getByText('No events extracted')).toBeVisible({ timeout: 5_000 });
+      await expect(page.getByText('No se extrajeron eventos')).toBeVisible({ timeout: 5_000 });
     }
   });
 });

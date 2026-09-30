@@ -88,9 +88,9 @@ test.describe('Lighting (Phase E)', () => {
     const scene = await createScene(request, campaign.id, 'Light Place');
     const canvas = await openScene(page, campaign.id, scene.id);
 
-    await page.getByRole('button', { name: /Build/i }).click();
-    await page.getByRole('button', { name: /Light \(place\)/ }).click();
-    await expect(page.getByText('Click to place light')).toBeVisible();
+    await page.getByRole('button', { name: /Construir/i }).click();
+    await page.getByRole('button', { name: /Luz \(colocar\)/ }).click();
+    await expect(page.getByText(/Clic para colocar luz/)).toBeVisible();
 
     const box = await canvas.boundingBox();
     if (!box) throw new Error('canvas sin boundingBox');

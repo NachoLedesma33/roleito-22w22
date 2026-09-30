@@ -13,7 +13,7 @@ test.describe('Character Sheet HUD', () => {
     await page.goto(`/campaigns/${campaignId}`);
     await expect(page.getByText('On Scene (1)')).toBeVisible({ timeout: 10_000 });
     await page.getByRole('button', { name: char.name }).click();
-    await expect(page.getByText('Max PV')).toBeVisible();
+    await expect(page.getByText('PV máx.')).toBeVisible();
   }
 
   test('CS1: click en token abre sheet con nombre y clase', async ({ page, campaign, request }) => {
@@ -27,7 +27,7 @@ test.describe('Character Sheet HUD', () => {
     await openSheet(page, campaign.id, scene.id, request, char);
 
     await expect(page.getByText('Humano Guerrero')).toBeVisible();
-    await expect(page.getByText('alive')).toBeVisible();
+    await expect(page.getByText('Vivo')).toBeVisible();
   });
 
   test('CS2: tab Stats muestra VIDA y derivados correctos', async ({ page, campaign, request }) => {
@@ -53,7 +53,7 @@ test.describe('Character Sheet HUD', () => {
     await expect(statValue('Intel')).toHaveText('/');
     await expect(statValue('Dest')).toHaveText('−');
     await expect(statValue('Astuc')).toHaveText('/');
-    await expect(statValue('Max PV')).toHaveText('13');
+    await expect(statValue('PV máx.')).toHaveText('13');
     await expect(statValue('Max PM')).toHaveText('8');
     await expect(statValue('Defensa')).toHaveText('7');
   });
@@ -64,9 +64,9 @@ test.describe('Character Sheet HUD', () => {
 
     await openSheet(page, campaign.id, scene.id, request, char);
 
-    await page.getByRole('button', { name: 'inventory' }).click();
+    await page.getByRole('button', { name: 'Inventario' }).click();
 
-    await expect(page.getByRole('button', { name: '+ Add Item' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '+ Agregar objeto' })).toBeVisible();
   });
 
   test('CS4: add item lo agrega a la lista y persiste', async ({ page, campaign, request }) => {
@@ -74,7 +74,7 @@ test.describe('Character Sheet HUD', () => {
     const char = await createCharacter(request, campaign.id, { name: 'Cedric' });
 
     await openSheet(page, campaign.id, scene.id, request, char);
-    await page.getByRole('button', { name: 'inventory' }).click();
+    await page.getByRole('button', { name: 'Inventario' }).click();
 
     const putPromise = page.waitForResponse(
       (res) =>
@@ -82,15 +82,15 @@ test.describe('Character Sheet HUD', () => {
         res.request().method() === 'PUT',
       { timeout: 10_000 },
     );
-    await page.getByRole('button', { name: '+ Add Item' }).click();
+    await page.getByRole('button', { name: '+ Agregar objeto' }).click();
     await putPromise;
 
-    await expect(page.getByPlaceholder('Item name')).toHaveValue('New Item');
+    await expect(page.getByPlaceholder('Nombre del objeto')).toHaveValue('Nuevo objeto');
 
     const stored = await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/characters/${char.id}`);
     const body = await stored.json();
     expect(body.inventory_json).toHaveLength(1);
-    expect(body.inventory_json[0].name).toBe('New Item');
+    expect(body.inventory_json[0].name).toBe('Nuevo objeto');
   });
 
   test('CS5: toggle equipped cambia estado del item', async ({ page, campaign, request }) => {
@@ -103,9 +103,9 @@ test.describe('Character Sheet HUD', () => {
     });
 
     await openSheet(page, campaign.id, scene.id, request, char);
-    await page.getByRole('button', { name: 'inventory' }).click();
+    await page.getByRole('button', { name: 'Inventario' }).click();
 
-    const checkbox = page.getByTitle('Equipped');
+    const checkbox = page.getByTitle('Equipado');
     await expect(checkbox).not.toBeChecked();
 
     const putPromise = page.waitForResponse(
@@ -130,9 +130,9 @@ test.describe('Character Sheet HUD', () => {
 
     await openSheet(page, campaign.id, scene.id, request, char);
 
-    await page.getByRole('button', { name: 'spells' }).click();
+    await page.getByRole('button', { name: 'Conjuros' }).click();
 
-    await expect(page.getByRole('button', { name: '+ Add Spell' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '+ Agregar conjuro' })).toBeVisible();
   });
 
   test('CS7: add spell lo agrega a la lista y persiste', async ({ page, campaign, request }) => {
@@ -140,7 +140,7 @@ test.describe('Character Sheet HUD', () => {
     const char = await createCharacter(request, campaign.id, { name: 'Cedric' });
 
     await openSheet(page, campaign.id, scene.id, request, char);
-    await page.getByRole('button', { name: 'spells' }).click();
+    await page.getByRole('button', { name: 'Conjuros' }).click();
 
     const putPromise = page.waitForResponse(
       (res) =>
@@ -148,17 +148,17 @@ test.describe('Character Sheet HUD', () => {
         res.request().method() === 'PUT',
       { timeout: 10_000 },
     );
-    await page.getByRole('button', { name: '+ Add Spell' }).click();
+    await page.getByRole('button', { name: '+ Agregar conjuro' }).click();
     await putPromise;
 
-    await expect(page.getByPlaceholder('Spell name')).toHaveValue('New Spell');
+    await expect(page.getByPlaceholder('Nombre del conjuro')).toHaveValue('Nuevo conjuro');
     await expect(page.getByText('Lv1')).toBeVisible();
     await expect(page.getByText('1 PM')).toBeVisible();
 
     const stored = await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/characters/${char.id}`);
     const body = await stored.json();
     expect(body.spells_json).toHaveLength(1);
-    expect(body.spells_json[0].name).toBe('New Spell');
+    expect(body.spells_json[0].name).toBe('Nuevo conjuro');
   });
 
   test('CS8: control PV ajusta current_pv y persiste', async ({ page, campaign, request }) => {

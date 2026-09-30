@@ -12,12 +12,12 @@ test.describe('Recap System', () => {
     campaignId: string,
   ) {
     await page.goto(`/campaigns/${campaignId}`);
-    await expect(page.getByTitle('Roll dice (D)')).toBeVisible();
+    await expect(page.getByTitle('Tirar dados (D)')).toBeVisible();
   }
 
   function recapPanel(page: import('@playwright/test').Page) {
     return page.locator('div.fixed', {
-      has: page.getByRole('button', { name: 'AI Recap' }),
+      has: page.getByRole('button', { name: 'Resumen IA' }),
     });
   }
 
@@ -38,11 +38,11 @@ test.describe('Recap System', () => {
 
     const panel = recapPanel(page);
     await expect(
-      panel.getByRole('button', { name: 'AI Recap' }),
+      panel.getByRole('button', { name: 'Resumen IA' }),
     ).toBeVisible();
     await expect(panel.getByText('# Session 1 — La Taberna')).toBeVisible();
     await expect(panel.getByText('Emboscan goblins en el camino')).toBeVisible();
-    await expect(panel.getByText('1 events')).toBeVisible();
+    await expect(panel.getByText('1 eventos')).toBeVisible();
 
     await page.keyboard.press('Escape');
     await expect(recapPanel(page)).toHaveCount(0);
@@ -93,11 +93,11 @@ test.describe('Recap System', () => {
     await page.keyboard.press('r');
     const panel = recapPanel(page);
 
-    await panel.getByRole('button', { name: 'Edit' }).click();
+    await panel.getByRole('button', { name: 'Editar' }).click();
     await panel
       .locator('textarea')
       .fill('Resumen editado por el DM durante el test');
-    await panel.getByRole('button', { name: 'Save' }).click();
+    await panel.getByRole('button', { name: 'Guardar' }).click();
 
     await expect(
       panel.getByText('Resumen editado por el DM durante el test'),
@@ -110,16 +110,16 @@ test.describe('Recap System', () => {
   test('R4: exporta recap como .md', async ({ page, campaign, request }) => {
     await createSession(request, campaign.id, {
       number: 3,
-      title: 'Exportable',
+      title: 'Exportarable',
     });
 
     await openDashboard(page, campaign.id);
     await page.keyboard.press('r');
     const panel = recapPanel(page);
-    await expect(panel.getByRole('button', { name: 'AI Recap' })).toBeVisible();
+    await expect(panel.getByRole('button', { name: 'Resumen IA' })).toBeVisible();
 
     const downloadPromise = page.waitForEvent('download');
-    await panel.getByRole('button', { name: 'Export' }).click();
+    await panel.getByRole('button', { name: 'Exportar' }).click();
     const download = await downloadPromise;
 
     expect(download.suggestedFilename()).toBe('session-3-recap.md');

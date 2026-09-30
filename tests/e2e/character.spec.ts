@@ -6,7 +6,7 @@ test.describe('Character CRUD', () => {
     page: import('@playwright/test').Page,
     data: { name: string; race?: string; className?: string },
   ) {
-    await page.getByPlaceholder('Character name').fill(data.name);
+    await page.getByPlaceholder('Nombre del personaje').fill(data.name);
     if (data.race) await page.getByPlaceholder('Humano, Elfo...').fill(data.race);
     if (data.className) await page.getByPlaceholder('Guerrero, Mago...').fill(data.className);
 
@@ -17,7 +17,7 @@ test.describe('Character CRUD', () => {
 
   test('CH1: crea personaje desde la UI', async ({ page, campaign }) => {
     await page.goto(`/campaigns/${campaign.id}/characters`);
-    await page.getByRole('link', { name: 'New Character' }).click();
+    await page.getByRole('link', { name: 'Nuevo personaje' }).click();
     await expect(page).toHaveURL(/\/characters\/new$/);
 
     await fillCharacterForm(page, {
@@ -25,12 +25,12 @@ test.describe('Character CRUD', () => {
       race: 'Elfa',
       className: 'Guerrera',
     });
-    await page.getByRole('button', { name: 'Create Character' }).click();
+    await page.getByRole('button', { name: 'Crear personaje' }).click();
 
     await expect(page).toHaveURL(/\/characters\/[a-z0-9-]+$/, { timeout: 10_000 });
 
     await page.goto(`/campaigns/${campaign.id}/characters`);
-    await expect(page.getByRole('heading', { name: 'Characters' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Personajes' })).toBeVisible();
     await expect(page.getByText('Aria')).toBeVisible();
   });
 
@@ -42,11 +42,11 @@ test.describe('Character CRUD', () => {
     const char = await created.json();
 
     await page.goto(`/campaigns/${campaign.id}/characters/${char.id}`);
-    await page.getByRole('link', { name: 'Edit' }).click();
-    await expect(page.getByRole('heading', { name: 'Edit Character' })).toBeVisible();
+    await page.getByRole('link', { name: 'Editar' }).click();
+    await expect(page.getByRole('heading', { name: 'Editarar personaje' })).toBeVisible();
 
-    await page.getByPlaceholder('Character name').fill('Borin Piedra');
-    await page.getByRole('button', { name: 'Save Changes' }).click();
+    await page.getByPlaceholder('Nombre del personaje').fill('Borin Piedra');
+    await page.getByRole('button', { name: 'Guardar cambios' }).click();
 
     await expect(page).toHaveURL(new RegExp(`/characters/${char.id}$`));
     await expect(page.getByRole('heading', { name: 'Borin Piedra' })).toBeVisible();
@@ -62,7 +62,7 @@ test.describe('Character CRUD', () => {
     page.on('dialog', (dialog) => dialog.accept());
 
     const card = page.locator('div.border.rounded-lg', { hasText: 'Nadia' }).first();
-    await card.getByRole('button', { name: 'Delete' }).click();
+    await card.getByRole('button', { name: 'Eliminar' }).click();
 
     await expect(page.getByText('Nadia')).toHaveCount(0);
   });
@@ -83,7 +83,7 @@ test.describe('Character CRUD', () => {
     });
     await expect(page.getByText('portrait.png')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Save Changes' }).click();
+    await page.getByRole('button', { name: 'Guardar cambios' }).click();
     await expect(page).toHaveURL(new RegExp(`/characters/${char.id}$`));
 
     const updated = await getCharacter(request, campaign.id, char.id);
@@ -103,7 +103,7 @@ test.describe('Character CRUD', () => {
       (res) => res.url().includes(`/campaigns/${campaign.id}/characters`) && res.request().method() === 'POST',
       { timeout: 10_000 },
     );
-    await page.getByRole('button', { name: 'Create Character' }).click();
+    await page.getByRole('button', { name: 'Crear personaje' }).click();
     const res = await postPromise;
     expect(res.status()).toBe(200);
 

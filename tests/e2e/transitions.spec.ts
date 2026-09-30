@@ -35,7 +35,7 @@ test.describe('Scene Transitions', () => {
     campaignId: string,
   ) {
     await page.goto(`/campaigns/${campaignId}`);
-    await expect(page.getByTitle('Upload map background')).toBeVisible();
+    await expect(page.getByTitle('Subir fondo de mapa')).toBeVisible();
   }
 
   interface TwoRooms {
@@ -89,21 +89,21 @@ test.describe('Scene Transitions', () => {
     const rooms = await seedTwoRooms(request, campaign.id);
 
     await openDashboard(page, campaign.id);
-    await page.getByTitle('Open map').click();
+    await page.getByTitle('Abrir mapa').click();
 
     const viewer = page.locator('div.fixed.inset-0');
-    await viewer.getByRole('button', { name: '+ Add Marker' }).click();
+    await viewer.getByRole('button', { name: '+ Agregar marcador' }).click();
     await viewer.getByRole('combobox').first().selectOption({ label: 'Transition' });
-    await expect(viewer.getByText('Click on map to place the transition')).toBeVisible();
+    await expect(viewer.getByText('Hacé clic en el mapa para colocar la transición')).toBeVisible();
 
     await viewer.locator('div.flex-1.overflow-hidden.relative').click();
 
     const form = viewer.locator('div.absolute.inset-0');
-    await expect(form.getByText('Transition to…')).toBeVisible();
+    await expect(form.getByText('Transición a…')).toBeVisible();
     await expect(form.getByRole('checkbox')).toBeChecked();
 
     await form.getByRole('combobox').selectOption({ label: 'Bóveda' });
-    await form.getByRole('button', { name: 'Create' }).click();
+    await form.getByRole('button', { name: 'Crear' }).click();
 
     await expect(viewer.getByTitle('Bóveda (transition)')).toBeVisible();
     await expect(viewer.getByText(/· 1 markers$/)).toBeVisible();
@@ -118,19 +118,19 @@ test.describe('Scene Transitions', () => {
     expect(list[0].target_scene_id).toBe(rooms.tavernId);
   });
 
-  test('TR2: Travel cambia la escena y abre el mapa destino', async ({ page, campaign, request }) => {
+  test('TR2: Viajar cambia la escena y abre el mapa destino', async ({ page, campaign, request }) => {
     const rooms = await seedTwoRooms(request, campaign.id);
     await seedTransitionViaApi(request, campaign.id, rooms);
 
     await openDashboard(page, campaign.id);
-    await page.getByTitle('Open map').click();
+    await page.getByTitle('Abrir mapa').click();
 
     const sceneSelect = page.locator('select').first();
     await expect(sceneSelect).toHaveValue(rooms.tavernId);
 
     const viewer = page.locator('div.fixed.inset-0');
     await viewer.getByTitle('Puerta (transition)').click();
-    await viewer.getByRole('button', { name: 'Travel' }).click();
+    await viewer.getByRole('button', { name: 'Viajar' }).click();
 
     await expect(viewer.getByText('Mapa Bóveda')).toBeVisible();
     await expect(sceneSelect).toHaveValue(rooms.vaultId);
@@ -141,17 +141,17 @@ test.describe('Scene Transitions', () => {
     await seedTransitionViaApi(request, campaign.id, rooms, true);
 
     await openDashboard(page, campaign.id);
-    await page.getByTitle('Open map').click();
+    await page.getByTitle('Abrir mapa').click();
 
     let viewer = page.locator('div.fixed.inset-0');
     await viewer.getByTitle('Puerta (transition)').click();
-    await viewer.getByRole('button', { name: 'Travel' }).click();
+    await viewer.getByRole('button', { name: 'Viajar' }).click();
 
     await expect(viewer.getByText('Mapa Bóveda')).toBeVisible();
     await expect(viewer.getByTitle('Salida (transition)')).toBeVisible();
 
     await viewer.getByTitle('Salida (transition)').click();
-    await viewer.getByRole('button', { name: 'Travel' }).click();
+    await viewer.getByRole('button', { name: 'Viajar' }).click();
 
     viewer = page.locator('div.fixed.inset-0');
     await expect(viewer.getByText('Mapa Taberna')).toBeVisible();
@@ -162,17 +162,17 @@ test.describe('Scene Transitions', () => {
     const rooms = await seedTwoRooms(request, campaign.id);
 
     await openDashboard(page, campaign.id);
-    await page.getByTitle('Open map').click();
+    await page.getByTitle('Abrir mapa').click();
 
     const viewer = page.locator('div.fixed.inset-0');
-    await viewer.getByRole('button', { name: '+ Add Marker' }).click();
+    await viewer.getByRole('button', { name: '+ Agregar marcador' }).click();
     await viewer.getByRole('combobox').first().selectOption({ label: 'Transition' });
     await viewer.locator('div.flex-1.overflow-hidden.relative').click();
 
     const form = viewer.locator('div.absolute.inset-0');
     await form.getByRole('combobox').selectOption({ label: 'Bóveda' });
     await form.getByRole('checkbox').uncheck();
-    await form.getByRole('button', { name: 'Create' }).click();
+    await form.getByRole('button', { name: 'Crear' }).click();
 
     await expect(viewer.getByText(/· 1 markers$/)).toBeVisible();
 

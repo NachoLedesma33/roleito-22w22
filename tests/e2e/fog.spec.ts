@@ -92,9 +92,9 @@ test.describe('Fog (Phase D)', () => {
     const scene = await createScene(request, campaign.id, 'Fog Brush');
     const canvas = await openScene(page, campaign.id, scene.id);
 
-    await page.getByRole('button', { name: /Build/i }).click();
-    await page.getByRole('button', { name: /Fog \(paint\)/ }).click();
-    await expect(page.getByText('Click-drag to paint fog')).toBeVisible();
+    await page.getByRole('button', { name: /Construir/i }).click();
+    await page.getByRole('button', { name: /Niebla \(pincel\)/ }).click();
+    await expect(page.getByText(/Arrastrá para pintar niebla/)).toBeVisible();
 
     const box = await canvas.boundingBox();
     if (!box) throw new Error('canvas sin boundingBox');
@@ -148,9 +148,9 @@ test.describe('Fog (Phase D)', () => {
         res.url().includes(`/scenes/${scene.id}/items`) && res.request().method() === 'PUT',
       { timeout: 20_000 },
     );
-    await page.getByRole('button', { name: /Build/i }).click();
-    await page.getByRole('button', { name: /Clear all fog/ }).click();
-    await expect(page.getByText(/fog regions removed/)).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('button', { name: /Construir/i }).click();
+    await page.getByRole('button', { name: /Limpiar toda la niebla/ }).click();
+    await expect(page.getByText(/regiones de niebla eliminadas/)).toBeVisible({ timeout: 10_000 });
     await putPromise;
 
     const { items } = await getSceneItems(request, campaign.id, scene.id);
@@ -203,14 +203,14 @@ test.describe('Fog (Phase D)', () => {
         res.url().includes(`/scenes/${scene.id}/items`) && res.request().method() === 'PUT',
       { timeout: 20_000 },
     );
-    await page.getByRole('button', { name: /Build/i }).click();
-    await page.getByRole('button', { name: /Zone fog \(toggle\)/ }).click();
-    await expect(page.getByText('Click inside a zone to toggle fog')).toBeVisible();
+    await page.getByRole('button', { name: /Construir/i }).click();
+    await page.getByRole('button', { name: /Niebla de zona \(alternar\)/ }).click();
+    await expect(page.getByText(/Clic dentro de una zona para alternar niebla/)).toBeVisible();
     const cx = box.x + box.width * (0.3 + 0.15);
     const cy = box.y + box.height * (0.3 + 0.15);
     await page.mouse.click(cx, cy);
     await putPromise;
-    await expect(page.getByText('fog covering zone')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/niebla cubriendo la zona/)).toBeVisible({ timeout: 10_000 });
 
     let { items } = await getSceneItems(request, campaign.id, scene.id);
     const fogAfterHide = fogItems(items);
@@ -230,7 +230,7 @@ test.describe('Fog (Phase D)', () => {
     );
     await page.mouse.click(cx, cy);
     await putPromise2;
-    await expect(page.getByText('fog cleared for zone')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/niebla despejada de la zona/)).toBeVisible({ timeout: 10_000 });
 
     ({ items } = await getSceneItems(request, campaign.id, scene.id));
     expect(fogItems(items)).toHaveLength(0);

@@ -38,13 +38,13 @@ async function updateNote(
 test.describe('DM Notebook', () => {
   async function openDashboard(page: Page, campaignId: string) {
     await page.goto(`/campaigns/${campaignId}`);
-    await expect(page.getByTitle('Roll dice (D)')).toBeVisible();
+    await expect(page.getByTitle('Tirar dados (D)')).toBeVisible();
   }
 
   async function openNotebook(page: Page) {
-    await page.getByTitle('DM Notebook (N)').click();
+    await page.getByTitle('Cuaderno del DM (N)').click();
     const panel = page.locator('div.fixed', {
-      has: page.getByRole('button', { name: '+ New Note' }),
+      has: page.getByRole('button', { name: '+ Nueva nota' }),
     });
     await expect(panel).toBeVisible();
     return panel;
@@ -63,12 +63,12 @@ test.describe('DM Notebook', () => {
     const panel = await openNotebook(page);
 
     const getPromise = noteDetailGet(page);
-    await panel.getByRole('button', { name: '+ New Note' }).click();
+    await panel.getByRole('button', { name: '+ Nueva nota' }).click();
     await getPromise;
 
     await expect(panel.locator('input')).toHaveValue('New Note');
     await expect(panel.locator('textarea')).toBeVisible();
-    await expect(panel.getByRole('button', { name: 'Save', exact: true })).toBeVisible();
+    await expect(panel.getByRole('button', { name: 'Guardar', exact: true })).toBeVisible();
   });
 
   test('NB2: edita y guarda nota', async ({ page, campaign, request }) => {
@@ -76,14 +76,14 @@ test.describe('DM Notebook', () => {
     const panel = await openNotebook(page);
 
     const getPromise = noteDetailGet(page);
-    await panel.getByRole('button', { name: '+ New Note' }).click();
+    await panel.getByRole('button', { name: '+ Nueva nota' }).click();
     await getPromise;
 
     await panel.locator('input').fill('Loot de la mazmorra');
     await panel
       .locator('textarea')
       .fill('El cofre está bajo el altar. Código: 7-3-1');
-    await panel.getByRole('button', { name: 'Save', exact: true }).click();
+    await panel.getByRole('button', { name: 'Guardar', exact: true }).click();
 
     await expect(panel.getByText('Loot de la mazmorra')).toBeVisible();
     await expect(
@@ -114,11 +114,11 @@ test.describe('DM Notebook', () => {
     await expect(panel.getByText('Crítico en 19+')).toBeVisible();
     await expect(panel.getByText('Rey desaparecido')).toBeVisible();
 
-    await panel.getByRole('button', { name: /Rules \(1\)/ }).click();
+    await panel.getByRole('button', { name: /Reglas \(1\)/ }).click();
     await expect(panel.getByText('Crítico en 19+')).toBeVisible();
     await expect(panel.getByText('Rey desaparecido')).toHaveCount(0);
 
-    await panel.getByRole('button', { name: /All \(2\)/ }).click();
+    await panel.getByRole('button', { name: /Todas \(2\)/ }).click();
     await expect(panel.getByText('Rey desaparecido')).toBeVisible();
   });
 
@@ -136,10 +136,10 @@ test.describe('DM Notebook', () => {
     const panel = await openNotebook(page);
 
     await panel.getByRole('button', { name: /Anotación vieja/ }).click();
-    await panel.getByTitle('Pin').click();
-    await expect(panel.getByTitle('Unpin')).toBeVisible();
+    await panel.getByTitle('Fijar').click();
+    await expect(panel.getByTitle('Desfijar')).toBeVisible();
 
-    await panel.getByRole('button', { name: '← Back to list' }).click();
+    await panel.getByRole('button', { name: '← Volver a la lista' }).click();
 
     const vieja = await panel.getByText('Anotación vieja').boundingBox();
     const nueva = await panel.getByText('Anotación nueva').boundingBox();
@@ -163,11 +163,11 @@ test.describe('DM Notebook', () => {
     const panel = await openNotebook(page);
 
     await panel.getByRole('button', { name: /Nota versionada/ }).click();
-    await panel.getByRole('button', { name: 'History' }).click();
+    await panel.getByRole('button', { name: 'Historial' }).click();
 
-    await expect(panel.getByText('Version History')).toBeVisible();
+    await expect(panel.getByText('Historial de versiones')).toBeVisible();
     await expect(panel.getByText('v1')).toBeVisible();
-    await expect(panel.getByRole('button', { name: 'Restore' })).toBeVisible();
+    await expect(panel.getByRole('button', { name: 'Restaurar' })).toBeVisible();
   });
 
   test('NB6: restaura versión anterior', async ({ page, campaign, request }) => {
@@ -183,12 +183,12 @@ test.describe('DM Notebook', () => {
     const panel = await openNotebook(page);
 
     await panel.getByRole('button', { name: /Nota restaurable/ }).click();
-    await panel.getByRole('button', { name: 'History' }).click();
+    await panel.getByRole('button', { name: 'Historial' }).click();
 
     await panel
       .locator('div.group')
       .filter({ hasText: 'v1' })
-      .getByRole('button', { name: 'Restore' })
+      .getByRole('button', { name: 'Restaurar' })
       .click();
 
     await expect(panel.getByText('Contenido original de la nota')).toBeVisible();
@@ -212,7 +212,7 @@ test.describe('DM Notebook', () => {
 
     page.on('dialog', (dialog) => dialog.accept());
     await panel.getByRole('button', { name: /Nota basura/ }).click();
-    await panel.getByTitle('Delete').click();
+    await panel.getByTitle('Eliminar').click();
 
     await expect(panel.getByText('Nota basura')).toHaveCount(0);
     await expect(panel.getByText(/No notes yet/)).toBeVisible();

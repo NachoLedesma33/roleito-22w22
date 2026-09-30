@@ -84,11 +84,11 @@ test.describe('TTS System', () => {
 
     const navLink = page.locator('a[href*="/tts"]');
     await expect(navLink).toBeVisible();
-    await expect(navLink).toContainText('Voice');
+    await expect(navLink).toContainText('Voz');
 
     await navLink.click();
     await expect(page).toHaveURL(new RegExp(`/campaigns/${campaign.id}/tts`));
-    await expect(page.getByRole('heading', { name: 'TTS' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /TTS/ })).toBeVisible();
   });
 
   test('TTS8: TTS panel has text input and generate button', async ({ page, campaign }) => {
@@ -96,7 +96,7 @@ test.describe('TTS System', () => {
     await page.waitForLoadState('networkidle');
 
     await expect(page.locator('textarea')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Generate Speech' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Generar audio' })).toBeVisible();
   });
 
   test('TTS9: TTS panel generate flow', async ({ page, campaign }) => {
@@ -104,7 +104,7 @@ test.describe('TTS System', () => {
     await page.waitForLoadState('networkidle');
 
     await page.locator('textarea').fill('La antorcha parpadea débilmente.');
-    await page.getByRole('button', { name: 'Generate Speech' }).click();
+    await page.getByRole('button', { name: 'Generar audio' }).click();
 
     await expect(page.locator('audio')).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText(/Duration:/)).toBeVisible();
@@ -114,9 +114,9 @@ test.describe('TTS System', () => {
     await page.goto(`/campaigns/${campaign.id}/tts`);
     await page.waitForLoadState('networkidle');
 
-    await expect(page.getByText('Configuration')).toBeVisible();
+    await expect(page.getByText('Configuración')).toBeVisible();
     await expect(page.locator('label:has-text("Provider")')).toBeVisible();
-    await expect(page.locator('label:has-text("Voice")')).toBeVisible();
+    await expect(page.locator('label:has-text("Voz")')).toBeVisible();
     await expect(page.locator('label:has-text("Speed")')).toBeVisible();
   });
 });

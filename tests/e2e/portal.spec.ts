@@ -172,16 +172,16 @@ test.describe('Portales (Build menu)', () => {
     const scene = await createScene(request, campaign.id, 'Portal Tool');
     const canvas = await openSceneWithZones(page, campaign.id, scene.id);
 
-    await page.getByRole('button', { name: /Build/i }).click();
-    await page.getByRole('button', { name: /Portal \(zone↔zone\)/ }).click();
-    await expect(page.getByText('Click edge of zone A')).toBeVisible();
+    await page.getByRole('button', { name: /Construir/i }).click();
+    await page.getByRole('button', { name: /Portal \(zona↔zona\)/ }).click();
+    await expect(page.getByText('Clic en el borde de la zona A')).toBeVisible();
 
     const errors: string[] = [];
     page.on('pageerror', (err) => errors.push(err.message));
 
     await page.mouse.click((await canvas.boundingBox())!.x + 50, (await canvas.boundingBox())!.y + 50);
     await page.keyboard.press('Escape');
-    await expect(page.getByText('Click edge of zone A')).not.toBeVisible();
+    await expect(page.getByText('Clic en el borde de la zona A')).not.toBeVisible();
     await expect(canvas).toBeVisible();
     expect(errors).toHaveLength(0);
   });

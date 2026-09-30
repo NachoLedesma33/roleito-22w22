@@ -4,18 +4,18 @@ import { createNpc } from '../helpers/api-helpers';
 test.describe('NPC CRUD', () => {
   test('N1: crea NPC desde la UI', async ({ page, campaign }) => {
     await page.goto(`/campaigns/${campaign.id}/npcs`);
-    await page.getByRole('link', { name: 'New NPC' }).click();
+    await page.getByRole('link', { name: 'Nuevo PNJ' }).click();
     await expect(page).toHaveURL(/\/npcs\/new$/);
 
-    await page.getByPlaceholder('NPC name').fill('Gorlok');
-    await page.getByPlaceholder('Who is this NPC?').fill('Orco mercader de pieles');
-    await page.getByRole('button', { name: 'Create NPC' }).click();
+    await page.getByPlaceholder('Nombre del PNJ').fill('Gorlok');
+    await page.getByPlaceholder('¿Quién es este PNJ?').fill('Orco mercader de pieles');
+    await page.getByRole('button', { name: 'Crear PNJ' }).click();
 
     await expect(page).toHaveURL(/\/npcs\/[a-z0-9-]+$/, { timeout: 10_000 });
     await expect(page.getByRole('heading', { name: 'Gorlok' })).toBeVisible();
 
     await page.goto(`/campaigns/${campaign.id}/npcs`);
-    await expect(page.getByRole('heading', { name: 'NPCs', level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'PNJs', level: 1 })).toBeVisible();
     await expect(page.getByText('Gorlok')).toBeVisible();
     await expect(page.getByText('Orco mercader de pieles')).toBeVisible();
   });
@@ -26,13 +26,13 @@ test.describe('NPC CRUD', () => {
     await page.goto(`/campaigns/${campaign.id}/npcs/${npc.id}`);
     await expect(page.getByRole('heading', { name: 'Varek' })).toBeVisible();
 
-    await page.getByRole('link', { name: 'Edit' }).click();
-    await expect(page.getByRole('heading', { name: 'Edit NPC' })).toBeVisible();
+    await page.getByRole('link', { name: 'Editar' }).click();
+    await expect(page.getByRole('heading', { name: 'Editar PNJ' })).toBeVisible();
 
     await page
-      .getByPlaceholder('Who is this NPC?')
+      .getByPlaceholder('¿Quién es este PNJ?')
       .fill('Contrabandista de la prisión');
-    await page.getByRole('button', { name: 'Save Changes' }).click();
+    await page.getByRole('button', { name: 'Guardar cambios' }).click();
 
     await expect(page).toHaveURL(new RegExp(`/npcs/${npc.id}$`));
     await expect(
@@ -48,7 +48,7 @@ test.describe('NPC CRUD', () => {
     page.on('dialog', (dialog) => dialog.accept());
 
     const card = page.locator('div.border.rounded-lg', { hasText: 'Nix' }).first();
-    await card.getByRole('button', { name: 'Delete' }).click();
+    await card.getByRole('button', { name: 'Eliminar' }).click();
 
     await expect(page.getByText('Nix')).toHaveCount(0);
   });

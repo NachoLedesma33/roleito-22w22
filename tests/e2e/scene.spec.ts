@@ -5,9 +5,9 @@ test.describe('Scene Management', () => {
   test('S1: crea escena desde SceneList', async ({ page, campaign, request }) => {
     await page.goto(`/campaigns/${campaign.id}/scenes`);
 
-    await page.getByRole('button', { name: 'New Scene' }).click();
-    await page.getByPlaceholder('Tavern, Forest, Dungeon...').fill('Taverna');
-    await page.getByRole('button', { name: 'Create Scene' }).click();
+    await page.getByRole('button', { name: 'Nueva escena' }).click();
+    await page.getByPlaceholder('Taberna, Bosque, Mazmorra...').fill('Taverna');
+    await page.getByRole('button', { name: 'Crear escena' }).click();
 
     await expect(page).toHaveURL(
       new RegExp(`/campaigns/${campaign.id}/scenes/[a-z0-9-]+$`),
@@ -46,7 +46,7 @@ test.describe('Scene Management', () => {
   test('S3: auto-crea escena al subir BG sin escenas previas', async ({ page, campaign, request }) => {
     await page.goto(`/campaigns/${campaign.id}`);
 
-    await expect(page.getByText('Create a scene to get started.')).toBeVisible();
+    await expect(page.getByText('Creá una escena para empezar.')).toBeVisible();
 
     await page.setInputFiles('header input[type="file"]', {
       name: 'bg.png',

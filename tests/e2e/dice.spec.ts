@@ -3,33 +3,33 @@ import { createCharacter } from '../helpers/api-helpers';
 
 async function openRoller(page: import('@playwright/test').Page, campaignId: string) {
   await page.goto(`/campaigns/${campaignId}`);
-  await expect(page.getByTitle('Roll dice (D)')).toBeVisible();
+  await expect(page.getByTitle('Tirar dados (D)')).toBeVisible();
   await page.keyboard.press('d');
-  await expect(page.getByText('Die Type')).toBeVisible();
+  await expect(page.getByText('Tipo de dado')).toBeVisible();
 }
 
 test.describe('Dice Roller', () => {
   test('DR1: tecla D abre el roller', async ({ page, campaign }) => {
     await openRoller(page, campaign.id);
 
-    await expect(page.getByRole('button', { name: 'Roll 1d6' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Tirar 1d6' })).toBeVisible();
   });
 
   test('DR2: roll d20 muestra resultado 1-20 y entra al historial', async ({ page, campaign }) => {
     await openRoller(page, campaign.id);
 
     await page.getByRole('button', { name: 'd20', exact: true }).click();
-    await expect(page.getByRole('button', { name: 'Roll 1d20' })).toBeVisible();
-    await page.getByRole('button', { name: 'Roll 1d20' }).click();
+    await expect(page.getByRole('button', { name: 'Tirar 1d20' })).toBeVisible();
+    await page.getByRole('button', { name: 'Tirar 1d20' }).click();
 
-    await expect(page.getByRole('button', { name: 'Rolling...' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Tirando...' })).toBeVisible();
     const total = page.locator('span.text-lg.font-bold.font-mono');
     await expect(total).toBeVisible({ timeout: 5_000 });
     const value = parseInt(await total.textContent() || '0', 10);
     expect(value).toBeGreaterThanOrEqual(1);
     expect(value).toBeLessThanOrEqual(20);
 
-    await expect(page.getByText('History')).toBeVisible();
+    await expect(page.getByText('Historial')).toBeVisible();
     await expect(page.getByText('1d20').first()).toBeVisible();
   });
 
@@ -41,7 +41,7 @@ test.describe('Dice Roller', () => {
     await plus.click();
     await plus.click();
 
-    await page.getByRole('button', { name: 'Roll 4d6' }).click();
+    await page.getByRole('button', { name: 'Tirar 4d6' }).click();
 
     await expect(page.locator('span.w-7.h-7')).toHaveCount(4, { timeout: 5_000 });
     await expect(page.locator('span.w-7.h-7').first()).toHaveText(/^\d$/);
@@ -55,7 +55,7 @@ test.describe('Dice Roller', () => {
     await page.evaluate(() => {
       Math.random = () => 0.999;
     });
-    await page.getByRole('button', { name: 'Roll 1d20' }).click();
+    await page.getByRole('button', { name: 'Tirar 1d20' }).click();
 
     const chip = page.locator('span.w-7.h-7').first();
     await expect(chip).toHaveText('20', { timeout: 5_000 });
@@ -69,7 +69,7 @@ test.describe('Dice Roller', () => {
     // abrirse — reintentar Escape hasta que cierre.
     await expect(async () => {
       await page.keyboard.press('Escape');
-      await expect(page.getByText('Die Type')).toHaveCount(0);
+      await expect(page.getByText('Tipo de dado')).toHaveCount(0);
     }).toPass();
   });
 
@@ -81,7 +81,7 @@ test.describe('Dice Roller', () => {
     });
     await openRoller(page, campaign.id);
 
-    const select = page.getByLabel('Roller Para');
+    const select = page.getByLabel('Tirada para');
     await expect(select).toBeVisible();
     await select.selectOption({ label: 'Lyra Roller' });
 
@@ -89,7 +89,7 @@ test.describe('Dice Roller', () => {
     await expect(page.getByTitle('Destreza: Menos')).toBeVisible();
 
     await page.getByPlaceholder('Habilidad (ej: Sigilo) — opcional').fill('Sigilo');
-    await page.getByRole('button', { name: 'Roll 1d6' }).click();
+    await page.getByRole('button', { name: 'Tirar 1d6' }).click();
 
     await expect(page.locator('span.text-lg.font-bold.font-mono')).toBeVisible({ timeout: 5_000 });
     await expect(page.getByText('Sigilo — Lyra Roller').first()).toBeVisible();

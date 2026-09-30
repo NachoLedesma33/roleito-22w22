@@ -14,7 +14,7 @@ test.describe('Map System', () => {
     campaignId: string,
   ) {
     await page.goto(`/campaigns/${campaignId}`);
-    await expect(page.getByTitle('Upload map background')).toBeVisible();
+    await expect(page.getByTitle('Subir fondo de mapa')).toBeVisible();
   }
 
   test('M1: abre MapViewer con escena vinculada', async ({ page, campaign, request }) => {
@@ -25,7 +25,7 @@ test.describe('Map System', () => {
     });
 
     await openDashboard(page, campaign.id);
-    const mapBtn = page.getByTitle('Open map');
+    const mapBtn = page.getByTitle('Abrir mapa');
     await expect(mapBtn).toBeVisible();
     await mapBtn.click();
 
@@ -47,7 +47,7 @@ test.describe('Map System', () => {
     });
 
     await openDashboard(page, campaign.id);
-    await page.getByTitle('Open map').click();
+    await page.getByTitle('Abrir mapa').click();
 
     const viewer = page.locator('div.fixed.inset-0');
     await expect(viewer.getByText(/^100% ·/)).toBeVisible();
@@ -67,7 +67,7 @@ test.describe('Map System', () => {
     });
 
     await openDashboard(page, campaign.id);
-    await page.getByTitle('Open map').click();
+    await page.getByTitle('Abrir mapa').click();
 
     const viewer = page.locator('div.fixed.inset-0');
     const canvas = viewer.locator('div.flex-1.overflow-hidden.relative');
@@ -91,13 +91,13 @@ test.describe('Map System', () => {
     });
 
     await openDashboard(page, campaign.id);
-    await page.getByTitle('Open map').click();
+    await page.getByTitle('Abrir mapa').click();
 
     const viewer = page.locator('div.fixed.inset-0');
-    await viewer.getByRole('button', { name: '+ Add Marker' }).click();
-    await viewer.getByPlaceholder('Label').fill('Vault');
+    await viewer.getByRole('button', { name: '+ Agregar marcador' }).click();
+    await viewer.getByPlaceholder('Etiqueta').fill('Vault');
 
-    await expect(viewer.getByText('Click on map to place marker')).toBeVisible();
+    await expect(viewer.getByText('Hacé clic en el mapa para colocar el marcador')).toBeVisible();
     await viewer.locator('div.flex-1.overflow-hidden.relative').click();
 
     await expect(viewer.getByTitle('Vault (poi)')).toBeVisible();
@@ -113,9 +113,9 @@ test.describe('Map System', () => {
 
     await openDashboard(page, campaign.id);
     const viewer = page.locator('div.fixed.inset-0');
-    await page.getByTitle('Open map').click();
-    await viewer.getByRole('button', { name: '+ Add Marker' }).click();
-    await viewer.getByPlaceholder('Label').fill('Vault');
+    await page.getByTitle('Abrir mapa').click();
+    await viewer.getByRole('button', { name: '+ Agregar marcador' }).click();
+    await viewer.getByPlaceholder('Etiqueta').fill('Vault');
     await viewer.locator('div.flex-1.overflow-hidden.relative').click();
     await expect(viewer.getByTitle('Vault (poi)')).toBeVisible();
 
@@ -142,14 +142,14 @@ test.describe('Map System', () => {
 
     await openDashboard(page, campaign.id);
     const viewer = page.locator('div.fixed.inset-0');
-    await page.getByTitle('Open map').click();
-    await viewer.getByRole('button', { name: '+ Add Marker' }).click();
-    await viewer.getByPlaceholder('Label').fill('Trampa');
+    await page.getByTitle('Abrir mapa').click();
+    await viewer.getByRole('button', { name: '+ Agregar marcador' }).click();
+    await viewer.getByPlaceholder('Etiqueta').fill('Trampa');
     await viewer.locator('div.flex-1.overflow-hidden.relative').click();
     await expect(viewer.getByTitle('Trampa (poi)')).toBeVisible();
 
     await viewer.getByTitle('Trampa (poi)').click();
-    await viewer.getByRole('button', { name: 'Delete', exact: true }).click();
+    await viewer.getByRole('button', { name: 'Eliminar', exact: true }).click();
 
     await expect(viewer.getByText(/· 0 markers$/)).toBeVisible();
     await expect(viewer.getByTitle('Trampa (poi)')).toHaveCount(0);
@@ -161,10 +161,10 @@ test.describe('Map System', () => {
 
     await openDashboard(page, campaign.id);
 
-    await page.getByRole('button', { name: 'Map ▾' }).click();
+    await page.getByRole('button', { name: 'Mapa ▾' }).click();
     await page.getByRole('button', { name: 'Plano Ciudad' }).click();
 
-    const mapBtn = page.getByTitle('Open map');
+    const mapBtn = page.getByTitle('Abrir mapa');
     await expect(mapBtn).toBeVisible();
     await mapBtn.click();
     await expect(
@@ -184,12 +184,12 @@ test.describe('Map System', () => {
     });
 
     await openDashboard(page, campaign.id);
-    await expect(page.getByTitle('Open map')).toBeVisible();
+    await expect(page.getByTitle('Abrir mapa')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Map ▾' }).click();
-    await page.getByRole('button', { name: 'Unlink map' }).click();
+    await page.getByRole('button', { name: 'Mapa ▾' }).click();
+    await page.getByRole('button', { name: 'Desvincular mapa' }).click();
 
-    await expect(page.getByTitle('Open map')).toHaveCount(0);
+    await expect(page.getByTitle('Abrir mapa')).toHaveCount(0);
 
     const res = await request.get(`${API_BASE}/campaigns/${campaign.id}/scenes`);
     const list = (await res.json()) as Array<{ id: string; map_id: string | null }>;

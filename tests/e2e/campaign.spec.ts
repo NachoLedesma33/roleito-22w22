@@ -5,11 +5,11 @@ test.describe('Campaign CRUD', () => {
     const name = `UI Campaign ${Date.now()}`;
 
     await page.goto('/');
-    await page.getByRole('link', { name: 'New Campaign' }).click();
+    await page.getByRole('link', { name: 'Nueva campaña' }).click();
     await expect(page).toHaveURL(/\/campaigns\/new$/);
 
-    await page.getByPlaceholder('Campaign name').fill(name);
-    await page.getByRole('button', { name: 'Create Campaign' }).click();
+    await page.getByPlaceholder('Nombre de la campaña').fill(name);
+    await page.getByRole('button', { name: 'Crear campaña' }).click();
 
     await expect(page).toHaveURL(/\/campaigns\/[a-z0-9-]+$/, { timeout: 10_000 });
     await expect(page.getByRole('link', { name })).toBeVisible();
@@ -17,7 +17,7 @@ test.describe('Campaign CRUD', () => {
 
   test('C2: lista campañas existentes', async ({ page, campaign }) => {
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: 'Campaigns' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Campañas' })).toBeVisible();
     await expect(page.getByRole('link', { name: campaign.name })).toBeVisible();
   });
 
@@ -25,11 +25,11 @@ test.describe('Campaign CRUD', () => {
     const newName = `${campaign.name} EDITED`;
 
     await page.goto(`/campaigns/${campaign.id}/edit`);
-    await expect(page.getByRole('heading', { name: 'Edit Campaign' })).toBeVisible();
-    await expect(page.getByPlaceholder('Campaign name')).toHaveValue(campaign.name);
+    await expect(page.getByRole('heading', { name: 'Editar campaña' })).toBeVisible();
+    await expect(page.getByPlaceholder('Nombre de la campaña')).toHaveValue(campaign.name);
 
-    await page.getByPlaceholder('Campaign name').fill(newName);
-    await page.getByRole('button', { name: 'Save Changes' }).click();
+    await page.getByPlaceholder('Nombre de la campaña').fill(newName);
+    await page.getByRole('button', { name: 'Guardar cambios' }).click();
 
     await expect(page).toHaveURL(new RegExp(`/campaigns/${campaign.id}$`));
     await page.goto('/');
@@ -42,7 +42,7 @@ test.describe('Campaign CRUD', () => {
     page.on('dialog', (dialog) => dialog.accept());
 
     const card = page.locator('div.border.rounded-lg', { hasText: campaign.name }).first();
-    await card.getByRole('button', { name: 'Delete' }).click();
+    await card.getByRole('button', { name: 'Eliminar' }).click();
 
     await expect(page.getByRole('link', { name: campaign.name })).toHaveCount(0);
   });
@@ -72,11 +72,11 @@ test.describe('Campaign Bulk Operations', () => {
     await checkboxes.nth(1).click();
     await checkboxes.nth(2).click();
 
-    await expect(page.getByText('2 selected')).toBeVisible();
+    await expect(page.getByText('2 seleccionadas')).toBeVisible();
 
     page.on('dialog', (dialog) => dialog.accept());
-    const bulkBar = page.locator('div.mb-4.p-3.rounded-lg').filter({ hasText: '2 selected' });
-    await bulkBar.getByRole('button', { name: 'Delete', exact: true }).click();
+    const bulkBar = page.locator('div.mb-4.p-3.rounded-lg').filter({ hasText: '2 seleccionadas' });
+    await bulkBar.getByRole('button', { name: 'Eliminar', exact: true }).click();
 
     for (const name of names) {
       await expect(page.getByRole('link', { name })).toHaveCount(0);
@@ -102,10 +102,10 @@ test.describe('Campaign Bulk Operations', () => {
     await checkboxes.nth(1).click();
     await checkboxes.nth(2).click();
 
-    await expect(page.getByText('2 selected')).toBeVisible();
+    await expect(page.getByText('2 seleccionadas')).toBeVisible();
 
     const downloadPromise = page.waitForEvent('download');
-    await page.getByRole('button', { name: 'Export (combined)' }).click();
+    await page.getByRole('button', { name: 'Exportar (combinado)' }).click();
     const download = await downloadPromise;
     expect(download.suggestedFilename()).toMatch(/campaigns-bulk-.*\.json/);
 
@@ -117,9 +117,9 @@ test.describe('Campaign Bulk Operations', () => {
   });
 
   test('C7: bulk edit campaigns', async ({ page, request, dmToken }) => {
-    const names = [`Edit A ${Date.now()}`, `Edit B ${Date.now()}`];
+    const names = [`Editar A ${Date.now()}`, `Editar B ${Date.now()}`];
     const ids: string[] = [];
-    const newName = `Edited ${Date.now()}`;
+    const newName = `Editado ${Date.now()}`;
 
     for (const name of names) {
       const res = await request.post('http://localhost:8000/api/campaigns', {
@@ -136,11 +136,11 @@ test.describe('Campaign Bulk Operations', () => {
     await checkboxes.nth(1).click();
     await checkboxes.nth(2).click();
 
-    await expect(page.getByText('2 selected')).toBeVisible();
+    await expect(page.getByText('2 seleccionadas')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Edit' }).click();
-    await page.getByPlaceholder('New name (leave empty to keep)').fill(newName);
-    await page.getByRole('button', { name: 'Apply' }).click();
+    await page.getByRole('button', { name: 'Editar' }).click();
+    await page.getByPlaceholder('Nuevo nombre (vacío = mantener)').fill(newName);
+    await page.getByRole('button', { name: 'Aplicar' }).click();
 
     await expect(page.getByRole('link', { name: newName })).toHaveCount(2);
 
@@ -159,6 +159,6 @@ test.describe('Campaign Bulk Operations', () => {
     const expectedCount = (await rows.count()) - 1;
     await rows.first().click();
     await expect(page.getByText(`${expectedCount} selected`)).toBeVisible();
-    await expect(page.getByText('Deselect all')).toBeVisible();
+    await expect(page.getByText('Deseleccionar todas')).toBeVisible();
   });
 });

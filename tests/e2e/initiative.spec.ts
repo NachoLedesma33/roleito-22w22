@@ -23,18 +23,18 @@ test.describe('Initiative Tracker', () => {
 
     await page.goto(`/campaigns/${campaignId}`);
     await expect(page.getByText('On Scene (2)')).toBeVisible({ timeout: 10_000 });
-    await page.getByTitle('Initiative Tracker').click();
-    await expect(page.getByRole('button', { name: 'Start Combat' })).toBeVisible();
-    await page.getByRole('button', { name: 'Start Combat' }).click();
-    await expect(page.getByText('Round 1 — Turn 0/0')).toBeVisible();
+    await page.getByTitle('Iniciativa').click();
+    await expect(page.getByRole('button', { name: 'Iniciar combate' })).toBeVisible();
+    await page.getByRole('button', { name: 'Iniciar combate' }).click();
+    await expect(page.getByText('Ronda 1 — Turno 0/0')).toBeVisible();
 
     // El DM elige quiénes pelean desde el pool de tokens de la escena.
     const poolBoxes = page.getByRole('checkbox');
     await expect(poolBoxes).toHaveCount(2);
     await poolBoxes.nth(0).check();
     await poolBoxes.nth(1).check();
-    await page.getByRole('button', { name: 'Add to combat (2)' }).click();
-    await expect(page.getByText('Round 1 — Turn 1/2')).toBeVisible();
+    await page.getByRole('button', { name: 'Agregar al combate (2)' }).click();
+    await expect(page.getByText('Ronda 1 — Turno 1/2')).toBeVisible();
   }
 
   test('I1: start crea combate vacío y el DM selecciona a los que pelean', async ({ page, campaign, request }) => {
@@ -49,7 +49,7 @@ test.describe('Initiative Tracker', () => {
     await expect(page.locator('span.w-4.text-center')).toHaveCount(2);
     await expect(page.locator('span.w-4.text-center').first()).toHaveText('—');
     // Personajes seleccionados → esperando tirada del jugador.
-    await expect(page.getByText('⏳ player roll')).toHaveCount(2);
+    await expect(page.getByText('⏳ tirada del jugador')).toHaveCount(2);
   });
 
   test('I2: DM tira d6 por combatiente y persiste via API', async ({ page, campaign, request }) => {
@@ -64,7 +64,7 @@ test.describe('Initiative Tracker', () => {
       { timeout: 10_000 },
     );
 
-    await page.getByTitle('Roll d6').first().click();
+    await page.getByTitle('Tirar d6').first().click();
 
     const res = await postPromise;
     const body = await res.json();
@@ -76,7 +76,7 @@ test.describe('Initiative Tracker', () => {
     await expect(page.locator('span.w-4.text-center').first()).toHaveText(/^[1-6]$/);
     await expect(page.locator('span.w-4.text-center').nth(1)).toHaveText('—');
     // La tirada del DM cancela el prompt del jugador.
-    await expect(page.getByText('⏳ player roll')).toHaveCount(1);
+    await expect(page.getByText('⏳ tirada del jugador')).toHaveCount(1);
   });
 
   test('I3: next turn avanza el turno activo', async ({ page, campaign, request }) => {
@@ -86,9 +86,9 @@ test.describe('Initiative Tracker', () => {
 
     await openWithTwoCombatants(page, campaign.id, scene.id, request, aria, borin);
 
-    await page.getByRole('button', { name: 'Next Turn ▸' }).click();
+    await page.getByRole('button', { name: 'Siguiente turno ▸' }).click();
 
-    await expect(page.getByText('Round 1 — Turn 2/2')).toBeVisible();
+    await expect(page.getByText('Ronda 1 — Turno 2/2')).toBeVisible();
   });
 
   test('I4: combate y tiradas sobreviven al refresco', async ({ page, campaign, request }) => {
@@ -97,15 +97,15 @@ test.describe('Initiative Tracker', () => {
     const borin = await createCharacter(request, campaign.id, { name: 'Borin' });
 
     await openWithTwoCombatants(page, campaign.id, scene.id, request, aria, borin);
-    await page.getByTitle('Roll d6').first().click();
+    await page.getByTitle('Tirar d6').first().click();
     await expect(page.locator('span.w-4.text-center').first()).toHaveText(/^[1-6]$/);
-    await page.getByRole('button', { name: 'Next Turn ▸' }).click();
-    await expect(page.getByText('Round 1 — Turn 2/2')).toBeVisible();
+    await page.getByRole('button', { name: 'Siguiente turno ▸' }).click();
+    await expect(page.getByText('Ronda 1 — Turno 2/2')).toBeVisible();
 
     await page.reload();
     await expect(page.getByText('On Scene (2)')).toBeVisible({ timeout: 10_000 });
-    await page.getByTitle('Initiative Tracker').click();
-    await expect(page.getByText('Round 1 — Turn 2/2')).toBeVisible();
+    await page.getByTitle('Iniciativa').click();
+    await expect(page.getByText('Ronda 1 — Turno 2/2')).toBeVisible();
     await expect(page.locator('span.w-4.text-center').first()).toHaveText(/^[1-6]$/);
     await expect(page.locator('span.w-4.text-center').nth(1)).toHaveText('—');
   });
@@ -152,7 +152,7 @@ test.describe('Initiative Tracker', () => {
     const code = await generateInviteCode(request, campaign.id);
 
     await openWithTwoCombatants(page, campaign.id, scene.id, request, aria, borin);
-    await expect(page.getByText('⏳ player roll')).toHaveCount(2);
+    await expect(page.getByText('⏳ tirada del jugador')).toHaveCount(2);
 
     const pctx = await browser.newContext();
     const player = await pctx.newPage();
@@ -175,7 +175,7 @@ test.describe('Initiative Tracker', () => {
     await pctx.close();
 
     // La lista del DM se actualiza sola (poll 2s): Aria tiró, Borin sigue esperando.
-    await expect(page.getByText('⏳ player roll')).toHaveCount(1, { timeout: 10_000 });
+    await expect(page.getByText('⏳ tirada del jugador')).toHaveCount(1, { timeout: 10_000 });
     await expect(page.locator('span.w-4.text-center').first()).toHaveText(/^[1-6]$/);
 
     const combat = await (

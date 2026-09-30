@@ -62,7 +62,7 @@ test.describe('Dashboard VTT Core', () => {
     await page.goto(`/campaigns/${campaign.id}`);
     await page.locator('header select').selectOption(scene.id);
 
-    await expect(page.getByText('No scene selected')).toBeVisible();
+    await expect(page.getByText('Sin escena seleccionada')).toBeVisible();
 
     const bg = assetExists(TAVERN_MAP) ? loadAsset(TAVERN_MAP) : null;
     await page.setInputFiles(
@@ -73,7 +73,7 @@ test.describe('Dashboard VTT Core', () => {
     );
 
     await expect(page.locator('canvas').first()).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText('No scene selected')).toHaveCount(0);
+    await expect(page.getByText('Sin escena seleccionada')).toHaveCount(0);
   });
 
   test('D3: coloca token en escena desde el tray', async ({ page, campaign, request }) => {
@@ -83,10 +83,10 @@ test.describe('Dashboard VTT Core', () => {
     await openSceneWithBackground(page, campaign.id, scene.id);
 
     await expect(page.getByText('On Scene (0)')).toBeVisible();
-    await expect(page.getByText('No tokens placed')).toBeVisible();
+    await expect(page.getByText('Sin tokens colocados')).toBeVisible();
 
     await page.getByRole('button', { name: 'Aria' }).click();
-    await expect(page.getByText('Click the map to place (Esc cancels)')).toBeVisible();
+    await expect(page.getByText('Hacé clic en el mapa para colocar (Esc cancela)')).toBeVisible();
 
     const canvas = page.locator('canvas').first();
     const box = await canvas.boundingBox();
@@ -94,7 +94,7 @@ test.describe('Dashboard VTT Core', () => {
     await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
 
     await expect(page.getByText('On Scene (1)')).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText('No tokens placed')).toHaveCount(0);
+    await expect(page.getByText('Sin tokens colocados')).toHaveCount(0);
 
     const sceneChars = await getSceneCharacters(request, campaign.id, scene.id);
     expect(sceneChars).toHaveLength(1);
@@ -165,42 +165,42 @@ test.describe('Dashboard VTT Core', () => {
     await expect(page.getByText('On Scene (1)')).toBeVisible({ timeout: 10_000 });
     await page.getByRole('button', { name: 'Cedric' }).click();
 
-    await expect(page.getByText('Max PV')).toBeVisible();
+    await expect(page.getByText('PV máx.')).toBeVisible();
     await expect(page.locator('input.text-red-400')).toHaveValue('13');
     await expect(page.locator('input.text-blue-400')).toHaveValue('8');
   });
 
   test('D6: tecla D abre dice roller y Escape cierra', async ({ page, campaign }) => {
     await page.goto(`/campaigns/${campaign.id}`);
-    await expect(page.getByTitle('Roll dice (D)')).toBeVisible();
+    await expect(page.getByTitle('Tirar dados (D)')).toBeVisible();
 
     await page.keyboard.press('d');
-    await expect(page.getByText('Die Type')).toBeVisible();
+    await expect(page.getByText('Tipo de dado')).toBeVisible();
 
     await page.keyboard.press('Escape');
-    await expect(page.getByText('Die Type')).toHaveCount(0);
+    await expect(page.getByText('Tipo de dado')).toHaveCount(0);
   });
 
   test('D7: tecla N abre notebook y Escape cierra', async ({ page, campaign }) => {
     await page.goto(`/campaigns/${campaign.id}`);
-    await expect(page.getByTitle('DM Notebook (N)')).toBeVisible();
+    await expect(page.getByTitle('Cuaderno del DM (N)')).toBeVisible();
 
     await page.keyboard.press('n');
-    await expect(page.getByRole('button', { name: '+ New Note' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '+ Nueva nota' })).toBeVisible();
 
     await page.keyboard.press('Escape');
-    await expect(page.getByRole('button', { name: '+ New Note' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '+ Nueva nota' })).toHaveCount(0);
   });
 
   test('D8: tecla R abre recap y Escape cierra', async ({ page, campaign }) => {
     await page.goto(`/campaigns/${campaign.id}`);
-    await expect(page.getByTitle('Session Recap (R)')).toBeVisible();
+    await expect(page.getByTitle('Resumen de sesión (R)')).toBeVisible();
 
     await page.keyboard.press('r');
-    await expect(page.getByRole('button', { name: 'AI Recap' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Resumen IA' })).toBeVisible();
 
     await page.keyboard.press('Escape');
-    await expect(page.getByRole('button', { name: 'AI Recap' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Resumen IA' })).toHaveCount(0);
   });
 
   test('D9: background y retratos reales renderizan sin errores de textura @showcase', async ({ page, campaign, request }) => {
@@ -251,7 +251,7 @@ test.describe('Dashboard VTT Core', () => {
     await page.goto(`/campaigns/${campaign.id}`);
     await page.locator('header select').selectOption(scene.id);
     await expect(page.locator('canvas').first()).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText('No scene selected')).toHaveCount(0);
+    await expect(page.getByText('Sin escena seleccionada')).toHaveCount(0);
     await page.waitForTimeout(1500);
 
     const seeded = (await listScenes(request, campaign.id)).find((s) => s.id === scene.id);

@@ -170,7 +170,7 @@ test.describe('Player View', () => {
 
   test('PV7: código inválido muestra error', async ({ page }) => {
     await page.goto('/campaigns/join/codigo-inexistente-xyz');
-    await expect(page.getByText(/Invalid invite code|Failed to join/)).toBeVisible({
+    await expect(page.getByText(/Código de invitación inválido/)).toBeVisible({
       timeout: 10_000,
     });
   });

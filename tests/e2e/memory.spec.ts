@@ -95,7 +95,7 @@ test.describe('Memory System', () => {
     await page.goto(`http://localhost:5173/campaigns/${campaignId}/memory`);
     await page.waitForTimeout(3000);
     const body = await page.textContent('body');
-    expect(body).toContain('Memory');
+    expect(body).toContain('Memoria');
   });
 
   test('MEM8: Memory page shows session data', async ({ page }) => {
