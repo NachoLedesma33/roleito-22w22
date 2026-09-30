@@ -366,7 +366,7 @@ Reference: `ROADMAP.md` (22,082 bytes)
 - AI/TTS infrastructure decoupled
 
 ## Gaps
-- Import cubre entidades core + VTT (scenes/maps/notebook con remap); assets binarios y combat/dice/quests/calendar NO se exportan
+- Import cubre entidades core + VTT + assets binarios (base64 ≤8MB, refs re-absolutizadas); combat/dice/quests/calendar y Asset table rows NO viajan aún
 - Ref IDs dentro de `items_json` de escena pasan crudos (sin remap interno)
 - No real-time sync (WebSocket); polling 16ms en PlayerView
 - `apps/player` / `apps/renderer` placeholders (vista jugador vive en apps/dm por decisión AGENTS.md)
@@ -388,12 +388,11 @@ Based on dependency analysis and documentation completeness:
 
 | Priority | System | Rationale |
 |----------|--------|-----------|
-| 1 | Assets binarios en export (copy/zip) | Portabilidad completa de campaña |
-| 2 | Asset Browser | DM workflow |
+| 1 | Asset Browser | DM workflow |
+| 2 | Real-time sync (WebSocket) | Base multiplayer |
 | 3 | AI Map Analysis | Automation |
-| 4 | Real-time sync (WebSocket) | Base multiplayer |
-| 5 | AI Agents reales | Fase 12 roadmap |
-| 6 | Voice input / atmosphere / media | Fases 13/15/16 |
+| 4 | AI Agents reales | Fase 12 roadmap |
+| 5 | Voice input / atmosphere / media | Fases 13/15/16 |
 
 > Prioridades 1-10 originales (scene graph → 3D) quedaron cubiertas — ver secciones 2 y 6.
 

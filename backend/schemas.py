@@ -48,6 +48,7 @@ class CampaignExport(BaseModel):
     map_markers: list[dict] = []
     notebooks: list[dict] = []
     notebook_versions: list[dict] = []
+    assets: list[dict] = []
 
 
 class CampaignImport(BaseModel):
@@ -67,6 +68,7 @@ class CampaignImport(BaseModel):
     map_markers: list[dict] = []
     notebooks: list[dict] = []
     notebook_versions: list[dict] = []
+    assets: list[dict] = []
 
 
 class CharacterCreate(BaseModel):

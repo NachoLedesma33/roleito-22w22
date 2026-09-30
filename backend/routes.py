@@ -38,6 +38,94 @@ from schemas import (
 import secrets
 import hashlib
 import json
+import os
+import base64
+
+ASSETS_DIR = os.path.normpath(
+    os.path.join(os.path.dirname(__file__), "..", "data", "assets")
+)
+MAX_ASSET_BYTES = 8 * 1024 * 1024
+
+
+def _asset_rel(path):
+    """Reduce an asset path to a portable 'data/assets/...' relative form."""
+    if not path:
+        return None
+    norm = path.replace("\\", "/")
+    idx = norm.find("data/assets")
+    if idx == -1:
+        return None
+    return norm[idx:]
+
+
+def _asset_abs(rel):
+    suffix = rel[len("data/assets"):].lstrip("/").replace("/", os.sep)
+    return os.path.join(ASSETS_DIR, suffix)
+
+
+def _import_asset_path(value):
+    rel = _asset_rel(value)
+    if not rel:
+        return value
+    return _asset_abs(rel)
+
+
+def _embed_asset(path):
+    rel = _asset_rel(path)
+    if not rel:
+        return None
+    try:
+        size = os.path.getsize(path)
+    except OSError:
+        return None
+    if size > MAX_ASSET_BYTES:
+        return None
+    try:
+        with open(path, "rb") as f:
+            data = base64.b64encode(f.read()).decode("ascii")
+    except OSError:
+        return None
+    return {"path": rel, "data_base64": data}
+
+
+async def _collect_assets(db: AsyncSession, campaign_id: str) -> list[dict]:
+    refs: dict[str, str] = {}
+
+    maps_r = await db.execute(select(Map).where(Map.campaign_id == campaign_id))
+    for m in maps_r.scalars().all():
+        refs[m.file_path] = m.file_path
+        if m.thumbnail_path:
+            refs[m.thumbnail_path] = m.thumbnail_path
+
+    scenes_r = await db.execute(select(Scene).where(Scene.campaign_id == campaign_id))
+    for s in scenes_r.scalars().all():
+        if s.background_path:
+            refs[s.background_path] = s.background_path
+        if s.audio_path:
+            refs[s.audio_path] = s.audio_path
+
+    chars_r = await db.execute(select(Character).where(Character.campaign_id == campaign_id))
+    for c in chars_r.scalars().all():
+        for p in (c.portrait_path, c.model_path):
+            if p:
+                refs[p] = p
+
+    npcs_r = await db.execute(select(NPC).where(NPC.campaign_id == campaign_id))
+    for n in npcs_r.scalars().all():
+        for p in (n.portrait_path, n.model_path):
+            if p:
+                refs[p] = p
+
+    assets_r = await db.execute(select(Asset).where(Asset.campaign_id == campaign_id))
+    for a in assets_r.scalars().all():
+        refs[a.file_path] = a.file_path
+
+    out = []
+    for p in refs.values():
+        emb = _embed_asset(p)
+        if emb:
+            out.append(emb)
+    return out
 
 campaigns_router = APIRouter(tags=["campaigns"])
 
@@ -360,6 +448,7 @@ async def bulk_export_campaigns(
             "map_markers": [dict(r._mapping) for r in markers_r.all()],
             "notebooks": [dict(r._mapping) for r in notebook_rows],
             "notebook_versions": [dict(r._mapping) for r in versions_r.all()],
+            "assets": await _collect_assets(db, cid),
         })
 
     return {"campaigns": exports}
@@ -421,6 +510,8 @@ async def export_campaign(
         )
     )
 
+    assets = await _collect_assets(db, campaign_id)
+
     return CampaignExport(
         campaign=CampaignResponse.model_validate(campaign),
         sessions=[to_dict(s) for s in sessions_r.scalars().all()],
@@ -435,6 +526,7 @@ async def export_campaign(
         map_markers=[to_dict(mk) for mk in markers_r.scalars().all()],
         notebooks=[to_dict(n) for n in notebooks],
         notebook_versions=[to_dict(v) for v in versions_r.scalars().all()],
+        assets=assets,
     )
 
 
@@ -451,6 +543,19 @@ async def import_campaign(
     )
     db.add(campaign)
     await db.flush()
+
+    for asset in data.assets:
+        rel = asset.get("path", "")
+        if not rel.startswith("data/assets"):
+            continue
+        try:
+            content = base64.b64decode(asset.get("data_base64", ""))
+        except ValueError:
+            continue
+        target = _asset_abs(rel)
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        with open(target, "wb") as f:
+            f.write(content)
 
     id_map: dict[str, str] = {}
 
@@ -491,6 +596,8 @@ async def import_campaign(
             defense=c.get("defense", 5),
             current_pv=c.get("current_pv"),
             current_pm=c.get("current_pm"),
+            portrait_path=_import_asset_path(c.get("portrait_path")),
+            model_path=_import_asset_path(c.get("model_path")),
         )
         db.add(new_char)
         await db.flush()
@@ -516,6 +623,8 @@ async def import_campaign(
             defense=n.get("defense", 5),
             current_pv=n.get("current_pv"),
             current_pm=n.get("current_pm"),
+            portrait_path=_import_asset_path(n.get("portrait_path")),
+            model_path=_import_asset_path(n.get("model_path")),
         )
         db.add(new_npc)
         await db.flush()
@@ -582,8 +691,8 @@ async def import_campaign(
             campaign_id=campaign.id,
             name=m.get("name", "Mapa importado"),
             description=m.get("description", ""),
-            file_path=m.get("file_path", ""),
-            thumbnail_path=m.get("thumbnail_path"),
+            file_path=_import_asset_path(m.get("file_path", "")),
+            thumbnail_path=_import_asset_path(m.get("thumbnail_path")),
             map_type=m.get("map_type", "world"),
         )
         db.add(new_map)
@@ -596,10 +705,10 @@ async def import_campaign(
             campaign_id=campaign.id,
             name=s.get("name", "Escena importada"),
             description=s.get("description", ""),
-            background_path=s.get("background_path"),
+            background_path=_import_asset_path(s.get("background_path")),
             map_id=id_map.get(s.get("map_id", ""), s.get("map_id")),
             lighting=s.get("lighting", "neutral"),
-            audio_path=s.get("audio_path"),
+            audio_path=_import_asset_path(s.get("audio_path")),
             status=s.get("status", "inactive"),
             notes=s.get("notes", ""),
             entrance_x=s.get("entrance_x", 0.0),

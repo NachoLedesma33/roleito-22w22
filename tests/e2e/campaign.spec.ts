@@ -1,4 +1,5 @@
 import { expect, test } from '../fixtures/campaign-fixture';
+import { PNG_1PX } from '../helpers/api-helpers';
 
 test.describe('Campaign CRUD', () => {
   test('C1: crea campaña desde la UI y redirige al dashboard', async ({ page }) => {
@@ -296,6 +297,74 @@ test.describe('Campaign Import', () => {
     expect(scene.items_json).toContain('item-1');
 
     await request.delete(`http://localhost:8000/api/campaigns/${imported.id}`, {
+      headers: authHeaders,
+    });
+  });
+
+  test('C11: assets binarios viajan en export e import', async ({ request, authHeaders }) => {
+    const res = await request.post('http://localhost:8000/api/campaigns', {
+      headers: authHeaders,
+      data: { name: `Assets ${Date.now()}` },
+    });
+    expect(res.status()).toBe(200);
+    const camp = await res.json();
+
+    const charRes = await request.post(`http://localhost:8000/api/campaigns/${camp.id}/characters`, {
+      headers: authHeaders,
+      data: { name: 'Ardan imgs', type: 'player', vigor: '/', intelligence: '/', dexterity: '/', cunning: '/' },
+    });
+    expect(charRes.status()).toBe(200);
+    const char = await charRes.json();
+
+    const uploadRes = await request.post(
+      `http://localhost:8000/api/campaigns/${camp.id}/characters/${char.id}/portrait`,
+      {
+        headers: authHeaders,
+        multipart: { file: { name: 'portrait.png', mimeType: 'image/png', buffer: PNG_1PX } },
+      },
+    );
+    expect(uploadRes.status()).toBe(200);
+
+    const expRes = await request.get(`http://localhost:8000/api/campaigns/${camp.id}/export`, {
+      headers: authHeaders,
+    });
+    expect(expRes.status()).toBe(200);
+    const exp = await expRes.json();
+
+    const asset = (exp.assets as Array<{ path: string; data_base64: string }>).find((a) =>
+      a.path.includes('/characters/'),
+    );
+    expect(asset).toBeTruthy();
+    expect(asset!.data_base64.length).toBeGreaterThan(0);
+    expect(exp.characters[0].portrait_path).toBeTruthy();
+
+    const impRes = await request.post('http://localhost:8000/api/campaigns/import', {
+      headers: authHeaders,
+      data: exp,
+    });
+    expect(impRes.status()).toBe(200);
+    const imported = await impRes.json();
+
+    const impExpRes = await request.get(`http://localhost:8000/api/campaigns/${imported.id}/export`, {
+      headers: authHeaders,
+    });
+    expect(impExpRes.status()).toBe(200);
+    const impExp = await impExpRes.json();
+
+    const asset2 = (impExp.assets as Array<{ path: string; data_base64: string }>).find((a) =>
+      a.path.includes('/characters/'),
+    );
+    expect(asset2).toBeTruthy();
+    expect(asset2!.data_base64).toBe(asset!.data_base64);
+
+    const dstPath = impExp.characters[0].portrait_path;
+    expect(dstPath).not.toBe(exp.characters[0].portrait_path);
+    expect(dstPath).toMatch(/data[\\/]assets/);
+
+    await request.delete(`http://localhost:8000/api/campaigns/${imported.id}`, {
+      headers: authHeaders,
+    });
+    await request.delete(`http://localhost:8000/api/campaigns/${camp.id}`, {
       headers: authHeaders,
     });
   });
