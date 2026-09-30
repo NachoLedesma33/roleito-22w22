@@ -93,7 +93,7 @@ test.describe('Scene Transitions', () => {
 
     const viewer = page.locator('div.fixed.inset-0');
     await viewer.getByRole('button', { name: '+ Agregar marcador' }).click();
-    await viewer.getByRole('combobox').first().selectOption({ label: 'Transition' });
+    await viewer.getByRole('combobox').first().selectOption({ label: 'Transición' });
     await expect(viewer.getByText('Hacé clic en el mapa para colocar la transición')).toBeVisible();
 
     await viewer.locator('div.flex-1.overflow-hidden.relative').click();
@@ -166,7 +166,7 @@ test.describe('Scene Transitions', () => {
 
     const viewer = page.locator('div.fixed.inset-0');
     await viewer.getByRole('button', { name: '+ Agregar marcador' }).click();
-    await viewer.getByRole('combobox').first().selectOption({ label: 'Transition' });
+    await viewer.getByRole('combobox').first().selectOption({ label: 'Transición' });
     await viewer.locator('div.flex-1.overflow-hidden.relative').click();
 
     const form = viewer.locator('div.absolute.inset-0');

@@ -43,7 +43,7 @@ test.describe('Character CRUD', () => {
 
     await page.goto(`/campaigns/${campaign.id}/characters/${char.id}`);
     await page.getByRole('link', { name: 'Editar' }).click();
-    await expect(page.getByRole('heading', { name: 'Editarar personaje' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Editar personaje' })).toBeVisible();
 
     await page.getByPlaceholder('Nombre del personaje').fill('Borin Piedra');
     await page.getByRole('button', { name: 'Guardar cambios' }).click();

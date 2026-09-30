@@ -66,7 +66,7 @@ test.describe('DM Notebook', () => {
     await panel.getByRole('button', { name: '+ Nueva nota' }).click();
     await getPromise;
 
-    await expect(panel.locator('input')).toHaveValue('New Note');
+    await expect(panel.locator('input')).toHaveValue('Nueva nota');
     await expect(panel.locator('textarea')).toBeVisible();
     await expect(panel.getByRole('button', { name: 'Guardar', exact: true })).toBeVisible();
   });
@@ -215,6 +215,6 @@ test.describe('DM Notebook', () => {
     await panel.getByTitle('Eliminar').click();
 
     await expect(panel.getByText('Nota basura')).toHaveCount(0);
-    await expect(panel.getByText(/No notes yet/)).toBeVisible();
+    await expect(panel.getByText(/Sin notas todavía/)).toBeVisible();
   });
 });

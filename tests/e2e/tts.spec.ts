@@ -107,16 +107,16 @@ test.describe('TTS System', () => {
     await page.getByRole('button', { name: 'Generar audio' }).click();
 
     await expect(page.locator('audio')).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(/Duration:/)).toBeVisible();
+    await expect(page.getByText(/Duración:/)).toBeVisible();
   });
 
   test('TTS10: TTS panel config section visible', async ({ page, campaign }) => {
     await page.goto(`/campaigns/${campaign.id}/tts`);
     await page.waitForLoadState('networkidle');
 
-    await expect(page.getByText('Configuración')).toBeVisible();
-    await expect(page.locator('label:has-text("Provider")')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Configuración' })).toBeVisible();
+    await expect(page.locator('label:has-text("Proveedor")')).toBeVisible();
     await expect(page.locator('label:has-text("Voz")')).toBeVisible();
-    await expect(page.locator('label:has-text("Speed")')).toBeVisible();
+    await expect(page.locator('label:has-text("Velocidad")')).toBeVisible();
   });
 });

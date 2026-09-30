@@ -158,7 +158,7 @@ test.describe('Campaign Bulk Operations', () => {
     const rows = page.locator('input[type="checkbox"]');
     const expectedCount = (await rows.count()) - 1;
     await rows.first().click();
-    await expect(page.getByText(`${expectedCount} selected`)).toBeVisible();
+    await expect(page.getByText(`${expectedCount} seleccionadas`)).toBeVisible();
     await expect(page.getByText('Deseleccionar todas')).toBeVisible();
   });
 });

@@ -54,7 +54,7 @@ test.describe('Character Sheet HUD', () => {
     await expect(statValue('Dest')).toHaveText('−');
     await expect(statValue('Astuc')).toHaveText('/');
     await expect(statValue('PV máx.')).toHaveText('13');
-    await expect(statValue('Max PM')).toHaveText('8');
+    await expect(statValue('PM máx.')).toHaveText('8');
     await expect(statValue('Defensa')).toHaveText('7');
   });
 
