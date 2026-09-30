@@ -2,7 +2,19 @@
 
 > Plan de tests end-to-end para Roleito DM Dashboard.
 >
-> Estado: SIN IMPLEMENTAR. Esperando aprobación del usuario.
+> Estado: IMPLEMENTADO — 31 suites, 192 tests. Fase actual: CI verde (labels ES-AR).
+
+## Estado de fases (2026-09-30)
+
+- **Implemented**: 192 tests en `tests/e2e/`, corren con `npm run test:e2e` (Playwright levanta frontend 5173 + backend 8000).
+- **CI pipeline**: `.github/workflows/e2e.yml` — typecheck → lint → playwright. NO corre vitest ni pytest (correr local antes de push).
+- **Fase CI verde en curso**:
+  - `37b83dc` — `fix(perf)`: gate de UnrealBloomPass por glow activo (mata jank SwiftShader → timeouts de mouse en canvas).
+  - `c571f04` — `test(e2e)`: sync labels EN→ES-AR en 21 specs (UI ya es ES-AR; specs arrastraban strings EN).
+  - Regla de oro: strings de specs DEBEN matchear UI ES-AR; API/enums quedan raw (ej. `equipped`, `inventory_json`).
+  - Flakes conocidos (retry los absorbe en CI, workers 1): fog F2, status S1 (cold-jank canvas).
+  - Pendiente: pytest (46 tests backend, puerto 8000 ocupado mientras corra e2e), push, CI.
+  - Decisión abierta: `backend/data/tts_config.json` — la suite e2e escribe `provider: mock` sobre la config commiteada (edge).
 
 ---
 
