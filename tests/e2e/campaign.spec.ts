@@ -162,3 +162,72 @@ test.describe('Campaign Bulk Operations', () => {
     await expect(page.getByText('Deseleccionar todas')).toBeVisible();
   });
 });
+
+test.describe('Campaign Import', () => {
+  test('C9: import roundtrip preserva campaña y remapea referencias', async ({ request, authHeaders }) => {
+    const name = `Importado ${Date.now()}`;
+    const payload = {
+      campaign: {
+        id: 'camp-old',
+        name,
+        description: 'desc import',
+        created_at: '2026-01-01T00:00:00',
+        updated_at: '2026-01-01T00:00:00',
+        current_session_id: null,
+        current_location_id: null,
+        settings_json: { theme: 'dark' },
+        invite_code: null,
+      },
+      sessions: [{ id: 'sess-old', number: 1, date: '2026-01-01', title: 'Sesión import', raw_notes: '', summary: '', status: 'DRAFT' }],
+      characters: [{ id: 'char-old', name: 'Ardan', type: 'player', description: '', class: 'guerrero', race: 'humano', status: 'alive', vigor: '10', intelligence: '10', dexterity: '10', cunning: '10', max_pv: 12, max_pm: 6, defense: 8 }],
+      npcs: [{ id: 'npc-old', name: 'Varek', description: '', status: 'alive', max_pv: 10, max_pm: 4, defense: 5 }],
+      locations: [{ id: 'loc-old', name: 'Prisión', type: 'dungeon', description: '', status: 'ACTIVE' }],
+      events: [{ id: 'evt-old', session_id: 'sess-old', type: 'ACTION', actor_id: 'char-old', target_id: 'npc-old', location_id: 'loc-old', description: 'Ardan encontró a Varek', confidence: 1.0, status: 'APPROVED' }],
+      relationships: [{ id: 'rel-old', source_entity_id: 'char-old', target_entity_id: 'loc-old', type: 'LOCATED_IN', strength: 1.0, status: 'active', source_event_id: 'evt-old' }],
+    };
+
+    const importRes = await request.post('http://localhost:8000/api/campaigns/import', {
+      headers: authHeaders,
+      data: payload,
+    });
+    expect(importRes.status()).toBe(200);
+    const imported = await importRes.json();
+    expect(imported.name).toBe(name);
+    expect(imported.description).toBe('desc import');
+    expect(imported.settings_json?.theme).toBe('dark');
+
+    const exportRes = await request.get(`http://localhost:8000/api/campaigns/${imported.id}/export`, {
+      headers: authHeaders,
+    });
+    expect(exportRes.status()).toBe(200);
+    const exp = await exportRes.json();
+
+    expect(exp.sessions).toHaveLength(1);
+    expect(exp.characters).toHaveLength(1);
+    expect(exp.npcs).toHaveLength(1);
+    expect(exp.locations).toHaveLength(1);
+    expect(exp.events).toHaveLength(1);
+    expect(exp.relationships).toHaveLength(1);
+
+    const [sess] = exp.sessions;
+    const [ch] = exp.characters;
+    const [npc] = exp.npcs;
+    const [loc] = exp.locations;
+    const [evt] = exp.events;
+    const [rel] = exp.relationships;
+
+    expect(sess.campaign_id).toBe(imported.id);
+    expect(ch.class_).toBe('guerrero');
+    expect(evt.session_id).toBe(sess.id);
+    expect(evt.actor_id).toBe(ch.id);
+    expect(evt.target_id).toBe(npc.id);
+    expect(evt.location_id).toBe(loc.id);
+    expect(rel.source_entity_id).toBe(ch.id);
+    expect(rel.target_entity_id).toBe(loc.id);
+    expect(rel.source_event_id).toBe(evt.id);
+
+    await request.delete(`http://localhost:8000/api/campaigns/${imported.id}`, {
+      headers: authHeaders,
+    });
+  });
+});

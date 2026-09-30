@@ -366,7 +366,7 @@ async def export_campaign(
     )
 
     def to_dict(obj):
-        return {c.name: getattr(obj, c.name) for c in obj.__table__.columns}
+        return {k: v for k, v in vars(obj).items() if not k.startswith("_sa_")}
 
     return CampaignExport(
         campaign=CampaignResponse.model_validate(campaign),
@@ -384,10 +384,11 @@ async def import_campaign(
     data: CampaignImport,
     db: AsyncSession = Depends(get_session),
 ):
+    src = data.campaign
     campaign = Campaign(
-        name=data.name or "Imported Campaign",
-        description=data.description or "",
-        settings_json=data.settings_json,
+        name=(data.name or (src.name if src else None)) or "Imported Campaign",
+        description=(data.description or (src.description if src else None)) or "",
+        settings_json=data.settings_json or (src.settings_json if src else {}),
     )
     db.add(campaign)
     await db.flush()
@@ -416,7 +417,7 @@ async def import_campaign(
             name=c.get("name", ""),
             type=c.get("type", "player"),
             description=c.get("description", ""),
-            class_=c.get("class", ""),
+            class_=c.get("class_", c.get("class", "")),
             race=c.get("race", ""),
             status=c.get("status", "alive"),
             current_location_id=c.get("current_location_id"),
@@ -484,14 +485,16 @@ async def import_campaign(
             session_id=id_map.get(e.get("session_id", ""), e.get("session_id", "")),
             type=e.get("type", ""),
             actor_id=id_map.get(e.get("actor_id", ""), e.get("actor_id", "")),
-            target_id=e.get("target_id"),
-            location_id=e.get("location_id"),
+            target_id=id_map.get(e.get("target_id", ""), e.get("target_id")),
+            location_id=id_map.get(e.get("location_id", ""), e.get("location_id")),
             description=e.get("description", ""),
             confidence=e.get("confidence", 1.0),
             status=e.get("status", "PROPOSED"),
-            source_id=e.get("source_id"),
+            source_id=id_map.get(e.get("source_id", ""), e.get("source_id")),
         )
         db.add(new_event)
+        await db.flush()
+        id_map[e.get("id", "")] = new_event.id
 
     for r in data.relationships:
         new_rel = Relationship(
@@ -507,7 +510,10 @@ async def import_campaign(
             type=r.get("type", ""),
             strength=r.get("strength", 1.0),
             status=r.get("status", "active"),
-            source_event_id=r.get("source_event_id"),
+            source_event_id=id_map.get(
+                r.get("source_event_id", ""),
+                r.get("source_event_id"),
+            ),
         )
         db.add(new_rel)
 

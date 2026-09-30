@@ -332,7 +332,7 @@ Reference: `ROADMAP.md` (22,082 bytes)
 | Phase | Name | Status | Notes |
 |-------|------|--------|-------|
 | 0 | Foundation | Implemented | Project structure, config, DB init |
-| 1 | Campaign Core | Partially | CRUD + export ✓, import pendiente |
+| 1 | Campaign Core | Implemented | CRUD + export + import roundtrip (remap de refs) |
 | 2 | Character System | Partially | Models + UI exist, relationships incomplete |
 | 3 | Session System | Partially | Models + UI exist, session flow partial |
 | 4 | DM Control | Implemented | Dashboard VTT: status, iniciativa, transiciones, recap, notas, dados, TTS |
@@ -366,7 +366,7 @@ Reference: `ROADMAP.md` (22,082 bytes)
 - AI/TTS infrastructure decoupled
 
 ## Gaps
-- Import de campaña pendiente (export ya existe)
+- Import cubre entidades core; scenes/maps/notebook/memory no se exportan aún
 - No real-time sync (WebSocket); polling 16ms en PlayerView
 - `apps/player` / `apps/renderer` placeholders (vista jugador vive en apps/dm por decisión AGENTS.md)
 - AI agents reales: orchestrator stub (fase 12)
@@ -387,7 +387,7 @@ Based on dependency analysis and documentation completeness:
 
 | Priority | System | Rationale |
 |----------|--------|-----------|
-| 1 | Import de campaña | Portabilidad (export ya existe) |
+| 1 | Export/import scenes+maps+notebook | Ampliar roundtrip a todo el contenido |
 | 2 | Asset Browser | DM workflow |
 | 3 | AI Map Analysis | Automation |
 | 4 | Real-time sync (WebSocket) | Base multiplayer |

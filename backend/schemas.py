@@ -48,6 +48,7 @@ class CampaignImport(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     settings_json: dict = {}
+    campaign: Optional[CampaignResponse] = None
     sessions: list[dict] = []
     characters: list[dict] = []
     npcs: list[dict] = []
