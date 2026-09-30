@@ -25,45 +25,45 @@ Reference: `SCENE-GRAPH.md` (29,606 bytes)
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Item System | Planned | Designed in SCENE-GRAPH.md |
-| Layer System | Planned | z-index management defined |
-| zIndex Management | Planned | Per-layer ordering designed |
+| Item System | Implemented | `ItemRenderer.tsx` |
+| Layer System | Partial | z-index parcial en overlays |
+| zIndex Management | Partial | Orden por capas en SceneRenderer |
 | Attachments | Planned | Parent-child relationships defined |
-| Shape Rendering | Planned | SVG/Canvas shapes specified |
-| Event System Integration | Planned | Scene events via bus |
+| Shape Rendering | Implemented | Canvas overlays (fog, walls, lights) |
+| Event System Integration | Implemented | Scene events via bus (`core/events/`) |
 
 ## Map Analysis
 Reference: `MAP-ANALYSIS.md` (20,382 bytes)
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Image Ingestion | Planned | Upload pipeline designed |
-| Grid Detection | Planned | Hough-based algorithm specified |
-| Feature Detection | Planned | Wall/room detection designed |
+| Image Ingestion | Implemented | Upload BG + grid-snap drag/drop |
+| Grid Detection | Partial | Grid manual/snap; auto Hough diseñado |
+| Feature Detection | Partial | Walls manuales via WallDrawer |
 | Semantic Interpretation | Planned | AI-assisted room labeling |
-| DM Authoring Tools | Planned | Manual grid/room tools |
+| DM Authoring Tools | Implemented | WallDrawer, fog tools, markers, lights |
 
 ## Fog of War
 Reference: `FOG-AND-VISIBILITY.md` (15,433 bytes)
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Static Fog | Planned | Pre-drawn fog masks designed |
-| Dynamic Fog | Planned | Runtime fog updates |
-| LoS Raycasting | Planned | Bresenham-based rays |
-| GPU Masking | Planned | WebGL fragment shader approach |
-| DM Fog Tools | Planned | Brush, fill, reveal, hide |
-| Player Visibility | Planned | Per-player fog state |
+| Static Fog | Implemented | `FogOverlay.tsx` + `core/scene/fogMask.ts` |
+| Dynamic Fog | Implemented | Brush/rect updates (`FogBrushCanvas`, `FogRectCanvas`) |
+| LoS Raycasting | Implemented | `core/scene/wall-collision.ts` + raycast (specs verdes) |
+| GPU Masking | Implemented | Mask canvas + overlay en `SceneRenderer.tsx` |
+| DM Fog Tools | Implemented | Brush, fill, reveal, hide en dashboard |
+| Player Visibility | Implemented | Per-player fog vía snapshot polling (PlayerView) |
 
 ## Walls & Line of Sight
 Reference: `WALLS-AND-LINE-OF-SIGHT.md` (21,246 bytes)
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Wall Entities | Planned | Segment-based walls designed |
-| Door System | Planned | Open/close/locked states |
-| LoS Raycasting | Planned | Integrated with wall segments |
-| Visibility Mask | Planned | Cell-based binary mask |
+| Wall Entities | Implemented | `WallDrawer.tsx` + `WallDrawerCanvas` |
+| Door System | Implemented | `WallContextMenu.tsx` (open/close/locked) |
+| LoS Raycasting | Implemented | `core/scene/wall-collision.ts` + rays |
+| Visibility Mask | Implemented | Hybrid shadow geometry (HYBRID-SHADOW-GEOMETRY.md, canon) |
 | Movement Pathfinding | Planned | A* on walkable grid |
 
 ## Lighting System
@@ -71,20 +71,20 @@ Reference: `LIGHTING-SYSTEM.md` (28,550 bytes)
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Light Sources | Planned | Point, area, ambient designed |
-| Light Propagation | Planned | Distance falloff model |
-| Wall Occlusion | Planned | Wall-aware light blocking |
-| DM Lighting Tools | Planned | Place, adjust, remove |
-| Light Presets | Planned | Torch, daylight, moonlight |
+| Light Sources | Implemented | `LightPlaceCanvas.tsx` + `core/scene/light.ts` |
+| Light Propagation | Implemented | `core/scene/light.ts` (glow/falloff) |
+| Wall Occlusion | Implemented | `core/scene/lightOcclusion.ts` |
+| DM Lighting Tools | Implemented | Placement canvas + `/api/.../light-requests` |
+| Light Presets | Partial | Torch/daylight presets parciales |
 
 ## Asset System
 Reference: `ASSET-SYSTEM.md` (19,374 bytes)
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Asset Manifest | Planned | JSON manifest designed |
-| Asset Loading | Planned | Lazy-load pipeline |
-| Asset Browser | Planned | DM asset picker UI |
+| Asset Manifest | Partial | `data/assets/` + `tts_config.json` |
+| Asset Loading | Implemented | Serving vía `/api/static` (imgs, audio, 3D) |
+| Asset Browser | Not Started | DM asset picker UI |
 | AI Generation | Planned | Prompt-based asset creation |
 
 ## 3D Rendering
@@ -92,11 +92,13 @@ Reference: `2D-TO-3D.md` (34,685 bytes), `3D-RENDERER.md` (118 bytes)
 
 | Item | Status | Notes |
 |------|--------|-------|
-| 2D to 3D Mapping | Planned | Height extrusion designed |
-| Camera Systems | Planned | Orbit, pan, zoom |
-| Character Models | Planned | Token-to-3D pipeline |
-| Environment | Planned | Procedural geometry |
-| Fog in 3D | Planned | Volumetric fog approach |
+| 2D to 3D Mapping | Implemented | `SceneRenderer.tsx` levanta escena desde mapa 2D |
+| Camera Systems | Implemented | Movimiento camara en SceneRenderer/PlayerView |
+| Character Models | Implemented | `TokenSprite.tsx` + `TokenModel.tsx` + glow |
+| Environment | Implemented | BG, items, walls, fog en escena 3D |
+| Fog in 3D | Implemented | Overlay de niebla sobre escena (SceneRenderer) |
+
+> Nota: el render 3D vive DENTRO de `apps/dm` (decisión AGENTS.md). `apps/renderer` queda placeholder intencional.
 
 ---
 
@@ -330,20 +332,20 @@ Reference: `ROADMAP.md` (22,082 bytes)
 | Phase | Name | Status | Notes |
 |-------|------|--------|-------|
 | 0 | Foundation | Implemented | Project structure, config, DB init |
-| 1 | Campaign Core | Partially | Models exist, CRUD works, no export/import |
+| 1 | Campaign Core | Partially | CRUD + export ✓, import pendiente |
 | 2 | Character System | Partially | Models + UI exist, relationships incomplete |
 | 3 | Session System | Partially | Models + UI exist, session flow partial |
-| 4 | DM Control | Partially | Dashboard exists, scene control partial |
-| 5 | Scene System | Planned | Scene routes exist, rendering designed |
-| 6 | Renderer | Planned | Three.js deps installed, code minimal |
-| 7 | 2D to 3D | Planned | Documented, not coded |
+| 4 | DM Control | Implemented | Dashboard VTT: status, iniciativa, transiciones, recap, notas, dados, TTS |
+| 5 | Scene System | Implemented | `scene_routes` + SceneRenderer + escena auto-creada al subir BG |
+| 6 | Renderer | Implemented | R3F dentro de apps/dm (SceneRenderer/PlayerView); apps/renderer placeholder |
+| 7 | 2D to 3D | Implemented | Escena 3D desde mapa 2D: walls, items, fog, glow |
 | 8 | Narrative Engine | Partial | Routes exist, AI integration basic |
 | 9 | Event Pipeline | Partial | Event bus exists, extraction partial |
 | 10 | Recap System | Partial | Routes exist, generation via AI |
-| 11 | Memory System | Partial | Routes + memory tiers designed |
+| 11 | Memory System | Implemented | `memory_routes` + tiers + 10 tests e2e |
 | 12 | AI Agents | Stub | Agent routes exist, no real agents |
 | 13 | DM Voice Input | Not Started | No code |
-| 14 | Voice Recap | Partial | TTS routes exist |
+| 14 | Voice Recap | Implemented | TTS completo: `tts_routes`, panel UI, 10 tests e2e |
 | 15 | Atmosphere System | Not Started | No code |
 | 16 | Media System | Not Started | No code |
 | 17 | LAN Mode | Not Started | No code |
@@ -364,14 +366,13 @@ Reference: `ROADMAP.md` (22,082 bytes)
 - AI/TTS infrastructure decoupled
 
 ## Gaps
-- Scene graph not implemented despite detailed design
-- Fog of war not implemented despite detailed design
-- Walls/LoS not implemented despite detailed design
-- Lighting system not implemented despite detailed design
-- 3D renderer is empty despite Three.js being a dependency
-- Player view is empty
-- No real-time sync (WebSocket)
-- No asset loading pipeline
+- Import de campaña pendiente (export ya existe)
+- No real-time sync (WebSocket); polling 16ms en PlayerView
+- `apps/player` / `apps/renderer` placeholders (vista jugador vive en apps/dm por decisión AGENTS.md)
+- AI agents reales: orchestrator stub (fase 12)
+- Grid auto-detection (Hough) diseñado, no implementado — grid manual + snap
+- Asset Browser drag-drop pendiente
+- Voice input DM, atmosphere, media sin código (fases 13/15/16)
 
 ## Documentation Drift
 - `ARCHITECTURE.md` needs update to reflect current state
@@ -386,21 +387,19 @@ Based on dependency analysis and documentation completeness:
 
 | Priority | System | Rationale |
 |----------|--------|-----------|
-| 1 | Scene Graph | Foundational for all rendering |
-| 2 | Basic Item Rendering | First visual output |
-| 3 | Selection System | DM interaction with items |
-| 4 | Basic Wall/Door Entities | Spatial structure |
-| 5 | Map Upload + Grid Detection | First map on screen |
-| 6 | Basic Fog of War | Core VTT feature |
-| 7 | Basic Lighting | Atmosphere |
-| 8 | Asset Browser | DM workflow |
-| 9 | AI Map Analysis | Automation |
-| 10 | 3D Rendering | Enhancement layer |
+| 1 | Import de campaña | Portabilidad (export ya existe) |
+| 2 | Asset Browser | DM workflow |
+| 3 | AI Map Analysis | Automation |
+| 4 | Real-time sync (WebSocket) | Base multiplayer |
+| 5 | AI Agents reales | Fase 12 roadmap |
+| 6 | Voice input / atmosphere / media | Fases 13/15/16 |
+
+> Prioridades 1-10 originales (scene graph → 3D) quedaron cubiertas — ver secciones 2 y 6.
 
 ---
 
 # 9. Last Updated
 
-- **Date**: 2026-09-04
-- **Updated By**: Implementation review
+- **Date**: 2026-09-30
+- **Updated By**: QA debt closure — sync estado real (fog/walls/LoS/lighting/3D implementados en apps/dm)
 - **Trigger**: Documentation audit and codebase scan

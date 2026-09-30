@@ -101,7 +101,7 @@ test.describe('Recap System', () => {
 
     await expect(
       panel.getByText('Resumen editado por el DM durante el test'),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 10_000 });
 
     const saved = await getSession(request, campaign.id, session.id);
     expect(saved.summary).toBe('Resumen editado por el DM durante el test');

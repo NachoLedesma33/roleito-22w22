@@ -4,9 +4,22 @@ const API = 'http://localhost:8000/api';
 
 const DEFAULT_TTS = { provider: 'mock', voice: 'mock-voice-1', speed: 1.0, language: 'es' };
 
+let originalConfig: typeof DEFAULT_TTS | null = null;
+
 test.describe('TTS System', () => {
+  test.beforeAll(async ({ request, authHeaders }) => {
+    const res = await request.get(`${API}/tts/config`, { headers: authHeaders });
+    if (res.ok()) originalConfig = await res.json();
+  });
+
   test.beforeEach(async ({ request, authHeaders }) => {
     await request.put(`${API}/tts/config`, { headers: authHeaders, data: DEFAULT_TTS });
+  });
+
+  test.afterAll(async ({ request, authHeaders }) => {
+    if (originalConfig) {
+      await request.put(`${API}/tts/config`, { headers: authHeaders, data: originalConfig });
+    }
   });
 
   test('TTS1: config default is mock', async ({ request, authHeaders }) => {
