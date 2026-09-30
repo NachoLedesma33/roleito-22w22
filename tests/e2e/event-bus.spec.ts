@@ -42,7 +42,7 @@ test.describe('Event Bus', () => {
     const res = await request.get(`${API}/event-bus/history?event_type=filter.test`);
     expect(res.status()).toBe(200);
     const data = await res.json();
-    expect(data.every((e: any) => e.event_type === 'filter.test')).toBe(true);
+    expect(data.every((e: { event_type: string }) => e.event_type === 'filter.test')).toBe(true);
   });
 
   test('EB5: DELETE history clears events', async ({ request }) => {

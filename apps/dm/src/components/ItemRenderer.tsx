@@ -354,6 +354,39 @@ function ZoneRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, 
     return nodes
   }, [meta.portals, mapWidth, mapHeight, Y])
 
+  const handleClick = useCallback((e: { stopPropagation: () => void }) => {
+    e.stopPropagation()
+    onClick?.()
+  }, [onClick])
+
+  const handleContextMenu = useCallback((e: { stopPropagation: () => void; nativeEvent: MouseEvent }) => {
+    e.stopPropagation()
+    onContextMenu?.(e.nativeEvent)
+  }, [onContextMenu])
+
+  const polygon = useMemo(() => {
+    const shape = item.shape as import('@core/domain/types').ShapePolygon
+    if (shape?.type !== 'polygon') return null
+    const verts: THREE.Vector2[] = []
+    const world: THREE.Vector3[] = []
+    for (let i = 0; i + 1 < shape.points.length; i += 2) {
+      const nx = shape.points[i]
+      const ny = shape.points[i + 1]
+      const wx = (nx - 0.5) * mapWidth - item.x
+      const wz = (ny - 0.5) * mapHeight - item.y
+      verts.push(new THREE.Vector2(wx, -wz))
+      world.push(new THREE.Vector3(wx, outlineY, wz))
+    }
+    const shape3 = new THREE.Shape(verts)
+    const geo = new THREE.ShapeGeometry(shape3, 4)
+    const outlinePts: THREE.Vector3[] = []
+    for (let i = 0; i < world.length; i++) {
+      outlinePts.push(world[i], world[(i + 1) % world.length])
+    }
+    const outlineGeo = new THREE.BufferGeometry().setFromPoints(outlinePts)
+    return { geometry: geo, outlineGeo }
+  }, [item.shape, item.x, item.y, mapWidth, mapHeight, outlineY])
+
   if (item.shape?.type === 'rectangle') {
     const hw = item.width / 2
     const hh = item.height / 2
@@ -386,35 +419,8 @@ function ZoneRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, 
     )
   }
 
-  const shape = item.shape as import('@core/domain/types').ShapePolygon
-  const handleClick = useCallback((e: { stopPropagation: () => void }) => {
-    e.stopPropagation()
-    onClick?.()
-  }, [onClick])
-  const handleContextMenu = useCallback((e: { stopPropagation: () => void; nativeEvent: MouseEvent }) => {
-    e.stopPropagation()
-    onContextMenu?.(e.nativeEvent)
-  }, [onContextMenu])
-  const { geometry, outlineGeo } = useMemo(() => {
-    const verts: THREE.Vector2[] = []
-    const world: THREE.Vector3[] = []
-    for (let i = 0; i + 1 < shape.points.length; i += 2) {
-      const nx = shape.points[i]
-      const ny = shape.points[i + 1]
-      const wx = (nx - 0.5) * mapWidth - item.x
-      const wz = (ny - 0.5) * mapHeight - item.y
-      verts.push(new THREE.Vector2(wx, -wz))
-      world.push(new THREE.Vector3(wx, outlineY, wz))
-    }
-    const shape3 = new THREE.Shape(verts)
-    const geo = new THREE.ShapeGeometry(shape3, 4)
-    const outlinePts: THREE.Vector3[] = []
-    for (let i = 0; i < world.length; i++) {
-      outlinePts.push(world[i], world[(i + 1) % world.length])
-    }
-    const outlineGeo = new THREE.BufferGeometry().setFromPoints(outlinePts)
-    return { geometry: geo, outlineGeo }
-  }, [shape, mapWidth, mapHeight, item.x, item.y])
+  if (!polygon) return null
+  const { geometry, outlineGeo } = polygon
 
   return (
     <group position={groupPos}>

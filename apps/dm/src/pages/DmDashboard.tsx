@@ -123,7 +123,7 @@ export default function DmDashboard() {
   const [useAi, setUseAi] = useState(false);
   const [bgSelector, setBgSelector] = useState<{
     sceneType: string;
-    suggestions: any[];
+    suggestions: { id: string; name: string; style: string; colors: string[] }[];
     dominantColors: string[];
   } | null>(null);
   const [bgCSS, setBgCSS] = useState<string | null>(null);
@@ -809,7 +809,7 @@ export default function DmDashboard() {
           timestamp: Date.now(),
         }])
       }
-    } catch (err) {
+    } catch (_err) {
       setToastQueue((prev) => [...prev.slice(-4), {
         id: `detect-err-${Date.now()}`,
         rollerName: 'Detección',
@@ -1273,7 +1273,7 @@ export default function DmDashboard() {
     const walls = graphRef.getItems()
       .filter((item) => item.metadata.type === 'wall' && item.shape?.type === 'line')
       .map((item) => {
-        const pts = (item.shape as any).points;
+        const pts = (item.shape as { type: 'line'; points: number[] }).points;
         return [pts[0], pts[1], pts[2], pts[3]] as [number, number, number, number];
       });
 
@@ -2755,6 +2755,7 @@ export default function DmDashboard() {
               const sc = sceneChars.find((s) => s.id === selectedTokenId);
               if (!sc) return null;
               const ent = allEntities.find((e) => e.id === sc.entity_id);
+              const win = window as unknown as { __tokenScaleTimer?: ReturnType<typeof setTimeout>; __facingTimer?: ReturnType<typeof setTimeout>; __visionTypeTimer?: ReturnType<typeof setTimeout>; __visionRangeTimer?: ReturnType<typeof setTimeout> };
               return (
                 <div className="mt-2 pt-2 border-t border-[var(--bg-tertiary)]">
                   <div className="flex items-center justify-between mb-1">
@@ -2777,8 +2778,8 @@ export default function DmDashboard() {
                           ? { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: v, move_speed: s.move_speed ?? 1, facing_offset: s.facing_offset ?? 0, vision_type: s.vision_type ?? 'normal', vision_range: s.vision_range ?? 6.0 }
                           : { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: s.facing_offset ?? 0, vision_type: s.vision_type ?? 'normal', vision_range: s.vision_range ?? 6.0 }
                       );
-                      clearTimeout((window as any).__tokenScaleTimer);
-                      (window as any).__tokenScaleTimer = setTimeout(() => {
+                      clearTimeout(win.__tokenScaleTimer);
+                      win.__tokenScaleTimer = setTimeout(() => {
                         api.scenes.updateCharacters(campaignId, activeScene.id, updated).catch(() => {});
                       }, 300);
                     }}
@@ -2805,8 +2806,8 @@ export default function DmDashboard() {
                           ? { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: v, vision_type: s.vision_type ?? 'normal', vision_range: s.vision_range ?? 6.0 }
                           : { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: s.facing_offset ?? 0, vision_type: s.vision_type ?? 'normal', vision_range: s.vision_range ?? 6.0 }
                       );
-                      clearTimeout((window as any).__facingTimer);
-                      (window as any).__facingTimer = setTimeout(() => {
+                      clearTimeout(win.__facingTimer);
+                      win.__facingTimer = setTimeout(() => {
                         api.scenes.updateCharacters(campaignId, activeScene.id, updated).catch(() => {});
                       }, 300);
                     }}
@@ -2830,8 +2831,8 @@ export default function DmDashboard() {
                           ? { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: s.facing_offset ?? 0, vision_type: v, vision_range: s.vision_range ?? 6.0 }
                           : { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: s.facing_offset ?? 0, vision_type: s.vision_type ?? 'normal', vision_range: s.vision_range ?? 6.0 }
                       );
-                      clearTimeout((window as any).__visionTypeTimer);
-                      (window as any).__visionTypeTimer = setTimeout(() => {
+                      clearTimeout(win.__visionTypeTimer);
+                      win.__visionTypeTimer = setTimeout(() => {
                         api.scenes.updateCharacters(campaignId, activeScene.id, updated).catch(() => {});
                       }, 300);
                     }}
@@ -2865,8 +2866,8 @@ export default function DmDashboard() {
                           ? { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: s.facing_offset ?? 0, vision_type: s.vision_type ?? 'normal', vision_range: v }
                           : { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: s.facing_offset ?? 0, vision_type: s.vision_type ?? 'normal', vision_range: s.vision_range ?? 6.0 }
                       );
-                      clearTimeout((window as any).__visionRangeTimer);
-                      (window as any).__visionRangeTimer = setTimeout(() => {
+                      clearTimeout(win.__visionRangeTimer);
+                      win.__visionRangeTimer = setTimeout(() => {
                         api.scenes.updateCharacters(campaignId, activeScene.id, updated).catch(() => {});
                       }, 300);
                     }}

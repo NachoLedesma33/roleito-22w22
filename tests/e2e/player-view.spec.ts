@@ -1,7 +1,6 @@
 import { expect, test } from '../fixtures/campaign-fixture';
 import type { Page } from '@playwright/test';
 import {
-  API_BASE,
   createCharacter,
   createNpc,
   createScene,

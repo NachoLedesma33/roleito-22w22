@@ -91,7 +91,7 @@ test.describe('Canon Manager', () => {
     const res = await request.get(`${API}/canon/${campaignId}?status=APPROVED`);
     expect(res.status()).toBe(200);
     const data = await res.json();
-    expect(data.every((e: any) => e.status === 'APPROVED')).toBe(true);
+    expect(data.every((e: { status: string }) => e.status === 'APPROVED')).toBe(true);
   });
 
   test('CAN8: Non-existent entry returns 404', async ({ request }) => {

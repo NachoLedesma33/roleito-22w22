@@ -99,7 +99,7 @@ export function castRayDDA(
   const targetCellX = Math.floor(tx / cellSize)
   const targetCellY = Math.floor(ty / cellSize)
 
-  let t = 0
+  let t: number
 
   while (cellX !== targetCellX || cellY !== targetCellY) {
     if (tMaxX < tMaxY) {

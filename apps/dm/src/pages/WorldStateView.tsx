@@ -38,7 +38,7 @@ export default function WorldStateView() {
     try {
       setLoading(true);
       const data = await api.worldState.get(campaignId);
-      setState(data);
+      setState(data as WorldState);
       setError('');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo cargar el estado del mundo');

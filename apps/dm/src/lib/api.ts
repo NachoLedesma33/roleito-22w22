@@ -1,3 +1,5 @@
+import type { SceneItem } from '@core/domain/types';
+
 const API_BASE = '/api';
 
 function authHeaders(): Record<string, string> {
@@ -748,19 +750,19 @@ export const api = {
         body: JSON.stringify(data),
       }),
     getItems: (campaignId: string, sceneId: string) =>
-      request<{ items: any[] }>(`/campaigns/${campaignId}/scenes/${sceneId}/items`),
-    saveItems: (campaignId: string, sceneId: string, items: any[]) =>
+      request<{ items: SceneItem[] }>(`/campaigns/${campaignId}/scenes/${sceneId}/items`),
+    saveItems: (campaignId: string, sceneId: string, items: SceneItem[]) =>
       request<Scene>(`/campaigns/${campaignId}/scenes/${sceneId}/items`, {
         method: 'PUT',
         body: JSON.stringify({ items }),
       }),
     detectWalls: (campaignId: string, sceneId: string, mode: string = 'blueprint') =>
-      request<{ items: any[]; wall_count: number; door_count: number; image_size: { width: number; height: number } }>(
+      request<{ items: SceneItem[]; wall_count: number; door_count: number; image_size: { width: number; height: number } }>(
         `/campaigns/${campaignId}/scenes/${sceneId}/detect-walls?mode=${mode}`,
         { method: 'POST' }
       ),
     classify: (campaignId: string, sceneId: string) =>
-      request<{ scene_type: string; confidence: number; dominant_colors: string[]; suggested_backgrounds: any[] }>(
+      request<{ scene_type: string; confidence: number; dominant_colors: string[]; suggested_backgrounds: { id: string; name: string; style: string; colors: string[] }[] }>(
         `/campaigns/${campaignId}/scenes/${sceneId}/classify`,
         { method: 'POST' }
       ),
@@ -830,20 +832,20 @@ export const api = {
 
   memory: {
     get: (campaignId: string) =>
-      request<any>(`/memory/${campaignId}`),
+      request<unknown>(`/memory/${campaignId}`),
     getSession: (campaignId: string, sessionNumber: number) =>
-      request<any>(`/memory/${campaignId}/sessions/${sessionNumber}`),
+      request<unknown>(`/memory/${campaignId}/sessions/${sessionNumber}`),
     search: (campaignId: string, q: string) =>
-      request<any[]>(`/memory/${campaignId}/search?q=${encodeURIComponent(q)}`),
+      request<unknown[]>(`/memory/${campaignId}/search?q=${encodeURIComponent(q)}`),
   },
 
   worldState: {
     get: (campaignId: string) =>
-      request<any>(`/world-state/${campaignId}`),
+      request<unknown>(`/world-state/${campaignId}`),
     snapshots: (campaignId: string) =>
-      request<any>(`/world-state/${campaignId}/snapshots`),
+      request<unknown>(`/world-state/${campaignId}/snapshots`),
     getSnapshot: (campaignId: string, version: number) =>
-      request<any>(`/world-state/${campaignId}/snapshots/${version}`),
+      request<unknown>(`/world-state/${campaignId}/snapshots/${version}`),
   },
 
   rolls: {

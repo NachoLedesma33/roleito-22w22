@@ -46,7 +46,7 @@ test.describe('World State', () => {
 
     const res = await request.get(`${API}/world-state/${campaignId}`);
     const data = await res.json();
-    const charNames = Object.values(data.characters).map((c: any) => c.name);
+    const charNames = Object.values(data.characters).map((c: { name: string }) => c.name);
     expect(charNames).toContain('TestHero');
   });
 
@@ -57,7 +57,7 @@ test.describe('World State', () => {
 
     const res = await request.get(`${API}/world-state/${campaignId}`);
     const data = await res.json();
-    const npcNames = Object.values(data.npcs).map((n: any) => n.name);
+    const npcNames = Object.values(data.npcs).map((n: { name: string }) => n.name);
     expect(npcNames).toContain('TestNPC');
   });
 
@@ -68,7 +68,7 @@ test.describe('World State', () => {
 
     const res = await request.get(`${API}/world-state/${campaignId}`);
     const data = await res.json();
-    const locNames = Object.values(data.locations).map((l: any) => l.name);
+    const locNames = Object.values(data.locations).map((l: { name: string }) => l.name);
     expect(locNames).toContain('TestVillage');
   });
 

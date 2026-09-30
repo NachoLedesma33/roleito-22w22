@@ -2,9 +2,7 @@ import { expect, test } from '../fixtures/auth-fixture';
 import {
   createCharacter,
   createNpc,
-  createScene,
   createSession,
-  seedEvent,
 } from '../helpers/api-helpers';
 
 const API = 'http://localhost:8000/api';
@@ -31,7 +29,7 @@ test.describe('Agent Routes', () => {
     expect(body.data.confidence).toBeGreaterThan(0);
   });
 
-  test('AG2: lore sin campaign devuelve 404', async ({ request, campaign, authHeaders }) => {
+  test('AG2: lore sin campaign devuelve 404', async ({ request, authHeaders }) => {
     const res = await request.post(`${API}/campaigns/nonexistent/agents/lore`, {
       headers: authHeaders,
       data: { question: 'test' },

@@ -17,11 +17,18 @@ interface CampaignMemory {
   campaign_id: string;
   total_sessions: number;
   current_arc: string | null;
-  arcs: any[];
+  arcs: unknown[];
   sessions: SessionMemory[];
   active_threads: string[];
   major_npcs: string[];
   key_locations: string[];
+}
+
+interface MemorySearchResult {
+  session_number: number;
+  event_type: string;
+  description: string;
+  actor: string;
 }
 
 export default function MemoryView() {
@@ -29,14 +36,14 @@ export default function MemoryView() {
   const [memory, setMemory] = useState<CampaignMemory | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<MemorySearchResult[]>([]);
   const [searching, setSearching] = useState(false);
 
   useEffect(() => {
     if (!campaignId) return;
     setLoading(true);
     api.memory.get(campaignId)
-      .then(setMemory)
+      .then((m) => setMemory(m as CampaignMemory))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [campaignId]);
@@ -46,7 +53,7 @@ export default function MemoryView() {
     setSearching(true);
     try {
       const results = await api.memory.search(campaignId, searchQuery);
-      setSearchResults(results);
+      setSearchResults(results as MemorySearchResult[]);
     } catch (e) {
       console.error(e);
     } finally {

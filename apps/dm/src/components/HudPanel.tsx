@@ -75,7 +75,7 @@ const CURSORS: Record<ResizeEdge, string> = {
 // Global minimize registry
 type MinimizedEntry = { panelId: string; title: string; onRestore: () => void };
 let minimizedListeners: Array<() => void> = [];
-let minimizedMap = new Map<string, MinimizedEntry>();
+const minimizedMap = new Map<string, MinimizedEntry>();
 
 function emitMinimizedChange() {
   minimizedListeners.forEach((l) => l());

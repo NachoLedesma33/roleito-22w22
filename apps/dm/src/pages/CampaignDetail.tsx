@@ -27,7 +27,7 @@ export default function CampaignDetail() {
         setCharacters(chars);
         setNpcs(npcList);
         setSessions(sessList);
-        setWorldState(ws);
+        setWorldState(ws as WorldState | null);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));

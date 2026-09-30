@@ -456,7 +456,7 @@ function DragController({
         return;
       }
 
-      let newPos = applyDragPosition(e);
+      const newPos = applyDragPosition(e);
       if (newPos) {
         if (gridSnap && gridSize && gridSize > 0) {
           // Snap to cell CENTER (0.5 offset), matching the reachable-cell

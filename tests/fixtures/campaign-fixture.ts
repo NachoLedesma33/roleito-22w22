@@ -1,4 +1,4 @@
-import { test as base, expect, Page } from '@playwright/test';
+import { test as base, expect } from '@playwright/test';
 import { Campaign, withAuth } from '../helpers/api-helpers';
 
 const API = 'http://localhost:8000/api';

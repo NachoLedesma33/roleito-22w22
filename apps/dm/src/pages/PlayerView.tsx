@@ -15,7 +15,7 @@ import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastC
 import { api, type DiceRollResponse } from '@/lib/api';
 import { checkWallCollision, extractZonePolygons, extractPortals, crossZoneBorder } from '@/lib/wall-collision';
 import { computeVisionRegions, type CharPos } from '@/lib/playerVision';
-import type { VisionConfig } from '@core/domain/types';
+import type { SceneItem, VisionConfig } from '@core/domain/types';
 import type { FogRegion } from '@/lib/fogMask';
 import type { LosJob } from '@/lib/losWorker';
 import { DEFAULT_RENDER_MODE } from '@/lib/overlayY';
@@ -80,7 +80,7 @@ interface JoinData {
   grid_snap: boolean;
   characters: PlayerToken[];
   player_characters: PlayerCharOption[];
-  items: any[];
+  items: SceneItem[];
 }
 
 interface InventoryItem {
@@ -605,9 +605,9 @@ export default function PlayerView() {
     const normZ = (z / mapH) + 0.5;
 
     const walls = (currentData.items ?? [])
-      .filter((item: any) => item.metadata?.type === 'wall' && item.shape?.type === 'line')
-      .map((item: any) => {
-        const pts = item.shape.points;
+      .filter((item) => item.metadata?.type === 'wall' && item.shape?.type === 'line')
+      .map((item) => {
+        const pts = (item.shape as { points: number[] }).points;
         return [pts[0], pts[1], pts[2], pts[3]] as [number, number, number, number];
       });
     if (checkWallCollision(normX, normZ, walls, 0.03)) return;
@@ -774,7 +774,7 @@ export default function PlayerView() {
       if (!currentData || !cur || cur.kind !== 'character') return;
 
       const sc = currentData.characters.find(
-        (ch: any) => ch.type === 'character' && currentData.player_characters.some((p: any) => p.id === ch.entity_id && p.id === cur.id)
+        (ch) => ch.type === 'character' && currentData.player_characters.some((p) => p.id === ch.entity_id && p.id === cur.id)
       );
       if (!sc) return;
 
@@ -839,9 +839,9 @@ export default function PlayerView() {
         const normX = (x / mapW) + 0.5;
         const normZ = (z / mapH) + 0.5;
         const walls = (currentData.items ?? [])
-          .filter((item: any) => item.metadata?.type === 'wall' && item.shape?.type === 'line')
-          .map((item: any) => {
-            const pts = item.shape.points;
+          .filter((item) => item.metadata?.type === 'wall' && item.shape?.type === 'line')
+          .map((item) => {
+            const pts = (item.shape as { points: number[] }).points;
             return [pts[0], pts[1], pts[2], pts[3]] as [number, number, number, number];
           });
         if (checkWallCollision(normX, normZ, walls, 0.03)) {

@@ -159,16 +159,8 @@ export function isInLoS(
   if (dist < 1e-9) return true
 
   const steps = Math.ceil(dist / 0.02)
-  const xInc = dx / steps
-  const yInc = dy / steps
-
-  let x = ox
-  let y = oy
 
   for (let i = 0; i < steps; i++) {
-    x += xInc
-    y += yInc
-
     for (const occ of occluders) {
       const ex = occ.b[0] - occ.a[0]
       const ey = occ.b[1] - occ.a[1]
