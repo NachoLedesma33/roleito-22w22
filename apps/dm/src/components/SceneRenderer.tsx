@@ -1430,6 +1430,8 @@ function ElectricAura({ scale, topY }: { scale: number; topY: number }) {
   );
 }
 
+const GLOW_STATUSES = new Set(['burning', 'cursed', 'shocked', 'concentrating', 'charmed', 'blessed']);
+
 function BloomPass({ strength = 0.55, radius = 0.6, threshold = 1.1 }: { strength?: number; radius?: number; threshold?: number }) {
   const { gl, scene, camera, size } = useThree();
   const composerRef = useRef<EffectComposer | null>(null);
@@ -1916,6 +1918,10 @@ export default function SceneRenderer({
   renderMode = '2d',
 }: SceneRendererProps) {
   const visibleChars = useMemo(() => characters.filter((c) => c.visible), [characters]);
+  const hasGlow = useMemo(
+    () => visibleChars.some((c) => (c.statuses ?? []).some((s) => GLOW_STATUSES.has(s))),
+    [visibleChars],
+  );
   const renderItems = useMemo(() => {
     return items
       .filter((i) => i.visible && (showZones || i.metadata.type !== 'zone'))
@@ -2144,7 +2150,7 @@ export default function SceneRenderer({
         minDistance={3}
         maxDistance={maxDistance}
       />
-      <BloomPass />
+      {hasGlow && <BloomPass />}
     </Canvas>
   );
 }
