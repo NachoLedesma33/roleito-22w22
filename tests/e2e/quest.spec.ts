@@ -24,14 +24,14 @@ test.describe('Quest Board', () => {
 
     await page.goto(`/campaigns/${campaign.id}`);
     await expect(page.getByText('On Scene (1)')).toBeVisible({ timeout: 10_000 });
-    await page.getByTitle('Quest Board').click();
-    await page.getByRole('button', { name: '＋ New quest' }).click();
-    await page.getByPlaceholder('Quest title').fill('Recuperar el Barril');
-    await page.getByPlaceholder('Description').fill('El gremio exige rescate.');
-    await page.getByRole('button', { name: '＋ objective' }).click();
-    await page.getByPlaceholder('Objective 1').fill('Hablar con Grimble');
-    await page.getByPlaceholder('Reward (e.g. 100 gp)').fill('100 gp');
-    await page.getByRole('button', { name: 'Save' }).click();
+    await page.getByTitle('Tablón de misiones').click();
+    await page.getByRole('button', { name: '＋ Nueva misión' }).click();
+    await page.getByPlaceholder('Título de la misión').fill('Recuperar el Barril');
+    await page.getByPlaceholder('Descripción').fill('El gremio exige rescate.');
+    await page.getByRole('button', { name: '＋ objetivo' }).click();
+    await page.getByPlaceholder('Objetivo 1').fill('Hablar con Grimble');
+    await page.getByPlaceholder('Recompensa (ej: 100 po)').fill('100 gp');
+    await page.getByRole('button', { name: 'Guardar' }).click();
     await expect(page.getByText('Recuperar el Barril')).toBeVisible();
     await expect(page.getByText('Hablar con Grimble')).toBeVisible();
 
@@ -48,7 +48,6 @@ test.describe('Quest Board', () => {
   });
 
   test('Q2: completed va a Archivo, draft nunca aparece al jugador', async ({
-    page,
     campaign,
     request,
     browser,
@@ -120,15 +119,15 @@ test.describe('Quest Board', () => {
 
     await page.goto(`/campaigns/${campaign.id}`);
     await expect(page.getByText('On Scene (1)')).toBeVisible({ timeout: 10_000 });
-    await page.getByTitle('Quest Board').click();
-    await page.getByTitle('Visible to players').click();
-    await expect(page.getByTitle('Hidden from players')).toBeVisible();
+    await page.getByTitle('Tablón de misiones').click();
+    await page.getByTitle('Visible para jugadores').click();
+    await expect(page.getByTitle('Oculta para jugadores')).toBeVisible();
 
     await p.getByRole('button', { name: '⟳ Recargar' }).click();
     await expect(p.getByText('El último refugio')).toHaveCount(0);
 
-    await page.getByTitle('Hidden from players').click();
-    await expect(page.getByTitle('Visible to players')).toBeVisible();
+    await page.getByTitle('Oculta para jugadores').click();
+    await expect(page.getByTitle('Visible para jugadores')).toBeVisible();
 
     await p.getByRole('button', { name: '⟳ Recargar' }).click();
     await expect(p.getByText('El último refugio')).toBeVisible();

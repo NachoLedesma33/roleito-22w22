@@ -37,9 +37,9 @@ async function startZoneTool(
   page: import('@playwright/test').Page,
   mode: 'rect' | 'polygon',
 ) {
-  await page.getByRole('button', { name: /Build/i }).click();
+  await page.getByRole('button', { name: /Construir/i }).click();
   await page
-    .getByRole('button', { name: mode === 'rect' ? /Zone \(rect\)/ : /Zone \(polygon\)/ })
+    .getByRole('button', { name: mode === 'rect' ? /Zona \(rect\)/ : /Zona \(polígono\)/ })
     .click();
 }
 
@@ -60,7 +60,7 @@ test.describe('Zones (Build menu)', () => {
 
     const canvas = await openSceneWithBackground(page, campaign.id, scene.id);
     await startZoneTool(page, 'rect');
-    await expect(page.getByText('Click-drag to draw zone rect')).toBeVisible();
+    await expect(page.getByText('Arrastrá para dibujar rect de zona')).toBeVisible();
 
     const box = await canvas.boundingBox();
     if (!box) throw new Error('canvas sin boundingBox');
@@ -101,7 +101,7 @@ test.describe('Zones (Build menu)', () => {
 
     const canvas = await openSceneWithBackground(page, campaign.id, scene.id);
     await startZoneTool(page, 'polygon');
-    await expect(page.getByText('Click to place vertices')).toBeVisible();
+    await expect(page.getByText('Clic para colocar vértices')).toBeVisible();
 
     const box = await canvas.boundingBox();
     if (!box) throw new Error('canvas sin boundingBox');
