@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -180,6 +180,68 @@ async def compute_player_revision(db: AsyncSession, campaign_id: str) -> str:
         parts.append(repr(tuple(last_roll)))
 
     return hashlib.sha1("|".join(parts).encode()).hexdigest()[:16]
+
+
+class CampaignWSManager:
+    """Room por campaign_id: broadcast de estados a jugadores conectados."""
+
+    def __init__(self) -> None:
+        self._rooms: dict[str, set[WebSocket]] = {}
+
+    async def connect(self, campaign_id: str, ws: WebSocket) -> None:
+        await ws.accept()
+        self._rooms.setdefault(campaign_id, set()).add(ws)
+
+    def disconnect(self, campaign_id: str, ws: WebSocket) -> None:
+        room = self._rooms.get(campaign_id)
+        if not room:
+            return
+        room.discard(ws)
+        if not room:
+            self._rooms.pop(campaign_id, None)
+
+    async def broadcast(self, campaign_id: str, message: dict) -> None:
+        room = self._rooms.get(campaign_id)
+        if not room:
+            return
+        dead: list[WebSocket] = []
+        for ws in list(room):
+            try:
+                await ws.send_json(message)
+            except Exception:
+                dead.append(ws)
+        for ws in dead:
+            room.discard(ws)
+        if dead and not room:
+            self._rooms.pop(campaign_id, None)
+
+
+ws_manager = CampaignWSManager()
+
+
+async def broadcast_revision(db: AsyncSession, campaign_id: str) -> None:
+    """Empuja la revisión actual a los players conectados (wake de snapshot)."""
+    revision = await compute_player_revision(db, campaign_id)
+    await ws_manager.broadcast(campaign_id, {"type": "revision", "revision": revision})
+
+
+@campaigns_router.websocket("/ws/invite/{code}")
+async def invite_ws(
+    websocket: WebSocket,
+    code: str,
+    db: AsyncSession = Depends(get_session),
+):
+    result = await db.execute(select(Campaign).where(Campaign.invite_code == code))
+    campaign = result.scalar_one_or_none()
+    if not campaign:
+        await websocket.close(code=4404)
+        return
+    await ws_manager.connect(campaign.id, websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        ws_manager.disconnect(campaign.id, websocket)
 
 
 @campaigns_router.post("/campaigns", response_model=CampaignResponse)

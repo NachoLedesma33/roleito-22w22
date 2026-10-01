@@ -13,6 +13,7 @@ from schemas import (
 )
 import os
 import uuid
+from routes import broadcast_revision
 
 router = APIRouter(tags=["characters", "npcs"])
 
@@ -179,6 +180,7 @@ async def update_character(
 
     await db.commit()
     await db.refresh(char)
+    await broadcast_revision(db, campaign_id)
     return apply_vida_response(char)
 
 
@@ -291,6 +293,7 @@ async def update_npc(
 
     await db.commit()
     await db.refresh(npc)
+    await broadcast_revision(db, campaign_id)
     return apply_npc_vida_response(npc)
 
 

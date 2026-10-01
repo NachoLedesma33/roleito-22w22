@@ -305,44 +305,88 @@ export default function PlayerView() {
     if (!code || !data) return;
     let cancelled = false;
     let timer: number;
+    let ws: WebSocket | null = null;
 
-    const tick = async () => {
+    const applyRevision = async (revision: string) => {
+      if (cancelled) return;
+      if (revision !== lastRevRef.current) {
+        lastRevRef.current = revision;
+        const snap = await fetchSnapshot();
+        if (cancelled) return;
+        applySnapshot(snap);
+
+        const c = choiceRef.current;
+        if (c?.kind === 'character') {
+          fetchMyChar(snap.campaign_id, c.id).then((ch) => {
+            if (ch) {
+              setMyChar(ch);
+              syncNotesDraft(ch);
+            }
+          });
+        }
+      }
+    };
+
+    const pollRevision = async () => {
       try {
         const res = await fetch(`${API_BASE}/campaigns/invite/${code}/revision`);
         if (!res.ok) throw new Error('revision failed');
         const { revision } = (await res.json()) as { revision: string };
         if (cancelled) return;
         setLive(true);
-
-        if (revision !== lastRevRef.current) {
-          lastRevRef.current = revision;
-          const snap = await fetchSnapshot();
-          if (cancelled) return;
-          applySnapshot(snap);
-
-          const c = choiceRef.current;
-          if (c?.kind === 'character') {
-            fetchMyChar(snap.campaign_id, c.id).then((ch) => {
-              if (ch) {
-                setMyChar(ch);
-                syncNotesDraft(ch);
-              }
-            });
-          }
-
-        }
+        await applyRevision(revision);
       } catch {
         if (!cancelled) setLive(false);
       }
-      if (!cancelled) timer = window.setTimeout(tick, POLL_MS);
     };
 
+    const tick = async () => {
+      if (ws && ws.readyState === WebSocket.OPEN) return; // WS cubre el sync
+      if (!ws || ws.readyState === WebSocket.CLOSED) connectWs();
+      await pollRevision();
+      if (!cancelled && !(ws && ws.readyState === WebSocket.OPEN)) {
+        timer = window.setTimeout(tick, POLL_MS);
+      }
+    };
+
+    const connectWs = () => {
+      if (cancelled) return;
+      if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
+      const sock = new WebSocket(`${API_BASE.replace(/^http/, 'ws')}/ws/invite/${code}`);
+      ws = sock;
+      sock.onopen = () => {
+        if (cancelled) return;
+        setLive(true);
+        void pollRevision();
+      };
+      sock.onmessage = (ev) => {
+        if (cancelled) return;
+        try {
+          const msg = JSON.parse(ev.data as string) as { type?: string; revision?: string };
+          if (msg.type === 'revision' && msg.revision) {
+            setLive(true);
+            void applyRevision(msg.revision);
+          }
+        } catch {
+          // mensaje no JSON: ignorar
+        }
+      };
+      sock.onclose = () => {
+        if (cancelled) return;
+        if (ws === sock) ws = null;
+        setLive(false);
+        if (!cancelled) timer = window.setTimeout(tick, POLL_MS);
+      };
+    };
+
+    connectWs();
     timer = window.setTimeout(tick, POLL_MS);
     return () => {
       cancelled = true;
       clearTimeout(timer);
+      if (ws) ws.close();
     };
-  }, [code, data, fetchSnapshot, applySnapshot, fetchMyChar]);
+  }, [code, data, fetchSnapshot, applySnapshot, fetchMyChar, syncNotesDraft]);
 
   useEffect(() => {
     if (!code || !data) return;

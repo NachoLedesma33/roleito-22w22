@@ -278,4 +278,39 @@ test.describe('Player View', () => {
     expect(content).toContain('Cedric');
     expect(content).toContain('Vigor');
   });
+
+  test('PV11: WebSocket — push de revisión sin polling de 16ms', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    const { scene, char, npc } = await setupActiveSceneWithTokens(request, campaign.id);
+    const code = await generateInviteCode(request, campaign.id);
+
+    let revReqs = 0;
+    await page.route('**/campaigns/invite/*/revision', async (route) => {
+      revReqs += 1;
+      await route.continue();
+    });
+
+    await page.goto(`/campaigns/join/${code}`);
+    await expect(page.getByTestId('on-scene-list')).toContainText('On Scene (2)');
+
+    // dejar que el WS abra y el polling inicial se asiente
+    await page.waitForTimeout(2000);
+    const baseline = revReqs;
+
+    // con WS activo no debe haber polling periódico de revisión
+    await page.waitForTimeout(2000);
+    expect(revReqs).toBe(baseline);
+
+    // mutación del DM → el WS despierta al player con un solo chequeo
+    await seedTokens(request, campaign.id, scene.id, [
+      { entityType: 'character', entityId: char.id, x: 2, z: 2 },
+      { entityType: 'npc', entityId: npc.id, x: -1, z: 0 },
+    ]);
+    await page.waitForTimeout(1500);
+    expect(revReqs).toBeGreaterThan(baseline);
+    await expect(page.getByTestId('on-scene-list')).toContainText('On Scene (2)');
+  });
 });

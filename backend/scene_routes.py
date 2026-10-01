@@ -16,6 +16,7 @@ import json
 from pathlib import Path
 
 from vault import get_api_key
+from routes import broadcast_revision
 
 router = APIRouter(tags=["scenes"])
 
@@ -166,6 +167,7 @@ async def sync_scene(
 
     await db.commit()
     await db.refresh(scene)
+    await broadcast_revision(db, campaign_id)
     return scene
 
 
@@ -220,6 +222,7 @@ async def save_scene_items(
     scene.items_json = json.dumps(data.get("items", []))
     await db.commit()
     await db.refresh(scene)
+    await broadcast_revision(db, campaign_id)
     return scene
 
 
@@ -459,6 +462,7 @@ async def update_scene_characters(
     await db.commit()
     for sc in created:
         await db.refresh(sc)
+    await broadcast_revision(db, campaign_id)
     return [_sc_response(sc) for sc in created]
 
 
@@ -562,4 +566,5 @@ async def player_move_character(
 
     await db.commit()
     await db.refresh(sc)
+    await broadcast_revision(db, campaign_id)
     return _sc_response(sc)

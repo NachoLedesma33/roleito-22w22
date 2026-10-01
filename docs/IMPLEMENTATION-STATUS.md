@@ -53,7 +53,7 @@ Reference: `FOG-AND-VISIBILITY.md` (15,433 bytes)
 | LoS Raycasting | Implemented | `core/scene/wall-collision.ts` + raycast (specs verdes) |
 | GPU Masking | Implemented | Mask canvas + overlay en `SceneRenderer.tsx` |
 | DM Fog Tools | Implemented | Brush, fill, reveal, hide en dashboard |
-| Player Visibility | Implemented | Per-player fog vía snapshot polling (PlayerView) |
+| Player Visibility | Implemented | Per-player fog vía snapshot push por WebSocket (fallback polling si WS cae) |
 
 ## Walls & Line of Sight
 Reference: `WALLS-AND-LINE-OF-SIGHT.md` (21,246 bytes)
@@ -368,7 +368,7 @@ Reference: `ROADMAP.md` (22,082 bytes)
 ## Gaps
 - Import cubre entidades core + VTT + assets binarios (base64 ≤8MB, refs re-absolutizadas); combat/dice/quests/calendar y Asset table rows NO viajan aún
 - Ref IDs dentro de `items_json` de escena pasan crudos (sin remap interno)
-- No real-time sync (WebSocket); polling 16ms en PlayerView
+- Real-time sync (WebSocket) **implementado**: `/api/ws/invite/{code}` (room por campaña) empuja revisión tras mutaciones player-visible (scene sync/items/characters/move, character/npc PUT); PlayerView escucha push con fallback de polling 16ms solo si el WS no conecta. DM dashboard sigue polling 100ms (no cubierto)
 - `apps/player` / `apps/renderer` placeholders (vista jugador vive en apps/dm por decisión AGENTS.md)
 - AI agents reales: orchestrator stub (fase 12)
 - Grid auto-detection (Hough) diseñado, no implementado — grid manual + snap
@@ -387,17 +387,18 @@ Based on dependency analysis and documentation completeness:
 
 | Priority | System | Rationale |
 |----------|--------|-----------|
-| 1 | Real-time sync (WebSocket) | Base multiplayer |
-| 2 | AI Map Analysis | Automation |
-| 3 | AI Agents reales | Fase 12 roadmap |
-| 4 | Voice input / atmosphere / media | Fases 13/15/16 |
+| 1 | AI Map Analysis | Automation |
+| 2 | AI Agents reales | Fase 12 roadmap |
+| 3 | Voice input / atmosphere / media | Fases 13/15/16 |
 
+> Real-time sync (WebSocket) completado — ver secciones 2 y 6.
+>
 > Prioridades 1-10 originales (scene graph → 3D) quedaron cubiertas — ver secciones 2 y 6.
 
 ---
 
 # 9. Last Updated
 
-- **Date**: 2026-09-30
-- **Updated By**: QA debt closure — sync estado real (fog/walls/LoS/lighting/3D implementados en apps/dm)
-- **Trigger**: Documentation audit and codebase scan
+- **Date**: 2026-10-01
+- **Updated By**: Real-time sync (WebSocket) — push de revisión a PlayerView + fallback polling
+- **Trigger**: Roadmap fase WebSocket sync (impl-order row 1)
