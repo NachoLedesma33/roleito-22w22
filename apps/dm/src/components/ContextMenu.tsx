@@ -44,6 +44,7 @@ export default function ContextMenu({ x, y, items, onClose }: ContextMenuProps) 
   return (
     <div
       ref={menuRef}
+      data-testid="context-menu"
       className="fixed z-50 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded-lg shadow-xl py-1 min-w-[180px] max-h-[70vh] overflow-y-auto animate-in fade-in"
       style={{ left: adjustedX, top: adjustedY }}
     >

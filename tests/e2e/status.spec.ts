@@ -40,7 +40,7 @@ async function openTokenMenu(
   expect(box).not.toBeNull();
   // El sprite del token compite con el piso en el hit-test del centro; probar
   // varios offsets verticales hasta que abra el menú del token.
-  const menu = page.locator('div.fixed.z-50').first();
+  const menu = page.getByTestId('context-menu').first();
   for (const dy of [0, -24, -48, 24, 48, -72, 72]) {
     await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2 + dy, {
       button: 'right',
