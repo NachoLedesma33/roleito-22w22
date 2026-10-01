@@ -264,6 +264,25 @@ async def invite_ws(
         ws_manager.disconnect(campaign.id, websocket)
 
 
+@campaigns_router.websocket("/ws/campaigns/{campaign_id}")
+async def campaign_ws(
+    websocket: WebSocket,
+    campaign_id: str,
+    db: AsyncSession = Depends(get_session),
+):
+    result = await db.execute(select(Campaign).where(Campaign.id == campaign_id))
+    campaign = result.scalar_one_or_none()
+    if not campaign:
+        await websocket.close(code=4404)
+        return
+    await ws_manager.connect(campaign.id, websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        ws_manager.disconnect(campaign.id, websocket)
+
+
 @campaigns_router.post("/campaigns", response_model=CampaignResponse)
 async def create_campaign(
     data: CampaignCreate,

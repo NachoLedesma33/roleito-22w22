@@ -112,6 +112,8 @@ export default function DmDashboard() {
   const [zoneContextMenu, setZoneContextMenu] = useState<{ x: number; y: number; itemId: string } | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [buildMenuOpen, setBuildMenuOpen] = useState(false);
+  const [lightingMenuRect, setLightingMenuRect] = useState<{ left: number; top: number } | null>(null);
+  const [weatherMenuRect, setWeatherMenuRect] = useState<{ left: number; top: number } | null>(null);
   const [lightContextMenu, setLightContextMenu] = useState<{ x: number; y: number; itemId: string } | null>(null);
   const [fogContextMenu, setFogContextMenu] = useState<{ x: number; y: number; itemId: string } | null>(null);
   const [, setUndoBump] = useState(0);
@@ -147,6 +149,7 @@ export default function DmDashboard() {
   const sceneCharsRef = useRef(sceneChars);
   sceneCharsRef.current = sceneChars;
   const lastLocalChangeRef = useRef(0);
+  const wsOpenRef = useRef(false);
 
   useEffect(() => {
     if (!campaignId) return;
@@ -181,15 +184,66 @@ export default function DmDashboard() {
   useEffect(() => {
     if (!campaignId || !activeScene) return;
     let cancelled = false;
+    let ws: WebSocket | null = null;
+    let reconnectTimer: number;
+    const wsUrl = '/api'.replace(/^http/, 'ws') + `/ws/campaigns/${campaignId}`;
+
+    const connectWs = () => {
+      if (cancelled) return;
+      if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
+      const sock = new WebSocket(wsUrl);
+      ws = sock;
+      sock.onopen = () => {
+        if (!cancelled) wsOpenRef.current = true;
+      };
+      sock.onmessage = async (ev) => {
+        if (cancelled) return;
+        try {
+          const msg = JSON.parse(ev.data as string) as { type?: string };
+          if (msg.type === 'revision' && Date.now() - lastLocalChangeRef.current > 500) {
+            const sc = await api.scenes.getCharacters(campaignId, activeScene.id);
+            if (!cancelled) setSceneChars(sc);
+          }
+        } catch {
+          // mensaje no JSON: ignorar
+        }
+      };
+      sock.onclose = () => {
+        if (cancelled) return;
+        if (ws === sock) ws = null;
+        wsOpenRef.current = false;
+        reconnectTimer = window.setTimeout(connectWs, 1000);
+      };
+      sock.onerror = () => {
+        if (ws === sock) sock.close();
+      };
+    };
+
+    connectWs();
+    return () => {
+      cancelled = true;
+      clearTimeout(reconnectTimer);
+      wsOpenRef.current = false;
+      if (ws) ws.close();
+    };
+  }, [campaignId, activeScene]);
+
+  useEffect(() => {
+    if (!campaignId || !activeScene) return;
+    let cancelled = false;
     let timer: number;
     const poll = async () => {
+      if (wsOpenRef.current) {
+        if (!cancelled) timer = window.setTimeout(poll, 1500);
+        return;
+      }
       try {
         const sc = await api.scenes.getCharacters(campaignId, activeScene.id);
         if (!cancelled && Date.now() - lastLocalChangeRef.current > 500) setSceneChars(sc);
       } catch {}
-      if (!cancelled) timer = window.setTimeout(poll, 100);
+      if (!cancelled) timer = window.setTimeout(poll, 1500);
     };
-    timer = window.setTimeout(poll, 100);
+    timer = window.setTimeout(poll, 1500);
     return () => { cancelled = true; clearTimeout(timer); };
   }, [campaignId, activeScene]);
 
@@ -1724,6 +1778,7 @@ export default function DmDashboard() {
   }
 
   const sceneIndex = activeScene ? scenes.findIndex((s) => s.id === activeScene.id) + 1 : 0;
+  
 
   return (
     <div className="h-screen flex flex-col bg-black overflow-hidden select-none">
@@ -2301,11 +2356,20 @@ export default function DmDashboard() {
           Sugerir fondo
         </button>
 
-        <div className="relative group shrink-0">
+        <div
+          className="relative group shrink-0"
+          onMouseEnter={(e) => {
+            const r = e.currentTarget.getBoundingClientRect();
+            setLightingMenuRect({ left: Math.max(8, r.right - 150), top: r.bottom - 2 });
+          }}
+        >
           <button className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
             {{ neutral: 'Neutra', dark: 'Oscura', dim: 'Tenue', bright: 'Brillante', torchlight: 'Antorcha' }[activeScene?.lighting || 'neutral'] || activeScene?.lighting || 'Neutra'} ▾
           </button>
-          <div className="absolute right-0 top-full mt-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+          <div
+            className="fixed bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 min-w-[150px] py-0.5"
+            style={{ left: lightingMenuRect?.left ?? -9999, top: lightingMenuRect?.top ?? -9999 }}
+          >
             {['neutral', 'dark', 'dim', 'bright', 'torchlight'].map((mode) => (
               <button
                 key={mode}
@@ -2320,7 +2384,13 @@ export default function DmDashboard() {
           </div>
         </div>
 
-        <div className="relative group shrink-0">
+        <div
+          className="relative group shrink-0"
+          onMouseEnter={(e) => {
+            const r = e.currentTarget.getBoundingClientRect();
+            setWeatherMenuRect({ left: Math.max(8, r.right - 170), top: r.bottom - 2 });
+          }}
+        >
           <button
             className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             data-testid="weather-select"
@@ -2328,7 +2398,10 @@ export default function DmDashboard() {
           >
             {(activeScene?.weather && WEATHER_META[activeScene.weather] ? WEATHER_META[activeScene.weather].label : WEATHER_NONE_LABEL)} ▾
           </button>
-          <div className="absolute right-0 top-full mt-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+          <div
+            className="fixed bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 min-w-[170px] py-0.5"
+            style={{ left: weatherMenuRect?.left ?? -9999, top: weatherMenuRect?.top ?? -9999 }}
+          >
             <button
               onClick={() => handleChangeWeather(null)}
               className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${
