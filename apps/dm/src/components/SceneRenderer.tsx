@@ -98,6 +98,7 @@ interface SceneRendererProps {
   lightAttach?: { lightId: string | null } | null;
   tokenPlace?: { entity_type: string; entity_id: string } | null;
   onTokenPlace?: (entityType: string, entityId: string, x: number, z: number) => void;
+  onAssetDrop?: (asset: { name: string; url: string; assetId: string }, x: number, z: number) => void;
   renderMode?: import('@/lib/overlayY').RenderMode;
 }
 
@@ -317,6 +318,7 @@ function DragController({
   onTokenDrop,
   onTokenDrag,
   onTokenPlace,
+  onAssetDrop,
   gridSize,
   gridSnap,
   otherTokens,
@@ -324,6 +326,7 @@ function DragController({
   onTokenDrop?: (sceneCharId: string, x: number, z: number) => void;
   onTokenDrag?: (sceneCharId: string, x: number, z: number) => void;
   onTokenPlace?: (entityType: string, entityId: string, x: number, z: number) => void;
+  onAssetDrop?: (asset: { name: string; url: string; assetId: string }, x: number, z: number) => void;
   gridSize?: number;
   gridSnap?: boolean;
   otherTokens?: Array<{ sceneCharId: string; x: number; z: number; tokenScale?: number }>;
@@ -495,7 +498,7 @@ function DragController({
 
     const onDragOver = (e: DragEvent) => {
       const types = e.dataTransfer?.types ?? [];
-      if (types.includes('roleito/token')) {
+      if (types.includes('roleito/token') || types.includes('roleito/asset')) {
         e.preventDefault();
         e.dataTransfer!.dropEffect = 'copy';
       }
@@ -503,12 +506,33 @@ function DragController({
 
     const onDrop = (e: DragEvent) => {
       const raw = e.dataTransfer?.getData('roleito/token');
-      if (!raw) return;
+      if (raw) {
+        e.preventDefault();
+        const sep = raw.indexOf(':');
+        if (sep < 0) return;
+        const entityType = raw.slice(0, sep);
+        const entityId = raw.slice(sep + 1);
+        const hit = getGroundPoint(e.clientX, e.clientY);
+        if (!hit) return;
+        const pos = clampToBackground(hit);
+        if (gridSnap && gridSize && gridSize > 0) {
+          pos.x = (Math.round(pos.x / gridSize - 0.5) + 0.5) * gridSize;
+          pos.z = (Math.round(pos.z / gridSize - 0.5) + 0.5) * gridSize;
+        }
+        onTokenPlace?.(entityType, entityId, pos.x, pos.z);
+        return;
+      }
+
+      const assetRaw = e.dataTransfer?.getData('roleito/asset');
+      if (!assetRaw) return;
       e.preventDefault();
-      const sep = raw.indexOf(':');
-      if (sep < 0) return;
-      const entityType = raw.slice(0, sep);
-      const entityId = raw.slice(sep + 1);
+      let payload: { name: string; url: string; assetId: string } | null;
+      try {
+        payload = JSON.parse(assetRaw);
+      } catch {
+        payload = null;
+      }
+      if (!payload || !payload.url) return;
       const hit = getGroundPoint(e.clientX, e.clientY);
       if (!hit) return;
       const pos = clampToBackground(hit);
@@ -516,7 +540,7 @@ function DragController({
         pos.x = (Math.round(pos.x / gridSize - 0.5) + 0.5) * gridSize;
         pos.z = (Math.round(pos.z / gridSize - 0.5) + 0.5) * gridSize;
       }
-      onTokenPlace?.(entityType, entityId, pos.x, pos.z);
+      onAssetDrop?.(payload, pos.x, pos.z);
     };
 
     canvas.addEventListener('pointermove', onPointerMove);
@@ -531,7 +555,7 @@ function DragController({
       canvas.removeEventListener('dragover', onDragOver);
       canvas.removeEventListener('drop', onDrop);
     };
-  }, [gl, getGroundPoint, clampToBackground, onTokenDrop, onTokenDrag, onTokenPlace, controls, scene, gridSize, gridSnap, otherTokens]);
+  }, [gl, getGroundPoint, clampToBackground, onTokenDrop, onTokenDrag, onTokenPlace, onAssetDrop, controls, scene, gridSize, gridSnap, otherTokens]);
 
   // Expose startDrag via a global function on the canvas.
   // Mutating the external DOM canvas node inside an effect is intentional:
@@ -1915,6 +1939,7 @@ export default function SceneRenderer({
   lightAttach = null,
   tokenPlace = null,
   onTokenPlace,
+  onAssetDrop,
   renderMode = '2d',
 }: SceneRendererProps) {
   const visibleChars = useMemo(() => characters.filter((c) => c.visible), [characters]);
@@ -2017,6 +2042,7 @@ export default function SceneRenderer({
           onTokenDrop={onTokenDrop}
           onTokenDrag={onTokenDrag}
           onTokenPlace={onTokenPlace}
+          onAssetDrop={onAssetDrop}
           gridSize={gridSize}
           gridSnap={gridSnap}
           otherTokens={visibleChars.map((c) => ({

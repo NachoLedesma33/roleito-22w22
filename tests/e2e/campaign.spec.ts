@@ -1,5 +1,5 @@
 import { expect, test } from '../fixtures/campaign-fixture';
-import { PNG_1PX } from '../helpers/api-helpers';
+import { PNG_1PX, createScene } from '../helpers/api-helpers';
 
 test.describe('Campaign CRUD', () => {
   test('C1: crea campaña desde la UI y redirige al dashboard', async ({ page }) => {
@@ -364,6 +364,86 @@ test.describe('Campaign Import', () => {
     await request.delete(`http://localhost:8000/api/campaigns/${imported.id}`, {
       headers: authHeaders,
     });
+    await request.delete(`http://localhost:8000/api/campaigns/${camp.id}`, {
+      headers: authHeaders,
+    });
+  });
+
+  test('C12: recurso arrastrado al mapa crea item imagen', async ({ page, request, authHeaders }) => {
+    const res = await request.post('http://localhost:8000/api/campaigns', {
+      headers: authHeaders,
+      data: { name: `Drag Asset ${Date.now()}` },
+    });
+    expect(res.status()).toBe(200);
+    const camp = await res.json();
+
+    const scene = await createScene(request, camp.id, 'Escena Assets');
+
+    const bgRes = await request.post(
+      `http://localhost:8000/api/campaigns/${camp.id}/scenes/${scene.id}/upload-background`,
+      {
+        headers: authHeaders,
+        multipart: { file: { name: 'fondo.png', mimeType: 'image/png', buffer: PNG_1PX } },
+      },
+    );
+    expect(bgRes.status()).toBe(200);
+
+    const uploadRes = await request.post(`http://localhost:8000/api/campaigns/${camp.id}/assets/upload`, {
+      headers: authHeaders,
+      multipart: {
+        file: { name: 'arbol.png', mimeType: 'image/png', buffer: PNG_1PX },
+        name: 'Árbol',
+      },
+    });
+    expect(uploadRes.status()).toBe(200);
+    const asset = await uploadRes.json();
+
+    await page.goto(`/campaigns/${camp.id}`);
+    await expect(page.getByText('Recursos (1)')).toBeVisible({ timeout: 10_000 });
+    await page.waitForSelector('canvas', { timeout: 15_000 });
+
+    const relUrl = `/api/static/${asset.file_path.replace(/\\/g, '/').split('/assets/')[1]}`;
+    let dropped = false;
+    for (let attempt = 0; attempt < 10 && !dropped; attempt++) {
+      dropped = await page.evaluate(
+      (payload) => {
+        const dt = new DataTransfer();
+        dt.setData('roleito/asset', JSON.stringify(payload));
+        let accepted = false;
+        for (const cv of Array.from(document.querySelectorAll('canvas'))) {
+          const rect = cv.getBoundingClientRect();
+          const clientX = rect.left + rect.width / 2;
+          const clientY = rect.top + rect.height / 2;
+          const over = new DragEvent('dragover', { bubbles: true, cancelable: true, clientX, clientY, dataTransfer: dt });
+          if (!cv.dispatchEvent(over)) {
+            cv.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, clientX, clientY, dataTransfer: dt }));
+            accepted = true;
+            break;
+          }
+          cv.dispatchEvent(new DragEvent('dragleave', { bubbles: true, cancelable: true }));
+        }
+        return accepted;
+      },
+      { name: 'Árbol', url: relUrl, assetId: asset.id },
+    );
+      if (!dropped) await page.waitForTimeout(300);
+    }
+    expect(dropped).toBe(true);
+
+    await page.waitForTimeout(900);
+    const itemsRes = await request.get(`http://localhost:8000/api/campaigns/${camp.id}/scenes/${scene.id}/items`, {
+      headers: authHeaders,
+    });
+    expect(itemsRes.status()).toBe(200);
+    const { items } = await itemsRes.json();
+    const placed = (items as Array<{ metadata: { type: string; assetId: string }; image: string; name: string }>).find(
+      (i) => i.metadata?.type === 'image',
+    );
+    expect(placed).toBeTruthy();
+    expect(placed!.metadata.assetId).toBe(asset.id);
+    expect(placed!.image).toContain(relUrl);
+    expect(placed!.name).toBe('Árbol');
+
     await request.delete(`http://localhost:8000/api/campaigns/${camp.id}`, {
       headers: authHeaders,
     });

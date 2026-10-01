@@ -84,7 +84,7 @@ Reference: `ASSET-SYSTEM.md` (19,374 bytes)
 |------|--------|-------|
 | Asset Manifest | Partial | `data/assets/` + `tts_config.json` |
 | Asset Loading | Implemented | Serving vía `/api/static` (imgs, audio, 3D) |
-| Asset Browser | Not Started | DM asset picker UI |
+| Asset Browser | Implemented | Drag-drop de recursos al mapa (item imagen) |
 | AI Generation | Planned | Prompt-based asset creation |
 
 ## 3D Rendering
@@ -170,7 +170,7 @@ Reference: `2D-TO-3D.md` (34,685 bytes), `3D-RENDERER.md` (118 bytes)
 | Fog Tools Panel | Not Started | DM fog brush/reveal |
 | Wall Tools Panel | Not Started | Wall drawing/editing |
 | Lighting Tools Panel | Not Started | Light source placement |
-| Asset Browser | Not Started | Drag-drop asset picker |
+| Asset Browser | Implemented | Drag-drop asset picker |
 | Player HUD | Not Started | Player-side controls |
 
 ### Infrastructure
@@ -372,7 +372,6 @@ Reference: `ROADMAP.md` (22,082 bytes)
 - `apps/player` / `apps/renderer` placeholders (vista jugador vive en apps/dm por decisión AGENTS.md)
 - AI agents reales: orchestrator stub (fase 12)
 - Grid auto-detection (Hough) diseñado, no implementado — grid manual + snap
-- Asset Browser drag-drop pendiente
 - Voice input DM, atmosphere, media sin código (fases 13/15/16)
 
 ## Documentation Drift
@@ -388,11 +387,10 @@ Based on dependency analysis and documentation completeness:
 
 | Priority | System | Rationale |
 |----------|--------|-----------|
-| 1 | Asset Browser | DM workflow |
-| 2 | Real-time sync (WebSocket) | Base multiplayer |
-| 3 | AI Map Analysis | Automation |
-| 4 | AI Agents reales | Fase 12 roadmap |
-| 5 | Voice input / atmosphere / media | Fases 13/15/16 |
+| 1 | Real-time sync (WebSocket) | Base multiplayer |
+| 2 | AI Map Analysis | Automation |
+| 3 | AI Agents reales | Fase 12 roadmap |
+| 4 | Voice input / atmosphere / media | Fases 13/15/16 |
 
 > Prioridades 1-10 originales (scene graph → 3D) quedaron cubiertas — ver secciones 2 y 6.
 

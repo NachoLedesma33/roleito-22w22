@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, Suspense, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { api, Campaign, Scene, SceneCharacter, Character, NPC, Map as GameMap, LightRequest } from '@/lib/api';
+import { api, Campaign, Scene, SceneCharacter, Character, NPC, Map as GameMap, LightRequest, Asset } from '@/lib/api';
 import { SceneItem, ZoneMetadata, SceneLayer } from '@core/domain/types';
 import { SceneGraph } from '@core/scene/scene-graph';
 import { useDoorInteraction } from '@core/scene/door-interaction';
@@ -61,6 +61,7 @@ export default function DmDashboard() {
   const { id: campaignId } = useParams<{ id: string }>();
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [scenes, setScenes] = useState<Scene[]>([]);
+  const [assets, setAssets] = useState<Asset[]>([]);
   const [activeScene, setActiveScene] = useState<Scene | null>(null);
   const [sceneChars, setSceneChars] = useState<SceneCharacter[]>([]);
   const [characters, setCharacters] = useState<Character[]>([]);
@@ -154,13 +155,15 @@ export default function DmDashboard() {
       api.characters.list(campaignId).catch(() => []),
       api.npcs.list(campaignId).catch(() => []),
       api.maps.list(campaignId).catch(() => []),
+      api.assets.list(campaignId).catch(() => []),
     ])
-      .then(([c, sc, chars, npcList, mapList]) => {
+      .then(([c, sc, chars, npcList, mapList, assetList]) => {
         setCampaign(c);
         setScenes(sc);
         setCharacters(chars);
         setNpcs(npcList);
         setMaps(mapList);
+        setAssets(assetList);
         const active = sc.find((s) => s.status === 'active') || sc[0] || null;
         setActiveScene(active);
       })
@@ -1372,6 +1375,33 @@ export default function DmDashboard() {
     }
     setPlacingToken(null);
   }, [campaignId, activeScene, sceneChars]);
+
+  const handleAssetDrop = useCallback((asset: { name: string; url: string; assetId: string }, x: number, z: number) => {
+    if (!campaignId || !activeScene) return;
+    const item: SceneItem = {
+      id: `img-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      name: asset.name,
+      x,
+      y: z,
+      zIndex: 0,
+      rotation: 0,
+      scale: 2,
+      width: 0,
+      height: 0,
+      opacity: 1,
+      visible: true,
+      locked: false,
+      disableHit: false,
+      disableAutoZIndex: false,
+      attachmentIds: [],
+      disableAttachmentBehavior: [],
+      layer: SceneLayer.EFFECTS_ABOVE,
+      image: asset.url,
+      metadata: { type: 'image', assetId: asset.assetId },
+    };
+    graphRef.addItem(item);
+    handleItemsChange(graphRef.getItems());
+  }, [graphRef, handleItemsChange]);
 
   const handleRemoveFromScene = useCallback(async (sceneCharId: string) => {
     if (!campaignId || !activeScene) return;
@@ -2598,6 +2628,7 @@ export default function DmDashboard() {
                 lightAttach={attachLightMode}
                 tokenPlace={placingToken}
                 onTokenPlace={handleTokenPlace}
+                onAssetDrop={handleAssetDrop}
                 onTokenClick={handleTokenClick}
                 onTokenDrop={handleTokenDrop}
                 onTokenDrag={handleTokenDrag}
@@ -2746,6 +2777,37 @@ export default function DmDashboard() {
                         <span className="ml-auto text-[9px] opacity-40" title="Arrastrá al mapa o hacé clic para colocar">↗</span>
                       </button>
                     ))}
+                </div>
+              </>
+            )}
+
+            {/* Recursos del DM — arrastrá al mapa para colocar */}
+            {assets.length > 0 && (
+              <>
+                <p className="text-[10px] text-[var(--text-secondary)] mb-1 px-1 mt-2">Recursos ({assets.length})</p>
+                <div className="grid grid-cols-4 gap-1 max-h-24 overflow-y-auto">
+                  {assets.map((a) => (
+                    <div
+                      key={a.id}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData(
+                          'roleito/asset',
+                          JSON.stringify({ name: a.name, url: staticUrl(a.file_path), assetId: a.id }),
+                        );
+                        e.dataTransfer.effectAllowed = 'copy';
+                      }}
+                      className="aspect-square rounded overflow-hidden border border-[var(--bg-tertiary)] hover:border-[var(--accent)] transition-colors cursor-grab"
+                      title={`${a.name} (arrastrá al mapa)`}
+                    >
+                      <img
+                        src={staticUrl(a.file_path)!}
+                        alt={a.name}
+                        className="w-full h-full object-cover"
+                        draggable={false}
+                      />
+                    </div>
+                  ))}
                 </div>
               </>
             )}

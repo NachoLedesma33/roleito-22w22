@@ -2,6 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api, Asset } from '@/lib/api';
 
+function staticUrl(path: string): string | null {
+  if (!path) return null;
+  const parts = path.replace(/\\/g, '/').split('/assets/');
+  return parts.length > 1 ? `/api/static/${parts[1]}` : null;
+}
+
 export default function AssetList() {
   const { id: campaignId } = useParams<{ id: string }>();
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -76,8 +82,16 @@ export default function AssetList() {
               key={a.id}
               className="border border-[var(--bg-tertiary)] rounded-lg overflow-hidden group"
             >
-              <div className="h-24 bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-secondary)] text-xs">
-                {a.asset_type === 'audio' ? '♪' : '🖼'}
+              <div className="h-24 bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-secondary)] text-xs overflow-hidden">
+                {a.asset_type === 'audio' ? (
+                  <span>♪</span>
+                ) : a.asset_type === 'video' && staticUrl(a.file_path) ? (
+                  <video src={staticUrl(a.file_path)!} muted loop playsInline autoPlay className="w-full h-full object-cover" />
+                ) : staticUrl(a.file_path) ? (
+                  <img src={staticUrl(a.file_path)!} alt={a.name} className="w-full h-full object-cover" />
+                ) : (
+                  <span>🖼</span>
+                )}
               </div>
               <div className="p-2">
                 <p className="text-xs font-medium truncate">{a.name}</p>

@@ -242,6 +242,12 @@ export type ItemMetadata =
   | RoomMetadata
   | ZoneMetadata
   | LightMetadata
+  | ImageMetadata
+
+export interface ImageMetadata {
+  type: 'image'
+  assetId: string
+}
 
 export interface TokenMetadata {
   type: 'token'

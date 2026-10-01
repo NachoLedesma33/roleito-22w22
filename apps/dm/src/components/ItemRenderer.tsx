@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Billboard, Text } from '@react-three/drei'
 import * as THREE from 'three'
@@ -64,6 +64,10 @@ export default function ItemRenderer({ item, isSelected, readOnly = false, showZ
 
   if (item.shape) {
     return <ShapeRenderer item={item} isSelected={isSelected} onClick={onClick} renderMode={renderMode} />
+  }
+
+  if (item.metadata.type === 'image') {
+    return <ImageSprite item={item} isSelected={isSelected} onClick={onClick} onContextMenu={onContextMenu} />
   }
 
   if (item.image) {
@@ -140,6 +144,55 @@ const WALL_MATERIAL_COLORS: Record<string, string> = {
   metal: '#64748b',
   glass: '#93c5fd',
   magic: '#a855f7',
+}
+
+function ImageSprite({ item, isSelected, onClick, onContextMenu }: { item: SceneItem; isSelected?: boolean; onClick?: () => void; onContextMenu?: (e: MouseEvent) => void }) {
+  const [texture, setTexture] = useState<THREE.Texture | null>(null)
+  const [aspect, setAspect] = useState(1)
+
+  useEffect(() => {
+    if (!item.image) return
+    let alive = true
+    const tex = new THREE.TextureLoader().load(item.image, (t) => {
+      if (!alive) return
+      t.colorSpace = THREE.SRGBColorSpace
+      const img = t.image as { width?: number; height?: number } | undefined
+      if (img && img.width && img.height) setAspect(img.width / img.height)
+      setTexture(t)
+    })
+    return () => {
+      alive = false
+      tex.dispose()
+    }
+  }, [item.image])
+
+  return (
+    <group
+      position={[item.x, 0, item.y]}
+      rotation={[0, (item.rotation * Math.PI) / 180, 0]}
+      scale={item.scale}
+      onClick={(e) => { e.stopPropagation(); onClick?.() }}
+      onContextMenu={(e) => { e.stopPropagation(); onContextMenu?.(e.nativeEvent) }}
+    >
+      <Billboard>
+        <mesh>
+          {texture ? <planeGeometry args={[1, 1 / aspect]} /> : <circleGeometry args={[0.4, 32]} />}
+          <meshBasicMaterial map={texture ?? undefined} color="#ffffff" transparent opacity={item.opacity ?? 1} side={THREE.DoubleSide} toneMapped={false} />
+        </mesh>
+        {isSelected && (
+          <mesh>
+            <ringGeometry args={[0.42, 0.48, 32]} />
+            <meshBasicMaterial color="#3b82f6" />
+          </mesh>
+        )}
+      </Billboard>
+      <Billboard position={[0, -0.6, 0]}>
+        <Text fontSize={0.15} color="white" outlineWidth={0.02} outlineColor="black" anchorX="center" anchorY="top">
+          {item.name}
+        </Text>
+      </Billboard>
+    </group>
+  )
 }
 
 function WallRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, imageAspect = 1, renderMode = DEFAULT_RENDER_MODE }: ItemRendererProps) {
