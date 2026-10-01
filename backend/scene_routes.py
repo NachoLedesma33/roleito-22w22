@@ -354,6 +354,62 @@ async def upload_scene_background(
     return scene
 
 
+@router.post("/campaigns/{campaign_id}/scenes/{scene_id}/upload-audio", response_model=SceneResponse)
+async def upload_scene_audio(
+    campaign_id: str,
+    scene_id: str,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_session),
+):
+    result = await db.execute(
+        select(Scene).where(
+            Scene.id == scene_id,
+            Scene.campaign_id == campaign_id,
+        )
+    )
+    scene = result.scalar_one_or_none()
+    if not scene:
+        raise HTTPException(status_code=404, detail="Scene not found")
+
+    ext = os.path.splitext(file.filename or "audio.mp3")[1] or ".mp3"
+    scene_dir = os.path.join(ASSETS_DIR, campaign_id, "scenes", scene_id)
+    os.makedirs(scene_dir, exist_ok=True)
+    file_path = os.path.join(scene_dir, f"audio{ext}")
+
+    content = await file.read()
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    scene.audio_path = file_path
+    await db.commit()
+    await db.refresh(scene)
+    await broadcast_revision(db, campaign_id)
+    return scene
+
+
+@router.delete("/campaigns/{campaign_id}/scenes/{scene_id}/audio", response_model=SceneResponse)
+async def clear_scene_audio(
+    campaign_id: str,
+    scene_id: str,
+    db: AsyncSession = Depends(get_session),
+):
+    result = await db.execute(
+        select(Scene).where(
+            Scene.id == scene_id,
+            Scene.campaign_id == campaign_id,
+        )
+    )
+    scene = result.scalar_one_or_none()
+    if not scene:
+        raise HTTPException(status_code=404, detail="Scene not found")
+
+    scene.audio_path = None
+    await db.commit()
+    await db.refresh(scene)
+    await broadcast_revision(db, campaign_id)
+    return scene
+
+
 @router.post("/campaigns/{campaign_id}/scenes/{scene_id}/classify")
 async def classify_scene_endpoint(
     campaign_id: str,

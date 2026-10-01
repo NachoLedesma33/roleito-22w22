@@ -73,6 +73,7 @@ interface JoinData {
   scene_id: string | null;
   scene_name: string;
   background_path: string | null;
+  audio_path: string | null;
   lighting: string;
   map_scale: number;
   model_y_offset: number;
@@ -188,6 +189,9 @@ export default function PlayerView() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [myChar, setMyChar] = useState<MyChar | null>(null);
   const [live, setLive] = useState(false);
+  const [audioOn, setAudioOn] = useState(true);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const audioStartedRef = useRef(false);
   const [fading, setFading] = useState<'in' | 'out' | null>(null);
   const [sheetTab, setSheetTab] = useState<'stats' | 'inventory' | 'spells' | 'notes'>('stats');
   const [notesDraft, setNotesDraft] = useState('');
@@ -416,6 +420,25 @@ export default function PlayerView() {
       clearTimeout(timer);
     };
   }, [code, data]);
+
+  // Ambiente: audio de la escena activa (loop). Arranca tras el gesto del jugador.
+  useEffect(() => {
+    if (!data) return;
+    const el = audioRef.current;
+    if (!data.audio_path) {
+      el?.pause();
+      return;
+    }
+    const url = staticUrl(data.audio_path);
+    if (!url || !el) return;
+    if (el.getAttribute('src') !== url) {
+      el.src = url;
+      el.load();
+    }
+    if (audioStartedRef.current && audioOn) {
+      void el.play().catch(() => {});
+    }
+  }, [data, choice, audioOn]);
 
   // Prompt de iniciativa para este jugador (si el DM lo agregó al combate)
   useEffect(() => {
@@ -943,6 +966,9 @@ export default function PlayerView() {
   const chooseCharacter = useCallback(
     (id: string) => {
       if (!data) return;
+      audioStartedRef.current = true;
+      const el = audioRef.current;
+      if (el && el.getAttribute('src')) void el.play().catch(() => {});
       localStorage.setItem(`roleito:pv:${code}`, id);
       const c: Choice = { kind: 'character', id };
       choiceRef.current = c;
@@ -967,6 +993,9 @@ export default function PlayerView() {
   );
 
   const chooseSpectator = useCallback(() => {
+    audioStartedRef.current = true;
+    const el = audioRef.current;
+    if (el && el.getAttribute('src')) void el.play().catch(() => {});
     localStorage.setItem(`roleito:pv:${code}`, 'spectator');
     const c: Choice = { kind: 'spectator' };
     choiceRef.current = c;
@@ -1081,6 +1110,7 @@ export default function PlayerView() {
 
   return (
     <div className="h-screen flex flex-col bg-black overflow-hidden select-none">
+      <audio ref={audioRef} loop className="hidden" />
       <TopBar
         title={data.campaign_name}
         subtitle={data.scene_name}
@@ -1126,6 +1156,21 @@ export default function PlayerView() {
             title={shareLight ? 'Compartiendo luz con el grupo' : 'Solo tu luz + luces del DM'}
           >
             🔦
+          </button>
+        )}
+        {data.audio_path && choice && (
+          <button
+            type="button"
+            onClick={() => setAudioOn((v) => !v)}
+            className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${
+              audioOn
+                ? 'bg-emerald-600 text-white'
+                : 'bg-gray-800 text-gray-400 hover:text-gray-200 hover:bg-gray-700'
+            }`}
+            title={audioOn ? 'Silenciar ambiente' : 'Activar ambiente'}
+            data-testid="audio-toggle"
+          >
+            {audioOn ? '🔊' : '🔇'}
           </button>
         )}
         {choice?.kind === 'character' && (

@@ -26,6 +26,7 @@ export default function SceneDetail() {
   const [lighting, setLighting] = useState('neutral');
   const [notes, setNotes] = useState('');
   const fileInput = useRef<HTMLInputElement>(null);
+  const audioFileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!campaignId || !sceneId) return;
@@ -78,6 +79,20 @@ export default function SceneDetail() {
     const updated = await api.scenes.uploadBackground(campaignId, sceneId, file);
     setScene(updated);
     e.target.value = '';
+  };
+
+  const handleUploadAudio = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !campaignId || !sceneId) return;
+    const updated = await api.scenes.uploadAudio(campaignId, sceneId, file);
+    setScene(updated);
+    e.target.value = '';
+  };
+
+  const handleClearAudio = async () => {
+    if (!campaignId || !sceneId) return;
+    const updated = await api.scenes.clearAudio(campaignId, sceneId);
+    setScene(updated);
   };
 
   const handlePickFromLibrary = async (mapId: string) => {
@@ -182,6 +197,29 @@ export default function SceneDetail() {
             Subir fondo
           </button>
           <input ref={fileInput} type="file" accept="image/*,.glb,.gltf" className="hidden" onChange={handleUploadBg} />
+          {scene.audio_path ? (
+            <div className="hidden md:flex items-center gap-2">
+              <audio
+                controls
+                loop
+                className="h-8 w-48"
+                src={staticUrl(scene.audio_path)!}
+                data-testid="scene-audio"
+              />
+              <button
+                onClick={handleClearAudio}
+                className="px-2 py-1 text-xs rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-red-400"
+                title="Quitar audio de la escena"
+              >
+                Quitar
+              </button>
+            </div>
+          ) : (
+            <button onClick={() => audioFileInput.current?.click()} className="px-3 py-1 text-sm rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+              Subir audio
+            </button>
+          )}
+          <input ref={audioFileInput} type="file" accept="audio/*" className="hidden" onChange={handleUploadAudio} />
         </div>
       </div>
 

@@ -737,6 +737,19 @@ export const api = {
       if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
       return res.json() as Promise<Scene>;
     },
+    uploadAudio: async (campaignId: string, sceneId: string, file: File) => {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${API_BASE}/campaigns/${campaignId}/scenes/${sceneId}/upload-audio`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: form,
+      });
+      if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+      return res.json() as Promise<Scene>;
+    },
+    clearAudio: (campaignId: string, sceneId: string) =>
+      request<Scene>(`/campaigns/${campaignId}/scenes/${sceneId}/audio`, { method: 'DELETE' }),
     getCharacters: (campaignId: string, sceneId: string) =>
       request<SceneCharacter[]>(`/campaigns/${campaignId}/scenes/${sceneId}/characters`),
     updateCharacters: (campaignId: string, sceneId: string, characters: { id?: string; entity_type: string; entity_id: string; x: number; y: number; z: number; visible: boolean; order: number; rotation?: number; token_scale?: number; move_speed?: number; brightness?: number; facing_offset?: number; vision_type?: string; vision_range?: number; statuses?: string[] }[]) =>

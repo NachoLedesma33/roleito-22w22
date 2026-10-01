@@ -372,7 +372,7 @@ Reference: `ROADMAP.md` (22,082 bytes)
 - `apps/player` / `apps/renderer` placeholders (vista jugador vive en apps/dm por decisión AGENTS.md)
 - AI agents reales: orchestrator stub (fase 12)
 - Grid auto-detection (Hough) diseñado, no implementado — grid manual + snap
-- Voice input DM, atmosphere, media sin código (fases 13/15/16)
+- Audio ambience (Fase 16) **implementada**: `Scene.audio_path` con UI en SceneDetail (upload/quitar + player) y reproducción loop por escena activa en PlayerView (toggle 🔊/🔇, arranca tras gesto, swap automático al cambiar escena; broadcast WS incluido). Quedan: voice input DM y atmosphere (fases 13/15)
 
 ## Documentation Drift
 - `ARCHITECTURE.md` needs update to reflect current state
@@ -400,5 +400,5 @@ Based on dependency analysis and documentation completeness:
 # 9. Last Updated
 
 - **Date**: 2026-10-01
-- **Updated By**: Real-time sync (WebSocket) — push de revisión a PlayerView + fallback polling
-- **Trigger**: Roadmap fase WebSocket sync (impl-order row 1)
+- **Updated By**: Audio ambience (Fase 16) — Scene.audio_path UI + loop player en PlayerView + broadcast WS
+- **Trigger**: Roadmap tras Real-time sync (WS)

@@ -134,6 +134,7 @@ async def compute_player_revision(db: AsyncSession, campaign_id: str) -> str:
     scenes_r = await db.execute(
         select(
             Scene.id, Scene.name, Scene.status, Scene.background_path,
+            Scene.audio_path,
             Scene.lighting, Scene.updated_at,
         ).where(Scene.campaign_id == campaign_id).order_by(Scene.id)
     )
@@ -981,6 +982,7 @@ async def join_by_invite_code(
         "scene_id": active_scene.id if active_scene else None,
         "scene_name": scene_name,
         "background_path": background_path,
+        "audio_path": active_scene.audio_path if active_scene else None,
         "lighting": lighting,
         "map_scale": getattr(active_scene, 'map_scale', 1.0) if active_scene else 1.0,
         "model_y_offset": getattr(active_scene, 'model_y_offset', 0.0) if active_scene else 0.0,
