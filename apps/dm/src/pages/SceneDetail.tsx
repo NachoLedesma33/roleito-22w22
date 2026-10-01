@@ -244,6 +244,7 @@ export default function SceneDetail() {
                   };
                 })}
                 lighting={scene.lighting}
+                weather={scene.weather ?? null}
                 mapScale={scene.map_scale ?? 1}
                 modelYOffset={scene.model_y_offset ?? 0}
                 gridSize={scene.grid_size ?? 0}

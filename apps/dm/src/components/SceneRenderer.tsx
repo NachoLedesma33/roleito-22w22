@@ -9,6 +9,7 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import TokenSprite from './TokenSprite';
 import TokenModel from './TokenModel';
 import ItemRenderer from './ItemRenderer';
+import WeatherFX, { WEATHER_META } from './WeatherFX';
 import { buildOccluders } from '../lib/lightOcclusion';
 import WallDrawerCanvas from './WallDrawerCanvas';
 import ZoneDrawerCanvas from './ZoneDrawerCanvas';
@@ -51,6 +52,7 @@ interface SceneRendererProps {
   characters: SceneEntity[];
   items?: SceneItem[];
   lighting?: string;
+  weather?: string | null;
   selectedTokenId?: string | null;
   selectedItemIds?: string[];
   readOnly?: boolean;
@@ -1896,6 +1898,7 @@ export default function SceneRenderer({
   characters,
   items = [],
   lighting = 'neutral',
+  weather = null,
   selectedTokenId,
   selectedItemIds = [],
   readOnly = false,
@@ -2020,15 +2023,25 @@ export default function SceneRenderer({
   }, [onTokenClick]);
 
   return (
-    <Canvas
-      camera={{ position: [0, 8, 8], fov: 50 }}
-      style={{ width: '100%', height: '100%' }}
-      onPointerMissed={handleCanvasPointerMissed}
-    >
-      <SceneLighting mode={lighting} />
-      <Suspense fallback={null}>
-        <SceneBackground url={backgroundUrl} mapScale={mapScale} modelYOffset={modelYOffset} />
-      </Suspense>
+    <div className="relative h-full w-full">
+      {weather && WEATHER_META[weather] && (
+        <div
+          className="absolute inset-0 z-10 pointer-events-none"
+          style={{ background: WEATHER_META[weather].tint }}
+          data-testid="weather-overlay"
+          data-weather={weather}
+        />
+      )}
+      <Canvas
+        camera={{ position: [0, 8, 8], fov: 50 }}
+        style={{ width: '100%', height: '100%' }}
+        onPointerMissed={handleCanvasPointerMissed}
+      >
+        <SceneLighting mode={lighting} />
+        <Suspense fallback={null}>
+          <SceneBackground url={backgroundUrl} mapScale={mapScale} modelYOffset={modelYOffset} />
+        </Suspense>
+        {weather && <WeatherFX weather={weather} mapWidth={mapWidth} mapHeight={mapHeight} />}
       {gridSize > 0 && <GridOverlay width={mapWidth} height={mapHeight} gridSize={gridSize} renderMode={renderMode} />}
       {movementRange && (
         <MovementRangeOverlay
@@ -2177,6 +2190,7 @@ export default function SceneRenderer({
         maxDistance={maxDistance}
       />
       {hasGlow && <BloomPass />}
-    </Canvas>
+      </Canvas>
+    </div>
   );
 }

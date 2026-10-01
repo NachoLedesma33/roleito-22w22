@@ -5,6 +5,7 @@ import { SceneItem, ZoneMetadata, SceneLayer } from '@core/domain/types';
 import { SceneGraph } from '@core/scene/scene-graph';
 import { useDoorInteraction } from '@core/scene/door-interaction';
 import SceneRenderer from '@/components/SceneRenderer';
+import { WEATHER_META, WEATHER_NONE_LABEL } from '@/components/WeatherFX';
 import { createEmptyDrawState, createWallItem, type DrawState } from '@/components/WallDrawer';
 import { createEmptyZoneDraft, createZoneItem, ZONE_COLORS, ZONE_DEFAULT_COLOR, type ZoneDraft } from '@/components/ZoneDrawer';
 import { createEmptyPortalDraft, type PortalDraft } from '@/components/PortalDrawerCanvas';
@@ -1143,6 +1144,23 @@ export default function DmDashboard() {
         rollerName: 'Sistema',
         diceType: 1, count: 1, results: [1], total: 1,
         label: 'No se pudo actualizar la iluminación',
+        timestamp: Date.now(),
+      }]);
+    }
+  };
+
+  const handleChangeWeather = async (weather: string | null) => {
+    if (!campaignId || !activeScene) return;
+    try {
+      const updated = await api.scenes.update(campaignId, activeScene.id, { weather });
+      setActiveScene(updated);
+      setScenes((prev) => prev.map((s) => s.id === updated.id ? updated : s));
+    } catch {
+      setToastQueue((prev) => [...prev.slice(-4), {
+        id: `weather-err-${Date.now()}`,
+        rollerName: 'Sistema',
+        diceType: 1, count: 1, results: [1], total: 1,
+        label: 'No se pudo cambiar el clima',
         timestamp: Date.now(),
       }]);
     }
@@ -2302,6 +2320,37 @@ export default function DmDashboard() {
           </div>
         </div>
 
+        <div className="relative group shrink-0">
+          <button
+            className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+            data-testid="weather-select"
+            title="Clima de la escena"
+          >
+            {(activeScene?.weather && WEATHER_META[activeScene.weather] ? WEATHER_META[activeScene.weather].label : WEATHER_NONE_LABEL)} ▾
+          </button>
+          <div className="absolute right-0 top-full mt-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+            <button
+              onClick={() => handleChangeWeather(null)}
+              className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${
+                !activeScene?.weather ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'
+              }`}
+            >
+              {WEATHER_NONE_LABEL}
+            </button>
+            {Object.entries(WEATHER_META).map(([key, meta]) => (
+              <button
+                key={key}
+                onClick={() => handleChangeWeather(key)}
+                className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${
+                  activeScene?.weather === key ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'
+                }`}
+              >
+                {meta.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <button
           onClick={() => setShowSceneSettings(!showSceneSettings)}
           className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showSceneSettings ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
@@ -2596,6 +2645,7 @@ export default function DmDashboard() {
                 })}
                 items={sceneItems}
                 lighting={activeScene.lighting}
+                weather={activeScene.weather ?? null}
                 selectedTokenId={selectedTokenId}
                 selectedItemIds={selectedItemId ? [selectedItemId] : []}
                 mapScale={activeScene.map_scale ?? 1}

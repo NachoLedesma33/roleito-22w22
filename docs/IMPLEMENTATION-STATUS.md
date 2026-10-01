@@ -97,6 +97,7 @@ Reference: `2D-TO-3D.md` (34,685 bytes), `3D-RENDERER.md` (118 bytes)
 | Character Models | Implemented | `TokenSprite.tsx` + `TokenModel.tsx` + glow |
 | Environment | Implemented | BG, items, walls, fog en escena 3D |
 | Fog in 3D | Implemented | Overlay de niebla sobre escena (SceneRenderer) |
+| Weather/FX atmosphere | Implemented | `Scene.weather` (rain/snow/fog) — partículas three.js en WeatherFX.tsx + filtro tint (SceneRenderer), switcher en DmDashboard, sync a PlayerView vía snapshot+WS |
 
 > Nota: el render 3D vive DENTRO de `apps/dm` (decisión AGENTS.md). `apps/renderer` queda placeholder intencional.
 
@@ -372,7 +373,8 @@ Reference: `ROADMAP.md` (22,082 bytes)
 - `apps/player` / `apps/renderer` placeholders (vista jugador vive en apps/dm por decisión AGENTS.md)
 - AI agents reales: orchestrator stub (fase 12)
 - Grid auto-detection (Hough) diseñado, no implementado — grid manual + snap
-- Audio ambience (Fase 16) **implementada**: `Scene.audio_path` con UI en SceneDetail (upload/quitar + player) y reproducción loop por escena activa en PlayerView (toggle 🔊/🔇, arranca tras gesto, swap automático al cambiar escena; broadcast WS incluido). Quedan: voice input DM y atmosphere (fases 13/15)
+- Audio ambience (Fase 16) **implementada**: `Scene.audio_path` con UI en SceneDetail (upload/quitar + player) y reproducción loop por escena activa en PlayerView (toggle 🔊/🔇, arranca tras gesto, swap automático al cambiar escena; broadcast WS incluido).
+- Weather/FX atmosphere (Fase 15, parcial) **implementada**: `Scene.weather` (rain/snow/fog — lluvia LineSegments, nieve Points, niebla Planes con textura radial; tint CSS por clima) — switcher "Clima" en DmDashboard (junto a lighting), render en SceneRenderer (DM + PlayerView + SceneDetail), entra en revision/snapshot → broadcast WS; migración `scenes.weather` en database.py. Quedan de fase 15: filtros por preset y otros FX (fuego/nieve fina); voice input DM (fase 13) y media (16) siguen verdes
 
 ## Documentation Drift
 - `ARCHITECTURE.md` needs update to reflect current state
@@ -389,7 +391,7 @@ Based on dependency analysis and documentation completeness:
 |----------|--------|-----------|
 | 1 | AI Map Analysis | Automation |
 | 2 | AI Agents reales | Fase 12 roadmap |
-| 3 | Voice input / atmosphere / media | Fases 13/15/16 |
+| 3 | Voice input / media | Fases 13/16 (atmosphere 15 hecho) |
 
 > Real-time sync (WebSocket) completado — ver secciones 2 y 6.
 >
@@ -400,5 +402,5 @@ Based on dependency analysis and documentation completeness:
 # 9. Last Updated
 
 - **Date**: 2026-10-01
-- **Updated By**: Audio ambience (Fase 16) — Scene.audio_path UI + loop player en PlayerView + broadcast WS
-- **Trigger**: Roadmap tras Real-time sync (WS)
+- **Updated By**: Weather/FX atmosphere (Fase 15) — Scene.weather rain/snow/fog + partículas WeatherFX + switcher DmDashboard + sync WS
+- **Trigger**: Roadmap tras Audio ambience (Fase 16)

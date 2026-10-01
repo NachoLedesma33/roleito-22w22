@@ -392,12 +392,14 @@ class SceneCreate(BaseModel):
     name: str
     description: str = ""
     lighting: str = "neutral"
+    weather: Optional[str] = None
 
 
 class SceneUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     lighting: Optional[str] = None
+    weather: Optional[str] = None
     status: Optional[str] = None
     notes: Optional[str] = None
     entrance_x: Optional[float] = None
@@ -438,6 +440,7 @@ class SceneResponse(BaseModel):
     map_id: Optional[str] = None
     lighting: str
     audio_path: Optional[str] = None
+    weather: Optional[str] = None
     status: str
     notes: str = ""
     entrance_x: float = 0.0

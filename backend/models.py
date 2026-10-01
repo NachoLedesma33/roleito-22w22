@@ -229,6 +229,7 @@ class Scene(Base):
     map_id = Column(String, ForeignKey("maps.id"), nullable=True)
     lighting = Column(String, default="neutral")
     audio_path = Column(String, nullable=True)
+    weather = Column(String, nullable=True)
     status = Column(String, default="inactive")
     notes = Column(Text, default="")
     entrance_x = Column(Float, default=0.0)
