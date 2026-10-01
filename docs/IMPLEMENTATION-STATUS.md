@@ -367,8 +367,8 @@ Reference: `ROADMAP.md` (22,082 bytes)
 - AI/TTS infrastructure decoupled
 
 ## Gaps
-- Import cubre entidades core + VTT + assets binarios (base64 ≤8MB, refs re-absolutizadas); combat/dice/quests/calendar y Asset table rows NO viajan aún
-- Ref IDs dentro de `items_json` de escena pasan crudos (sin remap interno)
+- Import/export **completo**: cubre entidades core + VTT + assets binarios (base64 ≤8MB, refs re-absolutizadas) + `asset_rows` (metadatos de Asset) + dice_rolls + combats + combat_combatants + quests + campaign_calendars + progress_clocks, con remap de IDs (scene/char/npc/combat)
+- Refs internos de `items_json` **remapeados**: `metadata.attachedTo` (luz → scene_characters) y portales/zonas (refs intra-escena, sin remap necesario) tras import
 - Real-time sync (WebSocket) **implementado**: `/api/ws/invite/{code}` (room por campaña) empuja revisión tras mutaciones player-visible (scene sync/items/characters/move, character/npc PUT); PlayerView escucha push con fallback de polling 16ms solo si el WS no conecta. DM dashboard sigue polling 100ms (no cubierto)
 - `apps/player` / `apps/renderer` placeholders (vista jugador vive en apps/dm por decisión AGENTS.md)
 - AI agents reales: orchestrator stub (fase 12)
@@ -402,5 +402,5 @@ Based on dependency analysis and documentation completeness:
 # 9. Last Updated
 
 - **Date**: 2026-10-01
-- **Updated By**: Weather/FX atmosphere (Fase 15) — Scene.weather rain/snow/fog + partículas WeatherFX + switcher DmDashboard + sync WS
-- **Trigger**: Roadmap tras Audio ambience (Fase 16)
+- **Updated By**: Import/export gaps (combat/dice/quests/calendar/clocks + asset rows + remap items_json)
+- **Trigger**: Roadmap tras Weather/FX atmosphere (Fase 15)

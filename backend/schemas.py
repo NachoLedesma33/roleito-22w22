@@ -49,6 +49,13 @@ class CampaignExport(BaseModel):
     notebooks: list[dict] = []
     notebook_versions: list[dict] = []
     assets: list[dict] = []
+    asset_rows: list[dict] = []
+    dice_rolls: list[dict] = []
+    combats: list[dict] = []
+    combat_combatants: list[dict] = []
+    quests: list[dict] = []
+    campaign_calendars: list[dict] = []
+    progress_clocks: list[dict] = []
 
 
 class CampaignImport(BaseModel):
@@ -69,6 +76,13 @@ class CampaignImport(BaseModel):
     notebooks: list[dict] = []
     notebook_versions: list[dict] = []
     assets: list[dict] = []
+    asset_rows: list[dict] = []
+    dice_rolls: list[dict] = []
+    combats: list[dict] = []
+    combat_combatants: list[dict] = []
+    quests: list[dict] = []
+    campaign_calendars: list[dict] = []
+    progress_clocks: list[dict] = []
 
 
 class CharacterCreate(BaseModel):

@@ -369,6 +369,107 @@ test.describe('Campaign Import', () => {
     });
   });
 
+  test('C13: roundtrip import/export cubre combate, dados, quests, calendario, clocks y asset rows con remap', async ({ request, authHeaders }) => {
+    const name = `Importado full ${Date.now()}`;
+    const payload = {
+      campaign: {
+        id: 'camp-old',
+        name,
+        description: '',
+        created_at: '2026-01-01T00:00:00',
+        updated_at: '2026-01-01T00:00:00',
+        current_session_id: null,
+        current_location_id: null,
+        settings_json: {},
+        invite_code: null,
+      },
+      sessions: [],
+      characters: [{ id: 'char-old', name: 'Ardan', type: 'player', description: '', class: 'guerrero', race: '', status: 'alive', vigor: '10', intelligence: '10', dexterity: '10', cunning: '10', max_pv: 12, max_pm: 6, defense: 8 }],
+      npcs: [],
+      locations: [],
+      events: [],
+      relationships: [],
+      maps: [],
+      scenes: [{
+        id: 'scene-old',
+        name: 'Bosque',
+        description: '',
+        background_path: null,
+        map_id: null,
+        lighting: 'neutral',
+        audio_path: null,
+        weather: 'rain',
+        status: 'active',
+        notes: '',
+        entrance_x: 1.5,
+        entrance_z: -2.0,
+        map_scale: 1.0,
+        model_y_offset: 0.0,
+        grid_size: 0.5,
+        grid_snap: 0,
+        items_json: '[{"id":"light-1","type":"light","x":5,"metadata":{"type":"light","source":{"mode":"hard","color":"#fff","intensity":1,"radius":0.1},"attachedTo":"sc-old"}}]',
+      }],
+      scene_characters: [{ id: 'sc-old', scene_id: 'scene-old', entity_type: 'character', entity_id: 'char-old', x: 3.0, y: 0.0, z: 3.0, visible: 1, order: 0, rotation: 0.0, token_scale: 1.0, move_speed: 1.0, brightness: 0.0, vx: 0.0, vz: 0.0, vrot: 0.0, last_move_at: 0.0, facing_offset: 0.0, vision_type: 'normal', vision_range: 6.0, statuses_json: '[]' }],
+      map_markers: [],
+      notebooks: [],
+      notebook_versions: [],
+      assets: [],
+      asset_rows: [{ id: 'asset-old', name: 'Retrato Ardan', file_path: 'data/assets/characters/ardan.png', asset_type: 'image', entity_type: 'character', entity_id: 'char-old' }],
+      quests: [{ id: 'quest-old', title: 'Matar dragón', description: '', status: 'active', objectives_json: '[{"label":"Llegar a la cueva","done":true}]', reward: '1d6 oro', visible_to_players: 1 }],
+      campaign_calendars: [{ id: 'cal-old', year: 3, month: 2, day: 15, month_names_json: null }],
+      progress_clocks: [{ id: 'clock-old', title: 'Fiebre del pueblo', segments_total: 6, segments_filled: 2, visible_to_players: 0 }],
+      dice_rolls: [{ id: 'dice-old', entity_type: 'character', entity_id: 'char-old', entity_name: 'Ardan', roller_name: 'Ardan', dice_type: 20, count: 1, results: [15], total: 15, label: 'Ataque', created_at: '2026-09-10T18:30:00' }],
+      combats: [{ id: 'cbt-old', scene_id: 'scene-old', status: 'active', finished_turns: 2, next_seq: 3 }],
+      combat_combatants: [{ id: 'cc-old', combat_id: 'cbt-old', entity_type: 'character', entity_id: 'char-old', initiative: 4, roll_seq: 1, pending_roll: 0 }],
+    };
+
+    const importRes = await request.post('http://localhost:8000/api/campaigns/import', {
+      headers: authHeaders,
+      data: payload,
+    });
+    expect(importRes.status()).toBe(200);
+    const imported = await importRes.json();
+
+    const exportRes = await request.get(`http://localhost:8000/api/campaigns/${imported.id}/export`, {
+      headers: authHeaders,
+    });
+    expect(exportRes.status()).toBe(200);
+    const exp = await exportRes.json();
+
+    expect(exp.scenes).toHaveLength(1);
+    expect(exp.scene_characters).toHaveLength(1);
+    expect(exp.asset_rows).toHaveLength(1);
+    expect(exp.quests).toHaveLength(1);
+    expect(exp.campaign_calendars).toHaveLength(1);
+    expect(exp.progress_clocks).toHaveLength(1);
+    expect(exp.dice_rolls).toHaveLength(1);
+    expect(exp.combats).toHaveLength(1);
+    expect(exp.combat_combatants).toHaveLength(1);
+
+    const scene = exp.scenes[0];
+    const sc = exp.scene_characters[0];
+    const cbt = exp.combats[0];
+    const cc = exp.combat_combatants[0];
+    const dice = exp.dice_rolls[0];
+    const asset = exp.asset_rows[0];
+
+    expect(scene.weather).toBe('rain');
+    expect(sc.scene_id).toBe(scene.id);
+    expect(sc.entity_id).toBe(exp.characters[0].id);
+    expect(cbt.scene_id).toBe(scene.id);
+    expect(cc.combat_id).toBe(cbt.id);
+    expect(cc.entity_id).toBe(exp.characters[0].id);
+    expect(dice.entity_id).toBe(exp.characters[0].id);
+    expect(asset.entity_id).toBe(exp.characters[0].id);
+    expect(asset.file_path).toMatch(/data[\\/]assets/);
+    expect(JSON.parse(scene.items_json)[0].metadata.attachedTo).toBe(sc.id);
+    expect(JSON.parse(scene.items_json)[0].metadata.attachedTo).not.toBe('sc-old');
+
+    await request.delete(`http://localhost:8000/api/campaigns/${imported.id}`, {
+      headers: authHeaders,
+    });
+  });
+
   test('C12: recurso arrastrado al mapa crea item imagen', async ({ page, request, authHeaders }) => {
     const res = await request.post('http://localhost:8000/api/campaigns', {
       headers: authHeaders,

@@ -20,6 +20,11 @@ from models import (
     DMNotebook,
     DMNotebookVersion,
     DiceRoll,
+    Combat,
+    CombatCombatant,
+    Quest,
+    CampaignCalendar,
+    ProgressClock,
 )
 from schemas import (
     BulkDeleteRequest,
@@ -40,6 +45,7 @@ import hashlib
 import json
 import os
 import base64
+from datetime import datetime
 
 ASSETS_DIR = os.path.normpath(
     os.path.join(os.path.dirname(__file__), "..", "data", "assets")
@@ -68,6 +74,18 @@ def _import_asset_path(value):
     if not rel:
         return value
     return _asset_abs(rel)
+
+
+def _parse_dt(value):
+    if value is None or isinstance(value, datetime):
+        return value
+    try:
+        parsed = datetime.fromisoformat(str(value))
+    except (ValueError, TypeError):
+        return None
+    if parsed.tzinfo is not None:
+        parsed = parsed.replace(tzinfo=None)
+    return parsed
 
 
 def _embed_asset(path):
@@ -576,6 +594,31 @@ async def export_campaign(
 
     assets = await _collect_assets(db, campaign_id)
 
+    dice_rolls_r = await db.execute(
+        select(DiceRoll).where(DiceRoll.campaign_id == campaign_id)
+    )
+    combats_r = await db.execute(
+        select(Combat).where(Combat.campaign_id == campaign_id)
+    )
+    combats = combats_r.scalars().all()
+    combatants_r = await db.execute(
+        select(CombatCombatant).where(
+            CombatCombatant.combat_id.in_([c.id for c in combats])
+        )
+    )
+    quests_r = await db.execute(
+        select(Quest).where(Quest.campaign_id == campaign_id)
+    )
+    calendars_r = await db.execute(
+        select(CampaignCalendar).where(CampaignCalendar.campaign_id == campaign_id)
+    )
+    clocks_r = await db.execute(
+        select(ProgressClock).where(ProgressClock.campaign_id == campaign_id)
+    )
+    asset_rows_r = await db.execute(
+        select(Asset).where(Asset.campaign_id == campaign_id)
+    )
+
     return CampaignExport(
         campaign=CampaignResponse.model_validate(campaign),
         sessions=[to_dict(s) for s in sessions_r.scalars().all()],
@@ -591,6 +634,13 @@ async def export_campaign(
         notebooks=[to_dict(n) for n in notebooks],
         notebook_versions=[to_dict(v) for v in versions_r.scalars().all()],
         assets=assets,
+        asset_rows=[to_dict(a) for a in asset_rows_r.scalars().all()],
+        dice_rolls=[to_dict(d) for d in dice_rolls_r.scalars().all()],
+        combats=[to_dict(c) for c in combats],
+        combat_combatants=[to_dict(cc) for cc in combatants_r.scalars().all()],
+        quests=[to_dict(q) for q in quests_r.scalars().all()],
+        campaign_calendars=[to_dict(ca) for ca in calendars_r.scalars().all()],
+        progress_clocks=[to_dict(pc) for pc in clocks_r.scalars().all()],
     )
 
 
@@ -622,6 +672,7 @@ async def import_campaign(
             f.write(content)
 
     id_map: dict[str, str] = {}
+    scene_items_for_remap: list[tuple["Scene", str]] = []
 
     for s in data.sessions:
         old_id = s.get("id", "")
@@ -787,6 +838,7 @@ async def import_campaign(
         db.add(new_scene)
         await db.flush()
         id_map[old_id] = new_scene.id
+        scene_items_for_remap.append((new_scene, s.get("items_json", "[]")))
 
     for sc in data.scene_characters:
         new_sc = SceneCharacter(
@@ -857,6 +909,104 @@ async def import_campaign(
         db.add(new_nv)
         await db.flush()
         id_map[nv.get("id", "")] = new_nv.id
+
+    # Refs internos de items_json: luces attachadas a scene_characters → id nuevo
+    for scene_obj, raw_items in scene_items_for_remap:
+        try:
+            items = json.loads(raw_items)
+        except (ValueError, TypeError):
+            continue
+        if not isinstance(items, list):
+            continue
+        changed = False
+        for it in items:
+            meta = it.get("metadata") if isinstance(it, dict) else None
+            if not isinstance(meta, dict) or meta.get("type") != "light":
+                continue
+            attached = meta.get("attachedTo")
+            if isinstance(attached, str) and attached in id_map:
+                meta["attachedTo"] = id_map[attached]
+                changed = True
+        if changed:
+            scene_obj.items_json = json.dumps(items, ensure_ascii=False)
+
+    for q in data.quests:
+        db.add(Quest(
+            campaign_id=campaign.id,
+            title=q.get("title", ""),
+            description=q.get("description", ""),
+            status=q.get("status", "active"),
+            objectives_json=q.get("objectives_json", "[]"),
+            reward=q.get("reward", ""),
+            visible_to_players=q.get("visible_to_players", 1),
+        ))
+
+    for cal in data.campaign_calendars:
+        db.add(CampaignCalendar(
+            campaign_id=campaign.id,
+            year=cal.get("year", 1),
+            month=cal.get("month", 1),
+            day=cal.get("day", 1),
+            month_names_json=cal.get("month_names_json"),
+        ))
+
+    for pc in data.progress_clocks:
+        db.add(ProgressClock(
+            campaign_id=campaign.id,
+            title=pc.get("title", ""),
+            segments_total=pc.get("segments_total", 4),
+            segments_filled=pc.get("segments_filled", 0),
+            visible_to_players=pc.get("visible_to_players", 1),
+        ))
+
+    for d in data.dice_rolls:
+        db.add(DiceRoll(
+            campaign_id=campaign.id,
+            entity_type=d.get("entity_type"),
+            entity_id=id_map.get(d.get("entity_id", ""), d.get("entity_id")),
+            entity_name=d.get("entity_name"),
+            roller_name=d.get("roller_name", ""),
+            dice_type=d.get("dice_type", 6),
+            count=d.get("count", 1),
+            results=d.get("results", []),
+            total=d.get("total", 0),
+            label=d.get("label"),
+            created_at=_parse_dt(d.get("created_at")),
+        ))
+
+    for cbt in data.combats:
+        old_cbt_id = cbt.get("id", "")
+        new_cbt = Combat(
+            campaign_id=campaign.id,
+            scene_id=id_map.get(cbt.get("scene_id", ""), cbt.get("scene_id")),
+            status=cbt.get("status", "active"),
+            finished_turns=cbt.get("finished_turns", 0),
+            next_seq=cbt.get("next_seq", 0),
+            created_at=_parse_dt(cbt.get("created_at")),
+        )
+        db.add(new_cbt)
+        await db.flush()
+        id_map[old_cbt_id] = new_cbt.id
+
+    for cc in data.combat_combatants:
+        db.add(CombatCombatant(
+            combat_id=id_map.get(cc.get("combat_id", ""), cc.get("combat_id")),
+            entity_type=cc.get("entity_type", "character"),
+            entity_id=id_map.get(cc.get("entity_id", ""), cc.get("entity_id")),
+            initiative=cc.get("initiative"),
+            roll_seq=cc.get("roll_seq"),
+            pending_roll=cc.get("pending_roll", 0),
+        ))
+
+    for a in data.asset_rows:
+        db.add(Asset(
+            campaign_id=campaign.id,
+            name=a.get("name", "Importado"),
+            file_path=_import_asset_path(a.get("file_path")),
+            asset_type=a.get("asset_type", "image"),
+            entity_type=a.get("entity_type"),
+            entity_id=id_map.get(a.get("entity_id", ""), a.get("entity_id")),
+        ))
 
     await db.commit()
     await db.refresh(campaign)
