@@ -154,6 +154,7 @@ async def compute_player_revision(db: AsyncSession, campaign_id: str) -> str:
             Scene.id, Scene.name, Scene.status, Scene.background_path,
             Scene.audio_path,
             Scene.weather,
+            Scene.weather_intensity,
             Scene.lighting, Scene.updated_at,
         ).where(Scene.campaign_id == campaign_id).order_by(Scene.id)
     )
@@ -844,6 +845,7 @@ async def import_campaign(
             lighting=s.get("lighting", "neutral"),
             audio_path=_import_asset_path(s.get("audio_path")),
             weather=s.get("weather"),
+            weather_intensity=s.get("weather_intensity", 1.0),
             status=s.get("status", "inactive"),
             notes=s.get("notes", ""),
             entrance_x=s.get("entrance_x", 0.0),
@@ -1155,6 +1157,7 @@ async def join_by_invite_code(
         "background_path": background_path,
         "audio_path": active_scene.audio_path if active_scene else None,
         "weather": active_scene.weather if active_scene else None,
+        "weather_intensity": getattr(active_scene, 'weather_intensity', 1.0) if active_scene else 1.0,
         "lighting": lighting,
         "map_scale": getattr(active_scene, 'map_scale', 1.0) if active_scene else 1.0,
         "model_y_offset": getattr(active_scene, 'model_y_offset', 0.0) if active_scene else 0.0,

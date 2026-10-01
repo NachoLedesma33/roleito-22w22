@@ -5,7 +5,7 @@ import { SceneItem, ZoneMetadata, SceneLayer } from '@core/domain/types';
 import { SceneGraph } from '@core/scene/scene-graph';
 import { useDoorInteraction } from '@core/scene/door-interaction';
 import SceneRenderer from '@/components/SceneRenderer';
-import { WEATHER_META, WEATHER_NONE_LABEL } from '@/components/WeatherFX';
+import { WEATHER_META, WEATHER_NONE_LABEL, clampWeatherIntensity, WEATHER_INTENSITY_MIN, WEATHER_INTENSITY_MAX } from '@/components/WeatherFX';
 import { createEmptyDrawState, createWallItem, type DrawState } from '@/components/WallDrawer';
 import { createEmptyZoneDraft, createZoneItem, ZONE_COLORS, ZONE_DEFAULT_COLOR, type ZoneDraft } from '@/components/ZoneDrawer';
 import { createEmptyPortalDraft, type PortalDraft } from '@/components/PortalDrawerCanvas';
@@ -1220,6 +1220,36 @@ export default function DmDashboard() {
     }
   };
 
+  const weatherIntensityTimerRef = useRef<number>(0);
+
+  const commitWeatherIntensity = useCallback(async (sceneId: string, value: number) => {
+    if (!campaignId) return;
+    try {
+      const updated = await api.scenes.update(campaignId, sceneId, { weather_intensity: value });
+      setActiveScene(updated);
+      setScenes((prev) => prev.map((s) => s.id === updated.id ? updated : s));
+    } catch {
+      setToastQueue((prev) => [...prev.slice(-4), {
+        id: `weather-int-err-${Date.now()}`,
+        rollerName: 'Sistema',
+        diceType: 1, count: 1, results: [1], total: 1,
+        label: 'No se pudo ajustar la intensidad del clima',
+        timestamp: Date.now(),
+      }]);
+    }
+  }, [campaignId]);
+
+  const handleChangeWeatherIntensity = (value: number) => {
+    if (!activeScene) return;
+    const clamped = clampWeatherIntensity(value);
+    // Feedback inmediato en el canvas; el PUT se agrupa para no spamear el backend.
+    setActiveScene((prev) => (prev ? { ...prev, weather_intensity: clamped } : prev));
+    window.clearTimeout(weatherIntensityTimerRef.current);
+    weatherIntensityTimerRef.current = window.setTimeout(() => {
+      void commitWeatherIntensity(activeScene.id, clamped);
+    }, 250);
+  };
+
   const handleTokenLightAttach = useCallback((sceneCharId: string, lightId: string) => {
     const light = graphRef.getItem(lightId)
     if (!light || light.metadata.type !== 'light') return
@@ -1778,7 +1808,7 @@ export default function DmDashboard() {
   }
 
   const sceneIndex = activeScene ? scenes.findIndex((s) => s.id === activeScene.id) + 1 : 0;
-  
+  const weatherIntensityK = clampWeatherIntensity(activeScene?.weather_intensity);
 
   return (
     <div className="h-screen flex flex-col bg-black overflow-hidden select-none">
@@ -2421,6 +2451,35 @@ export default function DmDashboard() {
                 {meta.label}
               </button>
             ))}
+            {activeScene?.weather && (
+              <div
+                className="border-t border-[var(--bg-tertiary)] mt-0.5 px-3 pt-1.5 pb-2"
+                onPointerDown={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between text-[10px] text-[var(--text-secondary)] mb-1">
+                  <span>Intensidad</span>
+                  <span className="text-[var(--accent)]" data-testid="weather-intensity-value">
+                    {weatherIntensityK.toFixed(2)}×
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={WEATHER_INTENSITY_MIN}
+                  max={WEATHER_INTENSITY_MAX}
+                  step={0.05}
+                  value={weatherIntensityK}
+                  onChange={(e) => handleChangeWeatherIntensity(parseFloat(e.target.value))}
+                  data-testid="weather-intensity"
+                  className="w-full h-1 cursor-pointer"
+                  title={`Intensidad del clima (${weatherIntensityK.toFixed(2)}x)`}
+                />
+                <div className="flex justify-between text-[9px] text-[var(--text-secondary)] opacity-70 mt-0.5">
+                  <span>Tenue</span>
+                  <span>Fuerte</span>
+                  <span>Torrencial</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -2719,6 +2778,7 @@ export default function DmDashboard() {
                 items={sceneItems}
                 lighting={activeScene.lighting}
                 weather={activeScene.weather ?? null}
+                weatherIntensity={activeScene.weather_intensity ?? 1}
                 selectedTokenId={selectedTokenId}
                 selectedItemIds={selectedItemId ? [selectedItemId] : []}
                 mapScale={activeScene.map_scale ?? 1}

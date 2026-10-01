@@ -81,6 +81,8 @@ async def create_scene(
         name=data.name,
         description=data.description,
         lighting=data.lighting,
+        weather=data.weather,
+        weather_intensity=data.weather_intensity,
     )
     db.add(scene)
     await db.commit()
@@ -140,6 +142,7 @@ async def update_scene(
 
     await db.commit()
     await db.refresh(scene)
+    await broadcast_revision(db, campaign_id)
     return scene
 
 

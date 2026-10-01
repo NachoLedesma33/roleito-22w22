@@ -230,6 +230,7 @@ class Scene(Base):
     lighting = Column(String, default="neutral")
     audio_path = Column(String, nullable=True)
     weather = Column(String, nullable=True)
+    weather_intensity = Column(Float, default=1.0)
     status = Column(String, default="inactive")
     notes = Column(Text, default="")
     entrance_x = Column(Float, default=0.0)

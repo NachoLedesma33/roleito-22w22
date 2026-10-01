@@ -75,6 +75,7 @@ interface JoinData {
   background_path: string | null;
   audio_path: string | null;
   weather: string | null;
+  weather_intensity?: number | null;
   lighting: string;
   map_scale: number;
   model_y_offset: number;
@@ -1291,6 +1292,7 @@ export default function PlayerView() {
               })}
               lighting={data.lighting}
               weather={data.weather ?? null}
+              weatherIntensity={data.weather_intensity ?? 1}
               mapScale={data.map_scale ?? 1}
               modelYOffset={data.model_y_offset ?? 0}
               items={data.items ?? []}

@@ -408,6 +408,7 @@ export interface Scene {
   lighting: string;
   audio_path: string | null;
   weather: string | null;
+  weather_intensity: number;
   status: string;
   notes: string;
   entrance_x: number;
@@ -719,9 +720,9 @@ export const api = {
       request<Scene[]>(`/campaigns/${campaignId}/scenes`),
     get: (campaignId: string, id: string) =>
       request<Scene>(`/campaigns/${campaignId}/scenes/${id}`),
-    create: (campaignId: string, data: { name: string; description?: string; lighting?: string; weather?: string | null }) =>
+    create: (campaignId: string, data: { name: string; description?: string; lighting?: string; weather?: string | null; weather_intensity?: number }) =>
       request<Scene>(`/campaigns/${campaignId}/scenes`, { method: 'POST', body: JSON.stringify(data) }),
-    update: (campaignId: string, id: string, data: { name?: string; description?: string; lighting?: string; weather?: string | null; status?: string; notes?: string; entrance_x?: number; entrance_z?: number; map_id?: string | null; map_scale?: number; model_y_offset?: number; grid_size?: number; grid_snap?: boolean }) =>
+    update: (campaignId: string, id: string, data: { name?: string; description?: string; lighting?: string; weather?: string | null; weather_intensity?: number; status?: string; notes?: string; entrance_x?: number; entrance_z?: number; map_id?: string | null; map_scale?: number; model_y_offset?: number; grid_size?: number; grid_snap?: boolean }) =>
       request<Scene>(`/campaigns/${campaignId}/scenes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (campaignId: string, id: string) =>
       request<{ status: string; id: string }>(`/campaigns/${campaignId}/scenes/${id}`, { method: 'DELETE' }),

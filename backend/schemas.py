@@ -407,6 +407,7 @@ class SceneCreate(BaseModel):
     description: str = ""
     lighting: str = "neutral"
     weather: Optional[str] = None
+    weather_intensity: float = 1.0
 
 
 class SceneUpdate(BaseModel):
@@ -414,6 +415,7 @@ class SceneUpdate(BaseModel):
     description: Optional[str] = None
     lighting: Optional[str] = None
     weather: Optional[str] = None
+    weather_intensity: Optional[float] = None
     status: Optional[str] = None
     notes: Optional[str] = None
     entrance_x: Optional[float] = None
@@ -455,6 +457,7 @@ class SceneResponse(BaseModel):
     lighting: str
     audio_path: Optional[str] = None
     weather: Optional[str] = None
+    weather_intensity: float = 1.0
     status: str
     notes: str = ""
     entrance_x: float = 0.0

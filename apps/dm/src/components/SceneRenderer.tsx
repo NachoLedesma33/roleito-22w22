@@ -9,7 +9,7 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import TokenSprite from './TokenSprite';
 import TokenModel from './TokenModel';
 import ItemRenderer from './ItemRenderer';
-import WeatherFX, { WEATHER_META } from './WeatherFX';
+import WeatherFX, { WEATHER_META, clampWeatherIntensity } from './WeatherFX';
 import { buildOccluders } from '../lib/lightOcclusion';
 import WallDrawerCanvas from './WallDrawerCanvas';
 import ZoneDrawerCanvas from './ZoneDrawerCanvas';
@@ -53,6 +53,7 @@ interface SceneRendererProps {
   items?: SceneItem[];
   lighting?: string;
   weather?: string | null;
+  weatherIntensity?: number | null;
   selectedTokenId?: string | null;
   selectedItemIds?: string[];
   readOnly?: boolean;
@@ -1899,6 +1900,7 @@ export default function SceneRenderer({
   items = [],
   lighting = 'neutral',
   weather = null,
+  weatherIntensity = null,
   selectedTokenId,
   selectedItemIds = [],
   readOnly = false,
@@ -1945,6 +1947,7 @@ export default function SceneRenderer({
   onAssetDrop,
   renderMode = '2d',
 }: SceneRendererProps) {
+  const weatherIntensityK = clampWeatherIntensity(weatherIntensity);
   const visibleChars = useMemo(() => characters.filter((c) => c.visible), [characters]);
   const hasGlow = useMemo(
     () => visibleChars.some((c) => (c.statuses ?? []).some((s) => GLOW_STATUSES.has(s))),
@@ -2027,9 +2030,10 @@ export default function SceneRenderer({
       {weather && WEATHER_META[weather] && (
         <div
           className="absolute inset-0 z-10 pointer-events-none"
-          style={{ background: WEATHER_META[weather].tint }}
+          style={{ background: WEATHER_META[weather].tint, opacity: Math.min(1, 0.55 + 0.45 * weatherIntensityK) }}
           data-testid="weather-overlay"
           data-weather={weather}
+          data-weather-intensity={weatherIntensityK}
         />
       )}
       <Canvas
@@ -2041,7 +2045,9 @@ export default function SceneRenderer({
         <Suspense fallback={null}>
           <SceneBackground url={backgroundUrl} mapScale={mapScale} modelYOffset={modelYOffset} />
         </Suspense>
-        {weather && <WeatherFX weather={weather} mapWidth={mapWidth} mapHeight={mapHeight} />}
+        {weather && (
+          <WeatherFX weather={weather} mapWidth={mapWidth} mapHeight={mapHeight} intensity={weatherIntensityK} />
+        )}
       {gridSize > 0 && <GridOverlay width={mapWidth} height={mapHeight} gridSize={gridSize} renderMode={renderMode} />}
       {movementRange && (
         <MovementRangeOverlay
