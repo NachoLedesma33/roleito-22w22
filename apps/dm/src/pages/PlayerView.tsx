@@ -203,7 +203,7 @@ export default function PlayerView() {
   const [showQuests, setShowQuests] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [showHandouts, setShowHandouts] = useState(false);
-  const [handoutRevision, setHandoutRevision] = useState('');
+  const [panelRevision, setPanelRevision] = useState('');
   const [toastQueue, setToastQueue] = useState<ToastRoll[]>([]);
   const [pendingRoll, setPendingRoll] = useState<{
     combat_id: string;
@@ -320,7 +320,7 @@ export default function PlayerView() {
       if (cancelled) return;
       if (revision !== lastRevRef.current) {
         lastRevRef.current = revision;
-        setHandoutRevision(revision);
+        setPanelRevision(revision);
         const snap = await fetchSnapshot();
         if (cancelled) return;
         applySnapshot(snap);
@@ -1655,6 +1655,7 @@ export default function PlayerView() {
       {showQuests && data && (
         <PlayerQuestPanel
           campaignId={data.campaign_id}
+          revision={panelRevision}
           onClose={() => setShowQuests(false)}
         />
       )}
@@ -1669,7 +1670,7 @@ export default function PlayerView() {
       {showHandouts && data && (
         <PlayerHandoutPanel
           campaignId={data.campaign_id}
-          revision={handoutRevision}
+          revision={panelRevision}
           onClose={() => setShowHandouts(false)}
         />
       )}

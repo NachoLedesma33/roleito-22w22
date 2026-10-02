@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import HudPanel from './HudPanel';
 import { api, type QuestResponse } from '@/lib/api';
 
@@ -11,11 +11,14 @@ const STATUS_STYLES: Record<string, string> = {
 interface PlayerQuestPanelProps {
   campaignId: string;
   onClose: () => void;
+  /** Cambia cuando el DM muta algo; dispara recarga si el panel está abierto. */
+  revision?: string;
 }
 
-export default function PlayerQuestPanel({ campaignId, onClose }: PlayerQuestPanelProps) {
+export default function PlayerQuestPanel({ campaignId, onClose, revision }: PlayerQuestPanelProps) {
   const [quests, setQuests] = useState<QuestResponse[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const lastRevRef = useRef<string | undefined>(undefined);
 
   const load = useCallback(async () => {
     try {
@@ -23,6 +26,7 @@ export default function PlayerQuestPanel({ campaignId, onClose }: PlayerQuestPan
       setQuests(
         all.filter((q) => q.visible_to_players && q.status !== 'draft')
       );
+      setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudieron cargar las misiones');
     }
@@ -31,6 +35,18 @@ export default function PlayerQuestPanel({ campaignId, onClose }: PlayerQuestPan
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (!revision) return;
+    if (lastRevRef.current === undefined) {
+      lastRevRef.current = revision;
+      return;
+    }
+    if (lastRevRef.current !== revision) {
+      lastRevRef.current = revision;
+      void load();
+    }
+  }, [revision, load]);
 
   const active = quests.filter((q) => q.status === 'active');
   const archive = quests.filter((q) => q.status !== 'active');

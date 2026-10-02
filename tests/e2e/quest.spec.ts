@@ -47,6 +47,66 @@ test.describe('Quest Board', () => {
     await ctx.close();
   });
 
+  test('Q3: sync — misión creada y completada por el DM aparece sin recargar', async ({
+    campaign,
+    request,
+    browser,
+    authHeaders,
+  }) => {
+    const scene = await createScene(request, campaign.id, 'Escena Quest3');
+    const aria = await createCharacter(request, campaign.id, { name: 'Aria' });
+    await seedTokens(request, campaign.id, scene.id, [
+      { entityType: 'character', entityId: aria.id, x: 0, z: 0 },
+    ]);
+    await updateScene(request, campaign.id, scene.id, { status: 'active' });
+    const code = await generateInviteCode(request, campaign.id);
+
+    const ctx = await browser.newContext();
+    const p = await ctx.newPage();
+    await p.goto(`/campaigns/join/${code}`);
+    await p.getByRole('button', { name: /Aria/ }).click();
+    await expect(p.getByTestId('player-role')).toContainText('Aria', { timeout: 10_000 });
+
+    await p.getByTitle('Misiones').click();
+    await expect(p.getByText('No hay misiones activas.')).toBeVisible();
+
+    // El DM crea una misión: tiene que aparecer por WS, sin recargar.
+    const created = await request.post(`/api/campaigns/${campaign.id}/quests`, {
+      headers: authHeaders,
+      data: {
+        title: 'Cazar al basilisco',
+        description: 'Cuidado con la cola.',
+        status: 'active',
+        objectives: [{ label: 'Encontrar la cueva', done: false }],
+        reward: '300 gp',
+        visible_to_players: true,
+      },
+    });
+    expect(created.ok()).toBeTruthy();
+    const quest = (await created.json()) as { id: string };
+
+    await expect(p.getByText('Cazar al basilisco')).toBeVisible({ timeout: 10_000 });
+    await expect(p.getByText('Encontrar la cueva')).toBeVisible();
+
+    // Y al completarla, el jugador la ve pasar a Archivo sin tocar nada.
+    const done = await request.put(`/api/campaigns/${campaign.id}/quests/${quest.id}`, {
+      headers: authHeaders,
+      data: {
+        title: 'Cazar al basilisco',
+        description: 'Cuidado con la cola.',
+        status: 'completed',
+        objectives: [{ label: 'Encontrar la cueva', done: true }],
+        reward: '300 gp',
+        visible_to_players: true,
+      },
+    });
+    expect(done.ok()).toBeTruthy();
+
+    await expect(p.getByText('Archivo')).toBeVisible({ timeout: 10_000 });
+
+    await ctx.close();
+  });
+
   test('Q2: completed va a Archivo, draft nunca aparece al jugador', async ({
     campaign,
     request,
