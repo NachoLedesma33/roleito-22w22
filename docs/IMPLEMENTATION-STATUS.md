@@ -379,10 +379,15 @@ Reference: `ROADMAP.md` (22,082 bytes)
 - Real-time sync (WebSocket) **implementado**: `/api/ws/invite/{code}` (room por campaña) empuja revisión tras mutaciones player-visible (scene sync/items/characters/move/PUT scene, character/npc PUT); `/api/ws/campaigns/{id}` para el dashboard DM (mata el polling 100ms). PlayerView escucha push con fallback de polling 16ms solo si el WS no conecta. Sin auth en el WS DM (mismo modelo que el WS de invite); solo emite el hash sha1 de 16 chars de `compute_player_revision`
 - `ContextMenu` tiene `data-testid="context-menu"` — el locator por clase `div.fixed.z-50` quedó ambiguo cuando los dropdowns de clima y lighting pasaron a `position: fixed` (aparecen antes en el DOM)
 - Quedan de fase 15: filtros por preset y otros FX (fuego/nieve fina); voice input DM (fase 13) y media (16) siguen verdes
-- Handouts **fase 1 implementada** (entrega, no lectura): tabla `handouts` (title, content, `image_path` absoluto bajo `data/assets/{cid}/handouts/{hid}`, `visible_to_players`), `backend/handout_routes.py` (CRUD + upload/clear de imagen, cada mutación con `broadcast_revision`), `api.handouts` y panel DM `HandoutPanel.tsx` (botón 🗂, crear/editar, 👁 visibilidad, subir/quitar imagen, borrar). Las mutaciones ya avisan a los jugadores por WS, pero **el jugador todavía no tiene panel** — es la fase 2
+- Handouts **fase 1 implementada** (entrega): tabla `handouts` (title, content, `image_path` absoluto bajo `data/assets/{cid}/handouts/{hid}`, `visible_to_players`), `backend/handout_routes.py` (CRUD + upload/clear de imagen, cada mutación con `broadcast_revision`), `api.handouts` y panel DM `HandoutPanel.tsx` (botón 🗂, crear/editar, 👁 visibilidad, subir/quitar imagen, borrar)
 - Handouts **fase 2 implementada** (lectura): `PlayerHandoutPanel.tsx` en `PlayerView` (botón 🗂, cards colapsables, texto con `whitespace-pre-wrap` e imagen servida por `/api/static`), recarga al abrir + `⟳ Recargar` + refetch cuando el DM muta. Para que el push sirva, `compute_player_revision` (`backend/routes.py`) ahora incluye los handouts en el hash: sin eso el WS empujaba una revisión idéntica y el panel nunca se enteraba. e2e `H4` (lee visible, no ve el oculto, imagen) y `H5` (aparece sin recargar)
 - Lección e2e: el dashboard DM tiene **2** `input[type=file]` (fondo + handouts), así que un selector `input[type=file]` es ambiguo — anclar por `data-testid`
 - Bug corregido: `DELETE /api/campaigns/{id}` (y `bulk-delete`) solo borraba las tablas viejas — quests, handouts, combats+combatantes, calendario, relojes, player_fog y light_requests quedaban **huérfanos** en la base. Ahora los purga (test `test_delete_campaign_purges_children`)
+- **Quests live-sync** (mismo patrón que handouts, mismo bug de fondo): las quests no entraban en el hash de `compute_player_revision` y `quest_routes.py` no llamaba `broadcast_revision` en ninguna mutación → el WS empujaba una revisión idéntica, `applyRevision` salía por el early-return y el `PlayerQuestPanel` del jugador quedaba congelado hasta que tocaba ⟳. Ahora las quests entran en el hash, create/update/delete avisan por WS, y `PlayerQuestPanel` recibe `revision` y refetchea (`PlayerView` comparte una sola señal `panelRevision` entre quests y handouts). Tests: `test_quest_mutations_change_revision` (pytest) y e2e `Q3` (el DM crea y completa una misión por API; el jugador la ve aparecer y pasar a Archivo sin recargar)
+
+- **Testing hygiene**: `backend/database.py` leía la **base de dev**: cada `pytest` dejaba ~21 campañas, escenas y personajes de prueba en la lista del usuario. Ahora `DB_PATH` sale de `ROLEITO_DB_PATH` y `init_db()` respeta `ROLEITO_SKIP_SEEDS`; `backend/tests/conftest.py` los setea antes de que se importe `database`, así que pytest corre contra una base propia en `%TEMP%` (48 tests, base de dev intacta). El skip de seeds también corta la copia de fondos y retratos a `data/assets/{cid}/`
+- `scripts/purge_e2e_junk.py` concentra la purga de e2e (la que estaba embebida en `tests/global-teardown.ts`, que ahora la invoca). **Regla dura: nada se borra si no sabemos que lo creó un test.** Fuentes: el **registro** `%TEMP%/roleito-e2e-ids.txt`, que escribe `tests/fixtures/campaign-fixture.ts` con cada id de campaña/DM que crea (es lo único que sobrevive al borrado por API del fixture); filas presentes con nombre `E2E %` o `created_at >= --since`; y carpetas `data/assets/{uuid}/` huérfanas **solo** si su id está en el registro. `--report` inventaría la base partida en `[test]` / `[no test]` con conteos y tamaño
+- Orden de borrado: los "hijos de hijos" (`scene_characters`, `combat_combatants`, `player_fog`, `map_markers`, `dm_notebook_versions`) van **primero**, mientras sus padres todavía existen; si borrás `scenes` antes, el subquery no matchea y quedan huérfanos. Verificar siempre con `PRAGMA foreign_key_check` (vacío = sano)
 
 ## Documentation Drift
 - `ARCHITECTURE.md` needs update to reflect current state
@@ -397,7 +402,7 @@ Based on dependency analysis and documentation completeness:
 
 | Priority | System | Rationale |
 |----------|--------|-----------|
-| 1 | Handouts a jugadores | Mayor gap del VTT: el DM comparte notas/imágenes y quedan en el panel del jugador. Reusa asset pipeline + broadcast |
+| 1 | Login profesional | Pedido del usuario: perfil + PIN contra el back, **sin listar todos los DMs** (hoy `PinLogin.tsx` tiene modo `select-dm` y lista `GET /api/auth/dms`). El back ya valida `dm_id` + PIN |
 | 2 | Mobile pass | Responsive real del dashboard y PlayerView (táctil) |
 | 3 | Filtros de clima por preset + fuego | Cierra fase 15 (chico, mismo archivo) |
 | 4 | Menús con click-toggle | Reemplaza `hover()` (táctil); rompe `weather.spec` W1, hay que pasarlo a `click()` |
@@ -405,6 +410,8 @@ Based on dependency analysis and documentation completeness:
 | 6 | AI Agents reales | Fase 12 roadmap |
 | 7 | Voice input | Fase 13 |
 
+> Handouts a jugadores **completado** (fases 1 y 2) — ver sección 6.
+>
 > Real-time sync (WebSocket) completado en ambos sentidos (jugador + dashboard DM) — ver secciones 2 y 6.
 >
 > Prioridades 1-10 originales (scene graph → 3D) quedaron cubiertas — ver secciones 2 y 6.
