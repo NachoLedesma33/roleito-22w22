@@ -116,6 +116,35 @@ export default function DmDashboard() {
   const [buildMenuOpen, setBuildMenuOpen] = useState(false);
   const [lightingMenuRect, setLightingMenuRect] = useState<{ left: number; top: number } | null>(null);
   const [weatherMenuRect, setWeatherMenuRect] = useState<{ left: number; top: number } | null>(null);
+  // Los menús de clima y lighting abren con click, no con hover: en táctil el
+  // hover no existe y el menú era inalcanzable.
+  const [openMenu, setOpenMenu] = useState<'lighting' | 'weather' | null>(null);
+
+  const toggleMenu = (which: 'lighting' | 'weather', anchor: HTMLElement) => {
+    const r = anchor.getBoundingClientRect();
+    if (which === 'lighting') {
+      setLightingMenuRect({ left: Math.max(8, r.right - 150), top: r.bottom - 2 });
+    } else {
+      setWeatherMenuRect({ left: Math.max(8, r.right - 170), top: r.bottom - 2 });
+    }
+    setOpenMenu((prev) => (prev === which ? null : which));
+  };
+
+  useEffect(() => {
+    if (!openMenu) return;
+    const onPointerDown = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement).closest('[data-menu-root]')) setOpenMenu(null);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpenMenu(null);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [openMenu]);
   const [lightContextMenu, setLightContextMenu] = useState<{ x: number; y: number; itemId: string } | null>(null);
   const [fogContextMenu, setFogContextMenu] = useState<{ x: number; y: number; itemId: string } | null>(null);
   const [, setUndoBump] = useState(0);
@@ -2390,23 +2419,28 @@ export default function DmDashboard() {
           Sugerir fondo
         </button>
 
-        <div
-          className="relative group shrink-0"
-          onMouseEnter={(e) => {
-            const r = e.currentTarget.getBoundingClientRect();
-            setLightingMenuRect({ left: Math.max(8, r.right - 150), top: r.bottom - 2 });
-          }}
-        >
-          <button className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+        <div className="relative shrink-0" data-menu-root>
+          <button
+            onClick={(e) => toggleMenu('lighting', e.currentTarget)}
+            aria-expanded={openMenu === 'lighting'}
+            aria-haspopup="menu"
+            data-testid="lighting-select"
+            className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+          >
             {{ neutral: 'Neutra', dark: 'Oscura', dim: 'Tenue', bright: 'Brillante', torchlight: 'Antorcha' }[activeScene?.lighting || 'neutral'] || activeScene?.lighting || 'Neutra'} ▾
           </button>
           <div
-            className="fixed bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 min-w-[150px] py-0.5"
+            role="menu"
+            data-testid="lighting-menu"
+            className={`fixed bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg transition-all z-50 min-w-[150px] py-0.5 ${
+              openMenu === 'lighting' ? 'opacity-100 visible' : 'opacity-0 invisible'
+            }`}
             style={{ left: lightingMenuRect?.left ?? -9999, top: lightingMenuRect?.top ?? -9999 }}
           >
             {['neutral', 'dark', 'dim', 'bright', 'torchlight'].map((mode) => (
               <button
                 key={mode}
+                role="menuitem"
                 onClick={() => handleToggleLighting(mode)}
                 className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${
                   activeScene?.lighting === mode ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'
@@ -2418,25 +2452,30 @@ export default function DmDashboard() {
           </div>
         </div>
 
-        <div
-          className="relative group shrink-0"
-          onMouseEnter={(e) => {
-            const r = e.currentTarget.getBoundingClientRect();
-            setWeatherMenuRect({ left: Math.max(8, r.right - 170), top: r.bottom - 2 });
-          }}
-        >
+        <div className="relative shrink-0" data-menu-root>
           <button
+            onClick={(e) => toggleMenu('weather', e.currentTarget)}
+            aria-expanded={openMenu === 'weather'}
+            aria-haspopup="menu"
             className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             data-testid="weather-select"
             title="Clima de la escena"
           >
             {(activeScene?.weather && WEATHER_META[activeScene.weather] ? WEATHER_META[activeScene.weather].label : WEATHER_NONE_LABEL)} ▾
           </button>
+          {/* El menú no se cierra al elegir: el de clima tiene adentro el slider
+              de intensidad, que hay que poder usar sin reabrir. Se cierra con
+              click afuera, Escape o volviendo a clickear el disparador. */}
           <div
-            className="fixed bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 min-w-[170px] py-0.5"
+            role="menu"
+            data-testid="weather-menu"
+            className={`fixed bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg transition-all z-50 min-w-[170px] py-0.5 ${
+              openMenu === 'weather' ? 'opacity-100 visible' : 'opacity-0 invisible'
+            }`}
             style={{ left: weatherMenuRect?.left ?? -9999, top: weatherMenuRect?.top ?? -9999 }}
           >
             <button
+              role="menuitem"
               onClick={() => handleChangeWeather(null)}
               className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${
                 !activeScene?.weather ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'
@@ -2447,6 +2486,7 @@ export default function DmDashboard() {
             {Object.entries(WEATHER_META).map(([key, meta]) => (
               <button
                 key={key}
+                role="menuitem"
                 onClick={() => handleChangeWeather(key)}
                 className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${
                   activeScene?.weather === key ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'

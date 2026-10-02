@@ -18,9 +18,12 @@ test.describe('Weather / Atmosphere', () => {
     const weatherSelect = page.getByTestId('weather-select');
     await expect(weatherSelect).toContainText(WEATHER_NONE, { timeout: 10_000 });
 
-    await weatherSelect.hover();
-    await page.getByRole('button', { name: '🌧 Lluvia' }).click();
+    await weatherSelect.click();
+    await expect(page.getByTestId('weather-menu')).toBeVisible();
+    await page.getByRole('menuitem', { name: '🌧 Lluvia' }).click();
 
+    // El menú sigue abierto al elegir (adentro está el slider de intensidad).
+    await expect(page.getByTestId('weather-menu')).toBeVisible();
     await expect(weatherSelect).toContainText('Lluvia', { timeout: 10_000 });
     await expect
       .poll(async () => {
@@ -31,9 +34,8 @@ test.describe('Weather / Atmosphere', () => {
       }, { timeout: 10_000 })
       .toBe('rain');
 
-    // Limpiar: vuelve a Sin clima
-    await weatherSelect.hover();
-    await page.getByRole('button', { name: '🌤 Sin clima' }).click();
+    // Limpiar: vuelve a Sin clima (el menú sigue abierto, no hay que reabrirlo)
+    await page.getByRole('menuitem', { name: '🌤 Sin clima' }).click();
     await expect(weatherSelect).toContainText(WEATHER_NONE, { timeout: 10_000 });
   });
 
@@ -85,7 +87,7 @@ test.describe('Weather / Atmosphere', () => {
     const weatherSelect = page.getByTestId('weather-select');
     await expect(weatherSelect).toContainText('Lluvia', { timeout: 10_000 });
 
-    await weatherSelect.hover();
+    await weatherSelect.click();
     const slider = page.getByTestId('weather-intensity');
     await expect(slider).toBeVisible();
     await slider.fill('2');
@@ -114,6 +116,42 @@ test.describe('Weather / Atmosphere', () => {
       '2',
       { timeout: 15_000 },
     );
+  });
+
+  test('W4: los menús abren con click (táctil) y se cierran con Escape', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    const scene = await createScene(request, campaign.id, 'Pradera W4');
+    await page.goto(`/campaigns/${campaign.id}`);
+    await expect(page.locator('header select')).toContainText('Pradera W4', { timeout: 10_000 });
+    await page.locator('header select').selectOption(scene.id);
+
+    const weatherMenu = page.getByTestId('weather-menu');
+    const lightingMenu = page.getByTestId('lighting-menu');
+    const weatherSelect = page.getByTestId('weather-select');
+
+    // Cerrados de entrada: en táctil no hay hover que los abra.
+    await expect(weatherMenu).toBeHidden();
+    await expect(lightingMenu).toBeHidden();
+
+    // Un click los abre, sin mover el mouse.
+    await weatherSelect.click();
+    await expect(weatherMenu).toBeVisible();
+    await weatherSelect.click();
+    await expect(weatherMenu).toBeHidden();
+
+    // Escape cierra.
+    await weatherSelect.click();
+    await expect(weatherMenu).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(weatherMenu).toBeHidden();
+
+    // El de lighting también, y abre el que corresponde.
+    await page.getByTestId('lighting-select').click();
+    await expect(lightingMenu).toBeVisible();
+    await expect(weatherMenu).toBeHidden();
   });
 });
 
