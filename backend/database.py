@@ -4,10 +4,13 @@ from models import Base
 from datetime import datetime
 from pathlib import Path
 import logging
+import os
 
 logger = logging.getLogger("roleito.db")
 
-DB_PATH = Path(__file__).parent.parent / "data" / "roleito.db"
+# ROLEITO_DB_PATH: pytest lo sobreescribe (ver tests/conftest.py) para no escribir
+# sobre la base de dev, que es la que usa la app.
+DB_PATH = Path(os.environ.get("ROLEITO_DB_PATH") or Path(__file__).parent.parent / "data" / "roleito.db")
 DB_URL = f"sqlite+aiosqlite:///{DB_PATH}"
 
 engine = create_async_engine(DB_URL, echo=False)
@@ -99,6 +102,10 @@ async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     await _migrate()
+    # ROLEITO_SKIP_SEEDS: los tests no necesitan los DMs/campañas demo, y
+    # seed_demo/seed_demo_2 copian assets a data/assets/ (basura en cada corrida).
+    if os.environ.get("ROLEITO_SKIP_SEEDS"):
+        return
     await seed_test_dm()
     await seed_demo()
     await seed_demo_2()
