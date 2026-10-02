@@ -21,6 +21,42 @@ async def client():
 
 
 @pytest.mark.asyncio
+async def test_login_by_profile_name(client):
+    """El login es nombre + PIN: el id interno no viaja a la pantalla."""
+    reg = await client.post("/api/auth/register", json={"name": "Gandalf", "pin": "1234"})
+    assert reg.status_code == 200, reg.text
+
+    res = await client.post("/api/auth/login", json={"name": "Gandalf", "pin": "1234"})
+    assert res.status_code == 200, res.text
+    assert res.json()["dm_name"] == "Gandalf"
+
+    # Sin espacios y sin importar mayúsculas: es un nombre, no un id.
+    res = await client.post("/api/auth/login", json={"name": "  gandalf ", "pin": "1234"})
+    assert res.status_code == 200, res.text
+
+
+@pytest.mark.asyncio
+async def test_login_no_enumera_perfiles(client):
+    """Nombre inexistente y PIN malo devuelven lo mismo, o el atacante usa la
+    diferencia (404 vs 401) para saber qué perfiles existen."""
+    await client.post("/api/auth/register", json={"name": "Bilbo", "pin": "1234"})
+
+    inexistente = await client.post(
+        "/api/auth/login", json={"name": "NoExiste", "pin": "1234"}
+    )
+    pin_malo = await client.post("/api/auth/login", json={"name": "Bilbo", "pin": "9999"})
+
+    assert inexistente.status_code == pin_malo.status_code == 401
+    assert inexistente.json()["detail"] == pin_malo.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_login_sin_identificador_rechazado(client):
+    res = await client.post("/api/auth/login", json={"pin": "1234"})
+    assert res.status_code == 422
+
+
+@pytest.mark.asyncio
 async def test_health(client):
     response = await client.get("/health")
     assert response.status_code == 200

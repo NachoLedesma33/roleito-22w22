@@ -24,7 +24,7 @@ from auth import (
     verify_dm_pin,
 )
 from database import async_session as get_db
-from sqlalchemy import select
+from sqlalchemy import func, select
 from models import DM
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -36,7 +36,12 @@ class DMCreateRequest(BaseModel):
 
 
 class PinLoginRequest(BaseModel):
-    dm_id: str
+    """Login por nombre de perfil + PIN. `dm_id` queda aceptado por
+    compatibilidad (lo usan el fixture de e2e y el flujo viejo), pero la UI
+    manda `name`: el id es interno y no tiene por qué viajar a la pantalla."""
+
+    name: str | None = None
+    dm_id: str | None = None
     pin: str = Field(..., min_length=4, max_length=8, pattern=r"^\d+$")
 
 
@@ -106,18 +111,39 @@ async def register_dm(body: DMCreateRequest, request: Request):
 
 @router.post("/login", response_model=LoginResponse)
 async def login(body: PinLoginRequest, request: Request):
-    """Login with DM id + PIN. Returns session token."""
+    """Login con nombre de perfil + PIN. Devuelve el token de sesión.
+
+    Nombre inexistente y PIN incorrecto devuelven el mismo 401: distinguirlos
+    ("DM not found" vs "Invalid PIN") le sirve a un atacante para enumerar qué
+    perfiles existen en la máquina.
+    """
     ip = request.client.host if request.client else "unknown"
     if check_lockout(ip):
         raise HTTPException(status_code=429, detail="Too many attempts. Try later.")
 
-    dm = await get_dm_by_id(body.dm_id)
-    if not dm:
-        raise HTTPException(status_code=404, detail="DM not found.")
+    if not body.name and not body.dm_id:
+        raise HTTPException(status_code=422, detail="Falta el nombre del perfil.")
 
-    if not await verify_dm_pin(body.dm_id, body.pin):
-        record_failed_attempt(ip)
-        raise HTTPException(status_code=401, detail="Invalid PIN.")
+    async with get_db() as db:
+        if body.name:
+            result = await db.execute(
+                select(DM).where(func.lower(DM.name) == body.name.strip().lower())
+            )
+            matches = result.scalars().all()
+            if len(matches) > 1:
+                # No debería pasar (register rechaza duplicados), pero si hay
+                # datos viejos no adivinamos cuál es.
+                raise HTTPException(
+                    status_code=409, detail="Hay más de un perfil con ese nombre."
+                )
+            dm = matches[0] if matches else None
+        else:
+            dm = (await db.execute(select(DM).where(DM.id == body.dm_id))).scalar_one_or_none()
+
+    if not dm or not await verify_dm_pin(dm.id, body.pin):
+        if dm:
+            record_failed_attempt(ip)
+        raise HTTPException(status_code=401, detail="Nombre o PIN incorrectos.")
 
     clear_failed_attempts(ip)
     session = await create_session(dm.id)
