@@ -368,6 +368,19 @@ class Quest(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+class Handout(Base):
+    __tablename__ = "handouts"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    campaign_id = Column(String, ForeignKey("campaigns.id"), nullable=False)
+    title = Column(String, nullable=False)
+    content = Column(Text, default="")  # texto del handout (notas, pista, documento)
+    image_path = Column(String, nullable=True)  # ABSOLUTO bajo ASSETS_DIR, como Scene.background_path
+    visible_to_players = Column(Integer, default=1)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class CampaignCalendar(Base):
     __tablename__ = "campaign_calendars"
 

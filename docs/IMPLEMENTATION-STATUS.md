@@ -97,7 +97,7 @@ Reference: `2D-TO-3D.md` (34,685 bytes), `3D-RENDERER.md` (118 bytes)
 | Character Models | Implemented | `TokenSprite.tsx` + `TokenModel.tsx` + glow |
 | Environment | Implemented | BG, items, walls, fog en escena 3D |
 | Fog in 3D | Implemented | Overlay de niebla sobre escena (SceneRenderer) |
-| Weather/FX atmosphere | Implemented | `Scene.weather` (rain/snow/fog) — partículas three.js en WeatherFX.tsx + filtro tint (SceneRenderer), switcher en DmDashboard, sync a PlayerView vía snapshot+WS |
+| Weather/FX atmosphere | Implemented | `Scene.weather` (rain/snow/fog) + `Scene.weather_intensity` (0.25×–4×) — partículas three.js en WeatherFX.tsx + filtro tint (SceneRenderer), switcher + slider en DmDashboard, sync a PlayerView vía snapshot+WS |
 
 > Nota: el render 3D vive DENTRO de `apps/dm` (decisión AGENTS.md). `apps/renderer` queda placeholder intencional.
 
@@ -348,7 +348,7 @@ Reference: `ROADMAP.md` (22,082 bytes)
 | 13 | DM Voice Input | Not Started | No code |
 | 14 | Voice Recap | Implemented | TTS completo: `tts_routes`, panel UI, 10 tests e2e |
 | 15 | Atmosphere System | Not Started | No code |
-| 16 | Media System | Not Started | No code |
+| 16 | Media System | Partially | Audio ambience implementado (`Scene.audio_path` + upload/player DM y jugador). Handouts **fase 1** (tabla + CRUD + panel DM) implementado; falta la vista del jugador |
 | 17 | LAN Mode | Not Started | No code |
 | 18 | Multiplayer Sync | Not Started | No code |
 | 19 | Immersive Features | Not Started | No code |
@@ -374,7 +374,13 @@ Reference: `ROADMAP.md` (22,082 bytes)
 - AI agents reales: orchestrator stub (fase 12)
 - Grid auto-detection (Hough) diseñado, no implementado — grid manual + snap
 - Audio ambience (Fase 16) **implementada**: `Scene.audio_path` con UI en SceneDetail (upload/quitar + player) y reproducción loop por escena activa en PlayerView (toggle 🔊/🔇, arranca tras gesto, swap automático al cambiar escena; broadcast WS incluido).
-- Weather/FX atmosphere (Fase 15, parcial) **implementada**: `Scene.weather` (rain/snow/fog — lluvia LineSegments, nieve Points, niebla Planes con textura radial; tint CSS por clima) — switcher "Clima" en DmDashboard (junto a lighting), render en SceneRenderer (DM + PlayerView + SceneDetail), entra en revision/snapshot → broadcast WS; migración `scenes.weather` en database.py. Quedan de fase 15: filtros por preset y otros FX (fuego/nieve fina); voice input DM (fase 13) y media (16) siguen verdes
+- Weather/FX atmosphere (Fase 15, parcial) **implementada**: `Scene.weather` (rain/snow/fog — lluvia Points 16-24 u/s, nieve Points, niebla Planes con textura radial; tint CSS por clima) — switcher "Clima" en DmDashboard (junto a lighting), render en SceneRenderer (DM + PlayerView + SceneDetail), entra en revision/snapshot → broadcast WS; migraciones `scenes.weather` + `scenes.weather_intensity` en database.py. OJO: la lluvia pasó de LineSegments a Points porque con cámara casi cenital un segmento vertical de 1px se escorza y "flota"
+- Intensidad de clima **implementada**: `Scene.weather_intensity` (Float, default 1.0, 0.25×–4×) con slider en el dashboard DM (debounce 250ms, feedback inmediato en `setActiveScene`); escala lluvia, nieve y niebla con el mismo `clampWeatherIntensity`; buffers de partículas alocados para la intensidad MÁXIMA (`N_RAIN_MAX`/`N_SNOW_MAX`) porque `setDrawRange` solo recorta. Persiste por escena y llega al jugador vía snapshot
+- Real-time sync (WebSocket) **implementado**: `/api/ws/invite/{code}` (room por campaña) empuja revisión tras mutaciones player-visible (scene sync/items/characters/move/PUT scene, character/npc PUT); `/api/ws/campaigns/{id}` para el dashboard DM (mata el polling 100ms). PlayerView escucha push con fallback de polling 16ms solo si el WS no conecta. Sin auth en el WS DM (mismo modelo que el WS de invite); solo emite el hash sha1 de 16 chars de `compute_player_revision`
+- `ContextMenu` tiene `data-testid="context-menu"` — el locator por clase `div.fixed.z-50` quedó ambiguo cuando los dropdowns de clima y lighting pasaron a `position: fixed` (aparecen antes en el DOM)
+- Quedan de fase 15: filtros por preset y otros FX (fuego/nieve fina); voice input DM (fase 13) y media (16) siguen verdes
+- Handouts **fase 1 implementada** (entrega, no lectura): tabla `handouts` (title, content, `image_path` absoluto bajo `data/assets/{cid}/handouts/{hid}`, `visible_to_players`), `backend/handout_routes.py` (CRUD + upload/clear de imagen, cada mutación con `broadcast_revision`), `api.handouts` y panel DM `HandoutPanel.tsx` (botón 🗂, crear/editar, 👁 visibilidad, subir/quitar imagen, borrar). Las mutaciones ya avisan a los jugadores por WS, pero **el jugador todavía no tiene panel** — es la fase 2
+- Lección e2e: el dashboard DM tiene **2** `input[type=file]` (fondo + handouts), así que un selector `input[type=file]` es ambiguo — anclar por `data-testid`
 
 ## Documentation Drift
 - `ARCHITECTURE.md` needs update to reflect current state
@@ -389,11 +395,15 @@ Based on dependency analysis and documentation completeness:
 
 | Priority | System | Rationale |
 |----------|--------|-----------|
-| 1 | AI Map Analysis | Automation |
-| 2 | AI Agents reales | Fase 12 roadmap |
-| 3 | Voice input / media | Fases 13/16 (atmosphere 15 hecho) |
+| 1 | Handouts a jugadores | Mayor gap del VTT: el DM comparte notas/imágenes y quedan en el panel del jugador. Reusa asset pipeline + broadcast |
+| 2 | Mobile pass | Responsive real del dashboard y PlayerView (táctil) |
+| 3 | Filtros de clima por preset + fuego | Cierra fase 15 (chico, mismo archivo) |
+| 4 | Menús con click-toggle | Reemplaza `hover()` (táctil); rompe `weather.spec` W1, hay que pasarlo a `click()` |
+| 5 | AI Map Analysis | Automation (IA diferida por el usuario) |
+| 6 | AI Agents reales | Fase 12 roadmap |
+| 7 | Voice input | Fase 13 |
 
-> Real-time sync (WebSocket) completado — ver secciones 2 y 6.
+> Real-time sync (WebSocket) completado en ambos sentidos (jugador + dashboard DM) — ver secciones 2 y 6.
 >
 > Prioridades 1-10 originales (scene graph → 3D) quedaron cubiertas — ver secciones 2 y 6.
 
@@ -402,5 +412,6 @@ Based on dependency analysis and documentation completeness:
 # 9. Last Updated
 
 - **Date**: 2026-10-01
-- **Updated By**: Import/export gaps (combat/dice/quests/calendar/clocks + asset rows + remap items_json)
-- **Trigger**: Roadmap tras Weather/FX atmosphere (Fase 15)
+- **Updated By**: Real-time DM (WS `/api/ws/campaigns/{id}` + fix de clipping en dropdowns de clima/lighting), intensidad de clima por escena, y `data-testid` en `ContextMenu`
+- **Trigger**: Commits `2cdbcb2`, `4fff17a`, `a9286f1` — las tres fases quedaron fuera del doc
+- **Nota de verificación**: las fases anteriores de esta sesión (import/export gaps, weather, audio) ya estaban anotadas

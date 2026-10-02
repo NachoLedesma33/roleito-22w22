@@ -387,6 +387,24 @@ export interface QuestInput {
   visible_to_players: boolean;
 }
 
+export interface HandoutResponse {
+  id: string;
+  campaign_id: string;
+  title: string;
+  content: string;
+  image_path: string | null;
+  visible_to_players: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface HandoutInput {
+  title: string;
+  content: string;
+  image_path: string | null;
+  visible_to_players: boolean;
+}
+
 export interface Asset {
   id: string;
   campaign_id: string;
@@ -926,6 +944,36 @@ export const api = {
       }),
     remove: (campaignId: string, questId: string) =>
       request<{ ok: boolean }>(`/campaigns/${campaignId}/quests/${questId}`, { method: 'DELETE' }),
+  },
+
+  handouts: {
+    list: (campaignId: string) =>
+      request<HandoutResponse[]>(`/campaigns/${campaignId}/handouts`),
+    create: (campaignId: string, data: HandoutInput) =>
+      request<HandoutResponse>(`/campaigns/${campaignId}/handouts`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    update: (campaignId: string, handoutId: string, data: HandoutInput) =>
+      request<HandoutResponse>(`/campaigns/${campaignId}/handouts/${handoutId}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    remove: (campaignId: string, handoutId: string) =>
+      request<{ ok: boolean }>(`/campaigns/${campaignId}/handouts/${handoutId}`, { method: 'DELETE' }),
+    uploadImage: async (campaignId: string, handoutId: string, file: File) => {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${API_BASE}/campaigns/${campaignId}/handouts/${handoutId}/image`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: form,
+      });
+      if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+      return res.json() as Promise<HandoutResponse>;
+    },
+    clearImage: (campaignId: string, handoutId: string) =>
+      request<HandoutResponse>(`/campaigns/${campaignId}/handouts/${handoutId}/image`, { method: 'DELETE' }),
   },
   calendar: {
     get: (campaignId: string) =>

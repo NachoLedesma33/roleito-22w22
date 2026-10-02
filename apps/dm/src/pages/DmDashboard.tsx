@@ -29,6 +29,7 @@ import RecapPanel from '@/components/RecapPanel';
 import CharacterSheet from '@/components/CharacterSheet';
 import InitiativeTracker from '@/components/InitiativeTracker';
 import QuestPanel from '@/components/QuestPanel';
+import HandoutPanel from '@/components/HandoutPanel';
 import CalendarPanel from '@/components/CalendarPanel';
 import { STATUS_OPTIONS, STATUS_GROUPS } from '@/lib/statusMarkers';
 import MapViewer from '@/components/MapViewer';
@@ -78,6 +79,7 @@ export default function DmDashboard() {
   const [showDiceRoller, setShowDiceRoller] = useState(false);
   const [showInitiative, setShowInitiative] = useState(false);
   const [showQuests, setShowQuests] = useState(false);
+  const [showHandouts, setShowHandouts] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [showRecap, setShowRecap] = useState(false);
   const [viewingMap, setViewingMap] = useState<GameMap | null>(null);
@@ -1668,6 +1670,8 @@ export default function DmDashboard() {
             setShowInitiative(false);
           } else if (showQuests) {
             setShowQuests(false);
+          } else if (showHandouts) {
+            setShowHandouts(false);
           } else if (showCalendar) {
             setShowCalendar(false);
           } else if (showRecap) {
@@ -2520,6 +2524,15 @@ export default function DmDashboard() {
         </button>
 
         <button
+          onClick={() => setShowHandouts(!showHandouts)}
+          className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showHandouts ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+          title="Documentos para jugadores"
+          data-testid="handouts-toggle"
+        >
+          🗂
+        </button>
+
+        <button
           onClick={() => setShowCalendar(!showCalendar)}
           className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showCalendar ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
           title="Calendario y relojes"
@@ -3188,6 +3201,12 @@ export default function DmDashboard() {
             <QuestPanel
               campaignId={campaignId}
               onClose={() => setShowQuests(false)}
+            />
+          )}
+          {showHandouts && campaignId && (
+            <HandoutPanel
+              campaignId={campaignId}
+              onClose={() => setShowHandouts(false)}
             />
           )}
           {showCalendar && campaignId && (

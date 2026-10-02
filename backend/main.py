@@ -35,6 +35,7 @@ from vault_routes import router as vault_router
 from dice_routes import dice_router
 from combat_routes import router as combat_router
 from quest_routes import router as quest_router
+from handout_routes import router as handout_router
 from calendar_routes import router as calendar_router
 
 logging.basicConfig(
@@ -121,6 +122,7 @@ app.include_router(vault_router, prefix="/api")
 app.include_router(dice_router, prefix="/api")
 app.include_router(combat_router, prefix="/api")
 app.include_router(quest_router, prefix="/api")
+app.include_router(handout_router, prefix="/api")
 app.include_router(calendar_router, prefix="/api")
 
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "assets")
