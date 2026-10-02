@@ -1,15 +1,16 @@
 import type { FormEvent, ReactNode } from 'react';
 
 export interface PinFormProps {
-  idValue: string;
-  onIdChange: (value: string) => void;
+  /** Nombre del perfil (no el id interno). */
+  nameValue: string;
+  onNameChange: (value: string) => void;
   pinValue: string;
   onPinChange: (value: string) => void;
   onSubmit: (e: FormEvent) => void;
   submitLabel: string;
   error?: string;
   loading?: boolean;
-  /** Lista de IDs guardados para autocompletar (opcional). */
+  /** Perfiles guardados para elegir (opcional). */
   aside?: ReactNode;
   /** Links secundarios: crear DM, cambiar PIN, volver. */
   footer?: ReactNode;
@@ -20,12 +21,13 @@ const inputClass =
   'w-full text-center bg-gray-800/50 border border-gray-700 rounded-lg py-3 text-gray-100 focus:outline-none focus:border-emerald-600 transition-colors';
 
 /**
- * Formulario clásico ID + PIN, sin lógica de auth ni cromo de pantalla: solo la
- * tarjeta. Se puede montar en el login actual o dentro de una landing.
+ * Formulario clásico nombre de perfil + PIN, sin lógica de auth ni cromo de
+ * pantalla: solo la tarjeta. Se puede montar en el login actual o dentro de una
+ * landing.
  */
 export default function PinForm({
-  idValue,
-  onIdChange,
+  nameValue,
+  onNameChange,
   pinValue,
   onPinChange,
   onSubmit,
@@ -41,14 +43,14 @@ export default function PinForm({
       <form onSubmit={onSubmit} className="space-y-5">
         <input
           type="text"
-          value={idValue}
-          onChange={(e) => onIdChange(e.target.value.trim())}
-          placeholder="ID de DM"
-          autoComplete="off"
+          value={nameValue}
+          onChange={(e) => onNameChange(e.target.value.trim())}
+          placeholder="Nombre de DM"
+          autoComplete="username"
           spellCheck={false}
           autoFocus
-          data-testid="login-dm-id"
-          className={`${inputClass} font-mono text-sm tracking-wider`}
+          data-testid="login-dm-name"
+          className={`${inputClass} text-lg`}
         />
 
         <input

@@ -22,7 +22,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   dms: DMBrief[];
-  login: (dmId: string, pin: string) => Promise<void>;
+  login: (name: string, pin: string) => Promise<void>;
   registerDm: (name: string, pin: string) => Promise<void>;
   changePin: (currentPin: string | undefined, newPin: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -69,11 +69,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [refreshDms]);
 
-  const login = useCallback(async (dmId: string, pin: string) => {
+  const login = useCallback(async (name: string, pin: string) => {
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ dm_id: dmId, pin }),
+      body: JSON.stringify({ name, pin }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: 'Login failed' }));

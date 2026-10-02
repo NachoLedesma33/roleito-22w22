@@ -5,14 +5,13 @@ import PinForm from './PinForm';
 type Mode = 'login' | 'register' | 'change';
 
 /**
- * Pantalla de entrada. El login es ID + PIN; a un costado, los IDs guardados
- * para autocompletar si no te acordás. La parte visual del formulario está en
- * `PinForm`, que no depende de auth ni de la pantalla.
+ * Pantalla de entrada. El login es nombre de perfil + PIN; a un costado, los
+ * perfiles guardados para elegir si no te acordás del nombre. La parte visual
+ * del formulario está en `PinForm`, que no depende de auth ni de la pantalla.
  */
 export default function PinLogin() {
   const { login, registerDm, changePin, dms } = useAuth();
   const [mode, setMode] = useState<Mode>('login');
-  const [dmId, setDmId] = useState('');
   const [dmName, setDmName] = useState('');
   const [currentPin, setCurrentPin] = useState('');
   const [pin, setPin] = useState('');
@@ -36,8 +35,8 @@ export default function PinLogin() {
   const submitLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!dmId) {
-      setError('Ingresá tu ID de DM');
+    if (!dmName) {
+      setError('Ingresá el nombre de tu perfil');
       return;
     }
     if (pin.length < 4 || pin.length > 8) {
@@ -46,7 +45,7 @@ export default function PinLogin() {
     }
     setLoading(true);
     try {
-      await login(dmId, pin);
+      await login(dmName, pin);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error');
     } finally {
@@ -112,24 +111,23 @@ export default function PinLogin() {
     <div data-testid="login-saved-dms">
       {dms.length > 0 ? (
         <>
-          <p className="text-[11px] text-gray-500 mb-2 text-center">IDs guardados</p>
+          <p className="text-[11px] text-gray-500 mb-2 text-center">Perfiles en esta máquina</p>
           <div className="space-y-1.5">
             {dms.map((dm) => (
               <button
                 key={dm.id}
                 type="button"
-                onClick={() => { setDmId(dm.id); setError(''); }}
+                onClick={() => { setDmName(dm.name); setError(''); }}
                 data-testid="login-saved-dm"
                 className="w-full px-3 py-2 rounded-lg bg-gray-800/40 hover:bg-gray-700 border border-gray-700/60 text-left transition-colors"
               >
                 <span className="block text-sm text-gray-100 truncate">{dm.name}</span>
-                <span className="block text-[11px] text-gray-500 font-mono truncate">{dm.id}</span>
               </button>
             ))}
           </div>
         </>
       ) : (
-        <p className="text-xs text-gray-500 text-center">No hay DMs registrados. Creá uno nuevo.</p>
+        <p className="text-xs text-gray-500 text-center">No hay perfiles en esta máquina. Creá uno nuevo.</p>
       )}
     </div>
   );
@@ -252,10 +250,10 @@ export default function PinLogin() {
   }
 
   return shell(
-    'Ingresá tu ID de DM y tu PIN',
+    'Ingresá el nombre de tu perfil y tu PIN',
     <PinForm
-      idValue={dmId}
-      onIdChange={setDmId}
+      nameValue={dmName}
+      onNameChange={setDmName}
       pinValue={pin}
       onPinChange={setPin}
       onSubmit={submitLogin}
