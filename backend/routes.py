@@ -23,8 +23,11 @@ from models import (
     Combat,
     CombatCombatant,
     Quest,
+    Handout,
     CampaignCalendar,
     ProgressClock,
+    PlayerFog,
+    LightRequest,
 )
 from schemas import (
     BulkDeleteRequest,
@@ -199,6 +202,14 @@ async def compute_player_revision(db: AsyncSession, campaign_id: str) -> str:
     last_roll = rolls_r.first()
     if last_roll:
         parts.append(repr(tuple(last_roll)))
+
+    handouts_r = await db.execute(
+        select(
+            Handout.id, Handout.title, Handout.content, Handout.image_path,
+            Handout.visible_to_players, Handout.updated_at,
+        ).where(Handout.campaign_id == campaign_id).order_by(Handout.id)
+    )
+    parts.extend(repr(tuple(r)) for r in handouts_r.all())
 
     return hashlib.sha1("|".join(parts).encode()).hexdigest()[:16]
 
@@ -386,7 +397,19 @@ async def delete_campaign(
             await db.delete(marker)
         await db.delete(map_)
 
-    for model in (Event, Relationship, Location, NPC, Character, Player, Session, Asset, DiceRoll):
+    combats_r = await db.execute(select(Combat).where(Combat.campaign_id == campaign_id))
+    for combat in combats_r.scalars().all():
+        combatants_r = await db.execute(
+            select(CombatCombatant).where(CombatCombatant.combat_id == combat.id)
+        )
+        for combatant in combatants_r.scalars().all():
+            await db.delete(combatant)
+        await db.delete(combat)
+
+    for model in (
+        Event, Relationship, Location, NPC, Character, Player, Session, Asset, DiceRoll,
+        Quest, Handout, CampaignCalendar, ProgressClock, PlayerFog, LightRequest,
+    ):
         rows_r = await db.execute(
             select(model).where(model.campaign_id == campaign_id)
         )
@@ -441,7 +464,19 @@ async def bulk_delete_campaigns(
                 await db.delete(marker)
             await db.delete(map_)
 
-        for model in (Event, Relationship, Location, NPC, Character, Player, Session, Asset, DiceRoll):
+        combats_r = await db.execute(select(Combat).where(Combat.campaign_id == cid))
+        for combat in combats_r.scalars().all():
+            combatants_r = await db.execute(
+                select(CombatCombatant).where(CombatCombatant.combat_id == combat.id)
+            )
+            for combatant in combatants_r.scalars().all():
+                await db.delete(combatant)
+            await db.delete(combat)
+
+        for model in (
+            Event, Relationship, Location, NPC, Character, Player, Session, Asset, DiceRoll,
+            Quest, Handout, CampaignCalendar, ProgressClock, PlayerFog, LightRequest,
+        ):
             rows_r = await db.execute(
                 select(model).where(model.campaign_id == cid)
             )

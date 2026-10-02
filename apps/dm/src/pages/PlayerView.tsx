@@ -7,6 +7,7 @@ import SceneRenderer from '@/components/SceneRenderer';
 import DiceRoller, { rollDice } from '@/components/DiceRoller';
 import PlayerQuestPanel from '@/components/PlayerQuestPanel';
 import PlayerCalendarPanel from '@/components/PlayerCalendarPanel';
+import PlayerHandoutPanel from '@/components/PlayerHandoutPanel';
 import HudPanel from '@/components/HudPanel';
 import { STATUS_OPTIONS } from '@/lib/statusMarkers';
 import TopBar from '@/components/TopBar';
@@ -201,6 +202,8 @@ export default function PlayerView() {
   const [showDiceRoller, setShowDiceRoller] = useState(false);
   const [showQuests, setShowQuests] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [showHandouts, setShowHandouts] = useState(false);
+  const [handoutRevision, setHandoutRevision] = useState('');
   const [toastQueue, setToastQueue] = useState<ToastRoll[]>([]);
   const [pendingRoll, setPendingRoll] = useState<{
     combat_id: string;
@@ -317,6 +320,7 @@ export default function PlayerView() {
       if (cancelled) return;
       if (revision !== lastRevRef.current) {
         lastRevRef.current = revision;
+        setHandoutRevision(revision);
         const snap = await fetchSnapshot();
         if (cancelled) return;
         applySnapshot(snap);
@@ -1214,6 +1218,21 @@ export default function PlayerView() {
             📅
           </button>
         )}
+        {choice?.kind === 'character' && (
+          <button
+            type="button"
+            data-testid="player-handouts-toggle"
+            onClick={() => setShowHandouts(!showHandouts)}
+            className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${
+              showHandouts
+                ? 'bg-emerald-600 text-white'
+                : 'bg-gray-800 text-gray-400 hover:text-gray-200 hover:bg-gray-700'
+            }`}
+            title="Documentos"
+          >
+            🗂
+          </button>
+        )}
         <span
           className="flex items-center gap-1.5 text-[10px] shrink-0"
           title={live ? 'Sincronizado' : 'Reconectando...'}
@@ -1644,6 +1663,14 @@ export default function PlayerView() {
         <PlayerCalendarPanel
           campaignId={data.campaign_id}
           onClose={() => setShowCalendar(false)}
+        />
+      )}
+
+      {showHandouts && data && (
+        <PlayerHandoutPanel
+          campaignId={data.campaign_id}
+          revision={handoutRevision}
+          onClose={() => setShowHandouts(false)}
         />
       )}
 

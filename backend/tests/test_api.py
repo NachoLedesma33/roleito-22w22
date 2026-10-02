@@ -536,6 +536,34 @@ async def test_combat_queue_concurrent(client):
 
 
 @pytest.mark.asyncio
+async def test_delete_campaign_purges_children(client):
+    """Borrar una campaña no debe dejar filas huérfanas en las tablas nuevas."""
+    camp = (await client.post("/api/campaigns", json={"name": "Purge Camp"})).json()
+    cid = camp["id"]
+
+    scen = (await client.post(f"/api/campaigns/{cid}/scenes", json={"name": "Arena"})).json()
+    await client.post(f"/api/campaigns/{cid}/scenes/{scen['id']}/combat")
+    await client.post(
+        f"/api/campaigns/{cid}/quests",
+        json={"title": "Q", "description": "d", "status": "active", "objectives": []},
+    )
+    await client.post(
+        f"/api/campaigns/{cid}/handouts",
+        json={"title": "H", "content": "c", "image_path": None, "visible_to_players": True},
+    )
+    await client.post(f"/api/campaigns/{cid}/clocks", json={"title": "Reloj", "segments_total": 6})
+
+    res = await client.delete(f"/api/campaigns/{cid}")
+    assert res.status_code == 200, res.text
+    assert (await client.get(f"/api/campaigns/{cid}")).status_code == 404
+
+    for path in ("quests", "handouts", "clocks", "calendar", "light-requests"):
+        body = (await client.get(f"/api/campaigns/{cid}/{path}")).json()
+        rows = body if isinstance(body, list) else body.get("clocks", [])
+        assert rows == [], f"{path} quedó huérfano: {rows}"
+
+
+@pytest.mark.asyncio
 async def test_quests_crud(client):
     camp = (await client.post("/api/campaigns", json={"name": "Quest Camp"})).json()
     cid = camp["id"]

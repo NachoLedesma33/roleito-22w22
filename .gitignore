@@ -30,6 +30,7 @@ build/
 *.sqlite3
 data/*.db
 data/**/*.db
+data/*.db.bak-*
 
 # IDE / AI tools
 .vscode/

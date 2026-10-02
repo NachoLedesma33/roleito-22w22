@@ -348,7 +348,7 @@ Reference: `ROADMAP.md` (22,082 bytes)
 | 13 | DM Voice Input | Not Started | No code |
 | 14 | Voice Recap | Implemented | TTS completo: `tts_routes`, panel UI, 10 tests e2e |
 | 15 | Atmosphere System | Not Started | No code |
-| 16 | Media System | Partially | Audio ambience implementado (`Scene.audio_path` + upload/player DM y jugador). Handouts **fase 1** (tabla + CRUD + panel DM) implementado; falta la vista del jugador |
+| 16 | Media System | Partially | Audio ambience implementado (`Scene.audio_path` + upload/player DM y jugador). Handouts implementado completo (backend + panel DM + panel jugador) |
 | 17 | LAN Mode | Not Started | No code |
 | 18 | Multiplayer Sync | Not Started | No code |
 | 19 | Immersive Features | Not Started | No code |
@@ -380,7 +380,9 @@ Reference: `ROADMAP.md` (22,082 bytes)
 - `ContextMenu` tiene `data-testid="context-menu"` — el locator por clase `div.fixed.z-50` quedó ambiguo cuando los dropdowns de clima y lighting pasaron a `position: fixed` (aparecen antes en el DOM)
 - Quedan de fase 15: filtros por preset y otros FX (fuego/nieve fina); voice input DM (fase 13) y media (16) siguen verdes
 - Handouts **fase 1 implementada** (entrega, no lectura): tabla `handouts` (title, content, `image_path` absoluto bajo `data/assets/{cid}/handouts/{hid}`, `visible_to_players`), `backend/handout_routes.py` (CRUD + upload/clear de imagen, cada mutación con `broadcast_revision`), `api.handouts` y panel DM `HandoutPanel.tsx` (botón 🗂, crear/editar, 👁 visibilidad, subir/quitar imagen, borrar). Las mutaciones ya avisan a los jugadores por WS, pero **el jugador todavía no tiene panel** — es la fase 2
+- Handouts **fase 2 implementada** (lectura): `PlayerHandoutPanel.tsx` en `PlayerView` (botón 🗂, cards colapsables, texto con `whitespace-pre-wrap` e imagen servida por `/api/static`), recarga al abrir + `⟳ Recargar` + refetch cuando el DM muta. Para que el push sirva, `compute_player_revision` (`backend/routes.py`) ahora incluye los handouts en el hash: sin eso el WS empujaba una revisión idéntica y el panel nunca se enteraba. e2e `H4` (lee visible, no ve el oculto, imagen) y `H5` (aparece sin recargar)
 - Lección e2e: el dashboard DM tiene **2** `input[type=file]` (fondo + handouts), así que un selector `input[type=file]` es ambiguo — anclar por `data-testid`
+- Bug corregido: `DELETE /api/campaigns/{id}` (y `bulk-delete`) solo borraba las tablas viejas — quests, handouts, combats+combatantes, calendario, relojes, player_fog y light_requests quedaban **huérfanos** en la base. Ahora los purga (test `test_delete_campaign_purges_children`)
 
 ## Documentation Drift
 - `ARCHITECTURE.md` needs update to reflect current state

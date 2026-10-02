@@ -1,6 +1,13 @@
 import type { APIRequestContext } from '@playwright/test';
 import { expect, test } from '../fixtures/campaign-fixture';
-import { PNG_1PX, createCharacter, createScene, seedTokens, updateScene } from '../helpers/api-helpers';
+import {
+  PNG_1PX,
+  createCharacter,
+  createScene,
+  generateInviteCode,
+  seedTokens,
+  updateScene,
+} from '../helpers/api-helpers';
 
 interface Handout {
   id: string;
@@ -100,5 +107,94 @@ test.describe('Handouts', () => {
     await page.getByTitle('Eliminar').click();
     await expect.poll(async () => (await listHandouts(request, campaign.id)).length).toBe(0);
     await expect(page.getByText('Todavía no hay documentos.')).toBeVisible();
+  });
+
+  test('H4: el jugador lee los handouts visibles con imagen', async ({
+    campaign,
+    request,
+    browser,
+    authHeaders,
+  }) => {
+    const create = await request.post(`/api/campaigns/${campaign.id}/handouts`, {
+      headers: authHeaders,
+      data: {
+        title: 'Carta de Grimble',
+        content: 'La puerta de la bóveda abre con una canción.',
+        image_path: null,
+        visible_to_players: true,
+      },
+    });
+    expect(create.ok()).toBeTruthy();
+    const handout = (await create.json()) as Handout;
+
+    await request.post(`/api/campaigns/${campaign.id}/handouts/${handout.id}/image`, {
+      headers: authHeaders,
+      multipart: {
+        file: { name: 'mapa.png', mimeType: 'image/png', buffer: PNG_1PX },
+      },
+    });
+
+    await request.post(`/api/campaigns/${campaign.id}/handouts`, {
+      headers: authHeaders,
+      data: {
+        title: 'Borrador del DM',
+        content: 'No deberia verse.',
+        image_path: null,
+        visible_to_players: false,
+      },
+    });
+
+    const code = await generateInviteCode(request, campaign.id);
+    const ctx = await browser.newContext();
+    const p = await ctx.newPage();
+    await p.goto(`/campaigns/join/${code}`);
+    await p.getByRole('button', { name: /Aria/ }).click();
+    await expect(p.getByTestId('player-role')).toContainText('Aria', { timeout: 10_000 });
+
+    await p.getByTestId('player-handouts-toggle').click();
+    await expect(p.getByText('Carta de Grimble')).toBeVisible();
+    await expect(p.getByText('Borrador del DM')).toHaveCount(0);
+
+    // El contenido y la imagen aparecen al expandir el documento.
+    await expect(p.getByTestId('player-handout-image')).toHaveCount(0);
+    await p.getByText('Carta de Grimble').click();
+    await expect(p.getByText(/La puerta de la bóveda/)).toBeVisible();
+    const img = p.getByTestId('player-handout-image');
+    await expect(img).toBeVisible();
+    await expect(img).toHaveAttribute('src', /\/api\/static\//);
+
+    await ctx.close();
+  });
+
+  test('H5: sync — handout creado por el DM aparece sin recargar', async ({
+    campaign,
+    request,
+    browser,
+    authHeaders,
+  }) => {
+    const code = await generateInviteCode(request, campaign.id);
+    const ctx = await browser.newContext();
+    const p = await ctx.newPage();
+    await p.goto(`/campaigns/join/${code}`);
+    await p.getByRole('button', { name: /Aria/ }).click();
+    await expect(p.getByTestId('player-role')).toContainText('Aria', { timeout: 10_000 });
+
+    await p.getByTestId('player-handouts-toggle').click();
+    await expect(p.getByText('Todavía no hay documentos.')).toBeVisible();
+
+    const create = await request.post(`/api/campaigns/${campaign.id}/handouts`, {
+      headers: authHeaders,
+      data: {
+        title: 'Recado urgente',
+        content: 'Corre al norte.',
+        image_path: null,
+        visible_to_players: true,
+      },
+    });
+    expect(create.ok()).toBeTruthy();
+
+    await expect(p.getByText('Recado urgente')).toBeVisible({ timeout: 10_000 });
+
+    await ctx.close();
   });
 });
