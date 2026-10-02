@@ -1,19 +1,25 @@
-"""Purga la basura de e2e de la base local.
+"""Purga SOLO la basura que crearon los tests. Nunca lo demás.
 
-Dos criterios, ambos seguros con las campañas reales:
+Regla dura: nada se borra si no sabemos que lo creó una corrida de e2e.
 
-1. Ventana temporal (`--since "YYYY-MM-DD HH:MM:SS"`): todo lo creado desde
-   esa marca. La usan global-setup/global-teardown de Playwright.
-2. Nombre: campañas `E2E Campaign %` y DMs `E2E DM %`, sin importar la fecha.
-   Es lo que captura las pruebas manuales (probes HTTP, checks de upload).
+Fuentes de verdad (en este orden):
 
-Además borra `data/assets/{campaign_id}/` huérfanas: borrar la fila no borra el
-disco, y los uploads de los tests acumulan cientos de MB.
+1. **Registro** (`%TEMP%/roleito-e2e-ids.txt`): ids de campañas y DMs que
+   crearon los tests. El fixture `tests/fixtures/campaign-fixture.ts` los
+   escribe al crearlos. Es la única fuente que sigue valiendo después de que el
+   fixture borra la campaña por la API: la fila ya no está, pero la carpeta
+   `data/assets/{id}/` sigue en disco.
+2. **Fila presente** en `campaigns`/`dms`: se borra si se llama `E2E %` o si
+   `created_at >= --since` (lo usan global-setup/global-teardown). Sus carpetas
+   de assets van con ella, porque la fila ya nos dice que es de test.
+3. Carpeta de assets sin fila: se borra **solo** si su id está en el registro.
+   Cualquier otra carpeta se reporta y se deja como está.
 
 Uso:
-    python scripts/purge_e2e_junk.py
-    python scripts/purge_e2e_junk.py --since "2026-10-02 01:44:52"
-    python scripts/purge_e2e_junk.py --dry-run
+    python scripts/purge_e2e_junk.py                  # purga lo de test
+    python scripts/purge_e2e_junk.py --dry-run        # muestra qué purgaría
+    python scripts/purge_e2e_junk.py --report         # inventario: qué es
+                                                       # de test y qué no
 """
 
 import argparse
@@ -21,11 +27,13 @@ import os
 import shutil
 import sqlite3
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DB_PATH = ROOT / "data" / "roleito.db"
 ASSETS_ROOT = ROOT / "data" / "assets"
+REGISTRY = Path(tempfile.gettempdir()) / "roleito-e2e-ids.txt"
 
 # Tablas por campaign_id. Los "hijos de hijos" van primero, mientras sus padres
 # todavía existen (si borrás scenes antes que scene_characters, el subquery no
@@ -81,15 +89,75 @@ def dir_size(path: Path) -> int:
 
 
 def is_campaign_id(name: str) -> bool:
-    """Solo carpetas con forma de id de campaña (uuid): cualquier otra cosa
-    bajo data/assets no es nuestra para borrar."""
+    """Solo carpetas con forma de id de campaña (uuid)."""
     return len(name) == 36 and name.count("-") == 4
 
 
+def read_registry() -> set[str]:
+    if not REGISTRY.exists():
+        return set()
+    return {
+        line.strip()
+        for line in REGISTRY.read_text(encoding="utf-8", errors="ignore").splitlines()
+        if line.strip()
+    }
+
+
+def kb(n: int) -> str:
+    return f"{n / 1024 / 1024:.1f} MB" if n >= 1024 * 1024 else f"{n // 1024} KB"
+
+
+def asset_dirs() -> list[Path]:
+    if not ASSETS_ROOT.is_dir():
+        return []
+    return [p for p in ASSETS_ROOT.iterdir() if p.is_dir() and is_campaign_id(p.name)]
+
+
+def report(con: sqlite3.Connection) -> int:
+    """Inventario completo: qué es de test (se purgaría) y qué no (intocable)."""
+    cur = con.cursor()
+    camps = cur.execute("SELECT id, name, created_at FROM campaigns ORDER BY created_at").fetchall()
+    dms = cur.execute("SELECT id, name, created_at FROM dms ORDER BY created_at").fetchall()
+    registered = read_registry()
+    dirs = asset_dirs()
+    live = {r[0] for r in camps}
+
+    print(f"campañas: {len(camps)}  DMs: {len(dms)}  carpetas de assets: {len(dirs)}")
+    print("\n[test] se purgarían:")
+    for cid, name, when in camps:
+        if name.startswith("E2E "):
+            print(f"  campaña {name!r} ({cid}, {when})")
+    for did, name, when in dms:
+        if name.startswith("E2E "):
+            print(f"  DM {name!r} ({did}, {when})")
+    for p in dirs:
+        if p.name in live:
+            continue
+        tag = "" if p.name in registered else "  <- NO se borra: no está en el registro"
+        print(f"  assets huérfanos {p.name} ({kb(dir_size(p))}){tag}")
+
+    keep_c = sum(1 for c in camps if not c[1].startswith("E2E "))
+    keep_d = sum(1 for d in dms if not d[1].startswith("E2E "))
+    survivors = live - {c[0] for c in camps if c[1].startswith("E2E ")}
+    keep_dirs = [p for p in dirs if p.name in survivors]
+    keep_assets = sum(dir_size(p) for p in keep_dirs)
+    print(f"\n[no test] NO se tocan: {keep_c} campañas, {keep_d} DMs, "
+          f"{len(keep_dirs)} carpetas de assets ({kb(keep_assets)})")
+    for cid, name, when in camps:
+        if not name.startswith("E2E "):
+            print(f"  campaña {name!r} ({cid}, {when})")
+    for did, name, when in dms:
+        if not name.startswith("E2E "):
+            print(f"  DM {name!r} ({did}, {when})")
+    print(f"\nregistro: {REGISTRY} ({len(registered)} ids)")
+    return 0
+
+
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Purga la basura e2e de data/roleito.db")
+    ap = argparse.ArgumentParser(description="Purga la basura de e2e de data/roleito.db")
     ap.add_argument("--since", help="borra campañas creadas desde esta marca (YYYY-MM-DD HH:MM:SS)")
-    ap.add_argument("--dry-run", action="store_true", help="solo muestra qué borraría")
+    ap.add_argument("--dry-run", action="store_true", help="muestra qué borraría, no borra")
+    ap.add_argument("--report", action="store_true", help="inventario: qué es de test y qué no")
     args = ap.parse_args()
 
     if not DB_PATH.exists():
@@ -97,12 +165,16 @@ def main() -> int:
         return 0
 
     con = sqlite3.connect(DB_PATH)
+    if args.report:
+        return report(con)
+
     cur = con.cursor()
+    registered = read_registry()
 
     where = "name LIKE 'E2E Campaign %'"
     params: list = []
     if args.since:
-        where = f"(name LIKE 'E2E Campaign %' OR created_at >= ?)"
+        where = "(name LIKE 'E2E Campaign %' OR created_at >= ?)"
         params.append(args.since)
 
     cur.execute(f"SELECT id, name FROM campaigns WHERE {where}", params)
@@ -110,24 +182,19 @@ def main() -> int:
     cur.execute("SELECT id, name FROM dms WHERE name LIKE 'E2E DM %'")
     dms = cur.fetchall()
 
-    live = {r[0] for r in cur.execute("SELECT id FROM campaigns").fetchall()}
-    # Las campañas que se van a borrar todavía están "vivas": proyectar el
-    # estado final para que el conteo y el dry-run sean los reales.
-    live -= {c[0] for c in campaigns}
-    asset_orphans = []
-    if ASSETS_ROOT.is_dir():
-        asset_orphans = [
-            p
-            for p in ASSETS_ROOT.iterdir()
-            if p.is_dir() and p.name not in live and is_campaign_id(p.name)
-        ]
+    # Carpetas que sí vamos a borrar: las de las campañas de esta purga (su fila
+    # ya las delató como test) + las huérfanas registradas por el fixture.
+    doomed_ids = {c[0] for c in campaigns} | registered
+    doomed_dirs = [p for p in asset_dirs() if p.name in doomed_ids]
 
-    if not campaigns and not dms and not asset_orphans:
+    if not campaigns and not dms and not doomed_dirs:
         print("e2e purge: nada que limpiar")
+        con.close()
         return 0
 
-    freed = sum(dir_size(p) for p in asset_orphans)
-    print(f"e2e purge: {len(campaigns)} campañas, {len(dms)} DMs, {len(asset_orphans)} carpetas de assets huérfanas ({freed // 1024} KB)")
+    freed = sum(dir_size(p) for p in doomed_dirs)
+    print(f"e2e purge: {len(campaigns)} campañas, {len(dms)} DMs, "
+          f"{len(doomed_dirs)} carpetas de assets ({kb(freed)})")
     for cid, name in campaigns[:20]:
         print(f"  - campaña {name!r} ({cid})")
     if len(campaigns) > 20:
@@ -136,6 +203,13 @@ def main() -> int:
         print(f"  - DM {name!r} ({did})")
 
     if args.dry_run:
+        # Las campañas que se van a borrar todavía están en la tabla: proyectar
+        # el estado final para contar las huérfanas de verdad.
+        survivors = {r[0] for r in cur.execute("SELECT id FROM campaigns").fetchall()} - doomed_ids
+        untouched = [p for p in asset_dirs() if p.name not in doomed_ids and p.name not in survivors]
+        if untouched:
+            print(f"dry-run: {len(untouched)} carpetas de assets huérfanas SIN borrar "
+                  f"({kb(sum(dir_size(p) for p in untouched))}) — no están en el registro")
         print("dry-run: no se borró nada")
         con.close()
         return 0
@@ -165,19 +239,13 @@ def main() -> int:
 
     con.commit()
     con.execute("VACUUM")
-
-    # Recién ahora, con las campañas ya fuera de la tabla: `live` ya no las
-    # incluye, así que sus carpetas de assets quedan huérfanas de verdad.
-    live = {r[0] for r in cur.execute("SELECT id FROM campaigns").fetchall()}
-    orphans = [
-        p
-        for p in (ASSETS_ROOT.iterdir() if ASSETS_ROOT.is_dir() else [])
-        if p.is_dir() and p.name not in live and is_campaign_id(p.name)
-    ]
     con.close()
 
-    for p in orphans:
+    for p in doomed_dirs:
         shutil.rmtree(p, ignore_errors=True)
+    # El registro se consume: lo que no se borró (carpetas huérfanas sin
+    # registro) queda fuera, pero las campañas test ya no existen.
+    REGISTRY.write_text("", encoding="utf-8")
 
     print("e2e purge: OK")
     return 0
