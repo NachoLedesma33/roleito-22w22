@@ -211,6 +211,14 @@ async def compute_player_revision(db: AsyncSession, campaign_id: str) -> str:
     )
     parts.extend(repr(tuple(r)) for r in handouts_r.all())
 
+    quests_r = await db.execute(
+        select(
+            Quest.id, Quest.title, Quest.description, Quest.status,
+            Quest.visible_to_players, Quest.updated_at,
+        ).where(Quest.campaign_id == campaign_id).order_by(Quest.id)
+    )
+    parts.extend(repr(tuple(r)) for r in quests_r.all())
+
     return hashlib.sha1("|".join(parts).encode()).hexdigest()[:16]
 
 

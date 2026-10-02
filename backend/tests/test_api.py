@@ -536,6 +536,44 @@ async def test_combat_queue_concurrent(client):
 
 
 @pytest.mark.asyncio
+async def test_quest_mutations_change_revision(client):
+    """Crear/editar/borrar una quest tiene que cambiar la revision del jugador.
+
+    Si no, el WS empuja una revision identica, applyRevision sale por el
+    early-return y el panel de misiones del jugador no se entera.
+    """
+    camp = (await client.post("/api/campaigns", json={"name": "Rev Camp"})).json()
+    cid = camp["id"]
+    code = (await client.post(f"/api/campaigns/{cid}/invite-code")).json()["invite_code"]
+
+    async def revision() -> str:
+        res = await client.get(f"/api/campaigns/invite/{code}/revision")
+        assert res.status_code == 200, res.text
+        return res.json()["revision"]
+
+    before = await revision()
+
+    q = (
+        await client.post(
+            f"/api/campaigns/{cid}/quests",
+            json={"title": "Q", "description": "d", "status": "active", "objectives": []},
+        )
+    ).json()
+    after_create = await revision()
+    assert after_create != before
+
+    await client.put(
+        f"/api/campaigns/{cid}/quests/{q['id']}",
+        json={"title": "Q2", "description": "d", "status": "completed", "objectives": []},
+    )
+    after_update = await revision()
+    assert after_update != after_create
+
+    await client.delete(f"/api/campaigns/{cid}/quests/{q['id']}")
+    assert await revision() != after_update
+
+
+@pytest.mark.asyncio
 async def test_delete_campaign_purges_children(client):
     """Borrar una campaña no debe dejar filas huérfanas en las tablas nuevas."""
     camp = (await client.post("/api/campaigns", json={"name": "Purge Camp"})).json()

@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_session
 from models import Campaign, Quest
 from schemas import ObjectiveItem, QuestIn, QuestOut
+from routes import broadcast_revision
 
 router = APIRouter(tags=["quests"])
 
@@ -75,6 +76,7 @@ async def create_quest(
     db.add(quest)
     await db.commit()
     await db.refresh(quest)
+    await broadcast_revision(db, campaign_id)
     return _to_out(quest)
 
 
@@ -94,6 +96,7 @@ async def update_quest(
     quest.visible_to_players = 1 if data.visible_to_players else 0
     await db.commit()
     await db.refresh(quest)
+    await broadcast_revision(db, campaign_id)
     return _to_out(quest)
 
 
@@ -106,4 +109,5 @@ async def delete_quest(
     quest = await _get_quest(db, campaign_id, quest_id)
     await db.delete(quest)
     await db.commit()
+    await broadcast_revision(db, campaign_id)
     return {"ok": True}
