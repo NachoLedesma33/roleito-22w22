@@ -1,12 +1,18 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import PinForm from './PinForm';
 
-type Mode = 'choose' | 'select-dm' | 'login' | 'register' | 'change';
+type Mode = 'login' | 'register' | 'change';
 
+/**
+ * Pantalla de entrada. El login es ID + PIN; a un costado, los IDs guardados
+ * para autocompletar si no te acordás. La parte visual del formulario está en
+ * `PinForm`, que no depende de auth ni de la pantalla.
+ */
 export default function PinLogin() {
   const { login, registerDm, changePin, dms } = useAuth();
-  const [mode, setMode] = useState<Mode>('choose');
-  const [selectedDm, setSelectedDm] = useState<{ id: string; name: string } | null>(null);
+  const [mode, setMode] = useState<Mode>('login');
+  const [dmId, setDmId] = useState('');
   const [dmName, setDmName] = useState('');
   const [currentPin, setCurrentPin] = useState('');
   const [pin, setPin] = useState('');
@@ -22,60 +28,25 @@ export default function PinLogin() {
     setError('');
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const switchTo = (next: Mode) => {
+    resetForm();
+    setMode(next);
+  };
+
+  const submitLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    if (mode === 'login') {
-      if (pin.length < 4 || pin.length > 8) {
-        setError('PIN debe tener 4-8 dígitos');
-        return;
-      }
-      if (!selectedDm) {
-        setError('Seleccioná un DM');
-        return;
-      }
-    } else if (mode === 'register') {
-      if (!dmName.trim()) {
-        setError('Ingresá un nombre');
-        return;
-      }
-      if (pin.length < 4 || pin.length > 8) {
-        setError('PIN debe tener 4-8 dígitos');
-        return;
-      }
-      if (pin !== confirmPin) {
-        setError('Los PINs no coinciden');
-        return;
-      }
-    } else if (mode === 'change') {
-      if (currentPin && (currentPin.length < 4 || currentPin.length > 8)) {
-        setError('PIN actual debe tener 4-8 dígitos');
-        return;
-      }
-      if (pin.length < 4 || pin.length > 8) {
-        setError('PIN nuevo debe tener 4-8 dígitos');
-        return;
-      }
-      if (currentPin && pin === currentPin) {
-        setError('El PIN nuevo debe ser diferente al actual');
-        return;
-      }
-      if (pin !== confirmPin) {
-        setError('Los PINs no coinciden');
-        return;
-      }
+    if (!dmId) {
+      setError('Ingresá tu ID de DM');
+      return;
     }
-
+    if (pin.length < 4 || pin.length > 8) {
+      setError('PIN debe tener 4-8 dígitos');
+      return;
+    }
     setLoading(true);
     try {
-      if (mode === 'login' && selectedDm) {
-        await login(selectedDm.id, pin);
-      } else if (mode === 'register') {
-        await registerDm(dmName.trim(), pin);
-      } else if (mode === 'change') {
-        await changePin(currentPin || undefined, pin);
-      }
+      await login(dmId, pin);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error');
     } finally {
@@ -83,125 +54,110 @@ export default function PinLogin() {
     }
   };
 
-  if (mode === 'choose') {
-    return (
-      <div className="h-screen flex items-center justify-center bg-black">
-        <div className="bg-gray-900 border border-gray-700/60 rounded-xl p-8 w-full max-w-sm space-y-5">
-          <div className="text-center">
-            <h1 className="text-xl font-bold text-gray-100">Roleito</h1>
-            <p className="text-xs text-gray-500 mt-1">Autenticación del DM</p>
-          </div>
+  const submitRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (!dmName.trim()) {
+      setError('Ingresá un nombre');
+      return;
+    }
+    if (pin.length < 4 || pin.length > 8) {
+      setError('PIN debe tener 4-8 dígitos');
+      return;
+    }
+    if (pin !== confirmPin) {
+      setError('Los PINs no coinciden');
+      return;
+    }
+    setLoading(true);
+    try {
+      await registerDm(dmName.trim(), pin);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-          <div className="space-y-3">
-            {dms.length > 0 && (
-              <button
-                onClick={() => { resetForm(); setMode('select-dm'); }}
-                className="w-full py-2.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-medium text-sm transition-colors"
-              >
-                Ingresar con PIN
-              </button>
-            )}
-            <button
-              onClick={() => { resetForm(); setMode('register'); }}
-              className="w-full py-2.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 font-medium text-sm border border-gray-700 transition-colors"
-            >
-              Crear DM nuevo
-            </button>
-            {dms.length > 0 && (
-              <button
-                onClick={() => { resetForm(); setMode('change'); }}
-                className="w-full py-2 text-xs text-gray-500 hover:text-gray-300 transition-colors"
-              >
-                Cambiar PIN
-              </button>
-            )}
-          </div>
+  const submitChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (currentPin && (currentPin.length < 4 || currentPin.length > 8)) {
+      setError('PIN actual debe tener 4-8 dígitos');
+      return;
+    }
+    if (pin.length < 4 || pin.length > 8) {
+      setError('PIN nuevo debe tener 4-8 dígitos');
+      return;
+    }
+    if (currentPin && pin === currentPin) {
+      setError('El PIN nuevo debe ser diferente al actual');
+      return;
+    }
+    if (pin !== confirmPin) {
+      setError('Los PINs no coinciden');
+      return;
+    }
+    setLoading(true);
+    try {
+      await changePin(currentPin || undefined, pin);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-          {dms.length === 0 && (
-            <p className="text-xs text-gray-500 text-center">
-              No hay DMs registrados. Creá uno nuevo.
-            </p>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (mode === 'select-dm') {
-    return (
-      <div className="h-screen flex items-center justify-center bg-black">
-        <div className="bg-gray-900 border border-gray-700/60 rounded-xl p-8 w-full max-w-sm space-y-5">
-          <div className="text-center">
-            <h1 className="text-xl font-bold text-gray-100">Roleito</h1>
-            <p className="text-xs text-gray-500 mt-1">Seleccioná tu DM</p>
-          </div>
-
-          <div className="space-y-2">
+  const savedDms = (
+    <div data-testid="login-saved-dms">
+      {dms.length > 0 ? (
+        <>
+          <p className="text-[11px] text-gray-500 mb-2 text-center">IDs guardados</p>
+          <div className="space-y-1.5">
             {dms.map((dm) => (
               <button
                 key={dm.id}
-                onClick={() => { setSelectedDm({ id: dm.id, name: dm.name }); resetForm(); setMode('login'); }}
-                className="w-full py-3 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-100 font-medium text-sm border border-gray-700 transition-colors text-left px-4"
+                type="button"
+                onClick={() => { setDmId(dm.id); setError(''); }}
+                data-testid="login-saved-dm"
+                className="w-full px-3 py-2 rounded-lg bg-gray-800/40 hover:bg-gray-700 border border-gray-700/60 text-left transition-colors"
               >
-                {dm.name}
+                <span className="block text-sm text-gray-100 truncate">{dm.name}</span>
+                <span className="block text-[11px] text-gray-500 font-mono truncate">{dm.id}</span>
               </button>
             ))}
           </div>
+        </>
+      ) : (
+        <p className="text-xs text-gray-500 text-center">No hay DMs registrados. Creá uno nuevo.</p>
+      )}
+    </div>
+  );
 
-          <button
-            type="button"
-            onClick={() => { resetForm(); setMode('choose'); }}
-            className="w-full py-2 text-xs text-gray-500 hover:text-gray-300 transition-colors"
-          >
-            ← Volver
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const title = mode === 'register'
-    ? 'Creá tu DM (4-8 dígitos)'
-    : mode === 'change'
-    ? 'Cambiar PIN — ingresá el actual y el nuevo'
-    : `Ingresá tu PIN — ${selectedDm?.name}`;
-
-  return (
+  const shell = (subtitle: string, body: React.ReactNode) => (
     <div className="h-screen flex items-center justify-center bg-black">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-gray-900 border border-gray-700/60 rounded-xl p-8 w-full max-w-sm space-y-5"
-      >
+      <div className="bg-gray-900 border border-gray-700/60 rounded-xl p-8 w-full max-w-sm space-y-5">
         <div className="text-center">
           <h1 className="text-xl font-bold text-gray-100">Roleito</h1>
-          <p className="text-xs text-gray-500 mt-1">{title}</p>
+          <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
         </div>
+        {body}
+      </div>
+    </div>
+  );
 
-        {mode === 'register' && (
-          <input
-            type="text"
-            value={dmName}
-            onChange={(e) => setDmName(e.target.value)}
-            placeholder="Nombre del DM"
-            autoFocus
-            className="w-full text-center text-lg bg-gray-800/50 border border-gray-700 rounded-lg py-3 text-gray-100 focus:outline-none focus:border-emerald-600 transition-colors"
-          />
-        )}
-
-        {mode === 'change' && (
-          <input
-            type="password"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            maxLength={8}
-            value={currentPin}
-            onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, ''))}
-            placeholder="PIN actual (opcional)"
-            autoFocus
-            className="w-full text-center text-2xl tracking-[0.5em] bg-gray-800/50 border border-gray-700 rounded-lg py-3 text-gray-100 focus:outline-none focus:border-emerald-600 transition-colors"
-          />
-        )}
-
+  if (mode === 'register') {
+    return shell(
+      'Creá tu DM (4-8 dígitos)',
+      <form onSubmit={submitRegister} className="space-y-5">
+        <input
+          type="text"
+          value={dmName}
+          onChange={(e) => setDmName(e.target.value)}
+          placeholder="Nombre del DM"
+          autoFocus
+          className="w-full text-center text-lg bg-gray-800/50 border border-gray-700 rounded-lg py-3 text-gray-100 focus:outline-none focus:border-emerald-600 transition-colors"
+        />
         <input
           type="password"
           inputMode="numeric"
@@ -209,42 +165,124 @@ export default function PinLogin() {
           maxLength={8}
           value={pin}
           onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-          placeholder={mode === 'change' ? 'PIN nuevo' : 'PIN'}
-          autoFocus={mode !== 'change'}
+          placeholder="PIN"
           className="w-full text-center text-2xl tracking-[0.5em] bg-gray-800/50 border border-gray-700 rounded-lg py-3 text-gray-100 focus:outline-none focus:border-emerald-600 transition-colors"
         />
-
-        {(mode === 'register' || mode === 'change') && (
-          <input
-            type="password"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            maxLength={8}
-            value={confirmPin}
-            onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
-            placeholder="Confirmar PIN"
-            className="w-full text-center text-2xl tracking-[0.5em] bg-gray-800/50 border border-gray-700 rounded-lg py-3 text-gray-100 focus:outline-none focus:border-emerald-600 transition-colors"
-          />
-        )}
-
+        <input
+          type="password"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          maxLength={8}
+          value={confirmPin}
+          onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
+          placeholder="Confirmar PIN"
+          className="w-full text-center text-2xl tracking-[0.5em] bg-gray-800/50 border border-gray-700 rounded-lg py-3 text-gray-100 focus:outline-none focus:border-emerald-600 transition-colors"
+        />
         {error && <p className="text-xs text-red-400 text-center">{error}</p>}
-
         <button
           type="submit"
           disabled={loading}
           className="w-full py-2.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-medium text-sm disabled:opacity-50 transition-colors"
         >
-          {loading ? '...' : mode === 'register' ? 'Crear DM' : mode === 'change' ? 'Cambiar PIN' : 'Entrar'}
+          {loading ? '...' : 'Crear DM'}
         </button>
-
         <button
           type="button"
-          onClick={() => { resetForm(); setMode(mode === 'change' ? 'choose' : dms.length > 0 ? 'select-dm' : 'choose'); }}
+          onClick={() => switchTo('login')}
           className="w-full py-2 text-xs text-gray-500 hover:text-gray-300 transition-colors"
         >
           ← Volver
         </button>
       </form>
-    </div>
+    );
+  }
+
+  if (mode === 'change') {
+    return shell(
+      'Cambiar PIN — ingresá el actual y el nuevo',
+      <form onSubmit={submitChange} className="space-y-5">
+        <input
+          type="password"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          maxLength={8}
+          value={currentPin}
+          onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, ''))}
+          placeholder="PIN actual (opcional)"
+          autoFocus
+          className="w-full text-center text-2xl tracking-[0.5em] bg-gray-800/50 border border-gray-700 rounded-lg py-3 text-gray-100 focus:outline-none focus:border-emerald-600 transition-colors"
+        />
+        <input
+          type="password"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          maxLength={8}
+          value={pin}
+          onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+          placeholder="PIN nuevo"
+          className="w-full text-center text-2xl tracking-[0.5em] bg-gray-800/50 border border-gray-700 rounded-lg py-3 text-gray-100 focus:outline-none focus:border-emerald-600 transition-colors"
+        />
+        <input
+          type="password"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          maxLength={8}
+          value={confirmPin}
+          onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
+          placeholder="Confirmar PIN"
+          className="w-full text-center text-2xl tracking-[0.5em] bg-gray-800/50 border border-gray-700 rounded-lg py-3 text-gray-100 focus:outline-none focus:border-emerald-600 transition-colors"
+        />
+        {error && <p className="text-xs text-red-400 text-center">{error}</p>}
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full py-2.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-medium text-sm disabled:opacity-50 transition-colors"
+        >
+          {loading ? '...' : 'Cambiar PIN'}
+        </button>
+        <button
+          type="button"
+          onClick={() => switchTo('login')}
+          className="w-full py-2 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+        >
+          ← Volver
+        </button>
+      </form>
+    );
+  }
+
+  return shell(
+    'Ingresá tu ID de DM y tu PIN',
+    <PinForm
+      idValue={dmId}
+      onIdChange={setDmId}
+      pinValue={pin}
+      onPinChange={setPin}
+      onSubmit={submitLogin}
+      submitLabel="Entrar"
+      error={error}
+      loading={loading}
+      aside={savedDms}
+      footer={
+        <div className="space-y-1">
+          <button
+            type="button"
+            onClick={() => switchTo('register')}
+            className="w-full py-2 text-xs text-gray-400 hover:text-gray-200 transition-colors"
+          >
+            Crear DM nuevo
+          </button>
+          {dms.length > 0 && (
+            <button
+              type="button"
+              onClick={() => switchTo('change')}
+              className="w-full py-2 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+            >
+              Cambiar PIN
+            </button>
+          )}
+        </div>
+      }
+    />
   );
 }
