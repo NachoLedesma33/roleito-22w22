@@ -217,10 +217,12 @@ def main():
     print("\n[2] SCENELAYER DEFINITIONS (should be identical)")
     print("-" * 40)
     layer_defs = check_scenelayer_conflicts()
+    # Se inicializa aca y no dentro del if: el resumen lo lee siempre, y si ningun
+    # doc define SceneLayer antes reventaba con NameError en vez de reportar 0.
+    all_match = True
     if layer_defs:
         # Check if all definitions match
         canonical = None
-        all_match = True
         for doc, layers in layer_defs.items():
             if canonical is None:
                 canonical = layers
@@ -271,9 +273,15 @@ def main():
         print("  OK No stale types")
 
     # Summary
+    # Las colisiones de nombre NO cuentan para el veredicto: que un tipo este
+    # definido en el codigo y documentado en docs/ es el estado sano, no un
+    # problema. Antes sumaban, y con eso el script no podia dar 0 ni en un repo
+    # sano, asi que su exit 1 no significaba nada y aprendimos a ignorarlo.
+    #
+    # Lo que si es un problema real: definiciones que se contradicen entre docs,
+    # strings de layer que no son los canonicos, y cross-references que faltan.
     total_issues = (
-        len(real_collisions)
-        + (0 if all_match else 1)
+        (0 if all_match else 1)
         + len(layer_issues)
         + len(ref_issues)
     )
