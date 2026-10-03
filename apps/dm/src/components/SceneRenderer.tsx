@@ -1656,11 +1656,14 @@ function makeFlameTexture(): THREE.Texture {
   return tex;
 }
 
-// `sway` mide cuanto se abre la llama para los lados. El default 1 deja la
-// llama como estaba; el fuego colocable pasa ~0.4 porque una hoguera es un
-// nudo y no una columna, y con el valor por defecto las particulas de una
-// antorcha quedan separadas por casi medio mapa.
-function FireParticles({ scale, sway = 1, withLight = true }: { scale: number; sway?: number; withLight?: boolean }) {
+// `sway` mide cuanto se abre la llama para los lados y `thickness` el ancho del
+// punto. Los dos default 1 dejan la llama como estaba (el personaje ardiendo
+// los usa asi); el fuego colocable los sube porque con muchos pilares finos y
+// chicos la llama se lee como un sacito de chispas y no como fuego.
+//
+// Cada uno tiene su uniform a proposito: `uScale` arrastra alto, ancho y grosor
+// a la vez, asi que con el no se puede ensanchar sin estirar.
+function FireParticles({ scale, sway = 1, thickness = 1, withLight = true }: { scale: number; sway?: number; thickness?: number; withLight?: boolean }) {
   const lightRef = useRef<THREE.PointLight>(null);
   const noiseRef = useRef(0.5);
   const geo = useMemo(() => {
@@ -1691,6 +1694,7 @@ function FireParticles({ scale, sway = 1, withLight = true }: { scale: number; s
         uTime: { value: 0 },
         uScale: { value: scale },
         uSway: { value: sway },
+        uThickness: { value: thickness },
         uPixelRatio: { value: window.devicePixelRatio || 1 },
         uMap: { value: makeFlameTexture() },
       },
@@ -1701,6 +1705,7 @@ function FireParticles({ scale, sway = 1, withLight = true }: { scale: number; s
         uniform float uTime;
         uniform float uScale;
         uniform float uSway;
+        uniform float uThickness;
         uniform float uPixelRatio;
         varying float vP;
         varying float vTw;
@@ -1722,7 +1727,7 @@ function FireParticles({ scale, sway = 1, withLight = true }: { scale: number; s
           float tw = 0.65 + 0.35 * sin(uTime * 22.0 + aSeed * 9.0);
           vTw = tw;
           float shrink = 1.0 - 0.55 * p; // encoger al subir
-          gl_PointSize = clamp(aSize * 0.36 * uScale * shrink * tw * uPixelRatio * (170.0 / -mv.z), 0.5, 70.0);
+          gl_PointSize = clamp(aSize * 0.36 * uThickness * uScale * shrink * tw * uPixelRatio * (170.0 / -mv.z), 0.5, 70.0);
         }
       `,
       fragmentShader: `
@@ -1746,7 +1751,7 @@ function FireParticles({ scale, sway = 1, withLight = true }: { scale: number; s
         }
       `,
     });
-  }, [scale, sway]);
+  }, [scale, sway, thickness]);
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
     if (mat) mat.uniforms.uTime.value = t;
@@ -1819,6 +1824,10 @@ function FireSpot({
   // se sube sin agrandar la llama de punta a punta. Este es el unico numero que
   // hay que tocar para cambiar el ancho, sin mover el nudo ni el conteo.
   const sway = 1.2;
+  // Grosor de cada particula. Es lo que separa "fuego" de "chispas": mismo
+  // conteo, mismo ancho, misma altura, pero el punto ocupa mas pantalla y las
+  // particulas se tocan entre si. Con 1 quedaban como puntitos sueltos.
+  const thickness = 1.7;
   const ring = (i: number) => (i / flames) * Math.PI * 2 + Math.random() * 0.9;
 
   return (
@@ -1828,7 +1837,7 @@ function FireSpot({
         const rr = flames === 1 ? 0 : knot * Math.random();
         return (
           <group key={i} position={[Math.cos(a) * rr, 0, Math.sin(a) * rr]}>
-            <FireParticles scale={perFlame} sway={sway} withLight={false} />
+            <FireParticles scale={perFlame} sway={sway} thickness={thickness} withLight={false} />
           </group>
         );
       })}
