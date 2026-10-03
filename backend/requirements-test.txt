@@ -5,3 +5,14 @@ httpx==0.27.0
 # Lint del backend. Va acá y no en requirements.txt porque no lo necesita la app
 # en runtime, solo el gate. La linea de abajo mantiene el pip cache de CI.
 ruff>=0.6.0
+
+# Type checker. NO es gate: sobre el backend da 291 errores y cero bugs reales,
+# asi que hacerlo fallar el build seria puro ruido. Queda instalado para
+# correrlo a mano cuando se tocan las rutas:
+#
+#   venv\Scripts\python.exe -m pyright backend
+#
+# Solo sirve a medida que se anoten los handlers. Hoy la anotacion es del 33%,
+# y pyright infiere el resto como Unknown: es consistencia de estilos sobre
+# este codigo, no deteccion de defectos.
+pyright>=1.1.400
