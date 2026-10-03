@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import type { ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
-import { normalizeLightConfig, LIGHT_PRESETS, hexToRgba } from '../lib/light'
+import { normalizeLightConfig, LIGHT_PRESETS, hexToRgba, FIRE_RADIUS_DEFAULT } from '../lib/light'
 import { getY } from '../lib/overlayY'
 import type { RenderMode } from '../lib/overlayY'
 
@@ -73,7 +73,7 @@ export default function LightPlaceCanvas({
   // Con fuego, el preview dibuja el círculo del fuego y no el halo de la luz:
   // es lo que el DM está posicionando. El borde pasa a naranja para que se
   // distinga del ring normal de la luz.
-  const radius = fx ? Math.max(0.35, (fxRadius ?? 0.05) * mapHeight) : source.radius * mapHeight
+  const radius = fx ? Math.max(0.35, (fxRadius ?? FIRE_RADIUS_DEFAULT) * mapHeight) : source.radius * mapHeight
   const ringColor = fx === 'flame' ? '#ff8c00' : fx === 'embers' ? '#fdba74' : preset.color
 
   const glowTexture = useMemo(() => {

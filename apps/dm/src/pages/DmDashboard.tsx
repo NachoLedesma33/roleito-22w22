@@ -11,7 +11,7 @@ import { createEmptyZoneDraft, createZoneItem, ZONE_COLORS, ZONE_DEFAULT_COLOR, 
 import { createEmptyPortalDraft, type PortalDraft } from '@/components/PortalDrawerCanvas';
 import { createPortalBetween, buildPortalLocalEdge, cyclePortalState, removePortal, zonesToGeometry } from '@/components/ZonePortal';
 import { circlePoints, toggleZoneFog } from '@/lib/fogMask';
-import { createLightItem, LIGHT_PRESETS, attachLightToToken, detachLight, normalizeLightConfig, updateLightSource } from '@/lib/light';
+import { createLightItem, LIGHT_PRESETS, attachLightToToken, detachLight, normalizeLightConfig, updateLightSource, FIRE_RADIUS_MIN, FIRE_RADIUS_MAX, FIRE_RADIUS_STEP, FIRE_RADIUS_DEFAULT } from '@/lib/light';
 import { LightMetadata } from '@core/domain/types';
 import DoorContextMenu from '@/components/DoorContextMenu';
 import WallContextMenu from '@/components/WallContextMenu';
@@ -727,7 +727,7 @@ export default function DmDashboard() {
     if (lightPlaceMode.fx) {
       const meta = item.metadata as LightMetadata
       meta.fx = lightPlaceMode.fx
-      meta.fxRadius = lightPlaceMode.fxRadius ?? 0.05
+      meta.fxRadius = lightPlaceMode.fxRadius ?? FIRE_RADIUS_DEFAULT
     }
     graphRef.addItem(item)
     handleItemsChange(graphRef.getItems())
@@ -2225,17 +2225,28 @@ export default function DmDashboard() {
                     ✨
                   </button>
                   {lightPlaceMode.fx && (
-                    <input
-                      type="range"
-                      min={0.01}
-                      max={0.25}
-                      step={0.01}
-                      value={lightPlaceMode.fxRadius ?? 0.05}
-                      onChange={(e) => setLightPlaceMode({ ...lightPlaceMode, fxRadius: Number(e.target.value) })}
-                      title="Radio del fuego"
-                      data-testid="light-fx-radius"
-                      className="w-20 accent-orange-500"
-                    />
+                    <>
+                      <input
+                        type="range"
+                        min={FIRE_RADIUS_MIN}
+                        max={FIRE_RADIUS_MAX}
+                        step={FIRE_RADIUS_STEP}
+                        value={lightPlaceMode.fxRadius ?? FIRE_RADIUS_DEFAULT}
+                        onChange={(e) => setLightPlaceMode({ ...lightPlaceMode, fxRadius: Number(e.target.value) })}
+                        title="Radio del fuego"
+                        data-testid="light-fx-radius"
+                        className="w-20 accent-orange-500"
+                      />
+                      {/* El número va al lado porque el rango es chico: sin él
+                          no hay forma de saber en qué fracción del mapa cae la
+                          llama, y con slider solo se llega a|party|. */}
+                      <span
+                        data-testid="light-fx-radius-value"
+                        className="text-[10px] text-orange-300 tabular-nums w-11 text-right"
+                      >
+                        {(lightPlaceMode.fxRadius ?? FIRE_RADIUS_DEFAULT).toFixed(3)}
+                      </span>
+                    </>
                   )}
                 </div>
               </>

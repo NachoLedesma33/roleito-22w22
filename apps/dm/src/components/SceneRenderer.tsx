@@ -11,6 +11,7 @@ import TokenModel from './TokenModel';
 import ItemRenderer from './ItemRenderer';
 import WeatherFX, { WEATHER_META, clampWeatherIntensity } from './WeatherFX';
 import { buildOccluders } from '../lib/lightOcclusion';
+import { FIRE_RADIUS_DEFAULT } from '../lib/light';
 import WallDrawerCanvas from './WallDrawerCanvas';
 import ZoneDrawerCanvas from './ZoneDrawerCanvas';
 import PortalDrawerCanvas, { createEmptyPortalDraft, type PortalDraft } from './PortalDrawerCanvas';
@@ -1781,21 +1782,26 @@ function FireSpot({
   mapHeight: number;
 }) {
   // El radio viene normalizado (0-1) como el de las luces, y se pasa a unidades
-  // de mundo con mapHeight. floor lo evita en 0: con radio 0 el suelo de
-  // spawn() degenera y todas las partículas nacen en el mismo punto, que es
-  // justo el caso "hoguera chica" que igual tiene que verse.
+  // de mundo con mapHeight. El floor de 0.35 es el ancho de una llama: por
+  // abajo no hay llama que se vea, y una hoguera chica tiene que verse igual.
   const r = Math.max(0.35, (radius || 0) * mapHeight);
-  const scale = Math.min(2.2, 0.75 + r * 0.5);
-  // Las llamas se distribuyen en anillos, no en una sola pila: una hoguera es
-  // un charco de fuego, no una columna.
-  const flames = variant === 'flame' ? Math.max(1, Math.min(5, Math.round(r * 1.6))) : 0;
-  const ring = (i: number) => (i / flames) * Math.PI * 2 + Math.random() * 0.6;
+  // La escala va con la raíz del radio, no con el radio. Con `+ r * 0.5` un
+  // radio apenas mayor duplicaba la llama, y como el radio se achicó a 0.015
+  // la escala quedó clavada en el piso para cualquier valor útil.
+  const scale = Math.min(1.5, 0.55 + Math.sqrt(r) * 0.42);
+  // Las llamas se apiñan: una hoguera es un nudo de fuego, no un círculo de
+  // antorchas separadas. El footprint es `fxRadius`; el fuego vive en el 35%
+  // central de ese círculo, y por eso varias llamas pueden solaparse sin que se
+  // vea un anillo de puntos.
+  const flames = variant === 'flame' ? Math.max(1, Math.min(6, 1 + Math.round(r * 1.1))) : 0;
+  const knot = r * 0.35;
+  const ring = (i: number) => (i / flames) * Math.PI * 2 + Math.random() * 0.9;
 
   return (
     <group position={[x, 0, z]}>
       {Array.from({ length: flames }, (_, i) => {
         const a = ring(i);
-        const rr = flames === 1 ? 0 : r * (0.35 + Math.random() * 0.55);
+        const rr = flames === 1 ? 0 : knot * Math.random();
         return (
           <group key={i} position={[Math.cos(a) * rr, 0, Math.sin(a) * rr]}>
             <FireParticles scale={scale} withLight={false} />
@@ -1804,16 +1810,18 @@ function FireSpot({
       })}
       {variant === 'embers' && (
         <ParticleField
-          count={Math.round(Math.min(48, 10 + r * 5))}
+          count={Math.round(Math.min(40, 12 + Math.sqrt(r) * 8))}
           color="#fdba74"
-          size={0.04}
+          size={0.035}
           scale={scale}
           additive
           spawn={(p, _t, s) => {
-            // sqrt para repartir parejo en el disco: con r lineal las brasas se
-            // amontonan en el centro y el borde queda vacío.
+            // sqrt reparte parejo en el disco (con radio lineal las brasas se
+            // amontonan en el centro y el borde queda vacío), y el 0.6 las
+            // mete en el núcleo: unas brasas sueltas por todo el footprint se
+            // leen como luciérnagas, no como fuego.
             const a = Math.random() * Math.PI * 2;
-            const rr = Math.sqrt(Math.random()) * r;
+            const rr = Math.sqrt(Math.random()) * knot * 1.7;
             p.x = Math.cos(a) * rr;
             p.z = Math.sin(a) * rr;
             p.y = 0.02 * s + Math.random() * 0.15 * s;
@@ -2068,7 +2076,7 @@ export default function SceneRenderer({
       const att = meta.attachedTo ? attachedLight.get(item.id) : undefined;
       const x = att ? att.pos[0] : item.x;
       const z = att ? att.pos[2] : item.y;
-      spots.push({ key: item.id, x, z, variant: meta.fx, radius: meta.fxRadius ?? 0.05 });
+      spots.push({ key: item.id, x, z, variant: meta.fx, radius: meta.fxRadius ?? FIRE_RADIUS_DEFAULT });
     }
     return spots;
   }, [items, attachedLight]);

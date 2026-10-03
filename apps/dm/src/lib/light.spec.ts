@@ -14,6 +14,10 @@ import {
   lightIntensityAt,
   normalizeLightConfig,
   updateLightSource,
+  FIRE_RADIUS_MIN,
+  FIRE_RADIUS_MAX,
+  FIRE_RADIUS_STEP,
+  FIRE_RADIUS_DEFAULT,
 } from './light'
 import { LightMetadata, SceneLayer } from '@core/domain/types'
 
@@ -215,6 +219,31 @@ describe('light/helpers', () => {
     const upd = updateLightSource(item, { mode: 'directional' })!
     expect((upd.metadata as LightMetadata).source.mode).toBe('directional')
     expect((upd.metadata as LightMetadata).source.angle).toBe(90)
+  })
+
+  // Estas cuatro constantes las leen tres archivos (el toolbar, el preview y el
+  // render). Si el default se cae del rango del slider, el <input type=range>
+  // queda con un value fuera de min/max y el browser lo recorta solo: el DM
+  // vería un número que no es el que dice la etiqueta.
+  it('el rango del radio de fuego contiene al default y el step lo divide', () => {
+    expect(FIRE_RADIUS_MIN).toBeLessThan(FIRE_RADIUS_DEFAULT)
+    expect(FIRE_RADIUS_DEFAULT).toBeLessThan(FIRE_RADIUS_MAX)
+    expect(FIRE_RADIUS_MIN).toBeGreaterThan(0)
+    expect(FIRE_RADIUS_STEP).toBeLessThan(FIRE_RADIUS_MAX - FIRE_RADIUS_MIN)
+    // Tolerancia, no igualdad: 0.06 - 0.002 da 0.058000000000000004 en IEEE-754
+    // y el cociente queda en 58.00000000000001. Lo que importa es que el paso
+    // recorra el rango con un número usable de pasos, no que sea exacto.
+    const span = (FIRE_RADIUS_MAX - FIRE_RADIUS_MIN) / FIRE_RADIUS_STEP
+    expect(Number.isFinite(span)).toBe(true)
+    expect(span).toBeGreaterThan(10)
+    expect(span).toBeCloseTo(Math.round(span), 6)
+  })
+
+  it('el radio de fuego por default es el ancho de una antorcha, no de una hoguera', () => {
+    // 0.015 sobre un mapa de 10 unidades son 0.15 unidades. Con el 0.05 de antes
+    // eran 0.5, que en un mapa chico se comia una esquina entera.
+    expect(FIRE_RADIUS_DEFAULT).toBeCloseTo(0.015, 6)
+    expect(FIRE_RADIUS_DEFAULT).toBeLessThan(LIGHT_PRESETS.torch.radius)
   })
 
   it('updateLightSource devuelve null si el item no es luz', () => {

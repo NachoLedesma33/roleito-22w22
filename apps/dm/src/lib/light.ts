@@ -1,5 +1,21 @@
 import { FlickerConfig, LightMetadata, LightMode, LightSourceConfig, PulseConfig, SceneItem, SceneLayer } from '@core/domain/types'
 
+/**
+ * Radio del fuego colocable, como fracción del alto del mapa (0-1).
+ *
+ * Chicos a propósito, y con tres decimales porque la diferencia entre una
+ * antorcha y una hoguera son centésimas: en un mapa de 10 unidades, 0.05 son
+ * media unidad, que en un mapa chico se come una esquina entera. 0.015 es el
+ * ancho de una antorcha; 0.06 ya es un cerco de brasas.
+ *
+ * Viven acá y no en cada componente para que el toolbar, el preview y el render
+ * no puedan quedar con rangos distintos.
+ */
+export const FIRE_RADIUS_MIN = 0.002
+export const FIRE_RADIUS_MAX = 0.06
+export const FIRE_RADIUS_STEP = 0.001
+export const FIRE_RADIUS_DEFAULT = 0.015
+
 export interface LightPreset {
   name: string
   mode: LightMode
