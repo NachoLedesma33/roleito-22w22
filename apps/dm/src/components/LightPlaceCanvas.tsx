@@ -11,6 +11,9 @@ interface LightPlaceCanvasProps {
   mapHeight: number
   onPlace: (point: { x: number; y: number }) => void
   renderMode?: RenderMode
+  /** Fuego que se va a poner en la luz. Solo afecta el preview. */
+  fx?: 'flame' | 'embers'
+  fxRadius?: number
 }
 
 export default function LightPlaceCanvas({
@@ -19,6 +22,8 @@ export default function LightPlaceCanvas({
   mapHeight,
   onPlace,
   renderMode = '2d',
+  fx,
+  fxRadius,
 }: LightPlaceCanvasProps) {
   const hoverRef = useRef<{ x: number; y: number } | null>(null)
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null)
@@ -65,7 +70,11 @@ export default function LightPlaceCanvas({
     [toNormalized, onPlace],
   )
 
-  const radius = source.radius * mapHeight
+  // Con fuego, el preview dibuja el círculo del fuego y no el halo de la luz:
+  // es lo que el DM está posicionando. El borde pasa a naranja para que se
+  // distinga del ring normal de la luz.
+  const radius = fx ? Math.max(0.35, (fxRadius ?? 0.05) * mapHeight) : source.radius * mapHeight
+  const ringColor = fx === 'flame' ? '#ff8c00' : fx === 'embers' ? '#fdba74' : preset.color
 
   const glowTexture = useMemo(() => {
     const size = 64
@@ -120,19 +129,19 @@ export default function LightPlaceCanvas({
             />
           </mesh>
           <lineSegments geometry={ringGeo} position={[0, 0.02, 0]}>
-            <lineBasicMaterial color={preset.color} transparent opacity={0.8} />
+            <lineBasicMaterial color={ringColor} transparent opacity={0.8} />
           </lineSegments>
           {renderMode === '2d' ? (
             <mesh position={[0, 0.025, 0]} rotation={[-Math.PI / 2, 0, 0]}>
               <ringGeometry args={[0.05, 0.09, 32]} />
-              <meshBasicMaterial color={preset.color} transparent opacity={0.9} side={THREE.DoubleSide} />
+              <meshBasicMaterial color={ringColor} transparent opacity={0.9} side={THREE.DoubleSide} />
             </mesh>
           ) : (
             <mesh position={[0, 0.12, 0]}>
               <sphereGeometry args={[0.09, 16, 16]} />
               <meshStandardMaterial
                 color="#000000"
-                emissive={new THREE.Color(preset.color)}
+                emissive={new THREE.Color(ringColor)}
                 emissiveIntensity={1.2}
               />
             </mesh>

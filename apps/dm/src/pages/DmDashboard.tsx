@@ -103,7 +103,7 @@ export default function DmDashboard() {
   const [rectFogMode, setRectFogMode] = useState<{ reveal: boolean } | null>(null);
   const lastFogPointRef = useRef<{ x: number; y: number } | null>(null);
   const [zoneFogActive, setZoneFogActive] = useState(false);
-  const [lightPlaceMode, setLightPlaceMode] = useState<{ preset: string } | null>(null);
+  const [lightPlaceMode, setLightPlaceMode] = useState<{ preset: string; fx?: 'flame' | 'embers'; fxRadius?: number } | null>(null);
   const [placingToken, setPlacingToken] = useState<{ entity_type: string; entity_id: string } | null>(null);
   const [attachLightMode, setAttachLightMode] = useState<{ lightId: string | null } | null>(null);
   const [zoneColor, setZoneColor] = useState(ZONE_DEFAULT_COLOR);
@@ -722,6 +722,13 @@ export default function DmDashboard() {
     const mapWidth = 10 * mScale
     const item = createLightItem(lightPlaceMode.preset, point, mapWidth, mapHeight)
     if (!item) return
+    // El fuego es opcional y va en el metadata del item de luz, no en un item
+    // aparte: asi una antorcha pegada a un token lleva la llama con ella.
+    if (lightPlaceMode.fx) {
+      const meta = item.metadata as LightMetadata
+      meta.fx = lightPlaceMode.fx
+      meta.fxRadius = lightPlaceMode.fxRadius ?? 0.05
+    }
     graphRef.addItem(item)
     handleItemsChange(graphRef.getItems())
   }, [lightPlaceMode, activeScene, graphRef, handleItemsChange])
@@ -2192,6 +2199,45 @@ export default function DmDashboard() {
                 <span className="text-[10px] text-amber-400 shrink-0">
                   💡 Clic para colocar luz · ESC cancela
                 </span>
+                <div className="flex items-center gap-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-1.5 py-0.5 shrink-0">
+                  <button
+                    onClick={() => setLightPlaceMode({ ...lightPlaceMode, fx: undefined, fxRadius: undefined })}
+                    title="Sin fuego: solo la luz"
+                    data-testid="light-fx-none"
+                    className={`w-6 h-5 rounded text-[10px] transition-colors ${!lightPlaceMode.fx ? 'bg-amber-600 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                  >
+                    —
+                  </button>
+                  <button
+                    onClick={() => setLightPlaceMode({ ...lightPlaceMode, fx: 'flame' })}
+                    title="Llama (la misma del status Ardiendo)"
+                    data-testid="light-fx-flame"
+                    className={`w-6 h-5 rounded text-[10px] transition-colors ${lightPlaceMode.fx === 'flame' ? 'bg-orange-600 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                  >
+                    🔥
+                  </button>
+                  <button
+                    onClick={() => setLightPlaceMode({ ...lightPlaceMode, fx: 'embers' })}
+                    title="Solo brasas ascendentes"
+                    data-testid="light-fx-embers"
+                    className={`w-6 h-5 rounded text-[10px] transition-colors ${lightPlaceMode.fx === 'embers' ? 'bg-orange-600 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                  >
+                    ✨
+                  </button>
+                  {lightPlaceMode.fx && (
+                    <input
+                      type="range"
+                      min={0.01}
+                      max={0.25}
+                      step={0.01}
+                      value={lightPlaceMode.fxRadius ?? 0.05}
+                      onChange={(e) => setLightPlaceMode({ ...lightPlaceMode, fxRadius: Number(e.target.value) })}
+                      title="Radio del fuego"
+                      data-testid="light-fx-radius"
+                      className="w-20 accent-orange-500"
+                    />
+                  )}
+                </div>
               </>
             )}
             {attachLightMode && (

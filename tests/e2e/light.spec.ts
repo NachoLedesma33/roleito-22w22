@@ -199,4 +199,87 @@ test.describe('Lighting (Phase E)', () => {
     const { items } = await getSceneItems(request, campaign.id, scene.id);
     expect(items.length).toBe(3);
   });
+
+  test('E-l5: fuego en la luz sobrevive roundtrip y no rompe render', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    const scene = await createScene(request, campaign.id, 'Light Fire Inject');
+    const flaming = lightItem('light-e2e-fire', {
+      mode: 'soft',
+      color: '#ff6b2b',
+      intensity: 0.95,
+      radius: 0.45,
+    });
+    flaming.metadata = {
+      type: 'light',
+      source: flaming.metadata.source,
+      fx: 'flame',
+      fxRadius: 0.12,
+    };
+    const embers = lightItem('light-e2e-embers', {
+      mode: 'hard',
+      color: '#ff9d45',
+      intensity: 0.7,
+      radius: 0.1,
+    });
+    embers.metadata = {
+      type: 'light',
+      source: embers.metadata.source,
+      fx: 'embers',
+      fxRadius: 0.05,
+    };
+    await putSceneItems(request, campaign.id, scene.id, [flaming, embers]);
+
+    const errors: string[] = [];
+    page.on('pageerror', (err) => errors.push(err.message));
+
+    await openScene(page, campaign.id, scene.id);
+
+    expect(errors).toHaveLength(0);
+    const { items } = await getSceneItems(request, campaign.id, scene.id);
+    const lights = lightItems(items);
+    expect(lights).toHaveLength(2);
+    const byId = new Map(lights.map((l) => [l.id, l.metadata as unknown as { fx: string; fxRadius: number }]));
+    expect(byId.get('light-e2e-fire')?.fx).toBe('flame');
+    expect(byId.get('light-e2e-fire')?.fxRadius).toBeCloseTo(0.12, 5);
+    expect(byId.get('light-e2e-embers')?.fx).toBe('embers');
+  });
+
+  test('E-l6: el DM elige fuego en el toolbar y la luz colocada lo guarda', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    const scene = await createScene(request, campaign.id, 'Light Fire Place');
+    const canvas = await openScene(page, campaign.id, scene.id);
+
+    await page.getByRole('button', { name: /Construir/i }).click();
+    await page.getByRole('button', { name: /Luz \(colocar\)/ }).click();
+    await expect(page.getByText(/Clic para colocar luz/)).toBeVisible();
+
+    // Sin fuego no hay slider de radio: el radio solo importa si hay llama.
+    await expect(page.getByTestId('light-fx-radius')).toHaveCount(0);
+    await page.getByTestId('light-fx-flame').click();
+    await expect(page.getByTestId('light-fx-radius')).toBeVisible();
+
+    const box = await canvas.boundingBox();
+    if (!box) throw new Error('canvas sin boundingBox');
+
+    const putPromise = page.waitForResponse(
+      (res) =>
+        res.url().includes(`/scenes/${scene.id}/items`) && res.request().method() === 'PUT',
+      { timeout: 20_000 },
+    );
+    await page.mouse.click(box.x + box.width * 0.5, box.y + box.height * 0.5);
+    expect((await putPromise).status()).toBe(200);
+
+    const { items } = await getSceneItems(request, campaign.id, scene.id);
+    const lights = lightItems(items);
+    expect(lights).toHaveLength(1);
+    const meta = lights[0].metadata as unknown as { fx: string; fxRadius: number };
+    expect(meta.fx).toBe('flame');
+    expect(meta.fxRadius).toBeGreaterThan(0);
+  });
 });

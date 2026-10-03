@@ -96,7 +96,7 @@ interface SceneRendererProps {
   playerFogRegions?: FogRegion[];
   zoneFogActive?: boolean;
   onZoneFogSelect?: (snap: import('./ZonePortal').EdgeSnap) => void;
-  lightPlace?: { preset: string } | null;
+  lightPlace?: { preset: string; fx?: 'flame' | 'embers'; fxRadius?: number } | null;
   onLightPlace?: (point: { x: number; y: number }) => void;
   lightAttach?: { lightId: string | null } | null;
   tokenPlace?: { entity_type: string; entity_id: string } | null;
@@ -2279,6 +2279,8 @@ export default function SceneRenderer({
           mapHeight={mapHeight}
           onPlace={onLightPlace}
           renderMode={renderMode}
+          fx={lightPlace.fx}
+          fxRadius={lightPlace.fxRadius}
         />
       )}
       {tokenPlace && onTokenPlace && (
