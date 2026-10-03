@@ -33,6 +33,11 @@ jobs:
       - run: npm ci
       - run: pip install -r backend/requirements.txt -r backend/requirements-test.txt
       - run: python -m ruff check backend
+      # Verifica que docs/ y el codigo no se contradigan. Va aca y no en checks
+      # porque necesita el Python del backend, y no en test porque no necesita
+      # ni node ni playwright: si esto falla, Playwright no va a decir nada
+      # nuevo. Sale rapido y es el unico que detecta que un doc quedo viejo.
+      - run: python scripts/check-docs-consistency.py
       - run: npm run test --workspace=apps/dm
       # Los tests importan `main` y `wall_detection`, que viven en backend/, no
       # en backend/tests/. `python -m pytest` mete el cwd en sys.path, asi que
