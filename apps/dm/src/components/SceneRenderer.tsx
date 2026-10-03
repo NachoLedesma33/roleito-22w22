@@ -1804,18 +1804,21 @@ function FireSpot({
   const knot = r * 0.09;
   // Cuantas llamas hay depende del nudo y no del radio bruto. Antes era
   // `1 + r * 1.1`, y como el radio se achico a 0.015 la cuenta daba 1 sola
-  // llama: no se veia un fuego sino una antorcha sola. Con el nudo salen 5 en
-  // una antorcha y 9 en una hoguera, todas pegadas y solapadas.
-  const flames = variant === 'flame' ? Math.max(5, Math.min(12, Math.round(knot * 78) + 4)) : 0;
+  // llama: no se veia un fuego sino una antorcha sola. Con el nudo salen 7 en
+  // una antorcha y 12 en una hoguera, todas pegadas y solapadas.
+  //
+  // El tope de 16 son 1760 puntos aditivos por fuego. Es lo que aguanta antes
+  // de que se note en el frame rate con varios fuegos en la misma escena; si
+  // se traba, el numero a bajar es este y no el radio.
+  const flames = variant === 'flame' ? Math.max(7, Math.min(16, Math.round(knot * 105) + 6)) : 0;
   // Cada llama se achica un poco al multiplicar: si no, 12 instancias del mismo
   // tamano se leen como 12 columnas iguales en vez de un nucleo. El tope es 0.45
   // porque a partir de ahi el fuego se ve mas chico que antes de multiplicarlo.
   const perFlame = scale * (1 - Math.min(0.45, (flames - 3) * 0.05));
   // Ancho del pilar. El alto sale de uScale y el ancho de uSway, asi que esto
-  // se sube sin agrandar la llama de punta a punta. A 0.4 los pilares se veian
-  // como pelos de luz; 0.8 los hace lenguas. Este es el unico numero que hay
-  // que tocar para cambiar el ancho, sin mover el nudo ni el conteo.
-  const sway = 0.8;
+  // se sube sin agrandar la llama de punta a punta. Este es el unico numero que
+  // hay que tocar para cambiar el ancho, sin mover el nudo ni el conteo.
+  const sway = 1.2;
   const ring = (i: number) => (i / flames) * Math.PI * 2 + Math.random() * 0.9;
 
   return (
