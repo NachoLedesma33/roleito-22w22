@@ -1,4 +1,4 @@
-import { useRef, useMemo, useCallback, memo } from 'react';
+import { useRef, useMemo, useCallback, useEffect, memo } from 'react';
 import { Text, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
@@ -63,8 +63,19 @@ const TokenModel = memo(function TokenModel({
       }
     });
     hitHeightRef.current = box.max.y - box.min.y;
-    onHeight?.(box.max.y - box.min.y);
   }
+
+  // `onHeight` es un setState del padre (DraggableToken lo pasa pelado), así que
+  // llamarlo desde el render dispara el warning "Cannot update a component while
+  // rendering a different component". Va en un efecto.
+  //
+  // El setState de React es estable entre renders, así que la dependencia no
+  // cambia y esto corre una sola vez por token. El primer frame usa el fallback
+  // `1.15 * tokenScale` de DraggableToken y al siguiente ya tiene la altura real:
+  // por eso ese fallback existe.
+  useEffect(() => {
+    if (hitHeightRef.current > 0) onHeight?.(hitHeightRef.current);
+  }, [onHeight]);
 
   if (cloneRef.current) {
     cloneRef.current.traverse((child) => {
