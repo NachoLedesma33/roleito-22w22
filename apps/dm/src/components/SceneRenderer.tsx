@@ -1798,18 +1798,19 @@ function FireSpot({
   // la escala quedó clavada en el piso para cualquier valor útil.
   const scale = Math.min(1.2, 0.38 + Math.sqrt(r) * 0.32);
   // Las llamas se apiñan: una hoguera es un nudo de fuego, no un círculo de
-  // antorchas separadas. El footprint es `fxRadius`; el fuego vive en el 15%
+  // antorchas separadas. El footprint es `fxRadius`; el fuego vive en el 9%
   // central de ese círculo, y por eso varias llamas pueden solaparse sin que se
   // vea un anillo de puntos.
-  const knot = r * 0.15;
+  const knot = r * 0.09;
   // Cuantas llamas hay depende del nudo y no del radio bruto. Antes era
   // `1 + r * 1.1`, y como el radio se achico a 0.015 la cuenta daba 1 sola
-  // llama: no se veia un fuego sino una antorcha sola. Con el nudo salen 3 en
-  // una antorcha y 5 en una hoguera, todas pegadas y solapadas.
-  const flames = variant === 'flame' ? Math.max(3, Math.min(8, Math.round(knot * 62) + 2)) : 0;
-  // Cada llama se achica un poco al multiplicar: si no, 8 instancias del mismo
-  // tamano se leen como 8 columnas iguales en vez de un nucleo.
-  const perFlame = scale * (1 - Math.min(0.3, (flames - 3) * 0.07));
+  // llama: no se veia un fuego sino una antorcha sola. Con el nudo salen 5 en
+  // una antorcha y 9 en una hoguera, todas pegadas y solapadas.
+  const flames = variant === 'flame' ? Math.max(5, Math.min(12, Math.round(knot * 78) + 4)) : 0;
+  // Cada llama se achica un poco al multiplicar: si no, 12 instancias del mismo
+  // tamano se leen como 12 columnas iguales en vez de un nucleo. El tope es 0.45
+  // porque a partir de ahi el fuego se ve mas chico que antes de multiplicarlo.
+  const perFlame = scale * (1 - Math.min(0.45, (flames - 3) * 0.05));
   // Al fuego colocable se le aprieta el lateral: el ancho de la llama no tiene
   // que coincidir con el del cerco de brasas, y antes se abria tanto que una
   // antorcha parecia un incendio.
