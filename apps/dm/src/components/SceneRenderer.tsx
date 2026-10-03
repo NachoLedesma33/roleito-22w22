@@ -1656,7 +1656,11 @@ function makeFlameTexture(): THREE.Texture {
   return tex;
 }
 
-function FireParticles({ scale, withLight = true }: { scale: number; withLight?: boolean }) {
+// `sway` mide cuanto se abre la llama para los lados. El default 1 deja la
+// llama como estaba; el fuego colocable pasa ~0.4 porque una hoguera es un
+// nudo y no una columna, y con el valor por defecto las particulas de una
+// antorcha quedan separadas por casi medio mapa.
+function FireParticles({ scale, sway = 1, withLight = true }: { scale: number; sway?: number; withLight?: boolean }) {
   const lightRef = useRef<THREE.PointLight>(null);
   const noiseRef = useRef(0.5);
   const geo = useMemo(() => {
@@ -1686,6 +1690,7 @@ function FireParticles({ scale, withLight = true }: { scale: number; withLight?:
       uniforms: {
         uTime: { value: 0 },
         uScale: { value: scale },
+        uSway: { value: sway },
         uPixelRatio: { value: window.devicePixelRatio || 1 },
         uMap: { value: makeFlameTexture() },
       },
@@ -1695,6 +1700,7 @@ function FireParticles({ scale, withLight = true }: { scale: number; withLight?:
         attribute float aSize;
         uniform float uTime;
         uniform float uScale;
+        uniform float uSway;
         uniform float uPixelRatio;
         varying float vP;
         varying float vTw;
@@ -1705,10 +1711,12 @@ function FireParticles({ scale, withLight = true }: { scale: number; withLight?:
           float h = mix(0.02 * uScale, 1.4 * uScale, p);
           float w1 = sin(uTime * 7.0 + aSeed * 6.28) + sin(uTime * 13.0 + aSeed * 3.7);
           float w2 = cos(uTime * 6.0 + aSeed * 4.2) + sin(uTime * 11.0 + aSeed * 9.3);
-          float sway = (0.07 + 0.06 * p) * uScale;
+          // El alto no se toca: una llama baja es una brasa. Lo que se aprieta
+          // es lo lateral, y por eso va aparte de uScale.
+          float sway = (0.07 + 0.06 * p) * uScale * uSway;
           vec3 posH = vec3(w1 * sway, h, w2 * sway);
-          posH.x += sin(p * 20.0 + aSeed) * 0.03 * uScale;
-          posH.z += cos(p * 17.0 + aSeed) * 0.03 * uScale;
+          posH.x += sin(p * 20.0 + aSeed) * 0.03 * uScale * uSway;
+          posH.z += cos(p * 17.0 + aSeed) * 0.03 * uScale * uSway;
           vec4 mv = modelViewMatrix * vec4(posH, 1.0);
           gl_Position = projectionMatrix * mv;
           float tw = 0.65 + 0.35 * sin(uTime * 22.0 + aSeed * 9.0);
@@ -1738,7 +1746,7 @@ function FireParticles({ scale, withLight = true }: { scale: number; withLight?:
         }
       `,
     });
-  }, [scale]);
+  }, [scale, sway]);
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
     if (mat) mat.uniforms.uTime.value = t;
@@ -1788,13 +1796,17 @@ function FireSpot({
   // La escala va con la raíz del radio, no con el radio. Con `+ r * 0.5` un
   // radio apenas mayor duplicaba la llama, y como el radio se achicó a 0.015
   // la escala quedó clavada en el piso para cualquier valor útil.
-  const scale = Math.min(1.5, 0.55 + Math.sqrt(r) * 0.42);
+  const scale = Math.min(1.2, 0.38 + Math.sqrt(r) * 0.32);
   // Las llamas se apiñan: una hoguera es un nudo de fuego, no un círculo de
-  // antorchas separadas. El footprint es `fxRadius`; el fuego vive en el 35%
+  // antorchas separadas. El footprint es `fxRadius`; el fuego vive en el 15%
   // central de ese círculo, y por eso varias llamas pueden solaparse sin que se
   // vea un anillo de puntos.
   const flames = variant === 'flame' ? Math.max(1, Math.min(6, 1 + Math.round(r * 1.1))) : 0;
-  const knot = r * 0.35;
+  const knot = r * 0.15;
+  // Al fuego colocable se le aprieta el lateral: el ancho de la llama no tiene
+  // que coincidir con el del cerco de brasas, y antes se abria tanto que una
+  // antorcha parecia un incendio.
+  const sway = 0.4;
   const ring = (i: number) => (i / flames) * Math.PI * 2 + Math.random() * 0.9;
 
   return (
@@ -1804,7 +1816,7 @@ function FireSpot({
         const rr = flames === 1 ? 0 : knot * Math.random();
         return (
           <group key={i} position={[Math.cos(a) * rr, 0, Math.sin(a) * rr]}>
-            <FireParticles scale={scale} withLight={false} />
+            <FireParticles scale={scale} sway={sway} withLight={false} />
           </group>
         );
       })}
