@@ -24,7 +24,7 @@ import type { FogRegion } from '../lib/fogMask';
 import type { MovementCell } from '../lib/movementRange';
 import type { ZoneDraft } from './ZoneDrawer';
 import type { ZoneGeometry } from './ZonePortal';
-import { SceneItem } from '@core/domain/types';
+import { LightMetadata, SceneItem } from '@core/domain/types';
 import type { DrawState } from './WallDrawer';
 import { STATUS_COLORS, STATUS_ICONS } from '@/lib/statusMarkers';
 
@@ -1655,7 +1655,7 @@ function makeFlameTexture(): THREE.Texture {
   return tex;
 }
 
-function FireParticles({ scale }: { scale: number }) {
+function FireParticles({ scale, withLight = true }: { scale: number; withLight?: boolean }) {
   const lightRef = useRef<THREE.PointLight>(null);
   const noiseRef = useRef(0.5);
   const geo = useMemo(() => {
@@ -1750,7 +1750,89 @@ function FireParticles({ scale }: { scale: number }) {
   return (
     <group>
       <points geometry={geo} material={mat} renderOrder={56} frustumCulled={false} />
-      <pointLight ref={lightRef} color="#ff8c00" position={[0, 0.05 * scale, 0]} distance={4.5} decay={2} intensity={2.2} />
+      {withLight && (
+        <pointLight ref={lightRef} color="#ff8c00" position={[0, 0.05 * scale, 0]} distance={4.5} decay={2} intensity={2.2} />
+      )}
+    </group>
+  );
+}
+
+// Fuego colocable: el mismo FX del status `burning` de un personaje, pero
+// repartido en un círculo que el DM pone donde quiere (`LightMetadata.fx`).
+//
+// La animación es la de `FireParticles` a propósito — una hoguera que se ve
+// distinta de un personaje ardiendo rompe la ilusión. Lo único que cambia es
+// dónde nacen las partículas.
+//
+// `withLight={false}` porque la llama trae su propio PointLight parpadeante y
+// estas luces ya tienen la suya: sin esto el punto queda el doble de brillante.
+// El default `true` de FireParticles sigue sirviendo para el personaje.
+function FireSpot({
+  x,
+  z,
+  variant,
+  radius,
+  mapHeight,
+}: {
+  x: number;
+  z: number;
+  variant: 'flame' | 'embers';
+  radius: number;
+  mapHeight: number;
+}) {
+  // El radio viene normalizado (0-1) como el de las luces, y se pasa a unidades
+  // de mundo con mapHeight. floor lo evita en 0: con radio 0 el suelo de
+  // spawn() degenera y todas las partículas nacen en el mismo punto, que es
+  // justo el caso "hoguera chica" que igual tiene que verse.
+  const r = Math.max(0.35, (radius || 0) * mapHeight);
+  const scale = Math.min(2.2, 0.75 + r * 0.5);
+  // Las llamas se distribuyen en anillos, no en una sola pila: una hoguera es
+  // un charco de fuego, no una columna.
+  const flames = variant === 'flame' ? Math.max(1, Math.min(5, Math.round(r * 1.6))) : 0;
+  const ring = (i: number) => (i / flames) * Math.PI * 2 + Math.random() * 0.6;
+
+  return (
+    <group position={[x, 0, z]}>
+      {Array.from({ length: flames }, (_, i) => {
+        const a = ring(i);
+        const rr = flames === 1 ? 0 : r * (0.35 + Math.random() * 0.55);
+        return (
+          <group key={i} position={[Math.cos(a) * rr, 0, Math.sin(a) * rr]}>
+            <FireParticles scale={scale} withLight={false} />
+          </group>
+        );
+      })}
+      {variant === 'embers' && (
+        <ParticleField
+          count={Math.round(Math.min(48, 10 + r * 5))}
+          color="#fdba74"
+          size={0.04}
+          scale={scale}
+          additive
+          spawn={(p, _t, s) => {
+            // sqrt para repartir parejo en el disco: con r lineal las brasas se
+            // amontonan en el centro y el borde queda vacío.
+            const a = Math.random() * Math.PI * 2;
+            const rr = Math.sqrt(Math.random()) * r;
+            p.x = Math.cos(a) * rr;
+            p.z = Math.sin(a) * rr;
+            p.y = 0.02 * s + Math.random() * 0.15 * s;
+            p.vx = (Math.random() - 0.5) * 0.12;
+            p.vy = (0.28 + Math.random() * 0.22) * s;
+            p.vz = (Math.random() - 0.5) * 0.12;
+            p.maxLife = 0.6 + Math.random() * 0.5;
+            p.sizeMul = 0.5 + Math.random() * 0.7;
+          }}
+          step={(p, dt, t, s) => {
+            const a = Math.min(p.age / p.maxLife, 1);
+            p.x += (p.vx + Math.sin(t * 9 + p.phase * 12) * 0.03) * dt;
+            p.y += p.vy * dt;
+            p.z += (p.vz + Math.cos(t * 7 + p.phase * 10) * 0.03) * dt;
+            p.vy *= 1 - 0.35 * dt;
+            return { x: p.x, y: p.y, z: p.z, s: Math.sin(Math.PI * a) * 1.2 * s };
+          }}
+        />
+      )}
     </group>
   );
 }
@@ -1972,6 +2054,24 @@ export default function SceneRenderer({
     }
     return info;
   }, [items, visibleChars]);
+  // Fuegos colocables: luces con `fx` puesto. Se renderizan acá y no en
+  // ItemRenderer porque FireParticles/ParticleField viven en este archivo, y
+  // SceneRenderer ya importa ItemRenderer: al revés se genera un ciclo.
+  //
+  // Las luces pegadas a un personaje heredan su posición, como el halo. Si no,
+  // una antorcha en la mano de un token quemaría en el centro del mapa.
+  const fireSpots = useMemo(() => {
+    const spots: { key: string; x: number; z: number; variant: 'flame' | 'embers'; radius: number }[] = [];
+    for (const item of items) {
+      const meta = item.metadata as LightMetadata | undefined;
+      if (!item.visible || meta?.type !== 'light' || !meta.fx) continue;
+      const att = meta.attachedTo ? attachedLight.get(item.id) : undefined;
+      const x = att ? att.pos[0] : item.x;
+      const z = att ? att.pos[2] : item.y;
+      spots.push({ key: item.id, x, z, variant: meta.fx, radius: meta.fxRadius ?? 0.05 });
+    }
+    return spots;
+  }, [items, attachedLight]);
   const fogRegions = useMemo(
     () => [...extractFogRegions(items), ...(playerFogRegions ?? [])],
     [items, playerFogRegions],
@@ -2048,6 +2148,9 @@ export default function SceneRenderer({
         {weather && (
           <WeatherFX weather={weather} mapWidth={mapWidth} mapHeight={mapHeight} intensity={weatherIntensityK} />
         )}
+        {fireSpots.map((s) => (
+          <FireSpot key={s.key} x={s.x} z={s.z} variant={s.variant} radius={s.radius} mapHeight={mapHeight} />
+        ))}
       {gridSize > 0 && <GridOverlay width={mapWidth} height={mapHeight} gridSize={gridSize} renderMode={renderMode} />}
       {movementRange && (
         <MovementRangeOverlay

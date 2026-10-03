@@ -331,6 +331,22 @@ export interface LightMetadata {
   type: 'light'
   source: LightSourceConfig
   attachedTo?: string
+  /**
+   * Fuego visible sobre la luz. Una luz brilla; con `fx` arde.
+   *
+   * - `flame`: la llama completa, la misma que el status `burning` de un
+   *   personaje (110 partículas con shader + rampa blanco→amarillo→naranja→rojo→humo).
+   * - `embers`: solo ascuas naranjas ascendiendo, sin llama. Para brasas.
+   *
+   * `fxRadius` reparte las partículas en un círculo de ese radio en el mapa, en
+   * vez de todas apiladas en el centro. Sin él, radio 0 = un punto.
+   *
+   * Ojo al duplicar luz: la llama trae su propio PointLight parpadeante. Si la
+   * luz de abajo ya tiene throw, ese PointLight se apaga (ver `withLight` en
+   * FireParticles) o el punto queda el doble de brillante.
+   */
+  fx?: 'flame' | 'embers'
+  fxRadius?: number
 }
 
 export interface RoomMetadata {
