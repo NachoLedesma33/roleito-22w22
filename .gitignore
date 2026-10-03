@@ -88,6 +88,10 @@ assets/temp/
 # Graphify output
 graphify-out/
 
+# Herramienta local de opencode (gates, git). Es del desarrollo, no del
+# producto: no va en un repo que se puede clonar o vender.
+.opencode/
+
 # Uploaded assets
 data/assets/
 data/roleito.db

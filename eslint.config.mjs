@@ -12,6 +12,7 @@ export default tseslint.config(
       'backend/**',
       'data/**',
       'venv/**',
+      '.opencode/**',
     ],
   },
   js.configs.recommended,
