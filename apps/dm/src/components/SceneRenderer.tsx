@@ -1811,10 +1811,11 @@ function FireSpot({
   // tamano se leen como 12 columnas iguales en vez de un nucleo. El tope es 0.45
   // porque a partir de ahi el fuego se ve mas chico que antes de multiplicarlo.
   const perFlame = scale * (1 - Math.min(0.45, (flames - 3) * 0.05));
-  // Al fuego colocable se le aprieta el lateral: el ancho de la llama no tiene
-  // que coincidir con el del cerco de brasas, y antes se abria tanto que una
-  // antorcha parecia un incendio.
-  const sway = 0.4;
+  // Ancho del pilar. El alto sale de uScale y el ancho de uSway, asi que esto
+  // se sube sin agrandar la llama de punta a punta. A 0.4 los pilares se veian
+  // como pelos de luz; 0.8 los hace lenguas. Este es el unico numero que hay
+  // que tocar para cambiar el ancho, sin mover el nudo ni el conteo.
+  const sway = 0.8;
   const ring = (i: number) => (i / flames) * Math.PI * 2 + Math.random() * 0.9;
 
   return (
