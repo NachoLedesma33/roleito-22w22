@@ -1801,8 +1801,15 @@ function FireSpot({
   // antorchas separadas. El footprint es `fxRadius`; el fuego vive en el 15%
   // central de ese círculo, y por eso varias llamas pueden solaparse sin que se
   // vea un anillo de puntos.
-  const flames = variant === 'flame' ? Math.max(1, Math.min(6, 1 + Math.round(r * 1.1))) : 0;
   const knot = r * 0.15;
+  // Cuantas llamas hay depende del nudo y no del radio bruto. Antes era
+  // `1 + r * 1.1`, y como el radio se achico a 0.015 la cuenta daba 1 sola
+  // llama: no se veia un fuego sino una antorcha sola. Con el nudo salen 3 en
+  // una antorcha y 5 en una hoguera, todas pegadas y solapadas.
+  const flames = variant === 'flame' ? Math.max(3, Math.min(8, Math.round(knot * 62) + 2)) : 0;
+  // Cada llama se achica un poco al multiplicar: si no, 8 instancias del mismo
+  // tamano se leen como 8 columnas iguales en vez de un nucleo.
+  const perFlame = scale * (1 - Math.min(0.3, (flames - 3) * 0.07));
   // Al fuego colocable se le aprieta el lateral: el ancho de la llama no tiene
   // que coincidir con el del cerco de brasas, y antes se abria tanto que una
   // antorcha parecia un incendio.
@@ -1816,7 +1823,7 @@ function FireSpot({
         const rr = flames === 1 ? 0 : knot * Math.random();
         return (
           <group key={i} position={[Math.cos(a) * rr, 0, Math.sin(a) * rr]}>
-            <FireParticles scale={scale} sway={sway} withLight={false} />
+            <FireParticles scale={perFlame} sway={sway} withLight={false} />
           </group>
         );
       })}
