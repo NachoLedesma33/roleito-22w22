@@ -7,7 +7,7 @@
 ## Estado de fases (2026-09-30)
 
 - **Implemented**: 192 tests en `tests/e2e/`, corren con `npm run test:e2e` (Playwright levanta frontend 5173 + backend 8000).
-- **CI pipeline**: `.github/workflows/e2e.yml` — typecheck → lint → playwright. NO corre vitest ni pytest (correr local antes de push).
+- **CI pipeline**: `.github/workflows/e2e.yml` — tres jobs encadenados: `checks` (typecheck → lint), `unit` (vitest + pytest) y `test` (playwright), que espera a los dos anteriores.
 - **Fase CI verde en curso**:
   - `37b83dc` — `fix(perf)`: gate de UnrealBloomPass por glow activo (mata jank SwiftShader → timeouts de mouse en canvas).
   - `c571f04` — `test(e2e)`: sync labels EN→ES-AR en 21 specs (UI ya es ES-AR; specs arrastraban strings EN).

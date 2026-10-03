@@ -20,7 +20,7 @@ DM authority + AI assistant. World State = source of truth.
   - ⚠️ `losRaycast.spec.ts` colgaba en vitest (rayos con dx/dy=0 → loop infinito en castRayDDA) — fixeado, ya corre
 - Backend (pytest): desde `backend/`: `..\..\venv\Scripts\python.exe -m pytest`; test deps en `requirements-test.txt` (NO en requirements.txt)
 - E2E: `npm run test:e2e` — Playwright **levanta solo** frontend (5173) + backend (8000) vía webServer; tests en `tests/e2e`, global setup en `tests/global-setup.ts`
-- CI (`e2e.yml`): typecheck → lint → playwright. **NO corre vitest ni pytest** — correr ambos local antes de push
+- CI (`e2e.yml`): tres jobs. `checks` = typecheck → lint; `unit` = vitest + pytest; `test` = playwright, que además `needs: [checks, unit]`. O sea que los unit corren en cada push
 - Orden de verificación sugerida: `lint → typecheck → vitest → pytest → (si toca UI) e2e`
 
 ## Architecture (invariantes)
