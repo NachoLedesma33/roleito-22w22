@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_session
 from models import Combat, CombatCombatant, Scene
-from schemas import CombatantIn, CombatResponse, CombatantResponse
+from schemas import CombatantIn, CombatResponse
 
 router = APIRouter(tags=["combat"])
 

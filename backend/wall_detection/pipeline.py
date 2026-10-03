@@ -8,7 +8,6 @@ from .types import DetectedMap, DetectedWall, DetectedDoor
 from .preprocessing import DetectionMode, preprocess_image, remove_grid, remove_grid_auto
 from .wall_detector import detect_walls
 from .door_detector import detect_doors
-from .geometry import detect_rooms, compute_walkable_areas
 
 
 def classify_image(img: np.ndarray) -> DetectionMode:

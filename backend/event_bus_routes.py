@@ -1,6 +1,6 @@
 """Event Bus API — monitoring and manual event emission."""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
 
 from core.events.bus import get_event_bus

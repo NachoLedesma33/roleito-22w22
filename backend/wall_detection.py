@@ -11,7 +11,6 @@ Algorithm based on Auto-Wall (github.com/ThreeHats/auto-wall):
 
 import cv2
 import numpy as np
-from pathlib import Path
 from typing import Optional
 
 

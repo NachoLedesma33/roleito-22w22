@@ -5,7 +5,6 @@ free of wall pixels in the binary image. The pixel check kills doors
 invented from arbitrary endpoint pairs (furniture, decorations).
 """
 
-import cv2
 import numpy as np
 from typing import List, Optional
 

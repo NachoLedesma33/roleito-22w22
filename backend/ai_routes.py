@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from infrastructure.ai import build_provider  # noqa: E402
-from infrastructure.ai.remote import estimate_usage, get_usage_info  # noqa: E402
+from infrastructure.ai.remote import estimate_usage  # noqa: E402
 from auth import require_dm, AuthSession  # noqa: E402
 from vault import get_api_key  # noqa: E402
 

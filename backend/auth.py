@@ -4,14 +4,11 @@ from __future__ import annotations
 
 import secrets
 import time
-from dataclasses import dataclass
 from datetime import datetime, timedelta
-from pathlib import Path
 from typing import Optional
 
-from fastapi import Depends, Header, HTTPException, Request
+from fastapi import Depends, Header, HTTPException
 from sqlalchemy import select, delete
-from sqlalchemy.ext.asyncio import AsyncSession
 import bcrypt
 
 from database import async_session

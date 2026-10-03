@@ -1,6 +1,5 @@
-import json
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import Literal, Optional
 

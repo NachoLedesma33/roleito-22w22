@@ -32,6 +32,7 @@ jobs:
             backend/requirements-test.txt
       - run: npm ci
       - run: pip install -r backend/requirements.txt -r backend/requirements-test.txt
+      - run: python -m ruff check backend
       - run: npm run test --workspace=apps/dm
       # Los tests importan `main` y `wall_detection`, que viven en backend/, no
       # en backend/tests/. `python -m pytest` mete el cwd en sys.path, asi que

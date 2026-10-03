@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 from database import get_session
 from models import (
     Campaign,
@@ -38,10 +37,6 @@ from schemas import (
     CampaignResponse,
     CampaignExport,
     CampaignImport,
-    SceneResponse,
-    SceneCharacterResponse,
-    CharacterResponse,
-    NPCResponse,
 )
 import secrets
 import hashlib

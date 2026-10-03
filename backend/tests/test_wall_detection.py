@@ -9,7 +9,6 @@ import tempfile
 
 import cv2
 import numpy as np
-import pytest
 
 from wall_detection import detect_map, DetectionMode
 

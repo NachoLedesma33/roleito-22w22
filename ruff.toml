@@ -1,0 +1,22 @@
+# Lint del backend Python. ESLint ignora backend/, asi que hasta ahora no habia
+# nada revisando estos archivos fuera de pytest.
+#
+# Sin formatter: `ruff format` no se corre nunca, asi que este archivo no toca
+# el formato del codigo. Por eso tampoco se selecciona I (isort), que reordenaria
+# los imports de 40 archivos en un diff gigante.
+#
+# line-length solo aplica a las reglas E501, que hoy no estan seleccionadas.
+
+target-version = "py311"
+
+[lint]
+# E9 = lo que detecta el compilador (sintaxis rota).
+# F  = pyflakes: nombres indefinidos, shadowing de builtins, imports sin usar.
+# Las dos familias con cero falsos positivos. Ampliar la lista (B, SIM, UP) es
+# trabajo futuro y deliberadamente no va en este commit.
+select = ["E9", "F"]
+
+[lint.per-file-ignores]
+# El __init__.py de wall_detection ES la API publica del paquete: re-exporta
+# tipos a proposito y no los usa en el cuerpo. Ruff solo lo admite en __init__.py.
+"backend/wall_detection/__init__.py" = ["F401"]

@@ -11,7 +11,6 @@ from models import (
     CampaignCalendar,
     DEFAULT_MONTH_NAMES,
     ProgressClock,
-    default_months_json,
 )
 from schemas import CalendarState, CalendarUpdate, ProgressClockIn, ProgressClockOut, ProgressClockUpdate
 

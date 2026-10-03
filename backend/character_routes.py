@@ -12,7 +12,6 @@ from schemas import (
     NPCResponse,
 )
 import os
-import uuid
 from routes import broadcast_revision
 
 router = APIRouter(tags=["characters", "npcs"])
