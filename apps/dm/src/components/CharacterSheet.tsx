@@ -360,7 +360,7 @@ export default function CharacterSheet({
                 />
                 <button
                   onClick={() => removeItem(item.id)}
-                  className="text-[var(--text-secondary)] hover:text-red-400 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="text-[var(--text-secondary)] hover:text-red-400 text-[10px] opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity"
                 >
                   x
                 </button>
@@ -390,7 +390,7 @@ export default function CharacterSheet({
                   <span className="text-[10px] text-blue-300">{spell.cost_pm} PM</span>
                   <button
                     onClick={() => removeSpell(spell.id)}
-                    className="text-[var(--text-secondary)] hover:text-red-400 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="text-[var(--text-secondary)] hover:text-red-400 text-[10px] opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity"
                   >
                     x
                   </button>

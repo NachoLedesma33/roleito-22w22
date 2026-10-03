@@ -99,7 +99,7 @@ export default function AssetList() {
                   <span className="text-[10px] text-[var(--text-secondary)] opacity-60">{a.asset_type === 'image' ? 'Imagen' : a.asset_type === 'audio' ? 'Audio' : a.asset_type}</span>
                   <button
                     onClick={() => handleDelete(a.id)}
-                    className="text-[10px] px-1 py-0.5 rounded bg-[var(--bg-tertiary)] text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="text-[10px] px-1 py-0.5 rounded bg-[var(--bg-tertiary)] text-red-400 hover:text-red-300 opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity"
                   >
                     Borrar
                   </button>

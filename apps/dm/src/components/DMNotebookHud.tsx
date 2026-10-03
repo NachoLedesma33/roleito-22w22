@@ -288,7 +288,7 @@ export default function DMNotebookHud({ campaignId, onClose }: DMNotebookHudProp
                     </span>
                     <button
                       onClick={() => handleRestore(selected!.id, v.id)}
-                      className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--accent)] text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--accent)] text-white opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity"
                     >
                       Restaurar
                     </button>
