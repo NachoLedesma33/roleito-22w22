@@ -2348,11 +2348,12 @@ E11. Placeable fire on a light (flame / embers) — IMPLEMENTED (`LightMetadata.
 
 ### Done when
 
-- [ ] DM can place light sources
-- [ ] Lights can be attached to tokens
-- [ ] Light range affects nearby area
-- [ ] Walls block light propagation
+- [x] DM can place light sources (E3)
+- [x] Lights can be attached to tokens (E4)
+- [x] Light range affects nearby area (E5 slider + E8 zones)
+- [x] Walls block light propagation (E7 `buildOccluders`/`lightShapePoints`)
 - [x] Light presets work (torch flickers)
+- [x] Fire can be placed on a light (E11)
 
 ---
 
