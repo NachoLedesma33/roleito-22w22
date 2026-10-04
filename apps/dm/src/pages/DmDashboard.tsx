@@ -5,7 +5,7 @@ import { SceneItem, ZoneMetadata, SceneLayer } from '@core/domain/types';
 import { SceneGraph } from '@core/scene/scene-graph';
 import { useDoorInteraction } from '@core/scene/door-interaction';
 import SceneRenderer from '@/components/SceneRenderer';
-import { WEATHER_META, WEATHER_NONE_LABEL, clampWeatherIntensity, WEATHER_INTENSITY_MIN, WEATHER_INTENSITY_MAX } from '@/components/WeatherFX';
+import { WEATHER_META, WEATHER_NONE_LABEL, WEATHER_KIND_LABEL, clampWeatherIntensity, WEATHER_INTENSITY_MIN, WEATHER_INTENSITY_MAX } from '@/components/WeatherFX';
 import { createEmptyDrawState, createWallItem, type DrawState } from '@/components/WallDrawer';
 import { createEmptyZoneDraft, createZoneItem, ZONE_COLORS, ZONE_DEFAULT_COLOR, type ZoneDraft } from '@/components/ZoneDrawer';
 import { createEmptyPortalDraft, type PortalDraft } from '@/components/PortalDrawerCanvas';
@@ -2540,18 +2540,32 @@ export default function DmDashboard() {
             >
               {WEATHER_NONE_LABEL}
             </button>
-            {Object.entries(WEATHER_META).map(([key, meta]) => (
-              <button
-                key={key}
-                role="menuitem"
-                onClick={() => handleChangeWeather(key)}
-                className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${
-                  activeScene?.weather === key ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'
-                }`}
-              >
-                {meta.label}
-              </button>
-            ))}
+            {(['rain', 'snow', 'fog'] as const).map((kind) => {
+              const entries = Object.entries(WEATHER_META).filter(([, meta]) => meta.kind === kind);
+              if (!entries.length) return null;
+              return (
+                <div key={kind}>
+                  {/* Encabezado de grupo, no botón. Un submenú real sería
+                      hover() y en táctil no abre — es el problema #4 del
+                      roadmap. Agrupar por tipo ordena sin agregar un hover. */}
+                  <div className="px-3 pt-2 pb-0.5 text-[10px] uppercase tracking-wide text-[var(--text-secondary)] opacity-60">
+                    {WEATHER_KIND_LABEL[kind]}
+                  </div>
+                  {entries.map(([key, meta]) => (
+                    <button
+                      key={key}
+                      role="menuitem"
+                      onClick={() => handleChangeWeather(key)}
+                      className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${
+                        activeScene?.weather === key ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'
+                      }`}
+                    >
+                      {meta.label}
+                    </button>
+                  ))}
+                </div>
+              );
+            })}
             {activeScene?.weather && (
               <div
                 className="border-t border-[var(--bg-tertiary)] mt-0.5 px-3 pt-1.5 pb-2"

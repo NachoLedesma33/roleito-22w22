@@ -153,6 +153,64 @@ test.describe('Weather / Atmosphere', () => {
     await expect(lightingMenu).toBeVisible();
     await expect(weatherMenu).toBeHidden();
   });
+
+  test('W5: las variantes de clima se eligen, persisten y el menú las agrupa por tipo', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    const scene = await createScene(request, campaign.id, 'Meseta W5');
+    await request.post(`${API}/campaigns/${campaign.id}/scenes/${scene.id}/upload-background`, {
+      multipart: { file: { name: 'bg.png', mimeType: 'image/png', buffer: PNG_1PX } },
+    });
+    await page.goto(`/campaigns/${campaign.id}`);
+    await expect(page.locator('header select')).toContainText('Meseta W5', { timeout: 10_000 });
+    await page.locator('header select').selectOption(scene.id);
+
+    const weatherSelect = page.getByTestId('weather-select');
+    await weatherSelect.click();
+    const menu = page.getByTestId('weather-menu');
+    await expect(menu).toBeVisible();
+
+    // Los tres encabezados de grupo, en orden. Con las 7 variantes en una lista
+    // plana no se distingue una tormenta de una llovizna.
+    for (const header of ['Lluvia', 'Nieve', 'Niebla']) {
+      await expect(menu.getByText(header, { exact: true })).toBeVisible();
+    }
+
+    // Tres variantes de tres familias distintas: el id guardado tiene que ser el
+    // de la variante, no el de la familia (si no, elegir "Tormenta" persiste
+    // "rain" y el DM nunca ve lo que eligió).
+    for (const [label, id] of [
+      ['⛈ Tormenta', 'rainStorm'],
+      ['🌨 Ventisca', 'snowBlizzard'],
+      ['🌁 Niebla densa', 'fogDense'],
+    ] as const) {
+      // El menú NO se reabre entre iteraciones: sigue abierto al elegir
+      // (adentro está el slider), y clickear el disparador lo cerraría.
+      await menu.getByRole('menuitem', { name: label }).click();
+      await expect(weatherSelect).toContainText(label.slice(2), { timeout: 10_000 });
+      await expect
+        .poll(async () => {
+          const s = (await (
+            await request.get(`${API}/campaigns/${campaign.id}/scenes/${scene.id}`)
+          ).json()) as { weather: string | null };
+          return s.weather;
+        }, { timeout: 10_000 })
+        .toBe(id);
+    }
+
+    // Y el id viejo sigue funcionando: hay escenas guardadas con 'rain'.
+    await menu.getByRole('menuitem', { name: '🌧 Lluvia' }).click();
+    await expect
+      .poll(async () => {
+        const s = (await (
+          await request.get(`${API}/campaigns/${campaign.id}/scenes/${scene.id}`)
+        ).json()) as { weather: string | null };
+        return s.weather;
+      }, { timeout: 10_000 })
+      .toBe('rain');
+  });
 });
 
 const WEATHER_NONE = 'Sin clima';
