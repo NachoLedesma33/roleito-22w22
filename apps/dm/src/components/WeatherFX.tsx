@@ -35,9 +35,12 @@ export interface WeatherMeta {
 export const WEATHER_META: Record<string, WeatherMeta> = {
   rain: { label: '🌧 Lluvia', tint: 'rgba(64, 88, 122, 0.16)', kind: 'rain', speed: 1, density: 1, grain: 1 },
   rainDrizzle: { label: '🌦 Llovizna', tint: 'rgba(96, 118, 148, 0.12)', kind: 'rain', speed: 0.7, density: 0.5, grain: 0.8 },
-  rainStorm: { label: '⛈ Tormenta', tint: 'rgba(38, 56, 86, 0.28)', kind: 'rain', speed: 1.5, density: 1.6, grain: 1.15 },
+  // La tormenta sube cantidad, velocidad y tamaño del punto juntos: con la
+  // cámara casi cenital, una lluvia intense de gotas chicas se lee como una
+  // llovizna aunque haya el doble de partículas.
+  rainStorm: { label: '⛈ Tormenta', tint: 'rgba(38, 56, 86, 0.28)', kind: 'rain', speed: 1.8, density: 2.4, grain: 1.3 },
   snow: { label: '❄ Nieve', tint: 'rgba(198, 210, 232, 0.14)', kind: 'snow', speed: 1, density: 1, grain: 1 },
-  snowBlizzard: { label: '🌨 Ventisca', tint: 'rgba(226, 234, 248, 0.26)', kind: 'snow', speed: 1.9, density: 1.5, grain: 0.85 },
+  snowBlizzard: { label: '🌨 Ventisca', tint: 'rgba(226, 234, 248, 0.26)', kind: 'snow', speed: 2.2, density: 2.4, grain: 0.85 },
   fog: { label: '🌫 Niebla', tint: 'rgba(212, 212, 218, 0.18)', kind: 'fog', speed: 1, density: 1, grain: 1 },
   fogDense: { label: '🌁 Niebla densa', tint: 'rgba(198, 200, 210, 0.34)', kind: 'fog', speed: 0.5, density: 1.6, grain: 1.7 },
 };
@@ -60,11 +63,18 @@ interface WeatherFXProps {
 
 const TOP_Y = 6.5;
 const N_RAIN = 400;
-const N_SNOW = 320;
-// Los buffers se alocan para la intensidad MÁXIMA: setDrawRange solo puede
-// recortar, nunca agregar vértices que no existen (si no, subir la intensidad no agrega gotas).
-const N_RAIN_MAX = Math.round(N_RAIN * WEATHER_INTENSITY_MAX);
-const N_SNOW_MAX = Math.round(N_SNOW * WEATHER_INTENSITY_MAX);
+const N_SNOW = 520;
+// La densidad más alta de cualquier variante. El buffer tiene que aguantar
+// TAMBIEN el multiplicador de la variante, no solo el de la intensidad: con el
+// tope en `N * INTENSITY_MAX` la ventisca a intensidad 4 daba 320*4*1.5 = 1920
+// contra un tope de 1280, y el Math.min se comía el 33% de la diferencia. Por
+// eso el tope lleva el factor de densidad adentro.
+const MAX_VARIANT_DENSITY = 2.4;
+// Los buffers se alocan para el peor caso posible (intensidad máxima × variante
+// más densa): setDrawRange solo puede recortar, nunca agregar vértices que no
+// existen (si no, subir la intensidad no agrega gotas).
+const N_RAIN_MAX = Math.round(N_RAIN * WEATHER_INTENSITY_MAX * MAX_VARIANT_DENSITY);
+const N_SNOW_MAX = Math.round(N_SNOW * WEATHER_INTENSITY_MAX * MAX_VARIANT_DENSITY);
 
 // La cámara es casi cenital: un segmento vertical se escorza hacia la cámara y
 // "flota". Por eso la lluvia usa <points> (como la nieve, que sí cae visible),
