@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import delete, func, select
 from database import get_session
-from models import Ability, Character, CharacterAbility, NPC, gen_id
+from models import Ability, Campaign, Character, CharacterAbility, Event, NPC, gen_id
 from schemas import (
     CharacterCreate,
     CharacterUpdate,
@@ -433,6 +434,83 @@ async def delete_campaign_ability(
     await db.delete(ability)
     await db.commit()
     return {"status": "deleted", "id": ability_id}
+
+
+class AbilityUseRequest(BaseModel):
+    character_id: str
+
+
+@router.post("/campaigns/{campaign_id}/abilities/{ability_id}/use")
+async def use_campaign_ability(
+    campaign_id: str,
+    ability_id: str,
+    data: AbilityUseRequest,
+    db: AsyncSession = Depends(get_session),
+):
+    """El jugador usa la habilidad: descuenta PM y deja el evento ability_used.
+
+    PM y evento salen de la misma transacción — o los dos o ninguno — así un
+    fallo a mitad de camino no deja PM descontado sin registro. El evento nace
+    como CANON (EVENT-SYSTEM.md §57: auto-canon de bajo impacto, igual que
+    "character moved from room A to B"), así el World State lo aplica sin
+    esperar revisión del DM: un hechizo no es lore. `Event.session_id` es NOT
+    NULL, así que sin sesión activa se gasta igual y `event_id` vuelve null.
+    """
+    ability = await _get_ability(db, campaign_id, ability_id)
+
+    result = await db.execute(
+        select(Character).where(
+            Character.id == data.character_id,
+            Character.campaign_id == campaign_id,
+        )
+    )
+    char = result.scalar_one_or_none()
+    if not char:
+        raise HTTPException(status_code=404, detail="Character not found")
+
+    link = await db.execute(
+        select(CharacterAbility.ability_id).where(
+            CharacterAbility.entity_type == "character",
+            CharacterAbility.entity_id == char.id,
+            CharacterAbility.ability_id == ability_id,
+        )
+    )
+    if not link.scalar_one_or_none():
+        raise HTTPException(
+            status_code=400, detail=f"{char.name} no sabe {ability.name}"
+        )
+
+    cost = ability.cost_pm or 0
+    current = char.current_pm if char.current_pm is not None else char.max_pm
+    if cost > current:
+        raise HTTPException(status_code=400, detail="PM insuficientes")
+    char.current_pm = current - cost
+
+    campaign = (
+        await db.execute(select(Campaign).where(Campaign.id == campaign_id))
+    ).scalar_one()
+    event_id = None
+    if campaign.current_session_id:
+        event = Event(
+            campaign_id=campaign_id,
+            session_id=campaign.current_session_id,
+            type="ability_used",
+            actor_id=char.id,
+            target_id=ability.id,
+            location_id=char.current_location_id,
+            description=f"{char.name} usó {ability.name} (-{cost} PM)",
+            confidence=1.0,
+            status="CANON",
+            source_id="player",
+        )
+        db.add(event)
+        await db.flush()
+        event_id = event.id
+
+    await db.commit()
+    await db.refresh(char)
+    await broadcast_revision(db, campaign_id)
+    return {"character": await apply_vida_response(db, char), "event_id": event_id}
 
 
 # ── NPC CRUD ────────────────────────────────────────────────

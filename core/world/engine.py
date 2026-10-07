@@ -126,6 +126,10 @@ class WorldStateEngine:
                 self._add_thread(state, f"Discovery at {loc}: {target}")
         elif etype == "location_change" and loc:
             state.current_location_id = loc
+        elif etype == "ability_used" and actor:
+            # Usar una habilidad deja a la ficha activa; el evento ya quedó en
+            # applied_events (el append es previo a este dispatch).
+            self._touch_entity(state, actor)
 
     def _move_entity(self, state: WorldStateData, entity_id: str, location_id: str) -> None:
         if entity_id in state.characters:

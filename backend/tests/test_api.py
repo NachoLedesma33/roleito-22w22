@@ -1010,6 +1010,138 @@ async def test_delete_ability_borra_catalogo_y_enlaces(client):
 
 
 @pytest.mark.asyncio
+async def test_use_ability_gasta_pm_y_deja_evento_canon_en_world_state(client):
+    """Usar descuenta PM y deja ability_used CANON, que el World State aplica."""
+    camp = (await client.post("/api/campaigns", json={"name": "Usar Camp"})).json()
+    cid = camp["id"]
+    char = (
+        await client.post(
+            f"/api/campaigns/{cid}/characters",
+            json={"name": "Aria", "max_pm": 8},
+        )
+    ).json()
+    spell = {"id": "spell-luz", "name": "Luz", "description": "d", "level": 1, "cost_pm": 3}
+    res = await client.put(
+        f"/api/campaigns/{cid}/characters/{char['id']}", json={"spells_json": [spell]}
+    )
+    assert res.status_code == 200, res.text
+
+    # Sin sesión activa: gasta igual, pero no hay fila posible
+    # (Event.session_id es NOT NULL) y event_id vuelve null.
+    res = await client.post(
+        f"/api/campaigns/{cid}/abilities/spell-luz/use",
+        json={"character_id": char["id"]},
+    )
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["character"]["current_pm"] == 5
+    assert body["event_id"] is None
+    assert (await client.get(f"/api/campaigns/{cid}/events")).json() == []
+
+    # Con sesión activa el evento nace CANON (auto-canon de bajo impacto).
+    sess = (
+        await client.post(
+            f"/api/campaigns/{cid}/sessions", json={"number": 1, "date": "2026-10-07"}
+        )
+    ).json()
+    res = await client.post(f"/api/campaigns/{cid}/sessions/{sess['id']}/start")
+    assert res.status_code == 200, res.text
+
+    res = await client.post(
+        f"/api/campaigns/{cid}/abilities/spell-luz/use",
+        json={"character_id": char["id"]},
+    )
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["character"]["current_pm"] == 2
+    assert body["event_id"]
+
+    eventos = [
+        e
+        for e in (await client.get(f"/api/campaigns/{cid}/events")).json()
+        if e["type"] == "ability_used"
+    ]
+    assert len(eventos) == 1
+    ev = eventos[0]
+    assert ev["status"] == "CANON"
+    assert ev["actor_id"] == char["id"]
+    assert ev["target_id"] == "spell-luz"
+    assert "Luz" in ev["description"]
+    assert ev["session_id"] == sess["id"]
+
+    # El motor de World State lo aplica sin que nadie lo apruebe.
+    # Se corre el motor directo y no por GET /world-state: ese endpoint guarda
+    # un snapshot en disco y en pytest eso dejaría archivos en data/snapshots.
+    from core.world.engine import WorldStateEngine
+
+    async with async_session() as s:
+        state = await WorldStateEngine(s).compute(cid)
+    assert body["event_id"] in state.applied_events
+
+
+@pytest.mark.asyncio
+async def test_use_ability_valida_pm_aprendizaje_y_existencia(client):
+    """Sin PM, sin haberla aprendido o sin fila: 400/404, sin gastar ni evento."""
+    camp = (await client.post("/api/campaigns", json={"name": "Usar Guard Camp"})).json()
+    cid = camp["id"]
+    sabe = (
+        await client.post(
+            f"/api/campaigns/{cid}/characters",
+            json={"name": "Aria", "max_pm": 1},
+        )
+    ).json()
+    novato = (
+        await client.post(f"/api/campaigns/{cid}/characters", json={"name": "Borin"})
+    ).json()
+    spell = {"id": "spell-luz-guard", "name": "Luz", "description": "d", "level": 1, "cost_pm": 3}
+    res = await client.put(
+        f"/api/campaigns/{cid}/characters/{sabe['id']}", json={"spells_json": [spell]}
+    )
+    assert res.status_code == 200, res.text
+
+    sess = (
+        await client.post(
+            f"/api/campaigns/{cid}/sessions", json={"number": 1, "date": "2026-10-07"}
+        )
+    ).json()
+    res = await client.post(f"/api/campaigns/{cid}/sessions/{sess['id']}/start")
+    assert res.status_code == 200, res.text
+
+    # La aprendió pero 3 PM no entran en 1: no gasta y no deja evento.
+    res = await client.post(
+        f"/api/campaigns/{cid}/abilities/spell-luz-guard/use",
+        json={"character_id": sabe["id"]},
+    )
+    assert res.status_code == 400, res.text
+    assert res.json()["detail"] == "PM insuficientes"
+
+    # No la sabe: se valida antes que los PM.
+    res = await client.post(
+        f"/api/campaigns/{cid}/abilities/spell-luz-guard/use",
+        json={"character_id": novato["id"]},
+    )
+    assert res.status_code == 400, res.text
+    assert "no sabe" in res.json()["detail"]
+
+    # Habilidad o ficha de otra campaña: ni llega a tocar PM.
+    otra = (await client.post("/api/campaigns", json={"name": "Otra"})).json()
+    res = await client.post(
+        f"/api/campaigns/{otra['id']}/abilities/spell-luz-guard/use",
+        json={"character_id": sabe["id"]},
+    )
+    assert res.status_code == 404
+    res = await client.post(
+        f"/api/campaigns/{cid}/abilities/no-existe/use",
+        json={"character_id": sabe["id"]},
+    )
+    assert res.status_code == 404
+
+    got = (await client.get(f"/api/campaigns/{cid}/characters/{sabe['id']}")).json()
+    assert got["current_pm"] == 1
+    assert (await client.get(f"/api/campaigns/{cid}/events")).json() == []
+
+
+@pytest.mark.asyncio
 async def test_backfill_de_spells_json_legacy(client):
     """El blob viejo pasa al catalogo, y lo que el DM borre no resucita."""
     camp = (await client.post("/api/campaigns", json={"name": "Backfill Camp"})).json()
