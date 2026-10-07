@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import HudPanel from './HudPanel';
 import { api, Character, NPC, InventoryItem, Spell, CampaignAbility } from '@/lib/api';
 import { STATUS_OPTIONS } from '@/lib/statusMarkers';
@@ -42,6 +43,7 @@ export default function CharacterSheet({
   // A qué habilidad le está apuntando el input de archivo de icono.
   const iconAbilityId = useRef<string>('');
   const [iconTarget, setIconTarget] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<CampaignAbility | null>(null);
 
   const inventory: InventoryItem[] = entity.inventory_json || [];
   const spells: Spell[] = entity.spells_json || [];
@@ -225,6 +227,28 @@ export default function CharacterSheet({
     if (!file) return;
     await uploadIcon(iconAbilityId.current, file);
     e.target.value = '';
+  };
+
+  // Borrar del catálogo es para la campaña entera: la `x` de la fila de
+  // arriba es la que solo desaprende de esta ficha. La fila solo aparece acá
+  // si esta ficha NO la sabe, así que `owners` son siempre fichas ajenas.
+  const deleteWarning = (ability: CampaignAbility) => {
+    if (ability.owners > 1) return `La saben ${ability.owners} fichas: desaparece de todas.`;
+    if (ability.owners === 1) return 'La sabe 1 ficha: le desaparece.';
+    return 'Ninguna ficha la sabe: solo vive en el catálogo.';
+  };
+
+  const confirmDelete = async () => {
+    const ability = pendingDelete;
+    setPendingDelete(null);
+    if (!ability) return;
+    try {
+      await api.abilities.remove(campaignId, ability.id);
+    } catch {
+      // el backend no borró nada: no tocar el estado local
+      return;
+    }
+    await reloadCatalog();
   };
 
   const iconChip = (icon: string | null, name: string) => {
@@ -594,6 +618,13 @@ export default function CharacterSheet({
                       >
                         +
                       </button>
+                      <button
+                        onClick={() => setPendingDelete(ability)}
+                        title="Eliminar del catálogo"
+                        className="text-[var(--text-secondary)] hover:text-red-400 text-[11px] leading-none px-1"
+                      >
+                        🗑
+                      </button>
                     </div>
                     {iconPicker(ability.id, ability.icon)}
                   </div>
@@ -603,6 +634,46 @@ export default function CharacterSheet({
           </div>
         )}
       </div>
+      {/* Portal a body: HudPanel tiene backdrop-filter, que convierte al panel
+          en containing block y el `fixed inset-0` quedaria atrapado adentro. */}
+      {createPortal(
+        pendingDelete ? (
+          <div
+            className="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
+            onClick={() => setPendingDelete(null)}
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Eliminar ${pendingDelete.name} del catálogo`}
+          >
+            <div
+              className="bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded-lg shadow-2xl p-6 max-w-md w-full mx-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-2">
+                ¿Eliminar "{pendingDelete.name}" del catálogo?
+              </h3>
+              <p className="text-xs text-[var(--text-secondary)] mb-5">
+                {deleteWarning(pendingDelete)}
+              </p>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setPendingDelete(null)}
+                  className="px-3 py-1.5 text-xs rounded border border-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => void confirmDelete()}
+                  className="px-3 py-1.5 text-xs rounded bg-red-500/90 hover:bg-red-500 text-white font-medium"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null,
+        document.body
+      )}
     </HudPanel>
   );
 }

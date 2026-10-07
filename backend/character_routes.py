@@ -412,6 +412,29 @@ async def clear_ability_icon(
     return _spell_payload(ability)
 
 
+@router.delete("/campaigns/{campaign_id}/abilities/{ability_id}")
+async def delete_campaign_ability(
+    campaign_id: str,
+    ability_id: str,
+    db: AsyncSession = Depends(get_session),
+):
+    """Borra la habilidad del catálogo, para todas las fichas que la saben.
+
+    No hay forma de quitarla de una sola ficha por esta vía: eso es la `x` de
+    la ficha, que solo desaprende. Enlaces primero y fila después (mismo orden
+    que el purge de campaña), y el archivo del icono solo si vive bajo
+    data/assets: lo creamos nosotros.
+    """
+    ability = await _get_ability(db, campaign_id, ability_id)
+    await db.execute(
+        delete(CharacterAbility).where(CharacterAbility.ability_id == ability_id)
+    )
+    _remove_icon_file(ability)
+    await db.delete(ability)
+    await db.commit()
+    return {"status": "deleted", "id": ability_id}
+
+
 # ── NPC CRUD ────────────────────────────────────────────────
 
 

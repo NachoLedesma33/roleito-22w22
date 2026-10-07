@@ -953,6 +953,63 @@ async def test_icono_viaja_con_el_catalogo(client):
 
 
 @pytest.mark.asyncio
+async def test_delete_ability_borra_catalogo_y_enlaces(client):
+    """Borrar una habilidad la saca del catálogo y de todas las fichas."""
+    camp = (await client.post("/api/campaigns", json={"name": "Borrar Camp"})).json()
+    cid = camp["id"]
+    a = (await client.post(f"/api/campaigns/{cid}/characters", json={"name": "Aria"})).json()
+    b = (await client.post(f"/api/campaigns/{cid}/characters", json={"name": "Borin"})).json()
+
+    spell = {
+        "id": "spell-borrar",
+        "name": "Borrar",
+        "description": "d",
+        "level": 1,
+        "cost_pm": 1,
+        "icon": "star",
+    }
+    for char in (a, b):
+        res = await client.put(
+            f"/api/campaigns/{cid}/characters/{char['id']}", json={"spells_json": [spell]}
+        )
+        assert res.status_code == 200, res.text
+    catalogo = (await client.get(f"/api/campaigns/{cid}/abilities")).json()
+    assert catalogo[0]["owners"] == 2
+
+    # Otra campaña no llega a la fila por id suelto.
+    otra = (await client.post("/api/campaigns", json={"name": "Otra Camp"})).json()
+    res = await client.delete(f"/api/campaigns/{otra['id']}/abilities/spell-borrar")
+    assert res.status_code == 404
+
+    res = await client.delete(f"/api/campaigns/{cid}/abilities/spell-borrar")
+    assert res.status_code == 200, res.text
+    assert res.json() == {"status": "deleted", "id": "spell-borrar"}
+
+    # Del catálogo desaparece para los dos: el borrado es de la campaña.
+    assert (await client.get(f"/api/campaigns/{cid}/abilities")).json() == []
+    for char in (a, b):
+        got = (await client.get(f"/api/campaigns/{cid}/characters/{char['id']}")).json()
+        assert got["spells_json"] == []
+
+    # Enlaces primero, fila después: ni uno ni otro queda huérfano.
+    async with async_session() as s:
+        links = (
+            await s.execute(
+                text("SELECT COUNT(*) FROM character_abilities WHERE ability_id = 'spell-borrar'")
+            )
+        ).scalar()
+        filas = (
+            await s.execute(text("SELECT COUNT(*) FROM abilities WHERE id = 'spell-borrar'"))
+        ).scalar()
+    assert links == 0
+    assert filas == 0
+
+    # Borrar dos veces: ya no existe.
+    res = await client.delete(f"/api/campaigns/{cid}/abilities/spell-borrar")
+    assert res.status_code == 404
+
+
+@pytest.mark.asyncio
 async def test_backfill_de_spells_json_legacy(client):
     """El blob viejo pasa al catalogo, y lo que el DM borre no resucita."""
     camp = (await client.post("/api/campaigns", json={"name": "Backfill Camp"})).json()

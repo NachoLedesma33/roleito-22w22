@@ -306,4 +306,76 @@ test.describe('Character Sheet HUD', () => {
     );
     expect((await stored.json()).spells_json[0].icon).toBe('flame');
   });
+
+  test('CS11: borrar del catálogo la saca de la campaña entera', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    const scene = await createScene(request, campaign.id, 'Escena Borrado');
+    const a = await createCharacter(request, campaign.id, { name: 'Aria' });
+    const b = await createCharacter(request, campaign.id, { name: 'Borin' });
+    // Dos fichas ajenas la saben: Borin (el que abre la ficha) no.
+    const c = await createCharacter(request, campaign.id, { name: 'Calen' });
+    const spellId = `spell-${randomUUID()}`;
+
+    for (const char of [a, c]) {
+      const put = await request.put(
+        `http://localhost:8000/api/campaigns/${campaign.id}/characters/${char.id}`,
+        {
+          data: {
+            spells_json: [
+              { id: spellId, name: 'Bola de Fuego', description: '', level: 3, cost_pm: 5 },
+            ],
+          },
+        },
+      );
+      expect(put.status()).toBe(200);
+    }
+
+    await openSheet(page, campaign.id, scene.id, request, b);
+    await page.getByRole('button', { name: 'Conjuros' }).click();
+    await expect(page.getByText('Bola de Fuego')).toBeVisible();
+
+    // Modal de confirmación centrado, no un alert del navegador.
+    await page.getByTitle('Eliminar del catálogo').click();
+    const modal = page.getByRole('dialog');
+    await expect(modal).toBeVisible();
+    // El aviso tenía que decir que la saben dos fichas, no una.
+    await expect(modal).toContainText('2 fichas');
+
+    // Cancelar cierra el modal y no borra nada.
+    await modal.getByRole('button', { name: 'Cancelar' }).click();
+    await expect(modal).toHaveCount(0);
+    const stillThere = await request.get(
+      `http://localhost:8000/api/campaigns/${campaign.id}/abilities`,
+    );
+    expect(await stillThere.json()).toHaveLength(1);
+
+    const delPromise = page.waitForResponse(
+      (res) =>
+        res.url().includes(`/abilities/${spellId}`) &&
+        res.request().method() === 'DELETE' &&
+        res.status() === 200,
+      { timeout: 10_000 },
+    );
+    await page.getByTitle('Eliminar del catálogo').click();
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Eliminar', exact: true })
+      .click();
+    await delPromise;
+    await expect(page.getByText('Bola de Fuego')).toHaveCount(0);
+
+    const catalog = await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/abilities`);
+    expect(await catalog.json()).toHaveLength(0);
+
+    // Aria y Calen sí la sabían: el borrado es del catálogo, les desaparece.
+    for (const char of [a, c]) {
+      const stored = await request.get(
+        `http://localhost:8000/api/campaigns/${campaign.id}/characters/${char.id}`,
+      );
+      expect((await stored.json()).spells_json).toHaveLength(0);
+    }
+  });
 });
