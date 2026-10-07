@@ -120,6 +120,11 @@ export interface Spell {
   cost_pm: number;
 }
 
+/** Habilidad del catálogo de campaña. `owners` = cuántas fichas la saben. */
+export interface CampaignAbility extends Spell {
+  owners: number;
+}
+
 export interface NPC {
   id: string;
   campaign_id: string;
@@ -539,6 +544,10 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ ids }),
       }),
+  },
+
+  abilities: {
+    list: (campaignId: string) => request<CampaignAbility[]>(`/campaigns/${campaignId}/abilities`),
   },
 
   characters: {

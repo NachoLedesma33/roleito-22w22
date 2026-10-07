@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { expect, test } from '../fixtures/campaign-fixture';
 import { createCharacter, createScene, seedToken } from '../helpers/api-helpers';
 
@@ -191,5 +192,63 @@ test.describe('Character Sheet HUD', () => {
     const stored = await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/characters/${char.id}`);
     const body = await stored.json();
     expect(body.current_pv).toBe(12);
+  });
+
+  test('CS9: catálogo permite aprender una habilidad ya existente', async ({ page, campaign, request }) => {
+    const scene = await createScene(request, campaign.id, 'Escena Catalogo');
+    const a = await createCharacter(request, campaign.id, { name: 'Aria' });
+    const b = await createCharacter(request, campaign.id, { name: 'Borin' });
+    // id por corrida: una fila vieja en el catalogo no tiene que colisionar.
+    const spellId = `spell-${randomUUID()}`;
+
+    // Aria ya sabe una habilidad: tiene que aparecer en el catalogo de Borin,
+    // sin duplicar la fila del catalogo.
+    const put = await request.put(
+      `http://localhost:8000/api/campaigns/${campaign.id}/characters/${a.id}`,
+      {
+        data: {
+          spells_json: [
+            { id: spellId, name: 'Bola de Fuego', description: '', level: 3, cost_pm: 5 },
+          ],
+        },
+      },
+    );
+    expect(put.status()).toBe(200);
+
+    const catalog = await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/abilities`);
+    expect(catalog.status()).toBe(200);
+    expect(await catalog.json()).toHaveLength(1);
+
+    await openSheet(page, campaign.id, scene.id, request, b);
+    await page.getByRole('button', { name: 'Conjuros' }).click();
+
+    await expect(page.getByText('Catálogo de la campaña')).toBeVisible();
+    await expect(page.getByText('Bola de Fuego')).toBeVisible();
+
+    const putPromise = page.waitForResponse(
+      (res) =>
+        res.url().includes(`/characters/${b.id}`) &&
+        res.request().method() === 'PUT' &&
+        res.status() === 200,
+      { timeout: 10_000 },
+    );
+    await page.getByTitle('Aprender').click();
+    await putPromise;
+
+    const stored = await request.get(
+      `http://localhost:8000/api/campaigns/${campaign.id}/characters/${b.id}`,
+    );
+    const body = await stored.json();
+    expect(body.spells_json).toHaveLength(1);
+    expect(body.spells_json[0].id).toBe(spellId);
+    expect(body.spells_json[0].cost_pm).toBe(5);
+
+    // Una sola fila en el catalogo aunque dos fichas la sepan.
+    const finalCatalog = await request.get(
+      `http://localhost:8000/api/campaigns/${campaign.id}/abilities`,
+    );
+    const rows = await finalCatalog.json();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].owners).toBe(2);
   });
 });

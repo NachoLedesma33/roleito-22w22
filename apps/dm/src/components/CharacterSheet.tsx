@@ -1,6 +1,6 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import HudPanel from './HudPanel';
-import { api, Character, NPC, InventoryItem, Spell } from '@/lib/api';
+import { api, Character, NPC, InventoryItem, Spell, CampaignAbility } from '@/lib/api';
 import { STATUS_OPTIONS } from '@/lib/statusMarkers';
 
 interface CharacterSheetProps {
@@ -41,6 +41,19 @@ export default function CharacterSheet({
   const inventory: InventoryItem[] = entity.inventory_json || [];
   const spells: Spell[] = entity.spells_json || [];
   const pUrl = portraitUrl(entity.portrait_path);
+
+  const [catalog, setCatalog] = useState<CampaignAbility[]>([]);
+  const reloadCatalog = useCallback(async () => {
+    try {
+      setCatalog(await api.abilities.list(campaignId));
+    } catch {
+      // el catalogo es auxiliar: si falla, la ficha sigue funcionando
+    }
+  }, [campaignId]);
+
+  useEffect(() => {
+    reloadCatalog();
+  }, [reloadCatalog]);
 
   const handlePortraitUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -113,7 +126,9 @@ export default function CharacterSheet({
       const updated = await api.npcs.update(campaignId, entity.id, { spells_json: newSpells });
       onUpdate(updated);
     }
-  }, [campaignId, entity.id, entityType, onUpdate]);
+    // alta y baja cambian el catalogo (owners, o la fila si es nueva)
+    await reloadCatalog();
+  }, [campaignId, entity.id, entityType, onUpdate, reloadCatalog]);
 
   const addItem = () => {
     const newItem: InventoryItem = { id: genId(), name: 'Nuevo objeto', description: '', quantity: 1 };
@@ -140,6 +155,24 @@ export default function CharacterSheet({
   const removeSpell = (id: string) => {
     handleSaveSpells(spells.filter((s) => s.id !== id));
   };
+
+  // El catalogo es de campaña: aprender no copia la habilidad, solo agrega el
+  // enlace. Por eso aparece con el mismo id que ya tiene el catálogo.
+  const learnSpell = (ability: CampaignAbility) => {
+    handleSaveSpells([
+      ...spells,
+      {
+        id: ability.id,
+        name: ability.name,
+        description: ability.description,
+        level: ability.level,
+        cost_pm: ability.cost_pm,
+      },
+    ]);
+  };
+
+  const unknownAbilities = catalog.filter((a) => !spells.some((s) => s.id === a.id));
+  const ownersOf = (id: string) => catalog.find((a) => a.id === id)?.owners ?? 1;
 
   return (
     <HudPanel
@@ -395,6 +428,11 @@ export default function CharacterSheet({
                     x
                   </button>
                 </div>
+                {ownersOf(spell.id) > 1 && (
+                  <div className="text-[9px] text-amber-400/80 mt-0.5">
+                    Compartida con {ownersOf(spell.id)} fichas: editarla la cambia en todas
+                  </div>
+                )}
               </div>
             ))}
             <button
@@ -403,6 +441,33 @@ export default function CharacterSheet({
             >
               + Agregar conjuro
             </button>
+
+            {unknownAbilities.length > 0 && (
+              <div className="pt-2 space-y-1.5">
+                <div className="text-[9px] uppercase tracking-wide text-[var(--text-secondary)]">
+                  Catálogo de la campaña
+                </div>
+                {unknownAbilities.map((ability) => (
+                  <div
+                    key={ability.id}
+                    className="bg-[var(--bg-tertiary)]/20 rounded px-2 py-1.5 flex items-center gap-1.5"
+                  >
+                    <span className="text-[10px] text-blue-400 font-mono">Lv{ability.level}</span>
+                    <span className="flex-1 text-xs text-[var(--text-primary)] truncate">
+                      {ability.name}
+                    </span>
+                    <span className="text-[10px] text-blue-300">{ability.cost_pm} PM</span>
+                    <button
+                      onClick={() => learnSpell(ability)}
+                      title="Aprender"
+                      className="text-[var(--text-secondary)] hover:text-[var(--accent)] text-[11px] leading-none px-1"
+                    >
+                      +
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
