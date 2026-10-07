@@ -629,6 +629,20 @@ async def test_delete_campaign_purges_children(client):
     )
     await client.post(f"/api/campaigns/{cid}/clocks", json={"title": "Reloj", "segments_total": 6})
 
+    # Una habilidad en el catalogo, sabida por un personaje.
+    purge_char = (
+        await client.post(f"/api/campaigns/{cid}/characters", json={"name": "Purge Mage"})
+    ).json()
+    put_spell = await client.put(
+        f"/api/campaigns/{cid}/characters/{purge_char['id']}",
+        json={
+            "spells_json": [
+                {"id": "purge-spell", "name": "Purgar", "description": "", "level": 1, "cost_pm": 1}
+            ]
+        },
+    )
+    assert put_spell.status_code == 200, put_spell.text
+
     res = await client.delete(f"/api/campaigns/{cid}")
     assert res.status_code == 200, res.text
     assert (await client.get(f"/api/campaigns/{cid}")).status_code == 404
@@ -637,6 +651,28 @@ async def test_delete_campaign_purges_children(client):
         body = (await client.get(f"/api/campaigns/{cid}/{path}")).json()
         rows = body if isinstance(body, list) else body.get("clocks", [])
         assert rows == [], f"{path} quedó huérfano: {rows}"
+
+    # abilities no tiene tabla madre que lo cubra el GET de arriba: se chequea
+    # directo, mas los enlaces de character_abilities.
+    async with async_session() as s:
+        orphans = (
+            await s.execute(
+                text(
+                    "SELECT COUNT(*) FROM abilities "
+                    "WHERE campaign_id NOT IN (SELECT id FROM campaigns)"
+                )
+            )
+        ).scalar()
+        orphan_links = (
+            await s.execute(
+                text(
+                    "SELECT COUNT(*) FROM character_abilities "
+                    "WHERE ability_id NOT IN (SELECT id FROM abilities)"
+                )
+            )
+        ).scalar()
+    assert orphans == 0, f"abilities huérfanas: {orphans}"
+    assert orphan_links == 0, f"character_abilities huérfanas: {orphan_links}"
 
 
 @pytest.mark.asyncio

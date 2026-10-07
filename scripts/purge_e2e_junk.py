@@ -57,9 +57,11 @@ CHILD_TABLES = (
     "campaign_calendars",
     "progress_clocks",
     "light_requests",
+    "abilities",
 )
 
 GRANDCHILD_SQL = (
+    "DELETE FROM character_abilities WHERE ability_id IN (SELECT id FROM abilities WHERE campaign_id IN ({ph}))",
     "DELETE FROM scene_characters WHERE scene_id IN (SELECT id FROM scenes WHERE campaign_id IN ({ph}))",
     "DELETE FROM map_markers WHERE map_id IN (SELECT id FROM maps WHERE campaign_id IN ({ph}))",
     "DELETE FROM dm_notebook_versions WHERE notebook_id IN (SELECT id FROM dm_notebooks WHERE campaign_id IN ({ph}))",
@@ -74,6 +76,9 @@ ORPHAN_RULES = (
     ("dm_notebook_versions", "notebook_id NOT IN (SELECT id FROM dm_notebooks)"),
     ("combat_combatants", "combat_id NOT IN (SELECT id FROM combats)"),
     ("player_fog", "scene_id NOT IN (SELECT id FROM scenes)"),
+    ("character_abilities", "ability_id NOT IN (SELECT id FROM abilities)"),
+    ("character_abilities", "entity_type = 'character' AND entity_id NOT IN (SELECT id FROM characters)"),
+    ("character_abilities", "entity_type = 'npc' AND entity_id NOT IN (SELECT id FROM npcs)"),
 )
 
 

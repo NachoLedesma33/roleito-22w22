@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from database import get_session
 from models import (
     Campaign,
+    Ability,
+    CharacterAbility,
     Session,
     Character,
     NPC,
@@ -409,9 +411,19 @@ async def delete_campaign(
             await db.delete(combatant)
         await db.delete(combat)
 
+    # Primero los enlaces y despues el catalogo: character_abilities no tiene
+    # campaign_id, se resuelve por las abilities de esta campana.
+    await db.execute(
+        delete(CharacterAbility).where(
+            CharacterAbility.ability_id.in_(
+                select(Ability.id).where(Ability.campaign_id == campaign_id)
+            )
+        )
+    )
+
     for model in (
         Event, Relationship, Location, NPC, Character, Player, Session, Asset, DiceRoll,
-        Quest, Handout, CampaignCalendar, ProgressClock, PlayerFog, LightRequest,
+        Quest, Handout, CampaignCalendar, ProgressClock, PlayerFog, LightRequest, Ability,
     ):
         rows_r = await db.execute(
             select(model).where(model.campaign_id == campaign_id)
