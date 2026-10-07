@@ -62,6 +62,51 @@ MIGRATIONS = [
 
 VIDA_ATTRS = ["vigor", "intelligence", "dexterity", "cunning"]
 
+
+def _spells_to_catalog(table: str, entity_type: str) -> list[str]:
+    """spells_json (blob por ficha) -> abilities + character_abilities.
+
+    Corre en cada arranque. La fila vieja se limpia SOLO si su backfill dejó al
+    menos un enlace: si algo falla se reintenta sola la proxima vez, y una fila
+    ya migrada no vuelve a rellenar spells_json — que es lo que hace que un
+    conjuro que el DM borre despues no resucite en cada reinicio.
+    """
+    src = (
+        f"SELECT id, campaign_id, spells_json FROM {table} "
+        "WHERE json_valid(COALESCE(spells_json, '[]')) "
+        "AND spells_json IS NOT NULL AND spells_json <> '[]'"
+    )
+    # CASE alrededor de json_each: si la fila no es JSON valido, json_each no
+    # llega a lanzar aunque el WHERE se evalue despues.
+    each = "json_each(CASE WHEN json_valid(c.spells_json) THEN c.spells_json ELSE '[]' END)"
+    return [
+        (
+            "INSERT OR IGNORE INTO abilities "
+            "(id, campaign_id, name, description, level, cost_pm) "
+            "SELECT json_extract(j.value, '$.id'), c.campaign_id, "
+            "COALESCE(json_extract(j.value, '$.name'), 'Nuevo conjuro'), "
+            "COALESCE(json_extract(j.value, '$.description'), ''), "
+            "COALESCE(json_extract(j.value, '$.level'), 1), "
+            "COALESCE(json_extract(j.value, '$.cost_pm'), 1) "
+            f"FROM ({src}) c, {each} j "
+            "WHERE json_extract(j.value, '$.id') IS NOT NULL"
+        ),
+        (
+            "INSERT OR IGNORE INTO character_abilities "
+            "(entity_type, entity_id, ability_id) "
+            f"SELECT '{entity_type}', c.id, json_extract(j.value, '$.id') "
+            f"FROM ({src}) c, {each} j "
+            "WHERE json_extract(j.value, '$.id') IS NOT NULL"
+        ),
+        (
+            f"UPDATE {table} SET spells_json = '[]' "
+            "WHERE spells_json IS NOT NULL AND spells_json <> '[]' "
+            "AND EXISTS (SELECT 1 FROM character_abilities ca "
+            f"WHERE ca.entity_type = '{entity_type}' AND ca.entity_id = {table}.id)"
+        ),
+    ]
+
+
 DATA_MIGRATIONS = [
     # VIDA cualitativo: atributos numéricos legacy → "/" (neutro)
     *[f"UPDATE {t} SET {a} = '/' WHERE typeof({a}) = 'integer'" for t in ("characters", "npcs") for a in VIDA_ATTRS],
@@ -74,6 +119,9 @@ DATA_MIGRATIONS = [
     # (year >= 2) ni filas nuevas (year = año real).
     f"UPDATE campaign_calendars SET year = {datetime.now().year}, month = {datetime.now().month}, day = {datetime.now().day} "
     "WHERE year = 1",
+    # spells_json -> catalogo (ver _spells_to_catalog)
+    *_spells_to_catalog("characters", "character"),
+    *_spells_to_catalog("npcs", "npc"),
 ]
 
 

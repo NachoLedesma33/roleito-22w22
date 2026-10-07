@@ -5,7 +5,9 @@ from datetime import datetime, timedelta
 import pytest
 from httpx import AsyncClient, ASGITransport
 from main import app
-from database import init_db
+from sqlalchemy import text
+
+from database import async_session, init_db
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -786,3 +788,92 @@ async def test_calendar_advance_and_clocks(client):
     assert res.status_code == 404
     res = await client.put(f"/api/campaigns/{cid}/clocks/nope", json={"segments_filled": 1})
     assert res.status_code == 404
+
+
+async def _correr_backfill_de_spells():
+    from database import _spells_to_catalog
+
+    async with async_session() as s:
+        for stmt in _spells_to_catalog("characters", "character"):
+            await s.execute(text(stmt))
+        await s.commit()
+
+
+@pytest.mark.asyncio
+async def test_spells_es_un_catalogo_compartido(client):
+    """Una habilidad definida una vez; dos personajes la saben y la comparten."""
+    camp = (await client.post("/api/campaigns", json={"name": "Habilidades Camp"})).json()
+    cid = camp["id"]
+    a = (await client.post(f"/api/campaigns/{cid}/characters", json={"name": "Aria"})).json()
+    b = (await client.post(f"/api/campaigns/{cid}/characters", json={"name": "Borin"})).json()
+
+    spell = {"id": "spell-fuego", "name": "Bola de Fuego", "description": "d", "level": 3, "cost_pm": 5}
+    res = await client.put(f"/api/campaigns/{cid}/characters/{a['id']}", json={"spells_json": [spell]})
+    assert res.status_code == 200, res.text
+    got = (await client.get(f"/api/campaigns/{cid}/characters/{a['id']}")).json()
+    assert [s["id"] for s in got["spells_json"]] == ["spell-fuego"]
+
+    # B aprende la misma habilidad: mismo id, una sola fila en el catalogo.
+    res = await client.put(f"/api/campaigns/{cid}/characters/{b['id']}", json={"spells_json": [spell]})
+    assert res.status_code == 200, res.text
+
+    # Editarla desde A se ve en B: el catalogo es de campana, no de ficha.
+    res = await client.put(
+        f"/api/campaigns/{cid}/characters/{a['id']}",
+        json={"spells_json": [{**spell, "cost_pm": 7}]},
+    )
+    assert res.status_code == 200, res.text
+    got_b = (await client.get(f"/api/campaigns/{cid}/characters/{b['id']}")).json()
+    assert got_b["spells_json"][0]["cost_pm"] == 7
+
+    # Borrarla de A solo quita el enlace: B sigue sabiendola.
+    res = await client.put(f"/api/campaigns/{cid}/characters/{a['id']}", json={"spells_json": []})
+    assert res.status_code == 200, res.text
+    got = (await client.get(f"/api/campaigns/{cid}/characters/{a['id']}")).json()
+    assert got["spells_json"] == []
+    got_b = (await client.get(f"/api/campaigns/{cid}/characters/{b['id']}")).json()
+    assert [s["name"] for s in got_b["spells_json"]] == ["Bola de Fuego"]
+
+    # Dos filas en abilities para el mismo id = una sola.
+    async with async_session() as s:
+        n = (await s.execute(text("SELECT COUNT(*) FROM abilities WHERE id = 'spell-fuego'"))).scalar()
+    assert n == 1
+
+
+@pytest.mark.asyncio
+async def test_backfill_de_spells_json_legacy(client):
+    """El blob viejo pasa al catalogo, y lo que el DM borre no resucita."""
+    camp = (await client.post("/api/campaigns", json={"name": "Backfill Camp"})).json()
+    cid = camp["id"]
+    char = (await client.post(f"/api/campaigns/{cid}/characters", json={"name": "Legolas"})).json()
+
+    legacy = '[{"id":"spell-flecha","name":"Flecha Magica","description":"x","level":1,"cost_pm":2}]'
+    async with async_session() as s:
+        await s.execute(
+            text("UPDATE characters SET spells_json = :v WHERE id = :i"),
+            {"v": legacy, "i": char["id"]},
+        )
+        await s.commit()
+
+    await _correr_backfill_de_spells()
+
+    got = (await client.get(f"/api/campaigns/{cid}/characters/{char['id']}")).json()
+    assert [x["id"] for x in got["spells_json"]] == ["spell-flecha"]
+    assert got["spells_json"][0]["cost_pm"] == 2
+
+    # La fila legacy quedo vacia tras migrar: es lo que impide la resurreccion.
+    async with async_session() as s:
+        row = (
+            await s.execute(text("SELECT spells_json FROM characters WHERE id = :i"), {"i": char["id"]})
+        ).scalar()
+    assert row == "[]"
+
+    # El DM borra el conjuro y vuelve a correr el backfill: no reaparece.
+    async with async_session() as s:
+        await s.execute(
+            text("DELETE FROM character_abilities WHERE entity_id = :i"), {"i": char["id"]}
+        )
+        await s.commit()
+    await _correr_backfill_de_spells()
+    got = (await client.get(f"/api/campaigns/{cid}/characters/{char['id']}")).json()
+    assert got["spells_json"] == []

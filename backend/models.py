@@ -123,6 +123,35 @@ class NPC(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+class Ability(Base):
+    """Catálogo de habilidades/hechizos de la campaña.
+
+    Una habilidad definida una sola vez y los personajes la "saben" vía
+    CharacterAbility. Antes era un blob JSON por personaje (spells_json), que
+    duplicaba la misma habilidad en cada ficha y no tenía FK para colgarle
+    icono ni efecto.
+    """
+
+    __tablename__ = "abilities"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    campaign_id = Column(String, ForeignKey("campaigns.id"), nullable=False)
+    name = Column(String, nullable=False)
+    description = Column(Text, default="")
+    level = Column(Integer, default=1)
+    cost_pm = Column(Integer, default=1)
+
+
+class CharacterAbility(Base):
+    """Quién sabe qué. entity_type/entity_id igual que SceneCharacter y DiceRoll."""
+
+    __tablename__ = "character_abilities"
+
+    entity_type = Column(String, primary_key=True)  # character | npc
+    entity_id = Column(String, primary_key=True)
+    ability_id = Column(String, ForeignKey("abilities.id"), primary_key=True)
+
+
 class Location(Base):
     __tablename__ = "locations"
 

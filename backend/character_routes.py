@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from database import get_session
-from models import Character, NPC
+from models import Ability, Character, CharacterAbility, NPC, gen_id
 from schemas import (
     CharacterCreate,
     CharacterUpdate,
@@ -23,7 +23,102 @@ DEFAULT_MAX_PM = 10
 DEFAULT_DEFENSE = 5
 
 
-def apply_vida_response(char: Character) -> dict:
+def _spell_payload(ability: Ability) -> dict:
+    # La respuesta conserva el nombre spells_json para no romper CharacterSheet
+    # ni PlayerView; la fuente ya no es la columna, es abilities + enlaces.
+    return {
+        "id": ability.id,
+        "name": ability.name,
+        "description": ability.description,
+        "level": ability.level,
+        "cost_pm": ability.cost_pm,
+    }
+
+
+async def _load_spells_bulk(
+    db: AsyncSession, entity_type: str, entity_ids: list[str]
+) -> dict[str, list[dict]]:
+    if not entity_ids:
+        return {}
+    result = await db.execute(
+        select(CharacterAbility.entity_id, Ability)
+        .join(Ability, Ability.id == CharacterAbility.ability_id)
+        .where(
+            CharacterAbility.entity_type == entity_type,
+            CharacterAbility.entity_id.in_(entity_ids),
+        )
+        .order_by(Ability.name)
+    )
+    out: dict[str, list[dict]] = {}
+    for entity_id, ability in result.all():
+        out.setdefault(entity_id, []).append(_spell_payload(ability))
+    return out
+
+
+async def _load_spells(db: AsyncSession, entity_type: str, entity_id: str) -> list[dict]:
+    return (await _load_spells_bulk(db, entity_type, [entity_id])).get(entity_id, [])
+
+
+async def _replace_spells(
+    db: AsyncSession,
+    campaign_id: str,
+    entity_type: str,
+    entity_id: str,
+    spells: list,
+) -> None:
+    """Reemplaza lo que la entidad sabe.
+
+    El catálogo es de campaña: editar un conjuro que también sabe otro
+    personaje lo cambia para los dos, que es la semántica elegida. Borrar solo
+    quita el enlace y la fila del catálogo queda.
+    """
+    keep: list[str] = []
+    for raw in spells:
+        ability_id = str(raw.get("id") or gen_id())
+        if ability_id in keep:
+            continue
+        keep.append(ability_id)
+        result = await db.execute(select(Ability).where(Ability.id == ability_id))
+        ability = result.scalar_one_or_none()
+        if ability is None:
+            ability = Ability(id=ability_id, campaign_id=campaign_id)
+            db.add(ability)
+        elif ability.campaign_id != campaign_id:
+            # id de otra campaña: no se toca su catálogo.
+            raise HTTPException(status_code=404, detail="Ability not found")
+        ability.name = str(raw.get("name") or "Nuevo conjuro")
+        ability.description = str(raw.get("description") or "")
+        ability.level = int(raw.get("level") or 1)
+        ability.cost_pm = int(raw.get("cost_pm") or 1)
+
+        link = await db.execute(
+            select(CharacterAbility).where(
+                CharacterAbility.entity_type == entity_type,
+                CharacterAbility.entity_id == entity_id,
+                CharacterAbility.ability_id == ability_id,
+            )
+        )
+        if link.scalar_one_or_none() is None:
+            db.add(
+                CharacterAbility(
+                    entity_type=entity_type,
+                    entity_id=entity_id,
+                    ability_id=ability_id,
+                )
+            )
+
+    unlink = delete(CharacterAbility).where(
+        CharacterAbility.entity_type == entity_type,
+        CharacterAbility.entity_id == entity_id,
+    )
+    if keep:
+        unlink = unlink.where(CharacterAbility.ability_id.not_in(keep))
+    await db.execute(unlink)
+
+
+async def apply_vida_response(
+    db: AsyncSession, char: Character, spells: list[dict] | None = None
+) -> dict:
     return {
         "id": char.id,
         "campaign_id": char.campaign_id,
@@ -48,12 +143,14 @@ def apply_vida_response(char: Character) -> dict:
         "current_pv": char.current_pv,
         "current_pm": char.current_pm,
         "inventory_json": char.inventory_json or [],
-        "spells_json": char.spells_json or [],
+        "spells_json": spells if spells is not None else await _load_spells(db, "character", char.id),
         "player_notes": char.player_notes or "",
     }
 
 
-def apply_npc_vida_response(npc: NPC) -> dict:
+async def apply_npc_vida_response(
+    db: AsyncSession, npc: NPC, spells: list[dict] | None = None
+) -> dict:
     return {
         "id": npc.id,
         "campaign_id": npc.campaign_id,
@@ -76,7 +173,7 @@ def apply_npc_vida_response(npc: NPC) -> dict:
         "current_pv": npc.current_pv,
         "current_pm": npc.current_pm,
         "inventory_json": npc.inventory_json or [],
-        "spells_json": npc.spells_json or [],
+        "spells_json": spells if spells is not None else await _load_spells(db, "npc", npc.id),
     }
 
 
@@ -116,7 +213,7 @@ async def create_character(
     db.add(char)
     await db.commit()
     await db.refresh(char)
-    return apply_vida_response(char)
+    return await apply_vida_response(db, char)
 
 
 @router.get("/campaigns/{campaign_id}/characters", response_model=list[CharacterResponse])
@@ -127,7 +224,9 @@ async def list_characters(
     result = await db.execute(
         select(Character).where(Character.campaign_id == campaign_id)
     )
-    return [apply_vida_response(c) for c in result.scalars().all()]
+    rows = result.scalars().all()
+    spells = await _load_spells_bulk(db, "character", [c.id for c in rows])
+    return [await apply_vida_response(db, c, spells.get(c.id, [])) for c in rows]
 
 
 @router.get(
@@ -148,7 +247,7 @@ async def get_character(
     char = result.scalar_one_or_none()
     if not char:
         raise HTTPException(status_code=404, detail="Character not found")
-    return apply_vida_response(char)
+    return await apply_vida_response(db, char)
 
 
 @router.put(
@@ -174,13 +273,16 @@ async def update_character(
     updates = data.model_dump(exclude_unset=True)
     if "class_name" in updates:
         char.class_ = updates.pop("class_name")
+    spells = updates.pop("spells_json", None)
     for field, value in updates.items():
         setattr(char, field, value)
+    if spells is not None:
+        await _replace_spells(db, campaign_id, "character", char.id, spells)
 
     await db.commit()
     await db.refresh(char)
     await broadcast_revision(db, campaign_id)
-    return apply_vida_response(char)
+    return await apply_vida_response(db, char)
 
 
 @router.delete("/campaigns/{campaign_id}/characters/{character_id}")
@@ -237,7 +339,7 @@ async def create_npc(
     db.add(npc)
     await db.commit()
     await db.refresh(npc)
-    return apply_npc_vida_response(npc)
+    return await apply_npc_vida_response(db, npc)
 
 
 @router.get("/campaigns/{campaign_id}/npcs", response_model=list[NPCResponse])
@@ -248,7 +350,9 @@ async def list_npcs(
     result = await db.execute(
         select(NPC).where(NPC.campaign_id == campaign_id)
     )
-    return [apply_npc_vida_response(n) for n in result.scalars().all()]
+    rows = result.scalars().all()
+    spells = await _load_spells_bulk(db, "npc", [n.id for n in rows])
+    return [await apply_npc_vida_response(db, n, spells.get(n.id, [])) for n in rows]
 
 
 @router.get("/campaigns/{campaign_id}/npcs/{npc_id}", response_model=NPCResponse)
@@ -266,7 +370,7 @@ async def get_npc(
     npc = result.scalar_one_or_none()
     if not npc:
         raise HTTPException(status_code=404, detail="NPC not found")
-    return apply_npc_vida_response(npc)
+    return await apply_npc_vida_response(db, npc)
 
 
 @router.put("/campaigns/{campaign_id}/npcs/{npc_id}", response_model=NPCResponse)
@@ -287,13 +391,16 @@ async def update_npc(
         raise HTTPException(status_code=404, detail="NPC not found")
 
     updates = data.model_dump(exclude_unset=True)
+    spells = updates.pop("spells_json", None)
     for field, value in updates.items():
         setattr(npc, field, value)
+    if spells is not None:
+        await _replace_spells(db, campaign_id, "npc", npc.id, spells)
 
     await db.commit()
     await db.refresh(npc)
     await broadcast_revision(db, campaign_id)
-    return apply_npc_vida_response(npc)
+    return await apply_npc_vida_response(db, npc)
 
 
 @router.delete("/campaigns/{campaign_id}/npcs/{npc_id}")
@@ -349,7 +456,7 @@ async def upload_character_portrait(
     char.portrait_path = file_path
     await db.commit()
     await db.refresh(char)
-    return apply_vida_response(char)
+    return await apply_vida_response(db, char)
 
 
 @router.post("/campaigns/{campaign_id}/npcs/{npc_id}/portrait")
@@ -381,7 +488,7 @@ async def upload_npc_portrait(
     npc.portrait_path = file_path
     await db.commit()
     await db.refresh(npc)
-    return apply_npc_vida_response(npc)
+    return await apply_npc_vida_response(db, npc)
 
 
 # ── 3D Model Upload ────────────────────────────────────────
@@ -417,7 +524,7 @@ async def upload_character_model(
     char.model_path = file_path
     await db.commit()
     await db.refresh(char)
-    return apply_vida_response(char)
+    return await apply_vida_response(db, char)
 
 
 @router.post("/campaigns/{campaign_id}/npcs/{npc_id}/model")
@@ -450,4 +557,4 @@ async def upload_npc_model(
     npc.model_path = file_path
     await db.commit()
     await db.refresh(npc)
-    return apply_npc_vida_response(npc)
+    return await apply_npc_vida_response(db, npc)
