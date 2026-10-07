@@ -884,6 +884,75 @@ async def test_spells_es_un_catalogo_compartido(client):
 
 
 @pytest.mark.asyncio
+async def test_icono_viaja_con_el_catalogo(client):
+    """El icono es un campo de la fila compartida, no de la ficha."""
+    camp = (await client.post("/api/campaigns", json={"name": "Iconos Camp"})).json()
+    cid = camp["id"]
+    a = (await client.post(f"/api/campaigns/{cid}/characters", json={"name": "Aria"})).json()
+    b = (await client.post(f"/api/campaigns/{cid}/characters", json={"name": "Borin"})).json()
+
+    spell = {
+        "id": "spell-rayo",
+        "name": "Rayo",
+        "description": "d",
+        "level": 2,
+        "cost_pm": 3,
+        "icon": "bolt",
+    }
+    res = await client.put(
+        f"/api/campaigns/{cid}/characters/{a['id']}", json={"spells_json": [spell]}
+    )
+    assert res.status_code == 200, res.text
+    got = (await client.get(f"/api/campaigns/{cid}/characters/{a['id']}")).json()
+    assert got["spells_json"][0]["icon"] == "bolt"
+
+    # B aprende la misma habilidad: el icono viene con ella.
+    res = await client.put(
+        f"/api/campaigns/{cid}/characters/{b['id']}", json={"spells_json": [spell]}
+    )
+    assert res.status_code == 200, res.text
+    catalogo = (await client.get(f"/api/campaigns/{cid}/abilities")).json()
+    assert catalogo[0]["icon"] == "bolt"
+    assert catalogo[0]["owners"] == 2
+
+    # Cambiarlo desde A se ve en B, igual que el nombre.
+    res = await client.put(
+        f"/api/campaigns/{cid}/characters/{a['id']}",
+        json={"spells_json": [{**spell, "icon": "flame"}]},
+    )
+    assert res.status_code == 200, res.text
+    got_b = (await client.get(f"/api/campaigns/{cid}/characters/{b['id']}")).json()
+    assert got_b["spells_json"][0]["icon"] == "flame"
+
+    # Un payload sin la clave icon no lo borra: los escritores viejos no lo traen.
+    res = await client.put(
+        f"/api/campaigns/{cid}/characters/{a['id']}",
+        json={"spells_json": [{"id": "spell-rayo", "name": "Rayo", "description": "d", "level": 2, "cost_pm": 3}]},
+    )
+    assert res.status_code == 200, res.text
+    got_b = (await client.get(f"/api/campaigns/{cid}/characters/{b['id']}")).json()
+    assert got_b["spells_json"][0]["icon"] == "flame"
+
+    # La paleta se fija por endpoint, sin pasar por el guardado de la ficha.
+    res = await client.put(f"/api/campaigns/{cid}/abilities/spell-rayo/icon/skull")
+    assert res.status_code == 200, res.text
+    assert res.json()["icon"] == "skull"
+    got_b = (await client.get(f"/api/campaigns/{cid}/characters/{b['id']}")).json()
+    assert got_b["spells_json"][0]["icon"] == "skull"
+
+    # Quitarlo deja la UI en el fallback (inicial del nombre).
+    res = await client.delete(f"/api/campaigns/{cid}/abilities/spell-rayo/icon")
+    assert res.status_code == 200, res.text
+    assert res.json()["icon"] is None
+    catalogo = (await client.get(f"/api/campaigns/{cid}/abilities")).json()
+    assert catalogo[0]["icon"] is None
+
+    # Otra campaña no llega a la fila por id suelto.
+    res = await client.put(f"/api/campaigns/{cid}/abilities/no-existe/icon/star")
+    assert res.status_code == 404
+
+
+@pytest.mark.asyncio
 async def test_backfill_de_spells_json_legacy(client):
     """El blob viejo pasa al catalogo, y lo que el DM borre no resucita."""
     camp = (await client.post("/api/campaigns", json={"name": "Backfill Camp"})).json()

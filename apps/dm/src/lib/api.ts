@@ -118,6 +118,8 @@ export interface Spell {
   description: string;
   level: number;
   cost_pm: number;
+  /** slug de lib/abilityIcons.ts, path absoluto de asset subido, o null. */
+  icon: string | null;
 }
 
 /** Habilidad del catálogo de campaña. `owners` = cuántas fichas la saben. */
@@ -548,6 +550,23 @@ export const api = {
 
   abilities: {
     list: (campaignId: string) => request<CampaignAbility[]>(`/campaigns/${campaignId}/abilities`),
+    setIcon: (campaignId: string, abilityId: string, slug: string) =>
+      request<Spell>(`/campaigns/${campaignId}/abilities/${abilityId}/icon/${encodeURIComponent(slug)}`, {
+        method: 'PUT',
+      }),
+    uploadIcon: async (campaignId: string, abilityId: string, file: File) => {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${API_BASE}/campaigns/${campaignId}/abilities/${abilityId}/icon`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: form,
+      });
+      if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+      return res.json() as Promise<Spell>;
+    },
+    clearIcon: (campaignId: string, abilityId: string) =>
+      request<Spell>(`/campaigns/${campaignId}/abilities/${abilityId}/icon`, { method: 'DELETE' }),
   },
 
   characters: {

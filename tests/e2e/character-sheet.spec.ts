@@ -251,4 +251,59 @@ test.describe('Character Sheet HUD', () => {
     expect(rows).toHaveLength(1);
     expect(rows[0].owners).toBe(2);
   });
+
+  test('CS10: el icono elegido en la ficha queda en el catálogo compartido', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    const scene = await createScene(request, campaign.id, 'Escena Iconos');
+    const a = await createCharacter(request, campaign.id, { name: 'Aria' });
+    const b = await createCharacter(request, campaign.id, { name: 'Borin' });
+    const spellId = `spell-${randomUUID()}`;
+
+    const put = await request.put(
+      `http://localhost:8000/api/campaigns/${campaign.id}/characters/${a.id}`,
+      {
+        data: {
+          spells_json: [
+            { id: spellId, name: 'Bola de Fuego', description: '', level: 3, cost_pm: 5 },
+          ],
+        },
+      },
+    );
+    expect(put.status()).toBe(200);
+
+    await openSheet(page, campaign.id, scene.id, request, b);
+    await page.getByRole('button', { name: 'Conjuros' }).click();
+
+    // Sin icono, el chip muestra la inicial del nombre.
+    const chip = page.getByTitle('Elegir icono');
+    await expect(chip).toHaveText('B');
+
+    await chip.click();
+    const savedPromise = page.waitForResponse(
+      (res) =>
+        res.url().includes(`/abilities/${spellId}/icon/flame`) &&
+        res.request().method() === 'PUT' &&
+        res.status() === 200,
+      { timeout: 10_000 },
+    );
+    await page.getByTitle('Llama').click();
+    await savedPromise;
+
+    await expect(chip).toHaveText('🔥');
+
+    // El icono vive en la fila del catálogo: Aria, que sí sabe la habilidad,
+    // la ve igual sin tocar su ficha.
+    const catalog = await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/abilities`);
+    const rows = await catalog.json();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].icon).toBe('flame');
+
+    const stored = await request.get(
+      `http://localhost:8000/api/campaigns/${campaign.id}/characters/${a.id}`,
+    );
+    expect((await stored.json()).spells_json[0].icon).toBe('flame');
+  });
 });

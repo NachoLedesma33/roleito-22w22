@@ -32,6 +32,7 @@ def _spell_payload(ability: Ability) -> dict:
         "description": ability.description,
         "level": ability.level,
         "cost_pm": ability.cost_pm,
+        "icon": ability.icon,
     }
 
 
@@ -90,6 +91,11 @@ async def _replace_spells(
         ability.description = str(raw.get("description") or "")
         ability.level = int(raw.get("level") or 1)
         ability.cost_pm = int(raw.get("cost_pm") or 1)
+        # icon viaja en el mismo payload que nombre/nivel: cambiarlo en la ficha
+        # es una edición del catálogo compartido, igual que el resto. Si la
+        # clave no viene (payloads viejos), el icono de la fila no se toca.
+        if "icon" in raw:
+            ability.icon = raw.get("icon") or None
 
         link = await db.execute(
             select(CharacterAbility).where(
@@ -325,6 +331,85 @@ async def list_campaign_abilities(
         .order_by(Ability.name)
     )
     return [{**_spell_payload(a), "owners": owners} for a, owners in result.all()]
+
+
+async def _get_ability(
+    db: AsyncSession, campaign_id: str, ability_id: str
+) -> Ability:
+    result = await db.execute(
+        select(Ability).where(
+            Ability.id == ability_id,
+            Ability.campaign_id == campaign_id,
+        )
+    )
+    ability = result.scalar_one_or_none()
+    if not ability:
+        raise HTTPException(status_code=404, detail="Ability not found")
+    return ability
+
+
+def _remove_icon_file(ability: Ability) -> None:
+    """Borra el archivo del icono subido, solo si vive bajo data/assets."""
+    if not ability.icon:
+        return
+    root = os.path.realpath(ASSETS_DIR)
+    real = os.path.realpath(ability.icon)
+    if real.startswith(root + os.sep) and os.path.isfile(real):
+        os.remove(real)
+
+
+@router.put("/campaigns/{campaign_id}/abilities/{ability_id}/icon/{slug}")
+async def set_ability_icon_preset(
+    campaign_id: str,
+    ability_id: str,
+    slug: str,
+    db: AsyncSession = Depends(get_session),
+):
+    """Fija un icono de la paleta precargada (apps/dm/src/lib/abilityIcons.ts)."""
+    ability = await _get_ability(db, campaign_id, ability_id)
+    ability.icon = slug
+    await db.commit()
+    return _spell_payload(ability)
+
+
+@router.post("/campaigns/{campaign_id}/abilities/{ability_id}/icon")
+async def upload_ability_icon(
+    campaign_id: str,
+    ability_id: str,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_session),
+):
+    """Sube una imagen propia; se guarda como la del retrato, en
+    data/assets/<campaña>/abilities/<habilidad>/icon.<ext>."""
+    ability = await _get_ability(db, campaign_id, ability_id)
+    _remove_icon_file(ability)
+
+    ext = os.path.splitext(file.filename or "icon.png")[1] or ".png"
+    icon_dir = os.path.join(ASSETS_DIR, campaign_id, "abilities", ability_id)
+    os.makedirs(icon_dir, exist_ok=True)
+    file_path = os.path.join(icon_dir, f"icon{ext}")
+
+    content = await file.read()
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    ability.icon = file_path
+    await db.commit()
+    return _spell_payload(ability)
+
+
+@router.delete("/campaigns/{campaign_id}/abilities/{ability_id}/icon")
+async def clear_ability_icon(
+    campaign_id: str,
+    ability_id: str,
+    db: AsyncSession = Depends(get_session),
+):
+    """Quita el icono: la UI vuelve al fallback (primera letra del nombre)."""
+    ability = await _get_ability(db, campaign_id, ability_id)
+    _remove_icon_file(ability)
+    ability.icon = None
+    await db.commit()
+    return _spell_payload(ability)
 
 
 # ── NPC CRUD ────────────────────────────────────────────────

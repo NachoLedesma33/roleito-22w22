@@ -10,6 +10,7 @@ import PlayerCalendarPanel from '@/components/PlayerCalendarPanel';
 import PlayerHandoutPanel from '@/components/PlayerHandoutPanel';
 import HudPanel from '@/components/HudPanel';
 import { STATUS_OPTIONS } from '@/lib/statusMarkers';
+import { abilityIconView, abilityFallbackGlyph } from '@/lib/abilityIcons';
 import TopBar from '@/components/TopBar';
 import MinimizedBar from '@/components/MinimizedBar';
 import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastContainer';
@@ -33,6 +34,13 @@ const VIDA_LABELS: Record<string, string> = {
 function staticUrl(path: string | null): string | null {
   if (!path) return null;
   return `/api/static/${path.replace(/\\/g, '/').split('/assets/')[1]}`;
+}
+
+function abilityIconChip(icon: string | null, name: string) {
+  const view = abilityIconView(icon);
+  if (!view) return <span className="text-[var(--text-secondary)]">{abilityFallbackGlyph(name)}</span>;
+  if (view.kind === 'glyph') return <span>{view.glyph}</span>;
+  return <img src={view.url} alt="" className="w-full h-full object-cover" />;
 }
 
 interface PlayerToken {
@@ -99,6 +107,7 @@ interface Spell {
   description: string;
   level: number;
   cost_pm: number;
+  icon: string | null;
 }
 
 interface MyChar {
@@ -1542,7 +1551,13 @@ export default function PlayerView() {
                       <p className="text-[10px] text-[var(--text-secondary)]">No hay hechizos</p>
                     ) : (
                       myChar.spells_json.map((spell) => (
-                        <div key={spell.id} className="text-[11px] text-[var(--text-primary)]">
+                        <div
+                          key={spell.id}
+                          className="flex items-center gap-1.5 text-[11px] text-[var(--text-primary)]"
+                        >
+                          <span className="w-4 h-4 shrink-0 flex items-center justify-center overflow-hidden text-[11px] leading-none">
+                            {abilityIconChip(spell.icon, spell.name)}
+                          </span>
                           <span className="text-blue-400">Lv{spell.level}</span> {spell.name} ({spell.cost_pm} PM)
                         </div>
                       ))

@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import HudPanel from './HudPanel';
 import { api, Character, NPC, InventoryItem, Spell, CampaignAbility } from '@/lib/api';
 import { STATUS_OPTIONS } from '@/lib/statusMarkers';
+import { ABILITY_ICON_OPTIONS, abilityIconView, abilityFallbackGlyph } from '@/lib/abilityIcons';
 
 interface CharacterSheetProps {
   entity: Character | NPC;
@@ -37,6 +38,10 @@ export default function CharacterSheet({
   const [currentHp, setCurrentHp] = useState(entity.current_pv ?? entity.max_pv);
   const [currentPm, setCurrentPm] = useState(entity.current_pm ?? entity.max_pm);
   const fileInput = useRef<HTMLInputElement>(null);
+  const iconFileInput = useRef<HTMLInputElement>(null);
+  // A qué habilidad le está apuntando el input de archivo de icono.
+  const iconAbilityId = useRef<string>('');
+  const [iconTarget, setIconTarget] = useState<string | null>(null);
 
   const inventory: InventoryItem[] = entity.inventory_json || [];
   const spells: Spell[] = entity.spells_json || [];
@@ -144,7 +149,7 @@ export default function CharacterSheet({
   };
 
   const addSpell = () => {
-    const newSpell: Spell = { id: genId(), name: 'Nuevo conjuro', description: '', level: 1, cost_pm: 1 };
+    const newSpell: Spell = { id: genId(), name: 'Nuevo conjuro', description: '', level: 1, cost_pm: 1, icon: null };
     handleSaveSpells([...spells, newSpell]);
   };
 
@@ -167,12 +172,120 @@ export default function CharacterSheet({
         description: ability.description,
         level: ability.level,
         cost_pm: ability.cost_pm,
+        icon: ability.icon,
       },
     ]);
   };
 
   const unknownAbilities = catalog.filter((a) => !spells.some((s) => s.id === a.id));
   const ownersOf = (id: string) => catalog.find((a) => a.id === id)?.owners ?? 1;
+
+  // El icono vive en la fila del catálogo compartido. Si la habilidad está en
+  // la ficha viaja en el guardado normal de spells_json — que además crea la
+  // fila cuando el conjuro es nuevo—; si solo está en el catálogo, va por
+  // endpoint, que es cuando la fila ya existe.
+  const applyIcon = async (abilityId: string, icon: string | null) => {
+    const spell = spells.find((s) => s.id === abilityId);
+    if (spell) {
+      handleSaveSpells(spells.map((s) => (s.id === abilityId ? { ...s, icon } : s)));
+      if (icon === null && spell.icon) {
+        try {
+          // había un archivo subido: borrarlo además de limpiar la columna.
+          await api.abilities.clearIcon(campaignId, abilityId);
+        } catch {
+          // un archivo huérfano no rompe nada
+        }
+      }
+      return;
+    }
+    try {
+      if (icon) await api.abilities.setIcon(campaignId, abilityId, icon);
+      else await api.abilities.clearIcon(campaignId, abilityId);
+    } catch {
+      // el catálogo es auxiliar: un icono fallido no rompe la ficha
+    }
+    await reloadCatalog();
+  };
+
+  const uploadIcon = async (abilityId: string, file: File) => {
+    try {
+      const updated = await api.abilities.uploadIcon(campaignId, abilityId, file);
+      if (spells.some((s) => s.id === abilityId)) {
+        handleSaveSpells(spells.map((s) => (s.id === abilityId ? { ...s, icon: updated.icon } : s)));
+      } else {
+        await reloadCatalog();
+      }
+    } catch {
+      // subida de icono no fatal
+    }
+  };
+
+  const handleIconFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadIcon(iconAbilityId.current, file);
+    e.target.value = '';
+  };
+
+  const iconChip = (icon: string | null, name: string) => {
+    const view = abilityIconView(icon);
+    if (!view) {
+      return <span className="text-[var(--text-secondary)]">{abilityFallbackGlyph(name)}</span>;
+    }
+    if (view.kind === 'glyph') return <span>{view.glyph}</span>;
+    return <img src={view.url} alt="" className="w-full h-full object-cover" />;
+  };
+
+  const iconPicker = (abilityId: string, currentIcon: string | null) => {
+    if (iconTarget !== abilityId) return null;
+    return (
+      <div className="mt-1 p-1.5 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] space-y-1.5">
+        <div className="grid grid-cols-9 gap-1">
+          {ABILITY_ICON_OPTIONS.map((opt) => (
+            <button
+              key={opt.id}
+              onClick={() => {
+                void applyIcon(abilityId, opt.id);
+                setIconTarget(null);
+              }}
+              title={opt.label}
+              className={`h-6 rounded text-sm leading-none hover:bg-[var(--bg-tertiary)] ${
+                currentIcon === opt.id ? 'bg-[var(--bg-tertiary)]' : ''
+              }`}
+            >
+              {opt.glyph}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-1 text-[10px]">
+          <button
+            onClick={() => {
+              iconAbilityId.current = abilityId;
+              iconFileInput.current?.click();
+            }}
+            className="px-1.5 py-0.5 rounded border border-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)]"
+          >
+            Subir imagen
+          </button>
+          <button
+            onClick={() => {
+              void applyIcon(abilityId, null);
+              setIconTarget(null);
+            }}
+            className="px-1.5 py-0.5 rounded border border-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-red-400"
+          >
+            Quitar
+          </button>
+          <button
+            onClick={() => setIconTarget(null)}
+            className="ml-auto px-1.5 py-0.5 rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <HudPanel
@@ -185,6 +298,7 @@ export default function CharacterSheet({
     >
       <div className="space-y-3">
         <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={handlePortraitUpload} />
+        <input ref={iconFileInput} type="file" accept="image/*" className="hidden" onChange={handleIconFile} />
 
         {/* Portrait + Header */}
         <div className="flex items-start gap-3">
@@ -413,6 +527,13 @@ export default function CharacterSheet({
             {spells.map((spell) => (
               <div key={spell.id} className="bg-[var(--bg-tertiary)]/30 rounded px-2 py-1.5 group">
                 <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setIconTarget(iconTarget === spell.id ? null : spell.id)}
+                    title="Elegir icono"
+                    className="w-5 h-5 shrink-0 rounded overflow-hidden border border-[var(--bg-tertiary)] bg-[var(--bg-secondary)] flex items-center justify-center text-[11px] leading-none hover:border-[var(--accent)]"
+                  >
+                    {iconChip(spell.icon, spell.name)}
+                  </button>
                   <span className="text-[10px] text-blue-400 font-mono">Lv{spell.level}</span>
                   <input
                     value={spell.name}
@@ -428,6 +549,7 @@ export default function CharacterSheet({
                     x
                   </button>
                 </div>
+                {iconPicker(spell.id, spell.icon)}
                 {ownersOf(spell.id) > 1 && (
                   <div className="text-[9px] text-amber-400/80 mt-0.5">
                     Compartida con {ownersOf(spell.id)} fichas: editarla la cambia en todas
@@ -450,20 +572,30 @@ export default function CharacterSheet({
                 {unknownAbilities.map((ability) => (
                   <div
                     key={ability.id}
-                    className="bg-[var(--bg-tertiary)]/20 rounded px-2 py-1.5 flex items-center gap-1.5"
+                    className="bg-[var(--bg-tertiary)]/20 rounded px-2 py-1.5"
                   >
-                    <span className="text-[10px] text-blue-400 font-mono">Lv{ability.level}</span>
-                    <span className="flex-1 text-xs text-[var(--text-primary)] truncate">
-                      {ability.name}
-                    </span>
-                    <span className="text-[10px] text-blue-300">{ability.cost_pm} PM</span>
-                    <button
-                      onClick={() => learnSpell(ability)}
-                      title="Aprender"
-                      className="text-[var(--text-secondary)] hover:text-[var(--accent)] text-[11px] leading-none px-1"
-                    >
-                      +
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => setIconTarget(iconTarget === ability.id ? null : ability.id)}
+                        title="Elegir icono"
+                        className="w-5 h-5 shrink-0 rounded overflow-hidden border border-[var(--bg-tertiary)] bg-[var(--bg-secondary)] flex items-center justify-center text-[11px] leading-none hover:border-[var(--accent)]"
+                      >
+                        {iconChip(ability.icon, ability.name)}
+                      </button>
+                      <span className="text-[10px] text-blue-400 font-mono">Lv{ability.level}</span>
+                      <span className="flex-1 text-xs text-[var(--text-primary)] truncate">
+                        {ability.name}
+                      </span>
+                      <span className="text-[10px] text-blue-300">{ability.cost_pm} PM</span>
+                      <button
+                        onClick={() => learnSpell(ability)}
+                        title="Aprender"
+                        className="text-[var(--text-secondary)] hover:text-[var(--accent)] text-[11px] leading-none px-1"
+                      >
+                        +
+                      </button>
+                    </div>
+                    {iconPicker(ability.id, ability.icon)}
                   </div>
                 ))}
               </div>

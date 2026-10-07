@@ -140,6 +140,9 @@ class Ability(Base):
     description = Column(Text, default="")
     level = Column(Integer, default=1)
     cost_pm = Column(Integer, default=1)
+    # slug de la paleta precargada (lib/abilityIcons.ts) o path absoluto de
+    # asset subido, el mismo convenio que Character.portrait_path.
+    icon = Column(String, nullable=True)
 
 
 class CharacterAbility(Base):
