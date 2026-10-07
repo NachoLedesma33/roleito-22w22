@@ -120,6 +120,8 @@ export interface Spell {
   cost_pm: number;
   /** slug de lib/abilityIcons.ts, path absoluto de asset subido, o null. */
   icon: string | null;
+  /** path absoluto del sonido que reproduce el botón Usar, o null. */
+  audio_path: string | null;
 }
 
 /** Habilidad del catálogo de campaña. `owners` = cuántas fichas la saben. */
@@ -567,6 +569,19 @@ export const api = {
     },
     clearIcon: (campaignId: string, abilityId: string) =>
       request<Spell>(`/campaigns/${campaignId}/abilities/${abilityId}/icon`, { method: 'DELETE' }),
+    uploadAudio: async (campaignId: string, abilityId: string, file: File) => {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${API_BASE}/campaigns/${campaignId}/abilities/${abilityId}/audio`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: form,
+      });
+      if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+      return res.json() as Promise<Spell>;
+    },
+    clearAudio: (campaignId: string, abilityId: string) =>
+      request<Spell>(`/campaigns/${campaignId}/abilities/${abilityId}/audio`, { method: 'DELETE' }),
     use: (campaignId: string, abilityId: string, characterId: string) =>
       request<{ character: Character; event_id: string | null }>(
         `/campaigns/${campaignId}/abilities/${abilityId}/use`,

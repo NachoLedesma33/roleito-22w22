@@ -108,6 +108,7 @@ interface Spell {
   level: number;
   cost_pm: number;
   icon: string | null;
+  audio_path: string | null;
 }
 
 interface MyChar {
@@ -1053,6 +1054,12 @@ export default function PlayerView() {
       const current = myChar.current_pm ?? myChar.max_pm ?? 0;
       const cost = spell.cost_pm;
       if (!Number.isFinite(cost) || cost > current) return;
+      // El click es el gesto que desbloquea audio: sonar acá cuenta como
+      // autoplay permitido, aunque la llamada al back falle después.
+      if (spell.audio_path) {
+        const url = staticUrl(spell.audio_path);
+        if (url) void new Audio(url).play().catch(() => {});
+      }
       setUsingSpellId(spell.id);
       try {
         const used = await api.abilities.use(data.campaign_id, spell.id, myChar.id);
@@ -1585,6 +1592,15 @@ export default function PlayerView() {
                             {abilityIconChip(spell.icon, spell.name)}
                           </span>
                           <span className="text-blue-400">Lv{spell.level}</span> {spell.name} ({spell.cost_pm} PM)
+                          {spell.audio_path && (
+                            <span
+                              className="shrink-0 text-[10px] leading-none"
+                              title="Tiene sonido: suena al usar"
+                              data-testid={`spell-audio-${spell.id}`}
+                            >
+                              🔊
+                            </span>
+                          )}
                           <button
                             type="button"
                             onClick={() => void handleUseSpell(spell)}

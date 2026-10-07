@@ -40,9 +40,11 @@ export default function CharacterSheet({
   const [currentPm, setCurrentPm] = useState(entity.current_pm ?? entity.max_pm);
   const fileInput = useRef<HTMLInputElement>(null);
   const iconFileInput = useRef<HTMLInputElement>(null);
+  const audioFileInput = useRef<HTMLInputElement>(null);
   // A qué habilidad le está apuntando el input de archivo de icono.
   const iconAbilityId = useRef<string>('');
   const [iconTarget, setIconTarget] = useState<string | null>(null);
+  const [audioTarget, setAudioTarget] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<CampaignAbility | null>(null);
 
   const inventory: InventoryItem[] = entity.inventory_json || [];
@@ -151,7 +153,7 @@ export default function CharacterSheet({
   };
 
   const addSpell = () => {
-    const newSpell: Spell = { id: genId(), name: 'Nuevo conjuro', description: '', level: 1, cost_pm: 1, icon: null };
+    const newSpell: Spell = { id: genId(), name: 'Nuevo conjuro', description: '', level: 1, cost_pm: 1, icon: null, audio_path: null };
     handleSaveSpells([...spells, newSpell]);
   };
 
@@ -175,6 +177,7 @@ export default function CharacterSheet({
         level: ability.level,
         cost_pm: ability.cost_pm,
         icon: ability.icon,
+        audio_path: ability.audio_path ?? null,
       },
     ]);
   };
@@ -226,6 +229,51 @@ export default function CharacterSheet({
     const file = e.target.files?.[0];
     if (!file) return;
     await uploadIcon(iconAbilityId.current, file);
+    e.target.value = '';
+  };
+
+  // Misma mecánica que el icono: el audio vive en la fila del catálogo y
+  // viaja en spells_json; quitarlo borra también el archivo subido.
+  const uploadAudio = async (abilityId: string, file: File) => {
+    try {
+      const updated = await api.abilities.uploadAudio(campaignId, abilityId, file);
+      if (spells.some((s) => s.id === abilityId)) {
+        handleSaveSpells(spells.map((s) => (s.id === abilityId ? { ...s, audio_path: updated.audio_path } : s)));
+      } else {
+        await reloadCatalog();
+      }
+      setAudioTarget((t) => t);
+    } catch {
+      // subida de audio no fatal
+    }
+  };
+
+  const applyAudio = async (abilityId: string, path: string | null) => {
+    const spell = spells.find((s) => s.id === abilityId);
+    if (spell) {
+      handleSaveSpells(spells.map((s) => (s.id === abilityId ? { ...s, audio_path: path } : s)));
+      if (path === null && spell.audio_path) {
+        try {
+          // había un archivo subido: borrarlo además de limpiar la columna.
+          await api.abilities.clearAudio(campaignId, abilityId);
+        } catch {
+          // un archivo huérfano no rompe nada
+        }
+      }
+      return;
+    }
+    try {
+      await api.abilities.clearAudio(campaignId, abilityId);
+    } catch {
+      // el catálogo es auxiliar: un audio fallido no rompe la ficha
+    }
+    await reloadCatalog();
+  };
+
+  const handleAudioFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadAudio(iconAbilityId.current, file);
     e.target.value = '';
   };
 
@@ -311,6 +359,44 @@ export default function CharacterSheet({
     );
   };
 
+  const audioPicker = (abilityId: string, audioPath: string | null) => {
+    if (audioTarget !== abilityId) return null;
+    return (
+      <div className="mt-1 p-1.5 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] space-y-1.5">
+        <div className="flex items-center gap-1 text-[10px]">
+          <span className={audioPath ? 'text-emerald-400' : 'text-[var(--text-secondary)]'}>
+            {audioPath ? '♪ Tiene sonido' : 'Sin sonido'}
+          </span>
+          <button
+            onClick={() => {
+              iconAbilityId.current = abilityId;
+              audioFileInput.current?.click();
+            }}
+            className="px-1.5 py-0.5 rounded border border-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)]"
+          >
+            Subir audio
+          </button>
+          <button
+            onClick={() => {
+              void applyAudio(abilityId, null);
+              setAudioTarget(null);
+            }}
+            disabled={!audioPath}
+            className="px-1.5 py-0.5 rounded border border-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-red-400 disabled:opacity-40"
+          >
+            Quitar
+          </button>
+          <button
+            onClick={() => setAudioTarget(null)}
+            className="ml-auto px-1.5 py-0.5 rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <HudPanel
       title={`${entity.name} — Ficha`}
@@ -323,6 +409,7 @@ export default function CharacterSheet({
       <div className="space-y-3">
         <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={handlePortraitUpload} />
         <input ref={iconFileInput} type="file" accept="image/*" className="hidden" onChange={handleIconFile} />
+        <input ref={audioFileInput} type="file" accept="audio/*" className="hidden" onChange={handleAudioFile} />
 
         {/* Portrait + Header */}
         <div className="flex items-start gap-3">
@@ -558,6 +645,15 @@ export default function CharacterSheet({
                   >
                     {iconChip(spell.icon, spell.name)}
                   </button>
+                  <button
+                    onClick={() => setAudioTarget(audioTarget === spell.id ? null : spell.id)}
+                    title={spell.audio_path ? '♪ Tiene sonido' : 'Agregar sonido'}
+                    className={`w-5 h-5 shrink-0 rounded border border-[var(--bg-tertiary)] bg-[var(--bg-secondary)] flex items-center justify-center text-[11px] leading-none hover:border-[var(--accent)] ${
+                      spell.audio_path ? 'text-emerald-400' : 'text-[var(--text-secondary)]'
+                    }`}
+                  >
+                    ♪
+                  </button>
                   <span className="text-[10px] text-blue-400 font-mono">Lv{spell.level}</span>
                   <input
                     value={spell.name}
@@ -574,6 +670,7 @@ export default function CharacterSheet({
                   </button>
                 </div>
                 {iconPicker(spell.id, spell.icon)}
+                {audioPicker(spell.id, spell.audio_path)}
                 {ownersOf(spell.id) > 1 && (
                   <div className="text-[9px] text-amber-400/80 mt-0.5">
                     Compartida con {ownersOf(spell.id)} fichas: editarla la cambia en todas
@@ -606,6 +703,15 @@ export default function CharacterSheet({
                       >
                         {iconChip(ability.icon, ability.name)}
                       </button>
+                      <button
+                        onClick={() => setAudioTarget(audioTarget === ability.id ? null : ability.id)}
+                        title={ability.audio_path ? '♪ Tiene sonido' : 'Agregar sonido'}
+                        className={`w-5 h-5 shrink-0 rounded border border-[var(--bg-tertiary)] bg-[var(--bg-secondary)] flex items-center justify-center text-[11px] leading-none hover:border-[var(--accent)] ${
+                          ability.audio_path ? 'text-emerald-400' : 'text-[var(--text-secondary)]'
+                        }`}
+                      >
+                        ♪
+                      </button>
                       <span className="text-[10px] text-blue-400 font-mono">Lv{ability.level}</span>
                       <span className="flex-1 text-xs text-[var(--text-primary)] truncate">
                         {ability.name}
@@ -627,6 +733,7 @@ export default function CharacterSheet({
                       </button>
                     </div>
                     {iconPicker(ability.id, ability.icon)}
+                    {audioPicker(ability.id, ability.audio_path ?? null)}
                   </div>
                 ))}
               </div>

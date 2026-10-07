@@ -332,6 +332,13 @@ test.describe('Player View', () => {
       },
     );
     expect(put.status()).toBe(200);
+    // C5: audio de la habilidad subido por el DM; viaja en spells_json.
+    const audio = await request.post(
+      `http://localhost:8000/api/campaigns/${campaign.id}/abilities/spell-luz/audio`,
+      { multipart: { file: { name: 'luz.mp3', mimeType: 'audio/mpeg', buffer: Buffer.from('fake-mp3') } } },
+    );
+    expect(audio.status()).toBe(200);
+    expect((await audio.json()).audio_path).toBeTruthy();
     // C4 necesita sesión activa: el evento ability_used se cuelga de ella.
     const session = await request.post(
       `http://localhost:8000/api/campaigns/${campaign.id}/sessions`,
@@ -352,6 +359,8 @@ test.describe('Player View', () => {
 
     await page.getByRole('button', { name: 'Hech' }).click();
     await expect(playerSheet(page)).toContainText('Luz');
+    // C5: la fila del jugador marca que la habilidad tiene sonido
+    await expect(playerSheet(page).getByTestId('spell-audio-spell-luz')).toBeVisible();
     // la pestaña muestra los PM que le quedan al jugador
     await expect(playerSheet(page)).toContainText('8/8 PM');
 
