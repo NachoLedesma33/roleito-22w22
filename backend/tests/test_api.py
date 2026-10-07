@@ -953,6 +953,71 @@ async def test_icono_viaja_con_el_catalogo(client):
 
 
 @pytest.mark.asyncio
+async def test_audio_de_habilidad_sube_viaja_y_borra(client):
+    """El audio vive en la fila del catálogo y viaja igual que el icono."""
+    camp = (await client.post("/api/campaigns", json={"name": "Audio Camp"})).json()
+    cid = camp["id"]
+    a = (await client.post(f"/api/campaigns/{cid}/characters", json={"name": "Aria"})).json()
+    b = (await client.post(f"/api/campaigns/{cid}/characters", json={"name": "Borin"})).json()
+
+    spell = {
+        "id": "spell-audio-c5",
+        "name": "Eco",
+        "description": "d",
+        "level": 1,
+        "cost_pm": 1,
+    }
+    res = await client.put(
+        f"/api/campaigns/{cid}/characters/{a['id']}", json={"spells_json": [spell]}
+    )
+    assert res.status_code == 200, res.text
+
+    # Subida multipart: queda path absoluto bajo data/assets.
+    res = await client.post(
+        f"/api/campaigns/{cid}/abilities/spell-audio-c5/audio",
+        files={"file": ("echo.mp3", b"\x00\x01mp3", "audio/mpeg")},
+    )
+    assert res.status_code == 200, res.text
+    audio_path = res.json()["audio_path"]
+    assert audio_path and "audio.mp3" in audio_path.replace("\\", "/")
+
+    # La ficha que la sabe y el catálogo la ven; B la aprende con audio.
+    got = (await client.get(f"/api/campaigns/{cid}/characters/{a['id']}")).json()
+    assert got["spells_json"][0]["audio_path"] == audio_path
+    catalogo = (await client.get(f"/api/campaigns/{cid}/abilities")).json()
+    assert catalogo[0]["audio_path"] == audio_path
+    res = await client.put(
+        f"/api/campaigns/{cid}/characters/{b['id']}", json={"spells_json": [spell]}
+    )
+    assert res.status_code == 200, res.text
+    got_b = (await client.get(f"/api/campaigns/{cid}/characters/{b['id']}")).json()
+    assert got_b["spells_json"][0]["audio_path"] == audio_path
+
+    # Un payload sin la clave no lo borra (escritores viejos).
+    res = await client.put(
+        f"/api/campaigns/{cid}/characters/{a['id']}",
+        json={"spells_json": [{"id": "spell-audio-c5", "name": "Eco", "description": "d", "level": 1, "cost_pm": 1}]},
+    )
+    assert res.status_code == 200, res.text
+    catalogo = (await client.get(f"/api/campaigns/{cid}/abilities")).json()
+    assert catalogo[0]["audio_path"] == audio_path
+
+    # DELETE lo quita de la fila y del catálogo.
+    res = await client.delete(f"/api/campaigns/{cid}/abilities/spell-audio-c5/audio")
+    assert res.status_code == 200, res.text
+    assert res.json()["audio_path"] is None
+    catalogo = (await client.get(f"/api/campaigns/{cid}/abilities")).json()
+    assert catalogo[0]["audio_path"] is None
+
+    # Otra campaña no llega a la fila por id suelto.
+    res = await client.post(
+        f"/api/campaigns/{cid}/abilities/no-existe/audio",
+        files={"file": ("x.mp3", b"x", "audio/mpeg")},
+    )
+    assert res.status_code == 404
+
+
+@pytest.mark.asyncio
 async def test_delete_ability_borra_catalogo_y_enlaces(client):
     """Borrar una habilidad la saca del catálogo y de todas las fichas."""
     camp = (await client.post("/api/campaigns", json={"name": "Borrar Camp"})).json()

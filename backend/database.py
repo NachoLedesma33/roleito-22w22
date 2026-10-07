@@ -59,6 +59,7 @@ MIGRATIONS = [
     ("scenes", "weather", "ALTER TABLE scenes ADD COLUMN weather TEXT"),
     ("scenes", "weather_intensity", "ALTER TABLE scenes ADD COLUMN weather_intensity FLOAT DEFAULT 1.0"),
     ("abilities", "icon", "ALTER TABLE abilities ADD COLUMN icon TEXT"),
+    ("abilities", "audio_path", "ALTER TABLE abilities ADD COLUMN audio_path TEXT"),
 ]
 
 VIDA_ATTRS = ["vigor", "intelligence", "dexterity", "cunning"]

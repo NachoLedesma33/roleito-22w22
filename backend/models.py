@@ -143,6 +143,8 @@ class Ability(Base):
     # slug de la paleta precargada (lib/abilityIcons.ts) o path absoluto de
     # asset subido, el mismo convenio que Character.portrait_path.
     icon = Column(String, nullable=True)
+    # path absoluto del sonido de la habilidad (lo reproduce el botón Usar).
+    audio_path = Column(String, nullable=True)
 
 
 class CharacterAbility(Base):

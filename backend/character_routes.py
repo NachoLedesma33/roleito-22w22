@@ -34,6 +34,7 @@ def _spell_payload(ability: Ability) -> dict:
         "level": ability.level,
         "cost_pm": ability.cost_pm,
         "icon": ability.icon,
+        "audio_path": ability.audio_path,
     }
 
 
@@ -97,6 +98,8 @@ async def _replace_spells(
         # clave no viene (payloads viejos), el icono de la fila no se toca.
         if "icon" in raw:
             ability.icon = raw.get("icon") or None
+        if "audio_path" in raw:
+            ability.audio_path = raw.get("audio_path") or None
 
         link = await db.execute(
             select(CharacterAbility).where(
@@ -359,6 +362,16 @@ def _remove_icon_file(ability: Ability) -> None:
         os.remove(real)
 
 
+def _remove_audio_file(ability: Ability) -> None:
+    """Borra el archivo de audio subido, solo si vive bajo data/assets."""
+    if not ability.audio_path:
+        return
+    root = os.path.realpath(ASSETS_DIR)
+    real = os.path.realpath(ability.audio_path)
+    if real.startswith(root + os.sep) and os.path.isfile(real):
+        os.remove(real)
+
+
 @router.put("/campaigns/{campaign_id}/abilities/{ability_id}/icon/{slug}")
 async def set_ability_icon_preset(
     campaign_id: str,
@@ -413,6 +426,46 @@ async def clear_ability_icon(
     return _spell_payload(ability)
 
 
+@router.post("/campaigns/{campaign_id}/abilities/{ability_id}/audio")
+async def upload_ability_audio(
+    campaign_id: str,
+    ability_id: str,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_session),
+):
+    """Sube un sonido de la habilidad; se guarda como el del icono, en
+    data/assets/<campaña>/abilities/<habilidad>/audio.<ext>."""
+    ability = await _get_ability(db, campaign_id, ability_id)
+    _remove_audio_file(ability)
+
+    ext = os.path.splitext(file.filename or "audio.mp3")[1] or ".mp3"
+    audio_dir = os.path.join(ASSETS_DIR, campaign_id, "abilities", ability_id)
+    os.makedirs(audio_dir, exist_ok=True)
+    file_path = os.path.join(audio_dir, f"audio{ext}")
+
+    content = await file.read()
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    ability.audio_path = file_path
+    await db.commit()
+    return _spell_payload(ability)
+
+
+@router.delete("/campaigns/{campaign_id}/abilities/{ability_id}/audio")
+async def clear_ability_audio(
+    campaign_id: str,
+    ability_id: str,
+    db: AsyncSession = Depends(get_session),
+):
+    """Quita el audio: el botón Usar vuelve a sonar solo con ambiente."""
+    ability = await _get_ability(db, campaign_id, ability_id)
+    _remove_audio_file(ability)
+    ability.audio_path = None
+    await db.commit()
+    return _spell_payload(ability)
+
+
 @router.delete("/campaigns/{campaign_id}/abilities/{ability_id}")
 async def delete_campaign_ability(
     campaign_id: str,
@@ -431,6 +484,7 @@ async def delete_campaign_ability(
         delete(CharacterAbility).where(CharacterAbility.ability_id == ability_id)
     )
     _remove_icon_file(ability)
+    _remove_audio_file(ability)
     await db.delete(ability)
     await db.commit()
     return {"status": "deleted", "id": ability_id}
