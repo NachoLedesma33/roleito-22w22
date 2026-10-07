@@ -1044,9 +1044,9 @@ export default function PlayerView() {
     }
   }, [myChar, data, notesDraft, syncNotesDraft]);
 
-  // "Usar" descuenta el coste en PM. El efecto observable de esta etapa es la
-  // ficha del jugador (que ya se refresca sola con la respuesta del PUT); el
-  // evento ability_used hacia el World State es C4.
+  // "Usar" descuenta el coste en PM y deja el evento ability_used (C4): el
+  // endpoint hace los dos en la misma transacción y la respuesta trae la
+  // ficha ya actualizada, así que el PM bar se refresca con setMyChar.
   const handleUseSpell = useCallback(
     async (spell: Spell) => {
       if (!myChar || !data) return;
@@ -1055,15 +1055,8 @@ export default function PlayerView() {
       if (!Number.isFinite(cost) || cost > current) return;
       setUsingSpellId(spell.id);
       try {
-        const res = await fetch(
-          `${API_BASE}/campaigns/${data.campaign_id}/characters/${myChar.id}`,
-          {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ current_pm: current - cost }),
-          },
-        );
-        if (res.ok) setMyChar((await res.json()) as MyChar);
+        const used = await api.abilities.use(data.campaign_id, spell.id, myChar.id);
+        setMyChar(used.character as unknown as MyChar);
       } catch {
         // sin respuesta no hay nada que descontar: la ficha queda como estaba
       } finally {

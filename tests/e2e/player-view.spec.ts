@@ -332,6 +332,17 @@ test.describe('Player View', () => {
       },
     );
     expect(put.status()).toBe(200);
+    // C4 necesita sesión activa: el evento ability_used se cuelga de ella.
+    const session = await request.post(
+      `http://localhost:8000/api/campaigns/${campaign.id}/sessions`,
+      { data: { number: 1, date: '2026-10-07' } },
+    );
+    expect(session.status()).toBe(200);
+    const sessionId = (await session.json()).id;
+    const started = await request.post(
+      `http://localhost:8000/api/campaigns/${campaign.id}/sessions/${sessionId}/start`,
+    );
+    expect(started.status()).toBe(200);
     const code = await generateInviteCode(request, campaign.id);
 
     await page.goto(`/campaigns/join/${code}`);
@@ -359,5 +370,17 @@ test.describe('Player View', () => {
       `http://localhost:8000/api/campaigns/${campaign.id}/characters/${char.id}`,
     );
     expect((await stored.json()).current_pm).toBe(2);
+
+    // C4: cada uso dejó un ability_used CANON en la sesión (auto-canon de bajo
+    // impacto, sin review del DM) — es lo que alimenta el World State.
+    const events = await (
+      await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/events`)
+    ).json();
+    const used = events.filter((e: { type: string }) => e.type === 'ability_used');
+    expect(used).toHaveLength(2);
+    expect(used[0].status).toBe('CANON');
+    expect(used[0].actor_id).toBe(char.id);
+    expect(used[0].target_id).toBe('spell-luz');
+    expect(used[0].session_id).toBe(sessionId);
   });
 });

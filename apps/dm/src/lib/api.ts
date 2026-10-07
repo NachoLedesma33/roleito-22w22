@@ -567,6 +567,11 @@ export const api = {
     },
     clearIcon: (campaignId: string, abilityId: string) =>
       request<Spell>(`/campaigns/${campaignId}/abilities/${abilityId}/icon`, { method: 'DELETE' }),
+    use: (campaignId: string, abilityId: string, characterId: string) =>
+      request<{ character: Character; event_id: string | null }>(
+        `/campaigns/${campaignId}/abilities/${abilityId}/use`,
+        { method: 'POST', body: JSON.stringify({ character_id: characterId }) },
+      ),
     remove: (campaignId: string, abilityId: string) =>
       request<{ status: string; id: string }>(`/campaigns/${campaignId}/abilities/${abilityId}`, {
         method: 'DELETE',
