@@ -208,6 +208,7 @@ export default function PlayerView() {
   const [sheetTab, setSheetTab] = useState<'stats' | 'inventory' | 'spells' | 'notes'>('stats');
   const [notesDraft, setNotesDraft] = useState('');
   const [notesSaving, setNotesSaving] = useState(false);
+  const [usingSpellId, setUsingSpellId] = useState<string | null>(null);
   const [showDiceRoller, setShowDiceRoller] = useState(false);
   const [showQuests, setShowQuests] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
@@ -1043,6 +1044,35 @@ export default function PlayerView() {
     }
   }, [myChar, data, notesDraft, syncNotesDraft]);
 
+  // "Usar" descuenta el coste en PM. El efecto observable de esta etapa es la
+  // ficha del jugador (que ya se refresca sola con la respuesta del PUT); el
+  // evento ability_used hacia el World State es C4.
+  const handleUseSpell = useCallback(
+    async (spell: Spell) => {
+      if (!myChar || !data) return;
+      const current = myChar.current_pm ?? myChar.max_pm ?? 0;
+      const cost = spell.cost_pm;
+      if (!Number.isFinite(cost) || cost > current) return;
+      setUsingSpellId(spell.id);
+      try {
+        const res = await fetch(
+          `${API_BASE}/campaigns/${data.campaign_id}/characters/${myChar.id}`,
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ current_pm: current - cost }),
+          },
+        );
+        if (res.ok) setMyChar((await res.json()) as MyChar);
+      } catch {
+        // sin respuesta no hay nada que descontar: la ficha queda como estaba
+      } finally {
+        setUsingSpellId(null);
+      }
+    },
+    [myChar, data],
+  );
+
   const handleExportMarkdown = useCallback(() => {
     if (!myChar) return;
     const lines: string[] = [];
@@ -1547,6 +1577,9 @@ export default function PlayerView() {
 
                 {sheetTab === 'spells' && (
                   <div className="space-y-1">
+                    <div className="pb-1 mb-1 border-b border-[var(--bg-tertiary)]">
+                      <StatBar label="PM" current={pm} max={myChar.max_pm} />
+                    </div>
                     {myChar.spells_json.length === 0 ? (
                       <p className="text-[10px] text-[var(--text-secondary)]">No hay hechizos</p>
                     ) : (
@@ -1559,6 +1592,19 @@ export default function PlayerView() {
                             {abilityIconChip(spell.icon, spell.name)}
                           </span>
                           <span className="text-blue-400">Lv{spell.level}</span> {spell.name} ({spell.cost_pm} PM)
+                          <button
+                            type="button"
+                            onClick={() => void handleUseSpell(spell)}
+                            disabled={usingSpellId === spell.id || spell.cost_pm > pm}
+                            title={
+                              spell.cost_pm > pm
+                                ? 'PM insuficientes'
+                                : `Gasta ${spell.cost_pm} PM`
+                            }
+                            className="ml-auto shrink-0 text-[10px] px-1.5 py-0.5 rounded border border-gray-700 text-gray-400 hover:text-gray-200 hover:border-gray-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          >
+                            Usar
+                          </button>
                         </div>
                       ))
                     )}

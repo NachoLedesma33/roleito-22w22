@@ -313,4 +313,51 @@ test.describe('Player View', () => {
     expect(revReqs).toBeGreaterThan(baseline);
     await expect(page.getByTestId('on-scene-list')).toContainText('On Scene (2)');
   });
+
+  test('PV12: usar un hechizo gasta PM y se bloquea cuando no alcanzan', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    await setupActiveSceneWithTokens(request, campaign.id);
+    const char = await createCharacter(request, campaign.id, { name: 'Sera', max_pm: 8 });
+    const put = await request.put(
+      `http://localhost:8000/api/campaigns/${campaign.id}/characters/${char.id}`,
+      {
+        data: {
+          spells_json: [
+            { id: 'spell-luz', name: 'Luz', description: '', level: 1, cost_pm: 3 },
+          ],
+        },
+      },
+    );
+    expect(put.status()).toBe(200);
+    const code = await generateInviteCode(request, campaign.id);
+
+    await page.goto(`/campaigns/join/${code}`);
+    await expect(page.getByText('¿Quién sos?')).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('button', { name: /Sera/ }).click();
+    await expect(playerSheet(page)).toBeVisible();
+
+    await page.getByRole('button', { name: 'Hech' }).click();
+    await expect(playerSheet(page)).toContainText('Luz');
+    // la pestaña muestra los PM que le quedan al jugador
+    await expect(playerSheet(page)).toContainText('8/8 PM');
+
+    const usar = playerSheet(page).getByRole('button', { name: 'Usar' });
+    await expect(usar).toBeEnabled();
+    await usar.click();
+    await expect(playerSheet(page)).toContainText('5/8 PM');
+    await usar.click();
+    await expect(playerSheet(page)).toContainText('2/8 PM');
+
+    // 3 PM no alcanzan para un tercero: queda deshabilitado, no falla a ciegas
+    await expect(usar).toBeDisabled();
+
+    // el descuento quedó en el back, no solo en el DOM
+    const stored = await request.get(
+      `http://localhost:8000/api/campaigns/${campaign.id}/characters/${char.id}`,
+    );
+    expect((await stored.json()).current_pm).toBe(2);
+  });
 });
