@@ -826,6 +826,11 @@ async def test_spells_es_un_catalogo_compartido(client):
     got_b = (await client.get(f"/api/campaigns/{cid}/characters/{b['id']}")).json()
     assert got_b["spells_json"][0]["cost_pm"] == 7
 
+    # El catalogo la muestra una sola vez, con dos fichas que la saben.
+    catalogo = (await client.get(f"/api/campaigns/{cid}/abilities")).json()
+    assert [x["id"] for x in catalogo] == ["spell-fuego"]
+    assert catalogo[0]["owners"] == 2
+
     # Borrarla de A solo quita el enlace: B sigue sabiendola.
     res = await client.put(f"/api/campaigns/{cid}/characters/{a['id']}", json={"spells_json": []})
     assert res.status_code == 200, res.text
@@ -833,6 +838,8 @@ async def test_spells_es_un_catalogo_compartido(client):
     assert got["spells_json"] == []
     got_b = (await client.get(f"/api/campaigns/{cid}/characters/{b['id']}")).json()
     assert [s["name"] for s in got_b["spells_json"]] == ["Bola de Fuego"]
+    catalogo = (await client.get(f"/api/campaigns/{cid}/abilities")).json()
+    assert catalogo[0]["owners"] == 1  # A la desaprendio; no desaparece del catalogo
 
     # Dos filas en abilities para el mismo id = una sola.
     async with async_session() as s:

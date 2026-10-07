@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from database import get_session
 from models import Ability, Character, CharacterAbility, NPC, gen_id
 from schemas import (
@@ -304,6 +304,27 @@ async def delete_character(
     await db.delete(char)
     await db.commit()
     return {"status": "deleted", "id": character_id}
+
+
+@router.get("/campaigns/{campaign_id}/abilities")
+async def list_campaign_abilities(
+    campaign_id: str,
+    db: AsyncSession = Depends(get_session),
+):
+    """Catalogo de la campaña: la fuente para que otros personajes sepan una
+    habilidad que ya existe, en vez de duplicarla en cada ficha.
+
+    `owners` es cuántas fichas la saben: la UI lo usa para avisar que editarla
+    la cambia para todos los que la conocen.
+    """
+    result = await db.execute(
+        select(Ability, func.count(CharacterAbility.ability_id))
+        .outerjoin(CharacterAbility, CharacterAbility.ability_id == Ability.id)
+        .where(Ability.campaign_id == campaign_id)
+        .group_by(Ability.id)
+        .order_by(Ability.name)
+    )
+    return [{**_spell_payload(a), "owners": owners} for a, owners in result.all()]
 
 
 # ── NPC CRUD ────────────────────────────────────────────────
