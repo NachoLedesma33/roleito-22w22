@@ -15,7 +15,7 @@ export const LANGUAGES: ReadonlyArray<{ id: Language; label: string }> = [
 const resources = {
   es: {
     translation: {
-      app: { name: 'Roleito', tagline: 'El mundo que tus sesiones recuerdan' },
+      app: { name: '22w22', tagline: 'El mundo que tus sesiones recuerdan' },
       common: {
         loading: 'Cargando…',
         save: 'Guardar',
@@ -47,7 +47,7 @@ const resources = {
   },
   en: {
     translation: {
-      app: { name: 'Roleito', tagline: 'The world your sessions remember' },
+      app: { name: '22w22', tagline: 'The world your sessions remember' },
       common: {
         loading: 'Loading…',
         save: 'Save',

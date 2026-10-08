@@ -1,4 +1,4 @@
-import { Brain, Dices, Eye, Map, ScrollText, Sparkles, Volume2 } from 'lucide-react';
+import { Brain, Eye, Map, ScrollText, Sparkles, Volume2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const FEATURES = [
@@ -46,7 +46,7 @@ export default function Landing() {
     <div className="min-h-screen bg-bg text-ink">
       <header className="border-b border-border">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <span className="text-lg font-bold tracking-wide">Roleito</span>
+          <span className="text-lg font-bold tracking-wide">22w22</span>
           <Link
             to="/login"
             className={`rounded-md border border-border px-4 py-2 text-sm text-ink transition-colors hover:bg-surface-2 ${linkFocus}`}
@@ -82,11 +82,12 @@ export default function Landing() {
             </div>
           </div>
 
-          <div
-            aria-hidden="true"
-            className="flex aspect-square items-center justify-center rounded-xl border border-border bg-gradient-to-br from-surface to-surface-2"
-          >
-            <Dices className="h-40 w-40 text-brand" strokeWidth={1} />
+          <div className="aspect-square overflow-hidden rounded-xl border border-border bg-surface">
+            <img
+              src="/ui/22w22-logo-roleito.jpg"
+              alt="Arte de 22w22"
+              className="h-full w-full object-cover"
+            />
           </div>
         </section>
 
@@ -110,7 +111,7 @@ export default function Landing() {
       </main>
 
       <footer className="border-t border-border py-6 text-center text-xs text-ink-muted">
-        Roleito · engine local-first para RPGs
+        22w22 · engine local-first para RPGs
       </footer>
     </div>
   );

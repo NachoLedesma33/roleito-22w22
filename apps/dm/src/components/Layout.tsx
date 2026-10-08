@@ -29,7 +29,7 @@ export default function Layout() {
       <div className="min-h-screen flex flex-col">
         <header className="border-b border-[var(--bg-tertiary)] px-6 py-3 flex items-center gap-6">
           <Link to="/" className="text-lg font-bold text-[var(--accent)]">
-            Roleito
+            22w22
           </Link>
           <nav className="flex gap-4">
             <Link
@@ -81,7 +81,7 @@ export default function Layout() {
             ← Campañas
           </Link>
           <Link to={basePath} className="block mt-2 text-sm font-bold text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors truncate">
-            Roleito
+            22w22
           </Link>
         </div>
 
