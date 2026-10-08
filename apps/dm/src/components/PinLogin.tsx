@@ -1,8 +1,17 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/Button';
 import PinForm from './PinForm';
 
 type Mode = 'login' | 'register' | 'change';
+
+const inputClass =
+  'w-full text-center bg-surface-2 border border-border rounded-lg py-3 text-ink placeholder:text-ink-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors';
+
+const pinInputClass = `${inputClass} text-3xl tracking-[0.5em]`;
+
+const secondaryClass =
+  'w-full py-2 text-xs text-brand hover:text-brand-hover underline underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md';
 
 /**
  * Pantalla de entrada. El login es nombre de perfil + PIN; a un costado, los
@@ -111,7 +120,7 @@ export default function PinLogin() {
     <div data-testid="login-saved-dms">
       {dms.length > 0 ? (
         <>
-          <p className="text-[11px] text-gray-500 mb-2 text-center">Perfiles en esta máquina</p>
+          <p className="text-xs text-ink-muted mb-2 text-center">Perfiles en esta máquina</p>
           <div className="space-y-1.5">
             {dms.map((dm) => (
               <button
@@ -119,54 +128,77 @@ export default function PinLogin() {
                 type="button"
                 onClick={() => { setDmName(dm.name); setError(''); }}
                 data-testid="login-saved-dm"
-                className="w-full px-3 py-2 rounded-lg bg-gray-800/40 hover:bg-gray-700 border border-gray-700/60 text-left transition-colors"
+                className="w-full px-3 py-2 rounded-lg bg-surface-2 hover:bg-surface border border-border text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                <span className="block text-sm text-gray-100 truncate">{dm.name}</span>
+                <span className="block text-sm text-ink truncate">{dm.name}</span>
               </button>
             ))}
           </div>
         </>
       ) : (
-        <p className="text-xs text-gray-500 text-center">No hay perfiles en esta máquina. Creá uno nuevo.</p>
+        <p className="text-xs text-ink-muted text-center">
+          No hay perfiles en esta máquina. Creá uno nuevo.
+        </p>
       )}
     </div>
   );
 
   const shell = (subtitle: string, body: React.ReactNode) => (
-    <div className="h-screen flex items-center justify-center bg-black">
-      <div className="bg-gray-900 border border-gray-700/60 rounded-xl p-8 w-full max-w-sm space-y-5">
-        <div className="text-center">
-          <h1 className="text-xl font-bold text-gray-100">Roleito</h1>
-          <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
+    <div className="min-h-screen flex items-center justify-center bg-bg px-4 py-10">
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-6">
+          <h1 className="text-3xl font-bold text-ink">Roleito</h1>
+          <div className="mt-3 mx-auto h-1 w-16 bg-brand" aria-hidden="true" />
         </div>
-        {body}
+        <div className="bg-surface border border-border rounded-xl p-8 space-y-5 shadow-lg">
+          <p className="text-sm text-ink-muted text-center">{subtitle}</p>
+          {body}
+        </div>
       </div>
     </div>
   );
+
+  const errorMessage = error ? (
+    <p role="alert" data-testid="login-error" className="text-sm text-danger text-center">
+      {error}
+    </p>
+  ) : null;
 
   if (mode === 'register') {
     return shell(
       'Creá tu DM (4-8 dígitos)',
       <form onSubmit={submitRegister} className="space-y-5">
+        <label className="sr-only" htmlFor="register-name">
+          Nombre del DM
+        </label>
         <input
+          id="register-name"
           type="text"
           value={dmName}
           onChange={(e) => setDmName(e.target.value)}
           placeholder="Nombre del DM"
           autoFocus
-          className="w-full text-center text-lg bg-gray-800/50 border border-gray-700 rounded-lg py-3 text-gray-100 focus:outline-none focus:border-emerald-600 transition-colors"
+          className={`${inputClass} text-lg`}
         />
+        <label className="sr-only" htmlFor="register-pin">
+          PIN
+        </label>
         <input
+          id="register-pin"
           type="password"
           inputMode="numeric"
           pattern="[0-9]*"
           maxLength={8}
           value={pin}
           onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-          placeholder="PIN"
-          className="w-full text-center text-2xl tracking-[0.5em] bg-gray-800/50 border border-gray-700 rounded-lg py-3 text-gray-100 focus:outline-none focus:border-emerald-600 transition-colors"
+          placeholder="····"
+          className={pinInputClass}
         />
+        <label className="sr-only" htmlFor="register-confirm">
+          Confirmar PIN
+        </label>
         <input
+          id="register-confirm"
           type="password"
           inputMode="numeric"
           pattern="[0-9]*"
@@ -174,21 +206,13 @@ export default function PinLogin() {
           value={confirmPin}
           onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
           placeholder="Confirmar PIN"
-          className="w-full text-center text-2xl tracking-[0.5em] bg-gray-800/50 border border-gray-700 rounded-lg py-3 text-gray-100 focus:outline-none focus:border-emerald-600 transition-colors"
+          className={pinInputClass}
         />
-        {error && <p className="text-xs text-red-400 text-center">{error}</p>}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-2.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-medium text-sm disabled:opacity-50 transition-colors"
-        >
+        {errorMessage}
+        <Button type="submit" disabled={loading} className="w-full">
           {loading ? '...' : 'Crear DM'}
-        </button>
-        <button
-          type="button"
-          onClick={() => switchTo('login')}
-          className="w-full py-2 text-xs text-gray-500 hover:text-gray-300 transition-colors"
-        >
+        </Button>
+        <button type="button" onClick={() => switchTo('login')} className={secondaryClass}>
           ← Volver
         </button>
       </form>
@@ -199,7 +223,11 @@ export default function PinLogin() {
     return shell(
       'Cambiar PIN — ingresá el actual y el nuevo',
       <form onSubmit={submitChange} className="space-y-5">
+        <label className="sr-only" htmlFor="change-current">
+          PIN actual (opcional)
+        </label>
         <input
+          id="change-current"
           type="password"
           inputMode="numeric"
           pattern="[0-9]*"
@@ -208,9 +236,13 @@ export default function PinLogin() {
           onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, ''))}
           placeholder="PIN actual (opcional)"
           autoFocus
-          className="w-full text-center text-2xl tracking-[0.5em] bg-gray-800/50 border border-gray-700 rounded-lg py-3 text-gray-100 focus:outline-none focus:border-emerald-600 transition-colors"
+          className={pinInputClass}
         />
+        <label className="sr-only" htmlFor="change-new">
+          PIN nuevo
+        </label>
         <input
+          id="change-new"
           type="password"
           inputMode="numeric"
           pattern="[0-9]*"
@@ -218,9 +250,13 @@ export default function PinLogin() {
           value={pin}
           onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
           placeholder="PIN nuevo"
-          className="w-full text-center text-2xl tracking-[0.5em] bg-gray-800/50 border border-gray-700 rounded-lg py-3 text-gray-100 focus:outline-none focus:border-emerald-600 transition-colors"
+          className={pinInputClass}
         />
+        <label className="sr-only" htmlFor="change-confirm">
+          Confirmar PIN
+        </label>
         <input
+          id="change-confirm"
           type="password"
           inputMode="numeric"
           pattern="[0-9]*"
@@ -228,21 +264,13 @@ export default function PinLogin() {
           value={confirmPin}
           onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
           placeholder="Confirmar PIN"
-          className="w-full text-center text-2xl tracking-[0.5em] bg-gray-800/50 border border-gray-700 rounded-lg py-3 text-gray-100 focus:outline-none focus:border-emerald-600 transition-colors"
+          className={pinInputClass}
         />
-        {error && <p className="text-xs text-red-400 text-center">{error}</p>}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-2.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-medium text-sm disabled:opacity-50 transition-colors"
-        >
+        {errorMessage}
+        <Button type="submit" disabled={loading} className="w-full">
           {loading ? '...' : 'Cambiar PIN'}
-        </button>
-        <button
-          type="button"
-          onClick={() => switchTo('login')}
-          className="w-full py-2 text-xs text-gray-500 hover:text-gray-300 transition-colors"
-        >
+        </Button>
+        <button type="button" onClick={() => switchTo('login')} className={secondaryClass}>
           ← Volver
         </button>
       </form>
@@ -263,19 +291,11 @@ export default function PinLogin() {
       aside={savedDms}
       footer={
         <div className="space-y-1">
-          <button
-            type="button"
-            onClick={() => switchTo('register')}
-            className="w-full py-2 text-xs text-gray-400 hover:text-gray-200 transition-colors"
-          >
+          <button type="button" onClick={() => switchTo('register')} className={secondaryClass}>
             Crear DM nuevo
           </button>
           {dms.length > 0 && (
-            <button
-              type="button"
-              onClick={() => switchTo('change')}
-              className="w-full py-2 text-xs text-gray-500 hover:text-gray-300 transition-colors"
-            >
+            <button type="button" onClick={() => switchTo('change')} className={secondaryClass}>
               Cambiar PIN
             </button>
           )}

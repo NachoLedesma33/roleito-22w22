@@ -1,4 +1,5 @@
 import type { FormEvent, ReactNode } from 'react';
+import { Button } from '@/components/ui/Button';
 
 export interface PinFormProps {
   /** Nombre del perfil (no el id interno). */
@@ -18,7 +19,7 @@ export interface PinFormProps {
 }
 
 const inputClass =
-  'w-full text-center bg-gray-800/50 border border-gray-700 rounded-lg py-3 text-gray-100 focus:outline-none focus:border-emerald-600 transition-colors';
+  'w-full text-center bg-surface-2 border border-border rounded-lg py-3 text-ink placeholder:text-ink-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors';
 
 /**
  * Formulario clásico nombre de perfil + PIN, sin lógica de auth ni cromo de
@@ -41,42 +42,65 @@ export default function PinForm({
   return (
     <div className="space-y-5" data-testid={testId}>
       <form onSubmit={onSubmit} className="space-y-5">
-        <input
-          type="text"
-          value={nameValue}
-          onChange={(e) => onNameChange(e.target.value.trim())}
-          placeholder="Nombre de DM"
-          autoComplete="username"
-          spellCheck={false}
-          autoFocus
-          data-testid="login-dm-name"
-          className={`${inputClass} text-lg`}
-        />
+        <div>
+          <label htmlFor="pin-form-name" className="sr-only">
+            Nombre de perfil
+          </label>
+          <input
+            id="pin-form-name"
+            type="text"
+            value={nameValue}
+            onChange={(e) => onNameChange(e.target.value.trim())}
+            placeholder="Nombre de perfil"
+            autoComplete="username"
+            spellCheck={false}
+            autoFocus
+            data-testid="login-dm-name"
+            className={`${inputClass} text-lg`}
+          />
+        </div>
 
-        <input
-          type="password"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          maxLength={8}
-          value={pinValue}
-          onChange={(e) => onPinChange(e.target.value.replace(/\D/g, ''))}
-          placeholder="PIN"
-          data-testid="login-pin"
-          className={`${inputClass} text-2xl tracking-[0.5em]`}
-        />
+        <div>
+          <label htmlFor="pin-form-pin" className="sr-only">
+            PIN de 4 a 8 dígitos
+          </label>
+          <input
+            id="pin-form-pin"
+            type="password"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={8}
+            value={pinValue}
+            onChange={(e) => onPinChange(e.target.value.replace(/\D/g, ''))}
+            placeholder="····"
+            autoComplete="current-password"
+            aria-describedby="pin-form-pin-hint"
+            data-testid="login-pin"
+            className={`${inputClass} text-3xl tracking-[0.5em]`}
+          />
+          <p id="pin-form-pin-hint" className="mt-1 text-center text-xs text-ink-muted">
+            4 a 8 dígitos
+          </p>
+        </div>
 
         {error && (
-          <p data-testid="login-error" className="text-xs text-red-400 text-center">{error}</p>
+          <p
+            role="alert"
+            data-testid="login-error"
+            className="text-sm text-danger text-center"
+          >
+            {error}
+          </p>
         )}
 
-        <button
+        <Button
           type="submit"
           disabled={loading}
           data-testid="login-submit"
-          className="w-full py-2.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-medium text-sm disabled:opacity-50 transition-colors"
+          className="w-full"
         >
           {loading ? '...' : submitLabel}
-        </button>
+        </Button>
       </form>
 
       {aside}
