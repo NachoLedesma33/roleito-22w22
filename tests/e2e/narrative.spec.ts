@@ -175,11 +175,10 @@ test.describe('Motor narrativo', () => {
     await page.goto(`/campaigns/${campaign.id}/manage`);
     await page.waitForLoadState('networkidle');
 
-    const navLink = page.locator('a[href*="/narrative"]');
-    await expect(navLink).toBeVisible();
-    await expect(navLink).toContainText('Narrativa');
+    // La sidebar de links se volvió riel de sectores: Crónica → isla → Narrativa.
+    await page.getByRole('button', { name: 'Crónica' }).click();
+    await page.getByRole('button', { name: 'Narrativa' }).click();
 
-    await navLink.click();
     await expect(page).toHaveURL(new RegExp(`/campaigns/${campaign.id}/narrative`));
     await expect(page.getByRole('heading', { name: 'Motor narrativo' })).toBeVisible();
   });

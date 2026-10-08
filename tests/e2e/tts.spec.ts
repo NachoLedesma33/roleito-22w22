@@ -95,11 +95,10 @@ test.describe('TTS System', () => {
     await page.goto(`/campaigns/${campaign.id}/manage`);
     await page.waitForLoadState('networkidle');
 
-    const navLink = page.locator('a[href*="/tts"]');
-    await expect(navLink).toBeVisible();
-    await expect(navLink).toContainText('Voz');
+    // La sidebar de links se volvió riel de sectores: Estudio → isla → Voz.
+    await page.getByRole('button', { name: 'Estudio' }).click();
+    await page.getByRole('button', { name: 'Voz' }).click();
 
-    await navLink.click();
     await expect(page).toHaveURL(new RegExp(`/campaigns/${campaign.id}/tts`));
     await expect(page.getByRole('heading', { name: /TTS/ })).toBeVisible();
   });

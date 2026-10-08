@@ -6,7 +6,7 @@ test.use({ locale: 'es-ES' });
 
 test.describe('Shell DM — Riel e Islas', () => {
   test('IS1: el sector Mundo abre la isla y navega a Eventos', async ({ page, campaign }) => {
-    await page.goto(`/campaigns/${campaign.id}`);
+    await page.goto(`/campaigns/${campaign.id}/manage`);
     await expect(page.getByRole('button', { name: 'Mundo' })).toBeVisible();
 
     await page.getByRole('button', { name: 'Mundo' }).click();
@@ -17,7 +17,7 @@ test.describe('Shell DM — Riel e Islas', () => {
   });
 
   test('IS2: Esc cierra la isla sin navegar', async ({ page, campaign }) => {
-    await page.goto(`/campaigns/${campaign.id}`);
+    await page.goto(`/campaigns/${campaign.id}/manage`);
 
     await page.getByRole('button', { name: 'Reparto' }).click();
     await expect(page.getByRole('dialog', { name: 'Reparto' })).toBeVisible();
@@ -27,12 +27,22 @@ test.describe('Shell DM — Riel e Islas', () => {
   });
 
   test('IS3: la búsqueda filtra tiles dentro de la isla', async ({ page, campaign }) => {
-    await page.goto(`/campaigns/${campaign.id}`);
+    await page.goto(`/campaigns/${campaign.id}/manage`);
 
     await page.getByRole('button', { name: 'Estudio' }).click();
     await page.getByRole('textbox', { name: 'Buscar' }).fill('Voz');
 
     await expect(page.getByRole('button', { name: 'Voz' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Imágenes' })).toHaveCount(0);
+  });
+
+  test('IS4: el tile VTT de Mesa navega al dashboard inmersivo', async ({ page, campaign }) => {
+    await page.goto(`/campaigns/${campaign.id}/manage`);
+
+    await page.getByRole('button', { name: 'Mesa' }).click();
+    await page.getByRole('button', { name: 'VTT' }).click();
+
+    await expect(page).toHaveURL(new RegExp(`/campaigns/${campaign.id}$`));
+    await expect(page.getByRole('button', { name: /Sincronizar/ })).toBeVisible();
   });
 });
