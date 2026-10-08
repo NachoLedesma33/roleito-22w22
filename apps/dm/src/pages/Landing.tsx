@@ -83,9 +83,14 @@ export default function Landing() {
           </div>
 
           <div className="aspect-square overflow-hidden rounded-xl border border-border bg-surface">
-            <img
-              src="/ui/22w22-logo-roleito.jpg"
-              alt="Arte de 22w22"
+            <video
+              src="/ui/22w22background.mp4"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
+              aria-hidden="true"
               className="h-full w-full object-cover"
             />
           </div>

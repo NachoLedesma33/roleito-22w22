@@ -176,21 +176,21 @@ export default function CampaignList() {
             onClick={() => setSelectMode((v) => !v)}
             className={`px-4 py-2 text-sm rounded transition-colors ${
               selectMode
-                ? 'bg-[var(--accent)] text-white'
-                : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                ? 'bg-[var(--accent)] text-white shadow-md'
+                : 'bg-[var(--surface)] border border-[var(--bg-tertiary)] shadow-md text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
             {t('lobby.select')}
           </button>
           <button
             onClick={handleImport}
-            className="px-4 py-2 text-sm rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+            className="px-4 py-2 text-sm rounded bg-[var(--surface)] border border-[var(--bg-tertiary)] shadow-md text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
           >
             {t('lobby.import')}
           </button>
           <Link
             to="/campaigns/new"
-            className="px-4 py-2 text-sm rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
+            className="px-4 py-2 text-sm rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] shadow-md transition-colors"
           >
             {t('lobby.newCampaign')}
           </Link>

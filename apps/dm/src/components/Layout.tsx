@@ -139,7 +139,7 @@ export default function Layout() {
   if (!isInCampaign) {
     return (
       <div className="min-h-screen flex flex-col">
-        <header className="border-b border-[var(--bg-tertiary)] px-6 py-3 flex items-center gap-6">
+        <header className="relative z-10 border-b border-[var(--bg-tertiary)] bg-[var(--surface)] px-6 py-3 flex items-center gap-6">
           <Link to="/" className="text-lg font-bold text-[var(--accent)]">
             22w22
           </Link>
