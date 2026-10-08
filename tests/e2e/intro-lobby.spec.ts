@@ -13,8 +13,12 @@ async function loginAndSkipIntro(page: Page, name: string) {
   await page.getByTestId('login-submit').click();
 
   // Tras el remolino (0.85s) monta la intro; saltarla para llegar al lobby.
-  await page.getByRole('button', { name: /Saltar/ }).click({ timeout: 15_000 });
-  await expect(page).toHaveURL(/\/campaigns$/, { timeout: 10_000 });
+  // Si el video falla (LFS fuera) o hay reduced-motion la intro se salta sola:
+  // ambos caminos (click Saltar o URL /campaigns) son válidos.
+  const skip = page.getByRole('button', { name: /Saltar/ });
+  const skipClicked = skip.click({ timeout: 15_000 }).catch(() => {});
+  await Promise.race([skipClicked, page.waitForURL(/\/campaigns$/, { timeout: 25_000 })]);
+  await expect(page).toHaveURL(/\/campaigns$/);
   await expect(page.getByRole('heading', { name: 'Tu mesa' })).toBeVisible();
 }
 
