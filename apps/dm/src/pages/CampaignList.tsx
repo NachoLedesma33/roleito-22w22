@@ -151,7 +151,7 @@ export default function CampaignList() {
   const allSelected = campaigns.length > 0 && selectedIds.size === campaigns.length;
 
   return (
-    <div className="relative min-h-full overflow-hidden">
+    <div className="relative">
       <video
         src={VIDEO_BG_SRC}
         autoPlay
@@ -160,9 +160,9 @@ export default function CampaignList() {
         playsInline
         preload="auto"
         aria-hidden="true"
-        className="absolute inset-0 h-full w-full object-cover bg-[var(--bg)]"
+        className="fixed inset-0 h-full w-full object-cover bg-[var(--bg)] pointer-events-none"
       />
-      <div className="absolute inset-0 bg-black/70" aria-hidden="true" />
+      <div className="fixed inset-0 bg-black/70 pointer-events-none" aria-hidden="true" />
       <div className="relative z-10">
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -299,7 +299,7 @@ export default function CampaignList() {
             <div
               key={c.id}
               data-testid="campaign-card"
-              className={`group relative rounded-xl overflow-hidden border transition-colors ${
+              className={`group relative rounded-xl overflow-hidden border bg-[var(--surface)] transition-colors ${
                 selectedIds.has(c.id)
                   ? 'border-[var(--accent)] ring-2 ring-[var(--accent)]/40'
                   : 'border-[var(--bg-tertiary)] hover:border-[var(--accent)]'
@@ -373,7 +373,7 @@ export default function CampaignList() {
           ))}
           <Link
             to="/campaigns/new"
-            className="rounded-xl border-2 border-dashed border-[var(--bg-tertiary)] hover:border-[var(--accent)] flex flex-col items-center justify-center gap-2 aspect-[16/9] text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
+            className="rounded-xl border-2 border-dashed border-[var(--bg-tertiary)] hover:border-[var(--accent)] bg-[var(--surface)] flex flex-col items-center justify-center gap-2 aspect-[16/9] text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
           >
             <span className="text-3xl leading-none">+</span>
             <span className="text-sm">{t('lobby.newCampaign')}</span>
