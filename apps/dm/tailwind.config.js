@@ -26,6 +26,8 @@ export default {
           DEFAULT: 'var(--brand)',
           hover: 'var(--brand-hover)',
         },
+        'on-brand': 'var(--on-brand)',
+        'on-danger': 'var(--on-danger)',
         hp: 'var(--hp)',
         mp: 'var(--mp)',
         def: 'var(--def)',
