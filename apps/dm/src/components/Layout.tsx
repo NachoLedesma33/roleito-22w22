@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { Settings } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import PreferencesDrawer from '@/components/PreferencesDrawer';
 import {
   Dialog,
   DialogClose,
@@ -29,10 +32,13 @@ const campaignNav = [
 ];
 
 export default function Layout() {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const { id: campaignId } = useParams<{ id: string }>();
   const { logout, session } = useAuth();
+
+  const [prefsOpen, setPrefsOpen] = useState(false);
 
   // Salir cierra la sesión y vuelve a la landing (no al formulario de PIN).
   const handleLogout = async () => {
@@ -93,6 +99,14 @@ export default function Layout() {
               <span className="text-sm text-[var(--text-secondary)]">{session.dm_name}</span>
             )}
             <button
+              onClick={() => setPrefsOpen(true)}
+              aria-label={t('settings.title')}
+              title={t('settings.title')}
+              className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+            >
+              <Settings className="h-4 w-4" />
+            </button>
+            <button
               onClick={() => setLogoutOpen(true)}
               className="text-sm text-[var(--text-secondary)] hover:text-red-400 transition-colors"
             >
@@ -104,6 +118,7 @@ export default function Layout() {
           <Outlet />
         </main>
         {logoutDialog}
+        <PreferencesDrawer open={prefsOpen} onOpenChange={setPrefsOpen} />
       </div>
     );
   }
