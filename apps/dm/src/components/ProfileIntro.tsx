@@ -31,10 +31,20 @@ export default function ProfileIntro({ onDone }: { onDone: () => void }) {
       if (video.duration) setProgress((video.currentTime / video.duration) * 100);
     };
     video.addEventListener('timeupdate', onTime);
-    void video.play().catch(() => {
-      // Autoplay bloqueado: sin video no hay intro que valga.
-      finish();
-    });
+    // Primero intenta con sonido; si el autoplay lo bloquea, baja a muted.
+    const playWithSound = async () => {
+      try {
+        await video.play();
+      } catch {
+        video.muted = true;
+        try {
+          await video.play();
+        } catch {
+          finish();
+        }
+      }
+    };
+    void playWithSound();
     return () => video.removeEventListener('timeupdate', onTime);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -51,7 +61,6 @@ export default function ProfileIntro({ onDone }: { onDone: () => void }) {
       <video
         ref={videoRef}
         src={VIDEO_SRC}
-        muted
         playsInline
         autoPlay
         onEnded={finish}

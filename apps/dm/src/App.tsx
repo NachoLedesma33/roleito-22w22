@@ -41,7 +41,8 @@ function Splash() {
 function AuthGuard() {
   const { session, loading } = useAuth();
   if (loading) return <Splash />;
-  if (!session) return <Navigate to="/login" replace />;
+  // Sin sesión → landing (no al formulario): el login se entra desde ahí.
+  if (!session) return <Navigate to="/" replace />;
   return <Outlet />;
 }
 

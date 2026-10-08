@@ -1,5 +1,15 @@
-import { Link, Outlet, useLocation, useParams } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/Dialog';
 
 const campaignNav = [
   { to: '', label: 'VTT', icon: '◆' },
@@ -20,8 +30,43 @@ const campaignNav = [
 
 export default function Layout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { id: campaignId } = useParams<{ id: string }>();
   const { logout, session } = useAuth();
+
+  // Salir cierra la sesión y vuelve a la landing (no al formulario de PIN).
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+  };
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const confirmLogout = async () => {
+    setLogoutOpen(false);
+    await handleLogout();
+  };
+  const logoutDialog = (
+    <Dialog open={logoutOpen} onOpenChange={setLogoutOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>¿Salir de 22w22?</DialogTitle>
+          <DialogDescription>Para volver a entrar vas a necesitar el PIN.</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <DialogClose asChild>
+            <button className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+              Cancelar
+            </button>
+          </DialogClose>
+          <button
+            onClick={confirmLogout}
+            className="text-sm text-white bg-[var(--accent)] hover:bg-[var(--accent-hover)] rounded px-3 py-1.5 transition-colors"
+          >
+            Salir
+          </button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
   const isInCampaign = !!campaignId && location.pathname.startsWith(`/campaigns/${campaignId}`);
 
   if (!isInCampaign) {
@@ -48,7 +93,7 @@ export default function Layout() {
               <span className="text-sm text-[var(--text-secondary)]">{session.dm_name}</span>
             )}
             <button
-              onClick={logout}
+              onClick={() => setLogoutOpen(true)}
               className="text-sm text-[var(--text-secondary)] hover:text-red-400 transition-colors"
             >
               Salir
@@ -58,6 +103,7 @@ export default function Layout() {
         <main className="flex-1 p-6">
           <Outlet />
         </main>
+        {logoutDialog}
       </div>
     );
   }
@@ -107,7 +153,7 @@ export default function Layout() {
             <p className="text-xs text-[var(--text-secondary)] mb-2">{session.dm_name}</p>
           )}
           <button
-            onClick={logout}
+            onClick={() => setLogoutOpen(true)}
             className="w-full text-left text-sm text-[var(--text-secondary)] hover:text-red-400 transition-colors"
           >
             ← Salir
@@ -118,6 +164,7 @@ export default function Layout() {
       <main className="flex-1 p-6 overflow-auto">
         <Outlet />
       </main>
+      {logoutDialog}
     </div>
   );
 }
