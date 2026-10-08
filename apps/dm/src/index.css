@@ -3,13 +3,141 @@
 @tailwind utilities;
 
 :root {
-  --bg-primary: #0f0f14;
-  --bg-secondary: #1a1a24;
-  --bg-tertiary: #252532;
-  --text-primary: #ffffff;
-  --text-secondary: #d8d8f0;
-  --accent: #6c5ce7;
-  --accent-hover: #7c6cf7;
+  /* ============================================================
+     Roleito — Design tokens (Fase 0)
+     Capas: primitivos -> semanticos -> alias de compatibilidad.
+     Tema en runtime: <html data-theme="vitela|brasa|abisal|alto-contraste|daltonico">
+     ============================================================ */
+
+  /* Primitivos */
+  --obsidian-950: #0a0c12;
+  --obsidian-900: #10141e;
+  --obsidian-800: #171c29;
+  --obsidian-700: #212838;
+  --obsidian-600: #2c3549;
+  --parchment-50: #f3eee3;
+  --parchment-200: #d9d2c2;
+  --slate-ink: #8b8fa3;
+  --muted-ink: #5c6273;
+  --arcana-500: #8b5cf6;
+  --arcana-600: #7c4de0;
+  --brass-500: #c9a227;
+  --ember-500: #f2983c;
+  --ruby-500: #e5484d;
+  --verdant-500: #46c08a;
+  --azure-500: #4cc2ff;
+
+  /* Semanticos — tema por defecto: Nocturno */
+  --bg: var(--obsidian-950);
+  --surface: var(--obsidian-900);
+  --surface-2: var(--obsidian-800);
+  --border: var(--obsidian-700);
+  --ring: var(--arcana-500);
+  --ink: #ece9e2;
+  --ink-muted: var(--slate-ink);
+  --ink-faint: var(--muted-ink);
+  --brand: var(--arcana-500);
+  --brand-hover: var(--arcana-600);
+  --hp: var(--ruby-500);
+  --mp: var(--azure-500);
+  --def: var(--brass-500);
+  --canon: var(--brass-500);
+  --proposed: var(--azure-500);
+  --rejected: var(--ruby-500);
+  --dm-only: var(--arcana-500);
+  --success: var(--verdant-500);
+  --warning: var(--ember-500);
+  --danger: var(--ruby-500);
+  --info: var(--azure-500);
+
+  /* Motion */
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 320ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Radios */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  /* Alias de compatibilidad (UI existente) */
+  --bg-primary: var(--bg);
+  --bg-secondary: var(--surface);
+  --bg-tertiary: var(--surface-2);
+  --text-primary: var(--ink);
+  --text-secondary: var(--ink-muted);
+  --accent: var(--brand);
+  --accent-hover: var(--brand-hover);
+}
+
+/* Tema: Vitela (claro) */
+[data-theme='vitela'] {
+  --bg: var(--parchment-50);
+  --surface: #ffffff;
+  --surface-2: #e9e3d5;
+  --border: var(--parchment-200);
+  --ink: #1a1614;
+  --ink-muted: var(--muted-ink);
+  --ink-faint: var(--slate-ink);
+}
+
+/* Tema: Brasa (calido) */
+[data-theme='brasa'] {
+  --bg: #120f0c;
+  --surface: #1c1712;
+  --surface-2: #291f16;
+  --border: #3a2c1e;
+  --ink: #f5e9d8;
+  --brand: #e0922f;
+  --brand-hover: #c97e24;
+}
+
+/* Tema: Abisal (azul profundo) */
+[data-theme='abisal'] {
+  --bg: #071018;
+  --surface: #0c1a26;
+  --surface-2: #112536;
+  --border: #1b3a52;
+  --ink: #e2f1ff;
+  --brand: #4cc2ff;
+  --brand-hover: #35a8e8;
+}
+
+/* Tema: Alto contraste */
+[data-theme='alto-contraste'] {
+  --bg: #000000;
+  --surface: #0a0c12;
+  --surface-2: #141821;
+  --border: #64748b;
+  --ink: #ffffff;
+  --ink-muted: #cbd5e1;
+  --ink-faint: #94a3b8;
+  --brand: #a78bfa;
+  --brand-hover: #c4b5fd;
+}
+
+/* Tema: Daltonico (seguro para deuteranopia/protanopia) */
+[data-theme='daltonico'] {
+  --hp: #e5484d;
+  --mp: #4cc2ff;
+  --success: #4cc2ff;
+  --warning: #f2983c;
+  --danger: #e5484d;
+  --canon: #f2983c;
+  --rejected: #e5484d;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 body {
