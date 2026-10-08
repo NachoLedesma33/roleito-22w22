@@ -1,12 +1,15 @@
 import { expect, test } from '../fixtures/campaign-fixture';
 import { PNG_1PX, createScene } from '../helpers/api-helpers';
 
+// El lobby usa strings i18n; fijar idioma para aserciones estables en español.
+test.use({ locale: 'es-ES' });
+
 test.describe('Campaign CRUD', () => {
   test('C1: crea campaña desde la UI y redirige al dashboard', async ({ page }) => {
     const name = `UI Campaign ${Date.now()}`;
 
     await page.goto('/');
-    await page.getByRole('link', { name: 'Nueva campaña' }).click();
+    await page.getByRole('link', { name: 'Nueva campaña' }).first().click();
     await expect(page).toHaveURL(/\/campaigns\/new$/);
 
     await page.getByPlaceholder('Nombre de la campaña').fill(name);
@@ -18,7 +21,7 @@ test.describe('Campaign CRUD', () => {
 
   test('C2: lista campañas existentes', async ({ page, campaign }) => {
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: 'Campañas' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Tu mesa' })).toBeVisible();
     await expect(page.getByRole('link', { name: campaign.name })).toBeVisible();
   });
 
@@ -42,7 +45,7 @@ test.describe('Campaign CRUD', () => {
 
     page.on('dialog', (dialog) => dialog.accept());
 
-    const card = page.locator('div.border.rounded-lg', { hasText: campaign.name }).first();
+    const card = page.getByTestId('campaign-card').filter({ hasText: campaign.name });
     await card.getByRole('button', { name: 'Eliminar' }).click();
 
     await expect(page.getByRole('link', { name: campaign.name })).toHaveCount(0);
@@ -68,6 +71,8 @@ test.describe('Campaign Bulk Operations', () => {
     for (const name of names) {
       await expect(page.getByRole('link', { name })).toBeVisible();
     }
+
+    await page.getByRole('button', { name: 'Seleccionar' }).click();
 
     const checkboxes = page.locator('input[type="checkbox"]');
     await checkboxes.nth(1).click();
@@ -98,6 +103,8 @@ test.describe('Campaign Bulk Operations', () => {
     }
 
     await page.goto('/');
+
+    await page.getByRole('button', { name: 'Seleccionar' }).click();
 
     const checkboxes = page.locator('input[type="checkbox"]');
     await checkboxes.nth(1).click();
@@ -133,6 +140,8 @@ test.describe('Campaign Bulk Operations', () => {
 
     await page.goto('/');
 
+    await page.getByRole('button', { name: 'Seleccionar' }).click();
+
     const checkboxes = page.locator('input[type="checkbox"]');
     await checkboxes.nth(1).click();
     await checkboxes.nth(2).click();
@@ -155,6 +164,8 @@ test.describe('Campaign Bulk Operations', () => {
   test('C8: select all campaigns', async ({ page, campaign }) => {
     await page.goto('/');
     await expect(page.getByRole('link', { name: campaign.name })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Seleccionar' }).click();
 
     const rows = page.locator('input[type="checkbox"]');
     const expectedCount = (await rows.count()) - 1;

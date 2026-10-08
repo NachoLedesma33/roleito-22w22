@@ -25,6 +25,7 @@ const resources = {
         create: 'Crear',
         close: 'Cerrar',
         back: 'Volver',
+        manage: 'Gestionar',
       },
       landing: { cta: 'Comenzar', demo: 'Ver cómo funciona' },
       lobby: {
@@ -32,6 +33,8 @@ const resources = {
         newCampaign: 'Nueva campaña',
         join: 'Unirse por código',
         import: 'Importar',
+        updatedAt: 'Actualizada',
+        select: 'Seleccionar',
       },
       settings: {
         title: 'Ajustes',
@@ -57,6 +60,7 @@ const resources = {
         create: 'Create',
         close: 'Close',
         back: 'Back',
+        manage: 'Manage',
       },
       landing: { cta: 'Start', demo: 'See how it works' },
       lobby: {
@@ -64,6 +68,8 @@ const resources = {
         newCampaign: 'New campaign',
         join: 'Join by code',
         import: 'Import',
+        updatedAt: 'Updated',
+        select: 'Select',
       },
       settings: {
         title: 'Settings',

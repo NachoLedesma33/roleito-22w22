@@ -1,5 +1,8 @@
 import { expect, test } from '@playwright/test';
 
+// El lobby usa strings i18n; fijar idioma para aserciones estables en español.
+test.use({ locale: 'es-ES' });
+
 // Spec pelado (sin fixture de campaña): el fixture inyecta token y justamente
 // saltearía la pantalla pre-login que queremos probar.
 const API = 'http://localhost:8000/api';
@@ -40,6 +43,6 @@ test.describe('Landing pre-login', () => {
 
     await page.goto('/');
     await expect(page).toHaveURL(/\/campaigns$/);
-    await expect(page.getByRole('heading', { name: 'Campañas' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Tu mesa' })).toBeVisible();
   });
 });
