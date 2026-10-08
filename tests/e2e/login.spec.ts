@@ -13,7 +13,7 @@ test.describe('Login nombre + PIN', () => {
     });
     expect(reg.ok()).toBeTruthy();
 
-    await page.goto('/');
+    await page.goto('/login');
     await page.getByTestId('login-dm-name').fill(name);
     await page.getByTestId('login-pin').fill('4321');
     await page.getByTestId('login-submit').click();
@@ -33,7 +33,7 @@ test.describe('Login nombre + PIN', () => {
     expect(reg.ok()).toBeTruthy();
     const dm = (await reg.json()) as { dm_id: string };
 
-    await page.goto('/');
+    await page.goto('/login');
     const card = page.getByTestId('login-saved-dms');
     await expect(card).toContainText(name, { timeout: 10_000 });
 
@@ -49,7 +49,7 @@ test.describe('Login nombre + PIN', () => {
   });
 
   test('L3: campos vacíos, PIN corto y nombre inexistente no entran', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/login');
 
     await page.getByTestId('login-submit').click();
     await expect(page.getByTestId('login-error')).toHaveText('Ingresá el nombre de tu perfil');

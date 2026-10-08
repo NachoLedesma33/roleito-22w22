@@ -1,6 +1,7 @@
-import { Routes, Route, Outlet } from 'react-router-dom';
+import { Navigate, Routes, Route, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import PinLogin from '@/components/PinLogin';
+import Landing from '@/pages/Landing';
 import Layout from '@/components/Layout';
 import CampaignList from '@/pages/CampaignList';
 import CampaignForm from '@/pages/CampaignForm';
@@ -29,17 +30,33 @@ import TTSPanel from '@/pages/TTSPanel';
 import WorldStateView from '@/pages/WorldStateView';
 import MemoryView from '@/pages/MemoryView';
 
+function Splash() {
+  return (
+    <div className="h-screen flex items-center justify-center bg-bg text-ink-muted">Cargando...</div>
+  );
+}
+
 function AuthGuard() {
   const { session, loading } = useAuth();
-  if (loading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-black text-gray-400">
-        Cargando...
-      </div>
-    );
-  }
-  if (!session) return <PinLogin />;
+  if (loading) return <Splash />;
+  if (!session) return <Navigate to="/login" replace />;
   return <Outlet />;
+}
+
+/** Raíz pública: sin sesión → landing; con sesión → lobby de campañas. */
+function HomeRoute() {
+  const { session, loading } = useAuth();
+  if (loading) return <Splash />;
+  if (session) return <Navigate to="/campaigns" replace />;
+  return <Landing />;
+}
+
+/** Login público: con sesión ya creada, vuelve al lobby. */
+function LoginRoute() {
+  const { session, loading } = useAuth();
+  if (loading) return <Splash />;
+  if (session) return <Navigate to="/campaigns" replace />;
+  return <PinLogin />;
 }
 
 function App() {
@@ -49,12 +66,16 @@ function App() {
         {/* Player View — public, uses invite code as auth */}
         <Route path="/campaigns/join/:code" element={<PlayerView />} />
 
+        {/* Public entry: landing pre-login + PIN login */}
+        <Route path="/" element={<HomeRoute />} />
+        <Route path="/login" element={<LoginRoute />} />
+
         {/* DM routes — protected by PIN auth */}
         <Route element={<AuthGuard />}>
           <Route path="/campaigns/:id" element={<DmDashboard />} />
 
           <Route element={<Layout />}>
-            <Route path="/" element={<CampaignList />} />
+            <Route path="/campaigns" element={<CampaignList />} />
             <Route path="/campaigns/new" element={<CampaignForm />} />
             <Route path="/campaigns/:id/manage" element={<CampaignDetail />} />
             <Route path="/campaigns/:id/edit" element={<CampaignForm />} />
