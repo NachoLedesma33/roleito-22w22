@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { api, Campaign } from '@/lib/api';
 
 const COVER_FALLBACK = '/ui/22w22-logo-roleito.jpg';
+const VIDEO_BG_SRC = '/ui/22w22background.mp4';
 
 export default function CampaignList() {
   const { t } = useTranslation();
@@ -150,7 +151,19 @@ export default function CampaignList() {
   const allSelected = campaigns.length > 0 && selectedIds.size === campaigns.length;
 
   return (
-    <div>
+    <div className="relative min-h-full overflow-hidden">
+      <video
+        src={VIDEO_BG_SRC}
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        aria-hidden="true"
+        className="absolute inset-0 h-full w-full object-cover bg-[var(--bg)]"
+      />
+      <div className="absolute inset-0 bg-black/70" aria-hidden="true" />
+      <div className="relative z-10">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-[var(--text-primary)]">{t('lobby.title')}</h1>
@@ -367,6 +380,7 @@ export default function CampaignList() {
           </Link>
         </div>
       )}
+      </div>
     </div>
   );
 }
