@@ -75,6 +75,9 @@ dist/
 build/
 *.tsbuildinfo
 
+# Storybook
+storybook-static/
+
 # Temporary
 tmp/
 temp/

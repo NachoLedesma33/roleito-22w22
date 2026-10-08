@@ -8,7 +8,9 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@react-three/drei": "^9.122.0",
@@ -23,6 +25,9 @@
     "three": "^0.170.0"
   },
   "devDependencies": {
+    "@storybook/addon-a11y": "^10.6.1",
+    "@storybook/addon-docs": "^10.6.1",
+    "@storybook/react-vite": "^10.6.1",
     "@types/node": "^26.2.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
@@ -30,6 +35,7 @@
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.19",
     "postcss": "^8.4.39",
+    "storybook": "^10.6.1",
     "tailwindcss": "^3.4.6",
     "typescript": "^5.5.3",
     "vite": "^5.3.4",
