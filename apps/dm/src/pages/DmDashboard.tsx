@@ -135,6 +135,7 @@ export default function DmDashboard() {
   // Los menús de clima y lighting abren con click, no con hover: en táctil el
   // hover no existe y el menú era inalcanzable.
   const [openMenu, setOpenMenu] = useState<'lighting' | 'weather' | null>(null);
+  const [showZones, setShowZones] = useState(true);
 
   const toggleMenu = (which: 'lighting' | 'weather', anchor: HTMLElement) => {
     const r = anchor.getBoundingClientRect();
@@ -2038,24 +2039,6 @@ export default function DmDashboard() {
                     🚪 Portal (zona↔zona)
                   </button>
                   <button
-                    onClick={startFogMode}
-                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${fogMode ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
-                  >
-                    🌫️ Niebla (pincel)
-                  </button>
-                  <button
-                    onClick={startRectFogMode}
-                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${rectFogMode ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
-                  >
-                    ▭ Niebla (rect)
-                  </button>
-                  <button
-                    onClick={startZoneFogMode}
-                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${zoneFogActive ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
-                  >
-                    🧩 Niebla de zona (alternar)
-                  </button>
-                  <button
                     onClick={startLightPlaceMode}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${lightPlaceMode ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
                   >
@@ -2708,6 +2691,41 @@ export default function DmDashboard() {
           )}
         </div>
 
+        {/* Rail derecho contextual — capas y niebla (Mesa) */}
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-1 w-[185px] bg-[var(--bg-secondary)]/90 border border-[var(--bg-tertiary)] rounded-lg p-1.5 shadow-lg">
+          <div className="px-1.5 text-[10px] uppercase tracking-wide text-[var(--text-secondary)] opacity-70">Capas</div>
+          <button
+            onClick={() => setShowZones((v) => !v)}
+            className={`w-full text-xs px-2 py-1 rounded transition-colors text-left ${showZones ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)]' : 'bg-transparent text-[var(--text-secondary)]'}`}
+            title="Mostrar zonas"
+            data-testid="zones-toggle"
+          >
+            🧩 Zonas {showZones ? '●' : '○'}
+          </button>
+          <div className="border-t border-[var(--bg-tertiary)] my-1" />
+          <div className="px-1.5 text-[10px] uppercase tracking-wide text-[var(--text-secondary)] opacity-70">Niebla</div>
+          <button
+            onClick={startFogMode}
+            className={`block w-full text-left px-2 py-1 text-xs rounded transition-colors ${fogMode ? 'text-amber-400 bg-[var(--bg-tertiary)]' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
+            title="Niebla (pincel)"
+          >
+            🌫️ Niebla (pincel)
+          </button>
+          <button
+            onClick={startRectFogMode}
+            className={`block w-full text-left px-2 py-1 text-xs rounded transition-colors ${rectFogMode ? 'text-amber-400 bg-[var(--bg-tertiary)]' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
+            title="Niebla (rect)"
+          >
+            ▭ Niebla (rect)
+          </button>
+          <button
+            onClick={startZoneFogMode}
+            className={`block w-full text-left px-2 py-1 text-xs rounded transition-colors ${zoneFogActive ? 'text-amber-400 bg-[var(--bg-tertiary)]' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
+            title="Niebla de zona (alternar)"
+          >
+            🧩 Niebla de zona (alternar)
+          </button>
+        </div>
         {/* Dock inferior — acciones de sesión, colapsable */}
         <div
           ref={dockRef}
@@ -2971,7 +2989,7 @@ export default function DmDashboard() {
                 gridSnap={activeScene.grid_snap ?? false}
                 movementRange={movementRange}
                 drawState={drawState}
-                showZones
+                showZones={showZones}
                 renderMode={DEFAULT_RENDER_MODE}
                 zoneDraft={zoneDraft}
                 onZoneAddPoint={handleZoneAddPoint}
