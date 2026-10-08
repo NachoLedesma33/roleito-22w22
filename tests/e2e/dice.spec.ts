@@ -3,6 +3,7 @@ import { createCharacter } from '../helpers/api-helpers';
 
 async function openRoller(page: import('@playwright/test').Page, campaignId: string) {
   await page.goto(`/campaigns/${campaignId}`);
+  await page.getByTitle('Acciones del DM').hover();
   await expect(page.getByTitle('Tirar dados (D)')).toBeVisible();
   await page.keyboard.press('d');
   await expect(page.getByText('Tipo de dado')).toBeVisible();

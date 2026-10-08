@@ -25,6 +25,7 @@ test.describe('Map System', () => {
     });
 
     await openDashboard(page, campaign.id);
+    await page.getByTitle('Acciones del DM').hover();
     const mapBtn = page.getByTitle('Abrir mapa');
     await expect(mapBtn).toBeVisible();
     await mapBtn.click();
@@ -47,6 +48,7 @@ test.describe('Map System', () => {
     });
 
     await openDashboard(page, campaign.id);
+    await page.getByTitle('Acciones del DM').hover();
     await page.getByTitle('Abrir mapa').click();
 
     const viewer = page.locator('div.fixed.inset-0');
@@ -67,6 +69,7 @@ test.describe('Map System', () => {
     });
 
     await openDashboard(page, campaign.id);
+    await page.getByTitle('Acciones del DM').hover();
     await page.getByTitle('Abrir mapa').click();
 
     const viewer = page.locator('div.fixed.inset-0');
@@ -91,6 +94,7 @@ test.describe('Map System', () => {
     });
 
     await openDashboard(page, campaign.id);
+    await page.getByTitle('Acciones del DM').hover();
     await page.getByTitle('Abrir mapa').click();
 
     const viewer = page.locator('div.fixed.inset-0');
@@ -113,6 +117,7 @@ test.describe('Map System', () => {
 
     await openDashboard(page, campaign.id);
     const viewer = page.locator('div.fixed.inset-0');
+    await page.getByTitle('Acciones del DM').hover();
     await page.getByTitle('Abrir mapa').click();
     await viewer.getByRole('button', { name: '+ Agregar marcador' }).click();
     await viewer.getByPlaceholder('Etiqueta').fill('Vault');
@@ -142,6 +147,7 @@ test.describe('Map System', () => {
 
     await openDashboard(page, campaign.id);
     const viewer = page.locator('div.fixed.inset-0');
+    await page.getByTitle('Acciones del DM').hover();
     await page.getByTitle('Abrir mapa').click();
     await viewer.getByRole('button', { name: '+ Agregar marcador' }).click();
     await viewer.getByPlaceholder('Etiqueta').fill('Trampa');
@@ -164,6 +170,7 @@ test.describe('Map System', () => {
     await page.getByRole('button', { name: 'Mapa ▾' }).click();
     await page.getByRole('button', { name: 'Plano Ciudad' }).click();
 
+    await page.getByTitle('Acciones del DM').hover();
     const mapBtn = page.getByTitle('Abrir mapa');
     await expect(mapBtn).toBeVisible();
     await mapBtn.click();
@@ -184,6 +191,7 @@ test.describe('Map System', () => {
     });
 
     await openDashboard(page, campaign.id);
+    await page.getByTitle('Acciones del DM').hover();
     await expect(page.getByTitle('Abrir mapa')).toBeVisible();
 
     await page.getByRole('button', { name: 'Mapa ▾' }).click();

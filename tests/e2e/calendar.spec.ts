@@ -33,6 +33,7 @@ test.describe('Calendar & Progress Clocks', () => {
 
     await page.goto(`/campaigns/${campaign.id}`);
     await expect(page.getByText('On Scene (1)')).toBeVisible({ timeout: 10_000 });
+    await page.getByTitle('Acciones del DM').hover();
     await page.getByTitle('Calendario y relojes').click();
     await expect(page.getByText(fmtDate(new Date()))).toBeVisible();
 
@@ -74,6 +75,7 @@ test.describe('Calendar & Progress Clocks', () => {
 
     await page.goto(`/campaigns/${campaign.id}`);
     await expect(page.getByText('On Scene (1)')).toBeVisible({ timeout: 10_000 });
+    await page.getByTitle('Acciones del DM').hover();
     await page.getByTitle('Calendario y relojes').click();
 
     await page.getByPlaceholder('Nuevo reloj (ritual, doom timer…)').fill('Ritual de invocación');

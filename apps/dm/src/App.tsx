@@ -79,9 +79,8 @@ function App() {
 
         {/* DM routes — protected by PIN auth */}
         <Route element={<AuthGuard />}>
-          <Route path="/campaigns/:id" element={<DmDashboard />} />
-
           <Route element={<Layout />}>
+            <Route path="/campaigns/:id" element={<DmDashboard />} />
             <Route path="/campaigns" element={<CampaignList />} />
             <Route path="/campaigns/new" element={<CampaignForm />} />
             <Route path="/campaigns/:id/manage" element={<CampaignDetail />} />

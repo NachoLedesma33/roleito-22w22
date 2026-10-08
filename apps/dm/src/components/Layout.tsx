@@ -256,7 +256,7 @@ export default function Layout() {
         </button>
       </aside>
 
-      <main className="flex-1 p-6 overflow-auto">
+      <main className={location.pathname === basePath ? 'flex-1 relative overflow-hidden' : 'flex-1 p-6 overflow-auto'}>
         <Outlet />
       </main>
 

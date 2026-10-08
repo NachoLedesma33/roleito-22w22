@@ -38,6 +38,7 @@ async function updateNote(
 test.describe('DM Notebook', () => {
   async function openDashboard(page: Page, campaignId: string) {
     await page.goto(`/campaigns/${campaignId}`);
+    await page.getByTitle('Acciones del DM').hover();
     await expect(page.getByTitle('Tirar dados (D)')).toBeVisible();
   }
 

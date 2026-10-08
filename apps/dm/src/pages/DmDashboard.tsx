@@ -89,6 +89,22 @@ export default function DmDashboard() {
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [showAssistant, setShowAssistant] = useState(false);
   const [showSceneSettings, setShowSceneSettings] = useState(false);
+  const [dockExpanded, setDockExpanded] = useState(false);
+  const [dockMoreOpen, setDockMoreOpen] = useState(false);
+  const [cmdOpen, setCmdOpen] = useState(false);
+  const [cmdQuery, setCmdQuery] = useState('');
+  const dockRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const closeDock = (e: MouseEvent) => {
+      if (dockRef.current && !dockRef.current.contains(e.target as Node)) {
+        setDockExpanded(false);
+        setDockMoreOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', closeDock);
+    return () => document.removeEventListener('mousedown', closeDock);
+  }, []);
   const [distanceFrom, setDistanceFrom] = useState<string | null>(null);
   const [distanceTo, setDistanceTo] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
@@ -1002,6 +1018,12 @@ export default function DmDashboard() {
         else if (attachLightMode) setAttachLightMode(null)
         else setSelectedItemId(null)
       }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setCmdOpen((v) => !v);
+        setCmdQuery('');
+        return;
+      }
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedItemId) {
         e.preventDefault()
         handleDeleteItem(selectedItemId)
@@ -1851,7 +1873,7 @@ export default function DmDashboard() {
   const weatherIntensityK = clampWeatherIntensity(activeScene?.weather_intensity);
 
   return (
-    <div className="h-screen flex flex-col bg-black overflow-hidden select-none">
+    <div className="h-full flex flex-col bg-black overflow-hidden select-none">
       <TopBar
         title={campaign.name}
         titleTo="/"
@@ -1922,6 +1944,42 @@ export default function DmDashboard() {
               {activeScene?.status === 'active' ? '✓ Sincronizada' : '⟳ Sincronizar'}
             </button>
             <div className="w-px h-5 bg-[var(--bg-tertiary)] shrink-0" />
+            
+              
+        <button
+              onClick={handleInviteCode}
+              className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${
+                copiedInvite
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              }`}
+              title="Copiar link de invitación para jugadores"
+            >
+              {copiedInvite ? '¡Copiado!' : campaign?.invite_code ? '🔗 Invitar' : '🔗 Obtener invitación'}
+            </button>
+          </>
+        }
+      >
+        
+            
+            
+            
+            
+        
+
+        
+
+        
+
+        
+
+        
+      </TopBar>
+
+      <div className="flex-1 flex overflow-hidden relative min-w-0">
+        {/* Toolbar canvas — herramientas de escena (izquierda) */}
+        <div className="absolute left-2 top-2 z-20 flex flex-col gap-1.5 pointer-events-none">
+          <div className="pointer-events-auto flex flex-col items-stretch gap-1 rounded-lg bg-[var(--bg-primary)]/90 backdrop-blur border border-[var(--bg-tertiary)] p-1 shadow-lg">
             <div className="flex items-center gap-1 shrink-0">
               <button
                 onClick={handleUndo}
@@ -1943,7 +2001,7 @@ export default function DmDashboard() {
             <div ref={buildMenuRef} className="relative shrink-0">
               <button
                 onClick={() => setBuildMenuOpen(!buildMenuOpen)}
-                className={`text-xs px-2 py-1 rounded transition-colors ${drawState || zoneDraft || portalDraft || fogMode || rectFogMode || zoneFogActive || lightPlaceMode || attachLightMode ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                className={`w-full text-xs px-2 py-1 rounded transition-colors ${drawState || zoneDraft || portalDraft || fogMode || rectFogMode || zoneFogActive || lightPlaceMode || attachLightMode ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
               >
                 🧱 Construir ▾
               </button>
@@ -2101,689 +2159,691 @@ export default function DmDashboard() {
                 </div>
               )}
             </div>
-          </>
-        }
-      >
-        {drawState && (
-          <span className="text-[10px] text-amber-400 shrink-0">
-            {drawState.mode === 'wall' ? '🧱 Arrastrá para dibujar pared' : '🚪 Arrastrá para colocar puerta'} · ESC cancela
-          </span>
-        )}
-            {zoneDraft && (
-              <span className="text-[10px] text-amber-400 shrink-0">
-                {zoneDraft.mode === 'rect'
-                  ? '▭ Arrastrá para dibujar rect de zona'
-                  : '⬠ Clic para colocar vértices · clic en el 1er punto para cerrar'} · ESC cancela
-              </span>
-            )}
-            {portalDraft && (
-              <span className="text-[10px] text-amber-400 shrink-0">
-                {portalDraft.zoneAId
-                  ? '🚪 Clic en el borde de otra zona para completar el portal'
-                  : '🚪 Clic en el borde de la zona A'} · ESC cancela
-              </span>
-            )}
-            {fogMode && (
-              <>
-                <div className="flex items-center gap-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-1.5 py-0.5 shrink-0">
+            <button
+              onClick={() => fileInput.current?.click()}
+              className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0"
+              title="Subir fondo de mapa"
+            >
+              Subir fondo
+            </button>
+            <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={handleUploadBg} data-testid="bg-upload-input" />
+            <button
+              onClick={handleClassifyBackground}
+              disabled={!activeScene?.background_path}
+              className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0 disabled:opacity-40"
+              title="Sugerir fondo para el mapa actual"
+            >
+              Sugerir fondo
+            </button>
+            <div className="relative shrink-0" data-menu-root>
+              <button
+                onClick={(e) => toggleMenu('lighting', e.currentTarget)}
+                aria-expanded={openMenu === 'lighting'}
+                aria-haspopup="menu"
+                data-testid="lighting-select"
+                className="w-full text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+              >
+                {{ neutral: 'Neutra', dark: 'Oscura', dim: 'Tenue', bright: 'Brillante', torchlight: 'Antorcha' }[activeScene?.lighting || 'neutral'] || activeScene?.lighting || 'Neutra'} ▾
+              </button>
+              <div
+                role="menu"
+                data-testid="lighting-menu"
+                className={`fixed bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg transition-all z-50 min-w-[150px] py-0.5 ${
+                  openMenu === 'lighting' ? 'opacity-100 visible' : 'opacity-0 invisible'
+                }`}
+                style={{ left: lightingMenuRect?.left ?? -9999, top: lightingMenuRect?.top ?? -9999 }}
+              >
+                {['neutral', 'dark', 'dim', 'bright', 'torchlight'].map((mode) => (
                   <button
-                    onClick={() => setFogMode((prev) => prev ? { ...prev, reveal: true } : prev)}
-                    className={`text-[10px] px-2 py-0.5 rounded transition-colors ${fogMode.reveal ? 'bg-green-600 text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
+                    key={mode}
+                    role="menuitem"
+                    onClick={() => handleToggleLighting(mode)}
+                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${
+                      activeScene?.lighting === mode ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'
+                    }`}
                   >
-                    Revelar
+                    {{ neutral: 'Neutra', dark: 'Oscura', dim: 'Tenue', bright: 'Brillante', torchlight: 'Antorcha' }[mode] || mode}
                   </button>
-                  <button
-                    onClick={() => setFogMode((prev) => prev ? { ...prev, reveal: false } : prev)}
-                    className={`text-[10px] px-2 py-0.5 rounded transition-colors ${!fogMode.reveal ? 'bg-red-600 text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
-                  >
-                    Ocultar
-                  </button>
-                  <input
-                    type="range"
-                    min={0.03}
-                    max={0.2}
-                    step={0.01}
-                    value={fogMode.radius}
-                    onChange={(e) => setFogMode((prev) => prev ? { ...prev, radius: parseFloat(e.target.value) } : prev)}
-                    className="w-20 h-1"
-                    title="Tamaño del pincel"
-                  />
-                  <span className="text-[9px] text-[var(--text-secondary)] w-8">
-                    {(fogMode.radius * 100).toFixed(0)}%
-                  </span>
-                </div>
-                <span className="text-[10px] text-amber-400 shrink-0">
-                  🌫️ Arrastrá para pintar niebla · ESC cancela
-                </span>
-              </>
-            )}
-            {rectFogMode && (
-              <>
-                <div className="flex items-center gap-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-1.5 py-0.5 shrink-0">
-                  <button
-                    onClick={() => setRectFogMode((prev) => prev ? { ...prev, reveal: true } : prev)}
-                    className={`text-[10px] px-2 py-0.5 rounded transition-colors ${rectFogMode.reveal ? 'bg-green-600 text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
-                  >
-                    Revelar
-                  </button>
-                  <button
-                    onClick={() => setRectFogMode((prev) => prev ? { ...prev, reveal: false } : prev)}
-                    className={`text-[10px] px-2 py-0.5 rounded transition-colors ${!rectFogMode.reveal ? 'bg-red-600 text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
-                  >
-                    Ocultar
-                  </button>
-                </div>
-                <span className="text-[10px] text-amber-400 shrink-0">
-                  ▭ Arrastrá para dibujar rect de niebla · ESC cancela
-                </span>
-              </>
-            )}
-            {zoneFogActive && (
-              <span className="text-[10px] text-amber-400 shrink-0">
-                🧩 Clic dentro de una zona para alternar niebla · ESC cancela
-              </span>
-            )}
-            {lightPlaceMode && (
-              <>
-                <div className="flex items-center gap-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-1.5 py-0.5 shrink-0">
-                  {Object.entries(LIGHT_PRESETS).map(([key, preset]) => (
-                    <button
-                      key={key}
-                      onClick={() => setLightPlaceMode({ preset: key })}
-                      title={preset.name}
-                      className={`w-5 h-5 rounded-full transition-colors ${lightPlaceMode.preset === key ? 'ring-2 ring-amber-400' : ''}`}
-                      style={{ backgroundColor: preset.color }}
-                    />
-                  ))}
-                </div>
-                <span className="text-[10px] text-amber-400 shrink-0">
-                  💡 Clic para colocar luz · ESC cancela
-                </span>
-                <div className="flex items-center gap-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-1.5 py-0.5 shrink-0">
-                  <button
-                    onClick={() => setLightPlaceMode({ ...lightPlaceMode, fx: undefined, fxRadius: undefined })}
-                    title="Sin fuego: solo la luz"
-                    data-testid="light-fx-none"
-                    className={`w-6 h-5 rounded text-[10px] transition-colors ${!lightPlaceMode.fx ? 'bg-amber-600 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
-                  >
-                    —
-                  </button>
-                  <button
-                    onClick={() => setLightPlaceMode({ ...lightPlaceMode, fx: 'flame' })}
-                    title="Llama (la misma del status Ardiendo)"
-                    data-testid="light-fx-flame"
-                    className={`w-6 h-5 rounded text-[10px] transition-colors ${lightPlaceMode.fx === 'flame' ? 'bg-orange-600 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
-                  >
-                    🔥
-                  </button>
-                  <button
-                    onClick={() => setLightPlaceMode({ ...lightPlaceMode, fx: 'embers' })}
-                    title="Solo brasas ascendentes"
-                    data-testid="light-fx-embers"
-                    className={`w-6 h-5 rounded text-[10px] transition-colors ${lightPlaceMode.fx === 'embers' ? 'bg-orange-600 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
-                  >
-                    ✨
-                  </button>
-                  {lightPlaceMode.fx && (
-                    <>
-                      <input
-                        type="range"
-                        min={FIRE_RADIUS_MIN}
-                        max={FIRE_RADIUS_MAX}
-                        step={FIRE_RADIUS_STEP}
-                        value={lightPlaceMode.fxRadius ?? FIRE_RADIUS_DEFAULT}
-                        onChange={(e) => setLightPlaceMode({ ...lightPlaceMode, fxRadius: Number(e.target.value) })}
-                        title="Radio del fuego"
-                        data-testid="light-fx-radius"
-                        className="w-20 accent-orange-500"
-                      />
-                      {/* El número va al lado porque el rango es chico: sin él
-                          no hay forma de saber en qué fracción del mapa cae la
-                          llama, y con slider solo se llega a|party|. */}
-                      <span
-                        data-testid="light-fx-radius-value"
-                        className="text-[10px] text-orange-300 tabular-nums w-11 text-right"
-                      >
-                        {(lightPlaceMode.fxRadius ?? FIRE_RADIUS_DEFAULT).toFixed(3)}
-                      </span>
-                    </>
-                  )}
-                </div>
-              </>
-            )}
-            {attachLightMode && (
-              <span className="text-[10px] text-amber-400 shrink-0">
-                {attachLightMode.lightId
-                  ? '🔗 Ahora hacé clic en un token para adjuntar esta luz · ESC cancela'
-                  : '🔗 Hacé clic en una fuente de luz y luego en un token · ESC cancela'}
-              </span>
-            )}
-            {attachLightMode?.lightId && (() => {
-              const selected = graphRef.getItem(attachLightMode.lightId!)
-              if (selected?.metadata.type !== 'light' || !(selected.metadata as { attachedTo?: string }).attachedTo) return null
-              return (
-                <div className="flex items-center gap-1 bg-[var(--bg-tertiary)] rounded px-1.5 py-0.5 shrink-0">
-                  <button
-                    onClick={() => handleLightDetach(attachLightMode.lightId!)}
-                    className="text-[10px] px-2 py-0.5 rounded bg-red-600 text-white hover:bg-red-700 transition-colors"
-                  >
-                    Desvincular
-                  </button>
-                </div>
-              )
-            })()}
-            {selectedLight && (
-              <div className="flex items-center gap-2 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-2 py-1 shrink-0">
-                <span className="text-[10px] text-[var(--text-secondary)]">💡 {selectedLight.item.name}</span>
+                ))}
+              </div>
+            </div>
+            <div className="relative shrink-0" data-menu-root>
+              <button
+                onClick={(e) => toggleMenu('weather', e.currentTarget)}
+                aria-expanded={openMenu === 'weather'}
+                aria-haspopup="menu"
+                className="w-full text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                data-testid="weather-select"
+                title="Clima de la escena"
+              >
+                {(activeScene?.weather && WEATHER_META[activeScene.weather] ? WEATHER_META[activeScene.weather].label : WEATHER_NONE_LABEL)} ▾
+              </button>
+              <div
+                role="menu"
+                data-testid="weather-menu"
+                className={`fixed bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg transition-all z-50 min-w-[170px] py-0.5 ${
+                  openMenu === 'weather' ? 'opacity-100 visible' : 'opacity-0 invisible'
+                }`}
+                style={{ left: weatherMenuRect?.left ?? -9999, top: weatherMenuRect?.top ?? -9999 }}
+              >
                 <button
-                  onClick={() => { handleDeleteItem(selectedLight.item.id); setSelectedItemId(null) }}
-                  className="text-[10px] px-1.5 py-0.5 rounded bg-red-600 text-white hover:bg-red-700 transition-colors ml-1"
-                  title="Eliminar luz"
+                  role="menuitem"
+                  onClick={() => handleChangeWeather(null)}
+                  className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${
+                    !activeScene?.weather ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'
+                  }`}
                 >
-                  🗑
+                  {WEATHER_NONE_LABEL}
                 </button>
-                <div className="flex gap-0.5">
-                  {(['hard', 'soft', 'directional'] as const).map((m) => (
-                    <button
-                      key={m}
-                      onClick={() => handleLightSourceChange({ mode: m })}
-                      className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${selectedLight.source.mode === m ? 'bg-amber-600 text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
-                    >
-                      {m === 'directional' ? 'cone' : m}
-                    </button>
-                  ))}
-                </div>
-                <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
-                  color
-                  <input
-                    type="color"
-                    value={selectedLight.source.color}
-                    onChange={(e) => handleLightSourceChange({ color: e.target.value })}
-                    className="w-5 h-5 rounded cursor-pointer bg-transparent border border-[var(--bg-tertiary)]"
-                    title="Color de luz"
-                  />
-                </label>
-                <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
-                  int
-                  <input
-                    type="range"
-                    min={0.1}
-                    max={1}
-                    step={0.01}
-                    value={selectedLight.source.intensity}
-                    onChange={(e) => handleLightSourceChange({ intensity: parseFloat(e.target.value) })}
-                    className="w-16 h-1"
-                    title="Intensidad"
-                  />
-                  <span className="w-7">{selectedLight.source.intensity.toFixed(2)}</span>
-                </label>
-                <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
-                  range
-                  <input
-                    type="range"
-                    min={0.0001}
-                    max={0.5}
-                    step={0.00001}
-                    value={selectedLight.source.radius}
-                    onChange={(e) => handleLightSourceChange({ radius: parseFloat(e.target.value) })}
-                    className="w-16 h-1"
-                    title="Alcance"
-                  />
-                  <input
-                    type="number"
-                    min={0.0001}
-                    max={0.5}
-                    step={0.00001}
-                    value={selectedLight.source.radius}
-                    onChange={(e) => handleLightSourceChange({ radius: parseFloat(e.target.value) || 0.0001 })}
-                    className="w-14 h-4 text-[9px] bg-[var(--bg-tertiary)] border border-[var(--bg-tertiary)] rounded px-1 text-[var(--text-primary)] font-mono"
-                    title="Alcance (escribí el valor exacto)"
-                  />
-                </label>
-                <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
-                  {selectedLight.source.mode === 'hard' ? 'edge' : 'falloff'}
-                  <input
-                    type="range"
-                    min={0.1}
-                    max={1}
-                    step={0.01}
-                    value={selectedLight.source.falloff ?? (selectedLight.source.mode === 'hard' ? 1 : 0.6)}
-                    onChange={(e) => handleLightSourceChange({ falloff: parseFloat(e.target.value) })}
-                    className="w-14 h-1"
-                    title={selectedLight.source.mode === 'hard' ? 'Posición del borde brillante' : 'Caída brillante→tenue'}
-                  />
-                  <span className="w-8">{(selectedLight.source.falloff ?? (selectedLight.source.mode === 'hard' ? 1 : 0.6)).toFixed(2)}</span>
-                </label>
-                <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
-                  <span
-                    onClick={() => handleLightSourceChange(selectedLight.source.flicker?.enabled
-                      ? { flicker: undefined }
-                      : { flicker: { speed: selectedLight.source.flicker?.speed ?? 0.3, variance: selectedLight.source.flicker?.variance ?? 0.1, enabled: true } })}
-                    className={`cursor-pointer px-1.5 py-0.5 rounded transition-colors ${selectedLight.source.flicker?.enabled ? 'bg-amber-600 text-white' : 'hover:bg-[var(--bg-tertiary)]'}`}
-                    title="Parpadeo"
+                {(['rain', 'snow', 'fog'] as const).map((kind) => {
+                  const entries = Object.entries(WEATHER_META).filter(([, meta]) => meta.kind === kind);
+                  if (!entries.length) return null;
+                  return (
+                    <div key={kind}>
+                      <div className="px-3 pt-2 pb-0.5 text-[10px] uppercase tracking-wide text-[var(--text-secondary)] opacity-60">
+                        {WEATHER_KIND_LABEL[kind]}
+                      </div>
+                      {entries.map(([key, meta]) => (
+                        <button
+                          key={key}
+                          role="menuitem"
+                          onClick={() => handleChangeWeather(key)}
+                          className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${
+                            activeScene?.weather === key ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'
+                          }`}
+                        >
+                          {meta.label}
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })}
+                {activeScene?.weather && (
+                  <div
+                    className="border-t border-[var(--bg-tertiary)] mt-0.5 px-3 pt-1.5 pb-2"
+                    onPointerDown={(e) => e.stopPropagation()}
                   >
-                    ✨ flick
-                  </span>
-                  {selectedLight.source.flicker?.enabled && (
-                    <>
-                      <input
-                        type="range"
-                        min={0.1}
-                        max={2}
-                        step={0.01}
-                        value={selectedLight.source.flicker.speed}
-                        onChange={(e) => handleLightSourceChange({ flicker: { speed: parseFloat(e.target.value), variance: selectedLight.source.flicker!.variance, enabled: true } })}
-                        className="w-12 h-1"
-                        title="Velocidad de parpadeo (ciclos/seg)"
-                      />
-                      <input
-                        type="range"
-                        min={0}
-                        max={0.5}
-                        step={0.01}
-                        value={selectedLight.source.flicker.variance}
-                        onChange={(e) => handleLightSourceChange({ flicker: { speed: selectedLight.source.flicker!.speed, variance: parseFloat(e.target.value), enabled: true } })}
-                        className="w-12 h-1"
-                        title="Variación de parpadeo (oscilación de intensidad)"
-                      />
-                    </>
-                  )}
-                </label>
-                <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
-                  <span
-                    onClick={() => handleLightSourceChange(selectedLight.source.pulse?.enabled
-                      ? { pulse: undefined }
-                      : { pulse: { speed: selectedLight.source.pulse?.speed ?? 0.6, variance: selectedLight.source.pulse?.variance ?? 0.2, enabled: true } })}
-                    className={`cursor-pointer px-1.5 py-0.5 rounded transition-colors ${selectedLight.source.pulse?.enabled ? 'bg-amber-600 text-white' : 'hover:bg-[var(--bg-tertiary)]'}`}
-                    title="Pulso"
-                  >
-                    🔶 pulse
-                  </span>
-                  {selectedLight.source.pulse?.enabled && (
-                    <>
-                      <input
-                        type="range"
-                        min={0.1}
-                        max={2}
-                        step={0.01}
-                        value={selectedLight.source.pulse.speed}
-                        onChange={(e) => handleLightSourceChange({ pulse: { speed: parseFloat(e.target.value), variance: selectedLight.source.pulse!.variance, enabled: true } })}
-                        className="w-12 h-1"
-                        title="Velocidad del pulso (ciclos/seg)"
-                      />
-                      <input
-                        type="range"
-                        min={0}
-                        max={0.5}
-                        step={0.01}
-                        value={selectedLight.source.pulse.variance}
-                        onChange={(e) => handleLightSourceChange({ pulse: { speed: selectedLight.source.pulse!.speed, variance: parseFloat(e.target.value), enabled: true } })}
-                        className="w-12 h-1"
-                        title="Variación del pulso (oscilación de intensidad)"
-                      />
-                    </>
-                  )}
-                </label>
-                {selectedLight.source.mode === 'directional' && (
-                  <>
-                    <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
-                      angle
-                      <input
-                        type="range"
-                        min={5}
-                        max={120}
-                        step={1}
-                        value={selectedLight.source.angle ?? 90}
-                        onChange={(e) => handleLightSourceChange({ angle: parseFloat(e.target.value) })}
-                        className="w-14 h-1"
-                        title="Ángulo del cono"
-                      />
-                      <span className="w-8">{selectedLight.source.angle ?? 90}°</span>
-                    </label>
-                    <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
-                      dir
-                      <input
-                        type="range"
-                        min={0}
-                        max={360}
-                        step={1}
-                        value={selectedLight.source.direction ?? 0}
-                        onChange={(e) => handleLightSourceChange({ direction: parseFloat(e.target.value) })}
-                        className="w-14 h-1"
-                        title="Dirección del cono"
-                      />
-                      <span className="w-8">{selectedLight.source.direction ?? 0}°</span>
-                    </label>
-                  </>
+                    <div className="flex items-center justify-between text-[10px] text-[var(--text-secondary)] mb-1">
+                      <span>Intensidad</span>
+                      <span className="text-[var(--accent)]" data-testid="weather-intensity-value">
+                        {weatherIntensityK.toFixed(2)}×
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={WEATHER_INTENSITY_MIN}
+                      max={WEATHER_INTENSITY_MAX}
+                      step={0.05}
+                      value={weatherIntensityK}
+                      onChange={(e) => handleChangeWeatherIntensity(parseFloat(e.target.value))}
+                      data-testid="weather-intensity"
+                      className="w-full h-1 cursor-pointer"
+                      title={`Intensidad del clima (${weatherIntensityK.toFixed(2)}x)`}
+                    />
+                    <div className="flex justify-between text-[9px] text-[var(--text-secondary)] opacity-70 mt-0.5">
+                      <span>Tenue</span>
+                      <span>Fuerte</span>
+                      <span>Torrencial</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => setShowSceneSettings(!showSceneSettings)}
+              className={`w-full text-xs px-2 py-1 rounded transition-colors shrink-0 ${showSceneSettings ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+              title="Ajustes de escena"
+            >
+              ⚙ Escena
+            </button>
+            {maps.length > 0 && (
+              <div className="relative shrink-0">
+                <button
+                  onClick={() => setShowMapMenu((v) => !v)}
+                  className={`w-full text-[10px] px-1.5 py-1 rounded transition-colors ${showMapMenu ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)]' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                >
+                  Mapa ▾
+                </button>
+                {showMapMenu && (
+                  <div className="absolute right-0 top-full mt-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg z-50 min-w-[140px]">
+                    {activeScene?.map_id && (
+                      <button
+                        onClick={async () => {
+                          if (!campaignId || !activeScene) return;
+                          const updated = await api.scenes.update(campaignId, activeScene.id, { map_id: null });
+                          setActiveScene(updated);
+                          setScenes((prev) => prev.map((s) => s.id === updated.id ? updated : s));
+                          setShowMapMenu(false);
+                        }}
+                        className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-red-400"
+                      >
+                        Desvincular mapa
+                      </button>
+                    )}
+                    {maps.map((m) => (
+                      <button
+                        key={m.id}
+                        onClick={async () => {
+                          if (!campaignId || !activeScene) return;
+                          const updated = await api.scenes.update(campaignId, activeScene.id, { map_id: m.id });
+                          setActiveScene(updated);
+                          setScenes((prev) => prev.map((s) => s.id === updated.id ? updated : s));
+                          setShowMapMenu(false);
+                        }}
+                        className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${
+                          activeScene?.map_id === m.id ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'
+                        }`}
+                      >
+                        {activeScene?.map_id === m.id ? '✓ ' : ''}{m.name}
+                      </button>
+                    ))}
+                  </div>
                 )}
               </div>
             )}
-        <button
-          onClick={() => fileInput.current?.click()}
-          className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0"
-          title="Subir fondo de mapa"
-        >
-          Subir fondo
-        </button>
-        <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={handleUploadBg} />
-
-        <button
-          onClick={handleClassifyBackground}
-          disabled={!activeScene?.background_path}
-          className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0 disabled:opacity-40"
-          title="Sugerir fondo para el mapa actual"
-        >
-          Sugerir fondo
-        </button>
-
-        <div className="relative shrink-0" data-menu-root>
-          <button
-            onClick={(e) => toggleMenu('lighting', e.currentTarget)}
-            aria-expanded={openMenu === 'lighting'}
-            aria-haspopup="menu"
-            data-testid="lighting-select"
-            className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-          >
-            {{ neutral: 'Neutra', dark: 'Oscura', dim: 'Tenue', bright: 'Brillante', torchlight: 'Antorcha' }[activeScene?.lighting || 'neutral'] || activeScene?.lighting || 'Neutra'} ▾
-          </button>
-          <div
-            role="menu"
-            data-testid="lighting-menu"
-            className={`fixed bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg transition-all z-50 min-w-[150px] py-0.5 ${
-              openMenu === 'lighting' ? 'opacity-100 visible' : 'opacity-0 invisible'
-            }`}
-            style={{ left: lightingMenuRect?.left ?? -9999, top: lightingMenuRect?.top ?? -9999 }}
-          >
-            {['neutral', 'dark', 'dim', 'bright', 'torchlight'].map((mode) => (
-              <button
-                key={mode}
-                role="menuitem"
-                onClick={() => handleToggleLighting(mode)}
-                className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${
-                  activeScene?.lighting === mode ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'
-                }`}
-              >
-                {{ neutral: 'Neutra', dark: 'Oscura', dim: 'Tenue', bright: 'Brillante', torchlight: 'Antorcha' }[mode] || mode}
-              </button>
-            ))}
+            <Link
+              to={`/campaigns/${campaignId}/scenes`}
+              className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0"
+              title="Gestión de escenas"
+            >
+              ⚙
+            </Link>
           </div>
         </div>
 
-        <div className="relative shrink-0" data-menu-root>
-          <button
-            onClick={(e) => toggleMenu('weather', e.currentTarget)}
-            aria-expanded={openMenu === 'weather'}
-            aria-haspopup="menu"
-            className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-            data-testid="weather-select"
-            title="Clima de la escena"
-          >
-            {(activeScene?.weather && WEATHER_META[activeScene.weather] ? WEATHER_META[activeScene.weather].label : WEATHER_NONE_LABEL)} ▾
-          </button>
-          {/* El menú no se cierra al elegir: el de clima tiene adentro el slider
-              de intensidad, que hay que poder usar sin reabrir. Se cierra con
-              click afuera, Escape o volviendo a clickear el disparador. */}
-          <div
-            role="menu"
-            data-testid="weather-menu"
-            className={`fixed bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg transition-all z-50 min-w-[170px] py-0.5 ${
-              openMenu === 'weather' ? 'opacity-100 visible' : 'opacity-0 invisible'
-            }`}
-            style={{ left: weatherMenuRect?.left ?? -9999, top: weatherMenuRect?.top ?? -9999 }}
-          >
-            <button
-              role="menuitem"
-              onClick={() => handleChangeWeather(null)}
-              className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${
-                !activeScene?.weather ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'
-              }`}
-            >
-              {WEATHER_NONE_LABEL}
-            </button>
-            {(['rain', 'snow', 'fog'] as const).map((kind) => {
-              const entries = Object.entries(WEATHER_META).filter(([, meta]) => meta.kind === kind);
-              if (!entries.length) return null;
-              return (
-                <div key={kind}>
-                  {/* Encabezado de grupo, no botón. Un submenú real sería
-                      hover() y en táctil no abre — es el problema #4 del
-                      roadmap. Agrupar por tipo ordena sin agregar un hover. */}
-                  <div className="px-3 pt-2 pb-0.5 text-[10px] uppercase tracking-wide text-[var(--text-secondary)] opacity-60">
-                    {WEATHER_KIND_LABEL[kind]}
-                  </div>
-                  {entries.map(([key, meta]) => (
-                    <button
-                      key={key}
-                      role="menuitem"
-                      onClick={() => handleChangeWeather(key)}
-                      className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${
-                        activeScene?.weather === key ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'
-                      }`}
-                    >
-                      {meta.label}
-                    </button>
-                  ))}
-                </div>
-              );
-            })}
-            {activeScene?.weather && (
-              <div
-                className="border-t border-[var(--bg-tertiary)] mt-0.5 px-3 pt-1.5 pb-2"
-                onPointerDown={(e) => e.stopPropagation()}
+        {/* Hints de modo de dibujo + luz seleccionada — contextual arriba-centro */}
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex flex-wrap items-center justify-center gap-2 max-w-[70%] pointer-events-none">
+          {drawState && (
+            <span className="text-[10px] text-amber-400 shrink-0">
+              {drawState.mode === 'wall' ? '🧱 Arrastrá para dibujar pared' : '🚪 Arrastrá para colocar puerta'} · ESC cancela
+            </span>
+          )}
+          {zoneDraft && (
+            <span className="text-[10px] text-amber-400 shrink-0">
+              {zoneDraft.mode === 'rect'
+                ? '▭ Arrastrá para dibujar rect de zona'
+                : '⬠ Clic para colocar vértices · clic en el 1er punto para cerrar'} · ESC cancela
+            </span>
+          )}
+          {portalDraft && (
+            <span className="text-[10px] text-amber-400 shrink-0">
+              {portalDraft.zoneAId
+                ? '🚪 Clic en el borde de otra zona para completar el portal'
+                : '🚪 Clic en el borde de la zona A'} · ESC cancela
+            </span>
+          )}
+          {fogMode && (
+            <div className="pointer-events-auto flex items-center gap-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-1.5 py-0.5 shrink-0">
+              <button
+                onClick={() => setFogMode((prev) => prev ? { ...prev, reveal: true } : prev)}
+                className={`text-[10px] px-2 py-0.5 rounded transition-colors ${fogMode.reveal ? 'bg-green-600 text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
               >
-                <div className="flex items-center justify-between text-[10px] text-[var(--text-secondary)] mb-1">
-                  <span>Intensidad</span>
-                  <span className="text-[var(--accent)]" data-testid="weather-intensity-value">
-                    {weatherIntensityK.toFixed(2)}×
+                Revelar
+              </button>
+              <button
+                onClick={() => setFogMode((prev) => prev ? { ...prev, reveal: false } : prev)}
+                className={`text-[10px] px-2 py-0.5 rounded transition-colors ${!fogMode.reveal ? 'bg-red-600 text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
+              >
+                Ocultar
+              </button>
+              <input
+                type="range"
+                min={0.03}
+                max={0.2}
+                step={0.01}
+                value={fogMode.radius}
+                onChange={(e) => setFogMode((prev) => prev ? { ...prev, radius: parseFloat(e.target.value) } : prev)}
+                className="w-20 h-1"
+                title="Tamaño del pincel"
+              />
+              <span className="text-[9px] text-[var(--text-secondary)] w-8">
+                {(fogMode.radius * 100).toFixed(0)}%
+              </span>
+            </div>
+          )}
+          {fogMode && (
+            <span className="text-[10px] text-amber-400 shrink-0">
+              🌫️ Arrastrá para pintar niebla · ESC cancela
+            </span>
+          )}
+          {rectFogMode && (
+            <div className="pointer-events-auto flex items-center gap-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-1.5 py-0.5 shrink-0">
+              <button
+                onClick={() => setRectFogMode((prev) => prev ? { ...prev, reveal: true } : prev)}
+                className={`text-[10px] px-2 py-0.5 rounded transition-colors ${rectFogMode.reveal ? 'bg-green-600 text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
+              >
+                Revelar
+              </button>
+              <button
+                onClick={() => setRectFogMode((prev) => prev ? { ...prev, reveal: false } : prev)}
+                className={`text-[10px] px-2 py-0.5 rounded transition-colors ${!rectFogMode.reveal ? 'bg-red-600 text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
+              >
+                Ocultar
+              </button>
+            </div>
+          )}
+          {rectFogMode && (
+            <span className="text-[10px] text-amber-400 shrink-0">
+              ▭ Arrastrá para dibujar rect de niebla · ESC cancela
+            </span>
+          )}
+          {zoneFogActive && (
+            <span className="text-[10px] text-amber-400 shrink-0">
+              🧩 Clic dentro de una zona para alternar niebla · ESC cancela
+            </span>
+          )}
+          {lightPlaceMode && (
+            <div className="pointer-events-auto flex items-center gap-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-1.5 py-0.5 shrink-0">
+              {Object.entries(LIGHT_PRESETS).map(([key, preset]) => (
+                <button
+                  key={key}
+                  onClick={() => setLightPlaceMode({ preset: key })}
+                  title={preset.name}
+                  className={`w-5 h-5 rounded-full transition-colors ${lightPlaceMode.preset === key ? 'ring-2 ring-amber-400' : ''}`}
+                  style={{ backgroundColor: preset.color }}
+                />
+              ))}
+            </div>
+          )}
+          {lightPlaceMode && (
+            <span className="text-[10px] text-amber-400 shrink-0">
+              💡 Clic para colocar luz · ESC cancela
+            </span>
+          )}
+          {lightPlaceMode && (
+            <div className="pointer-events-auto flex items-center gap-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-1.5 py-0.5 shrink-0">
+              <button
+                onClick={() => setLightPlaceMode({ ...lightPlaceMode, fx: undefined, fxRadius: undefined })}
+                title="Sin fuego: solo la luz"
+                data-testid="light-fx-none"
+                className={`w-6 h-5 rounded text-[10px] transition-colors ${!lightPlaceMode.fx ? 'bg-amber-600 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+              >
+                —
+              </button>
+              <button
+                onClick={() => setLightPlaceMode({ ...lightPlaceMode, fx: 'flame' })}
+                title="Llama (la misma del status Ardiendo)"
+                data-testid="light-fx-flame"
+                className={`w-6 h-5 rounded text-[10px] transition-colors ${lightPlaceMode.fx === 'flame' ? 'bg-orange-600 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+              >
+                🔥
+              </button>
+              <button
+                onClick={() => setLightPlaceMode({ ...lightPlaceMode, fx: 'embers' })}
+                title="Solo brasas ascendentes"
+                data-testid="light-fx-embers"
+                className={`w-6 h-5 rounded text-[10px] transition-colors ${lightPlaceMode.fx === 'embers' ? 'bg-orange-600 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+              >
+                ✨
+              </button>
+              {lightPlaceMode.fx && (
+                <>
+                  <input
+                    type="range"
+                    min={FIRE_RADIUS_MIN}
+                    max={FIRE_RADIUS_MAX}
+                    step={FIRE_RADIUS_STEP}
+                    value={lightPlaceMode.fxRadius ?? FIRE_RADIUS_DEFAULT}
+                    onChange={(e) => setLightPlaceMode({ ...lightPlaceMode, fxRadius: Number(e.target.value) })}
+                    title="Radio del fuego"
+                    data-testid="light-fx-radius"
+                    className="w-20 accent-orange-500"
+                  />
+                  <span
+                    data-testid="light-fx-radius-value"
+                    className="text-[10px] text-orange-300 tabular-nums w-11 text-right"
+                  >
+                    {(lightPlaceMode.fxRadius ?? FIRE_RADIUS_DEFAULT).toFixed(3)}
                   </span>
-                </div>
+                </>
+              )}
+            </div>
+          )}
+          {attachLightMode && (
+            <span className="text-[10px] text-amber-400 shrink-0">
+              {attachLightMode.lightId
+                ? '🔗 Ahora hacé clic en un token para adjuntar esta luz · ESC cancela'
+                : '🔗 Hacé clic en una fuente de luz y luego en un token · ESC cancela'}
+            </span>
+          )}
+          {attachLightMode?.lightId && (() => {
+            const selected = graphRef.getItem(attachLightMode.lightId!)
+            if (selected?.metadata.type !== 'light' || !(selected.metadata as { attachedTo?: string }).attachedTo) return null
+            return (
+              <div className="pointer-events-auto flex items-center gap-1 bg-[var(--bg-tertiary)] rounded px-1.5 py-0.5 shrink-0">
+                <button
+                  onClick={() => handleLightDetach(attachLightMode.lightId!)}
+                  className="text-[10px] px-2 py-0.5 rounded bg-red-600 text-white hover:bg-red-700 transition-colors"
+                >
+                  Desvincular
+                </button>
+              </div>
+            )
+          })()}
+          {selectedLight && (
+            <div className="pointer-events-auto flex flex-wrap items-center gap-2 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-2 py-1 shrink-0">
+              <span className="text-[10px] text-[var(--text-secondary)]">💡 {selectedLight.item.name}</span>
+              <button
+                onClick={() => { handleDeleteItem(selectedLight.item.id); setSelectedItemId(null) }}
+                className="text-[10px] px-1.5 py-0.5 rounded bg-red-600 text-white hover:bg-red-700 transition-colors ml-1"
+                title="Eliminar luz"
+              >
+                🗑
+              </button>
+              <div className="flex gap-0.5">
+                {(['hard', 'soft', 'directional'] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => handleLightSourceChange({ mode: m })}
+                    className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${selectedLight.source.mode === m ? 'bg-amber-600 text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
+                  >
+                    {m === 'directional' ? 'cone' : m}
+                  </button>
+                ))}
+              </div>
+              <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
+                color
+                <input
+                  type="color"
+                  value={selectedLight.source.color}
+                  onChange={(e) => handleLightSourceChange({ color: e.target.value })}
+                  className="w-5 h-5 rounded cursor-pointer bg-transparent border border-[var(--bg-tertiary)]"
+                  title="Color de luz"
+                />
+              </label>
+              <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
+                int
                 <input
                   type="range"
-                  min={WEATHER_INTENSITY_MIN}
-                  max={WEATHER_INTENSITY_MAX}
-                  step={0.05}
-                  value={weatherIntensityK}
-                  onChange={(e) => handleChangeWeatherIntensity(parseFloat(e.target.value))}
-                  data-testid="weather-intensity"
-                  className="w-full h-1 cursor-pointer"
-                  title={`Intensidad del clima (${weatherIntensityK.toFixed(2)}x)`}
+                  min={0.1}
+                  max={1}
+                  step={0.01}
+                  value={selectedLight.source.intensity}
+                  onChange={(e) => handleLightSourceChange({ intensity: parseFloat(e.target.value) })}
+                  className="w-16 h-1"
+                  title="Intensidad"
                 />
-                <div className="flex justify-between text-[9px] text-[var(--text-secondary)] opacity-70 mt-0.5">
-                  <span>Tenue</span>
-                  <span>Fuerte</span>
-                  <span>Torrencial</span>
+                <span className="w-7">{selectedLight.source.intensity.toFixed(2)}</span>
+              </label>
+              <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
+                range
+                <input
+                  type="range"
+                  min={0.0001}
+                  max={0.5}
+                  step={0.00001}
+                  value={selectedLight.source.radius}
+                  onChange={(e) => handleLightSourceChange({ radius: parseFloat(e.target.value) })}
+                  className="w-16 h-1"
+                  title="Alcance"
+                />
+                <input
+                  type="number"
+                  min={0.0001}
+                  max={0.5}
+                  step={0.00001}
+                  value={selectedLight.source.radius}
+                  onChange={(e) => handleLightSourceChange({ radius: parseFloat(e.target.value) || 0.0001 })}
+                  className="w-14 h-4 text-[9px] bg-[var(--bg-tertiary)] border border-[var(--bg-tertiary)] rounded px-1 text-[var(--text-primary)] font-mono"
+                  title="Alcance (escribí el valor exacto)"
+                />
+              </label>
+              <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
+                {selectedLight.source.mode === 'hard' ? 'edge' : 'falloff'}
+                <input
+                  type="range"
+                  min={0.1}
+                  max={1}
+                  step={0.01}
+                  value={selectedLight.source.falloff ?? (selectedLight.source.mode === 'hard' ? 1 : 0.6)}
+                  onChange={(e) => handleLightSourceChange({ falloff: parseFloat(e.target.value) })}
+                  className="w-14 h-1"
+                  title={selectedLight.source.mode === 'hard' ? 'Posición del borde brillante' : 'Caída brillante→tenue'}
+                />
+                <span className="w-8">{(selectedLight.source.falloff ?? (selectedLight.source.mode === 'hard' ? 1 : 0.6)).toFixed(2)}</span>
+              </label>
+              <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
+                <span
+                  onClick={() => handleLightSourceChange(selectedLight.source.flicker?.enabled
+                    ? { flicker: undefined }
+                    : { flicker: { speed: selectedLight.source.flicker?.speed ?? 0.3, variance: selectedLight.source.flicker?.variance ?? 0.1, enabled: true } })}
+                  className={`cursor-pointer px-1.5 py-0.5 rounded transition-colors ${selectedLight.source.flicker?.enabled ? 'bg-amber-600 text-white' : 'hover:bg-[var(--bg-tertiary)]'}`}
+                  title="Parpadeo"
+                >
+                  ✨ flick
+                </span>
+                {selectedLight.source.flicker?.enabled && (
+                  <>
+                    <input
+                      type="range"
+                      min={0.1}
+                      max={2}
+                      step={0.01}
+                      value={selectedLight.source.flicker.speed}
+                      onChange={(e) => handleLightSourceChange({ flicker: { speed: parseFloat(e.target.value), variance: selectedLight.source.flicker!.variance, enabled: true } })}
+                      className="w-12 h-1"
+                      title="Velocidad de parpadeo (ciclos/seg)"
+                    />
+                    <input
+                      type="range"
+                      min={0}
+                      max={0.5}
+                      step={0.01}
+                      value={selectedLight.source.flicker.variance}
+                      onChange={(e) => handleLightSourceChange({ flicker: { speed: selectedLight.source.flicker!.speed, variance: parseFloat(e.target.value), enabled: true } })}
+                      className="w-12 h-1"
+                      title="Variación de parpadeo (oscilación de intensidad)"
+                    />
+                  </>
+                )}
+              </label>
+              <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
+                <span
+                  onClick={() => handleLightSourceChange(selectedLight.source.pulse?.enabled
+                    ? { pulse: undefined }
+                    : { pulse: { speed: selectedLight.source.pulse?.speed ?? 0.6, variance: selectedLight.source.pulse?.variance ?? 0.2, enabled: true } })}
+                  className={`cursor-pointer px-1.5 py-0.5 rounded transition-colors ${selectedLight.source.pulse?.enabled ? 'bg-amber-600 text-white' : 'hover:bg-[var(--bg-tertiary)]'}`}
+                  title="Pulso"
+                >
+                  🔶 pulse
+                </span>
+                {selectedLight.source.pulse?.enabled && (
+                  <>
+                    <input
+                      type="range"
+                      min={0.1}
+                      max={2}
+                      step={0.01}
+                      value={selectedLight.source.pulse.speed}
+                      onChange={(e) => handleLightSourceChange({ pulse: { speed: parseFloat(e.target.value), variance: selectedLight.source.pulse!.variance, enabled: true } })}
+                      className="w-12 h-1"
+                      title="Velocidad del pulso (ciclos/seg)"
+                    />
+                    <input
+                      type="range"
+                      min={0}
+                      max={0.5}
+                      step={0.01}
+                      value={selectedLight.source.pulse.variance}
+                      onChange={(e) => handleLightSourceChange({ pulse: { speed: selectedLight.source.pulse!.speed, variance: parseFloat(e.target.value), enabled: true } })}
+                      className="w-12 h-1"
+                      title="Variación del pulso (oscilación de intensidad)"
+                    />
+                  </>
+                )}
+              </label>
+              {selectedLight.source.mode === 'directional' && (
+                <>
+                  <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
+                    angle
+                    <input
+                      type="range"
+                      min={5}
+                      max={120}
+                      step={1}
+                      value={selectedLight.source.angle ?? 90}
+                      onChange={(e) => handleLightSourceChange({ angle: parseFloat(e.target.value) })}
+                      className="w-14 h-1"
+                      title="Ángulo del cono"
+                    />
+                    <span className="w-8">{selectedLight.source.angle ?? 90}°</span>
+                  </label>
+                  <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
+                    dir
+                    <input
+                      type="range"
+                      min={0}
+                      max={360}
+                      step={1}
+                      value={selectedLight.source.direction ?? 0}
+                      onChange={(e) => handleLightSourceChange({ direction: parseFloat(e.target.value) })}
+                      className="w-14 h-1"
+                      title="Dirección del cono"
+                    />
+                    <span className="w-8">{selectedLight.source.direction ?? 0}°</span>
+                  </label>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Dock inferior — acciones de sesión, colapsable */}
+        <div
+          ref={dockRef}
+          className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30"
+          onMouseEnter={() => setDockExpanded(true)}
+        >
+          <div className="flex items-center gap-0.5 rounded-full bg-[var(--bg-primary)]/95 backdrop-blur border border-[var(--bg-tertiary)] px-2 py-1.5 shadow-xl">
+            {dockExpanded ? (
+              <>
+                <button
+                  onClick={() => setShowDiceRoller(!showDiceRoller)}
+                  className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${showDiceRoller ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
+                  title="Tirar dados (D)"
+                >
+                  🎲
+                </button>
+                <button
+                  onClick={() => setShowInitiative(!showInitiative)}
+                  className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${showInitiative ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
+                  title="Iniciativa"
+                >
+                  ⚔
+                </button>
+                <button
+                  onClick={() => setShowNotebook(!showNotebook)}
+                  className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${showNotebook ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
+                  title="Cuaderno del DM (N)"
+                >
+                  📓
+                </button>
+                <button
+                  onClick={() => setShowRecap(!showRecap)}
+                  className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${showRecap ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
+                  title="Resumen de sesión (R)"
+                >
+                  📋
+                </button>
+                <button
+                  onClick={() => setShowCalendar(!showCalendar)}
+                  className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${showCalendar ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
+                  title="Calendario y relojes"
+                >
+                  📅
+                </button>
+                <button
+                  onClick={() => setShowQuests(!showQuests)}
+                  className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${showQuests ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
+                  title="Tablón de misiones"
+                >
+                  📜
+                </button>
+                <button
+                  onClick={() => setShowHandouts(!showHandouts)}
+                  className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${showHandouts ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
+                  title="Documentos para jugadores"
+                  data-testid="handouts-toggle"
+                >
+                  🗂
+                </button>
+                {activeScene?.map_id && (
+                  <button
+                    onClick={() => {
+                      const m = maps.find((m) => m.id === activeScene.map_id);
+                      if (m) setViewingMap(m);
+                    }}
+                    className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                    title="Abrir mapa"
+                  >
+                    🗺
+                  </button>
+                )}
+                <div className="w-px h-5 bg-[var(--bg-tertiary)] mx-1" />
+                <div className="relative">
+                  <button
+                    onClick={() => setDockMoreOpen((v) => !v)}
+                    className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                    title="Más acciones"
+                    aria-label="Más acciones"
+                  >
+                    ＋
+                  </button>
+                  {dockMoreOpen && (
+                    <div className="absolute bottom-full right-0 mb-2 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded-lg shadow-xl p-1 min-w-[180px]">
+                    <button
+                      onClick={() => setShowAIPanel(!showAIPanel)}
+                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs rounded transition-colors ${showAIPanel ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
+                      title="Configuración de IA"
+                      data-testid="ai-panel-button"
+                    >
+                      🤖 Configuración de IA
+                    </button>
+                    <button
+                      onClick={() => setShowAssistant(!showAssistant)}
+                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs rounded transition-colors ${showAssistant ? 'bg-violet-700 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
+                      title="Asistente del DM"
+                      data-testid="dm-assistant-button"
+                    >
+                      💬 Asistente del DM
+                    </button>
+                    <button
+                      onClick={() => setShowQuickActions(!showQuickActions)}
+                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs rounded transition-colors ${showQuickActions ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
+                      title="Acciones rápidas"
+                    >
+                      ⚡ Acciones rápidas
+                    </button>
+                    <button
+                      onClick={() => setShowSessionLog(!showSessionLog)}
+                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs rounded transition-colors ${showSessionLog ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
+                      title="Bitácora de sesión"
+                    >
+                      📋 Bitácora
+                    </button>
+                    <button
+                      onClick={() => setShowSceneNotes(!showSceneNotes)}
+                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs rounded transition-colors ${showSceneNotes ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
+                      title="Notas de la escena"
+                    >
+                      📝 Notas de la escena
+                    </button>
+                    </div>
+                  )}
                 </div>
-              </div>
+              </>
+            ) : (
+              <button
+                onClick={() => setDockExpanded(true)}
+                className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                title="Acciones del DM"
+                aria-label="Acciones del DM"
+              >
+                ⋯
+              </button>
             )}
           </div>
         </div>
-
-        <button
-          onClick={() => setShowSceneSettings(!showSceneSettings)}
-          className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showSceneSettings ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
-          title="Ajustes de escena"
-        >
-          ⚙ Escena
-        </button>
-
-        <button
-          onClick={handleInviteCode}
-          className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${
-            copiedInvite
-              ? 'bg-emerald-600 text-white'
-              : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-          }`}
-          title="Copiar link de invitación para jugadores"
-        >
-          {copiedInvite ? '¡Copiado!' : campaign?.invite_code ? '🔗 Invitar' : '🔗 Obtener invitación'}
-        </button>
-
-        <button
-          onClick={() => setShowInitiative(!showInitiative)}
-          className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showInitiative ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
-          title="Iniciativa"
-        >
-          ⚔
-        </button>
-
-        <button
-          onClick={() => setShowQuests(!showQuests)}
-          className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showQuests ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
-          title="Tablón de misiones"
-        >
-          📜
-        </button>
-
-        <button
-          onClick={() => setShowHandouts(!showHandouts)}
-          className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showHandouts ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
-          title="Documentos para jugadores"
-          data-testid="handouts-toggle"
-        >
-          🗂
-        </button>
-
-        <button
-          onClick={() => setShowCalendar(!showCalendar)}
-          className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showCalendar ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
-          title="Calendario y relojes"
-        >
-          📅
-        </button>
-
-        <button
-          onClick={() => setShowDiceRoller(!showDiceRoller)}
-          className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showDiceRoller ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
-          title="Tirar dados (D)"
-        >
-          🎲
-        </button>
-
-        <button
-          onClick={() => setShowRecap(!showRecap)}
-          className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showRecap ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
-          title="Resumen de sesión (R)"
-        >
-          📋
-        </button>
-
-        <button
-          onClick={() => setShowNotebook(!showNotebook)}
-          className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showNotebook ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
-          title="Cuaderno del DM (N)"
-        >
-          📓
-        </button>
-
-        <button
-          onClick={() => setShowAIPanel(!showAIPanel)}
-          className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showAIPanel ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
-          title="Configuración de IA"
-          data-testid="ai-panel-button"
-        >
-          🤖
-        </button>
-
-        <button
-          onClick={() => setShowAssistant(!showAssistant)}
-          className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showAssistant ? 'bg-violet-700 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
-          title="Asistente del DM"
-          data-testid="dm-assistant-button"
-        >
-          💬
-        </button>
-
-        {activeScene?.map_id && (
-          <button
-            onClick={() => {
-              const m = maps.find((m) => m.id === activeScene.map_id);
-              if (m) setViewingMap(m);
-            }}
-            className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0"
-            title="Abrir mapa"
-          >
-            🗺
-          </button>
-        )}
-
-        {maps.length > 0 && (
-          <div className="relative shrink-0">
-            <button
-              onClick={() => setShowMapMenu((v) => !v)}
-              className={`text-[10px] px-1.5 py-1 rounded transition-colors ${showMapMenu ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)]' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
-            >
-              Mapa ▾
-            </button>
-            {showMapMenu && (
-              <div className="absolute right-0 top-full mt-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg z-50 min-w-[140px]">
-              {activeScene?.map_id && (
-                <button
-                  onClick={async () => {
-                    if (!campaignId || !activeScene) return;
-                    const updated = await api.scenes.update(campaignId, activeScene.id, { map_id: null });
-                    setActiveScene(updated);
-                    setScenes((prev) => prev.map((s) => s.id === updated.id ? updated : s));
-                    setShowMapMenu(false);
-                  }}
-                  className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-red-400"
-                >
-                  Desvincular mapa
-                </button>
-              )}
-              {maps.map((m) => (
-                <button
-                  key={m.id}
-                  onClick={async () => {
-                    if (!campaignId || !activeScene) return;
-                    const updated = await api.scenes.update(campaignId, activeScene.id, { map_id: m.id });
-                    setActiveScene(updated);
-                    setScenes((prev) => prev.map((s) => s.id === updated.id ? updated : s));
-                    setShowMapMenu(false);
-                  }}
-                  className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${
-                    activeScene?.map_id === m.id ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'
-                  }`}
-                >
-                  {activeScene?.map_id === m.id ? '✓ ' : ''}{m.name}
-                </button>
-              ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        <button
-          onClick={() => setShowQuickActions(!showQuickActions)}
-          className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showQuickActions ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
-          title="Acciones rápidas"
-        >
-          ⚡
-        </button>
-        <button
-          onClick={() => setShowSessionLog(!showSessionLog)}
-          className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showSessionLog ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
-          title="Bitácora de sesión"
-        >
-          📋
-        </button>
-        <button
-          onClick={() => setShowSceneNotes(!showSceneNotes)}
-          className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${showSceneNotes ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
-          title="Notas de la escena"
-        >
-          📝
-        </button>
-
-        <Link
-          to={`/campaigns/${campaignId}/scenes`}
-          className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0"
-          title="Gestión de escenas"
-        >
-          ⚙
-        </Link>
-      </TopBar>
-
-      <div className="flex-1 flex overflow-hidden relative min-w-0">
         {/* Sidebar — lg+: permanent toggle, md/sm: overlay */}
         {sidebarOpen && (
           <>
@@ -3458,6 +3518,90 @@ export default function DmDashboard() {
           ]}
           onClose={() => setFogContextMenu(null)}
         />
+      )}
+
+      {cmdOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center pt-[18vh] bg-black/60"
+          onMouseDown={(e) => { if (e.target === e.currentTarget) setCmdOpen(false); }}
+        >
+          <div className="w-full max-w-md bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded-xl shadow-2xl overflow-hidden">
+            <input
+              autoFocus
+              value={cmdQuery}
+              onChange={(e) => setCmdQuery(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Escape') setCmdOpen(false); }}
+              placeholder="Buscar acción… (Ctrl+K)"
+              className="w-full bg-transparent px-4 py-3 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-secondary)]/60"
+            />
+            <div className="max-h-72 overflow-y-auto border-t border-[var(--bg-tertiary)]">
+              {(() => {
+                const q = cmdQuery.trim().toLowerCase();
+                const links = [
+                  { label: 'VTT', icon: '◆', to: `/campaigns/${campaignId}` },
+                  { label: 'Resumen de la campaña', icon: '◇', to: `/campaigns/${campaignId}/manage` },
+                  { label: 'Personajes', icon: '♦', to: `/campaigns/${campaignId}/characters` },
+                  { label: 'Sesiones', icon: '♠', to: `/campaigns/${campaignId}/sessions` },
+                  { label: 'Escenas', icon: '▣', to: `/campaigns/${campaignId}/scenes` },
+                  { label: 'Narrativa', icon: '✒', to: `/campaigns/${campaignId}/narrative` },
+                  { label: 'Jugadores', icon: '○', to: `/campaigns/${campaignId}/players` },
+                  { label: 'Imágenes', icon: '◇', to: `/campaigns/${campaignId}/maps` },
+                  { label: 'Recursos', icon: '□', to: `/campaigns/${campaignId}/assets` },
+                  { label: 'Voz (TTS)', icon: '♪', to: `/campaigns/${campaignId}/tts` },
+                  { label: 'Agentes', icon: '🤖', to: `/campaigns/${campaignId}/agents` },
+                  { label: 'Estado del mundo', icon: '🌍', to: `/campaigns/${campaignId}/world-state` },
+                  { label: 'Memoria', icon: '🧠', to: `/campaigns/${campaignId}/memory` },
+                ];
+                const actions = [
+                  { label: 'Tirar dados', icon: '🎲', run: () => setShowDiceRoller((v) => !v) },
+                  { label: 'Iniciativa', icon: '⚔', run: () => setShowInitiative((v) => !v) },
+                  { label: 'Cuaderno del DM', icon: '📓', run: () => setShowNotebook((v) => !v) },
+                  { label: 'Resumen de sesión', icon: '📋', run: () => setShowRecap((v) => !v) },
+                  { label: 'Calendario y relojes', icon: '📅', run: () => setShowCalendar((v) => !v) },
+                  { label: 'Tablón de misiones', icon: '📜', run: () => setShowQuests((v) => !v) },
+                  { label: 'Documentos para jugadores', icon: '🗂', run: () => setShowHandouts((v) => !v) },
+                  { label: 'Abrir mapa', icon: '🗺', run: () => {
+                    const m = maps.find((mm) => mm.id === activeScene?.map_id);
+                    if (m) setViewingMap(m);
+                  } },
+                  { label: 'Configuración de IA', icon: '🤖', run: () => setShowAIPanel((v) => !v) },
+                  { label: 'Asistente del DM', icon: '💬', run: () => setShowAssistant((v) => !v) },
+                  { label: 'Acciones rápidas', icon: '⚡', run: () => setShowQuickActions((v) => !v) },
+                  { label: 'Bitácora de sesión', icon: '📋', run: () => setShowSessionLog((v) => !v) },
+                  { label: 'Notas de la escena', icon: '📝', run: () => setShowSceneNotes((v) => !v) },
+                  { label: 'Ajustes de escena', icon: '⚙', run: () => setShowSceneSettings((v) => !v) },
+                  { label: 'Construir', icon: '🧱', run: () => setBuildMenuOpen(true) },
+                ];
+                const filtered = [
+                  ...links.filter((l) => !q || l.label.toLowerCase().includes(q)).map((l) => (
+                    <Link
+                      key={l.label}
+                      to={l.to}
+                      onClick={() => setCmdOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                    >
+                      <span className="text-xs opacity-60">{l.icon}</span>
+                      {l.label}
+                    </Link>
+                  )),
+                  ...actions.filter((a) => !q || a.label.toLowerCase().includes(q)).map((a) => (
+                    <button
+                      key={a.label}
+                      onClick={() => { a.run(); setCmdOpen(false); }}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-left text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                    >
+                      <span className="text-xs opacity-60">{a.icon}</span>
+                      {a.label}
+                    </button>
+                  )),
+                ];
+                return filtered.length > 0 ? filtered : (
+                  <p className="px-4 py-3 text-xs text-[var(--text-secondary)]">Sin resultados</p>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
       )}
 
       <MinimizedBar />

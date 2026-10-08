@@ -24,7 +24,7 @@ async function openSceneWithBackground(
   await page.locator('header select').selectOption(sceneId);
   const bg = assetExists(TAVERN_MAP) ? loadAsset(TAVERN_MAP) : null;
   await page.setInputFiles(
-    'header input[type="file"]',
+    '[data-testid="bg-upload-input"]',
     bg
       ? { name: bg.name, mimeType: bg.mimeType, buffer: bg.buffer }
       : { name: 'bg.png', mimeType: 'image/png', buffer: PNG_1PX },
@@ -66,7 +66,7 @@ test.describe('Dashboard VTT Core', () => {
 
     const bg = assetExists(TAVERN_MAP) ? loadAsset(TAVERN_MAP) : null;
     await page.setInputFiles(
-      'header input[type="file"]',
+      '[data-testid="bg-upload-input"]',
       bg
         ? { name: bg.name, mimeType: bg.mimeType, buffer: bg.buffer }
         : { name: 'bg.png', mimeType: 'image/png', buffer: PNG_1PX },
@@ -172,6 +172,7 @@ test.describe('Dashboard VTT Core', () => {
 
   test('D6: tecla D abre dice roller y Escape cierra', async ({ page, campaign }) => {
     await page.goto(`/campaigns/${campaign.id}`);
+    await page.getByTitle('Acciones del DM').hover();
     await expect(page.getByTitle('Tirar dados (D)')).toBeVisible();
 
     await page.keyboard.press('d');
@@ -183,6 +184,7 @@ test.describe('Dashboard VTT Core', () => {
 
   test('D7: tecla N abre notebook y Escape cierra', async ({ page, campaign }) => {
     await page.goto(`/campaigns/${campaign.id}`);
+    await page.getByTitle('Acciones del DM').hover();
     await expect(page.getByTitle('Cuaderno del DM (N)')).toBeVisible();
 
     await page.keyboard.press('n');
@@ -194,6 +196,7 @@ test.describe('Dashboard VTT Core', () => {
 
   test('D8: tecla R abre recap y Escape cierra', async ({ page, campaign }) => {
     await page.goto(`/campaigns/${campaign.id}`);
+    await page.getByTitle('Acciones del DM').hover();
     await expect(page.getByTitle('Resumen de sesión (R)')).toBeVisible();
 
     await page.keyboard.press('r');

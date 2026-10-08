@@ -9,7 +9,7 @@ import {
 async function openScene(page: import('@playwright/test').Page, campaignId: string, sceneId: string) {
   await page.goto(`/campaigns/${campaignId}`);
   await page.locator('header select').selectOption(sceneId);
-  await page.setInputFiles('header input[type="file"]', {
+  await page.setInputFiles('[data-testid="bg-upload-input"]', {
     name: 'bg.png',
     mimeType: 'image/png',
     buffer: PNG_1PX,

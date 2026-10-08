@@ -30,7 +30,7 @@ test.describe('Scene Management', () => {
 
     await page.locator('header select').selectOption(scene.id);
 
-    await page.setInputFiles('header input[type="file"]', {
+    await page.setInputFiles('[data-testid="bg-upload-input"]', {
       name: 'bg.png',
       mimeType: 'image/png',
       buffer: PNG_1PX,
@@ -48,7 +48,7 @@ test.describe('Scene Management', () => {
 
     await expect(page.getByText('Creá una escena para empezar.')).toBeVisible();
 
-    await page.setInputFiles('header input[type="file"]', {
+    await page.setInputFiles('[data-testid="bg-upload-input"]', {
       name: 'bg.png',
       mimeType: 'image/png',
       buffer: PNG_1PX,

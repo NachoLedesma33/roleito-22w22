@@ -24,6 +24,7 @@ test.describe('Quest Board', () => {
 
     await page.goto(`/campaigns/${campaign.id}`);
     await expect(page.getByText('On Scene (1)')).toBeVisible({ timeout: 10_000 });
+    await page.getByTitle('Acciones del DM').hover();
     await page.getByTitle('Tablón de misiones').click();
     await page.getByRole('button', { name: '＋ Nueva misión' }).click();
     await page.getByPlaceholder('Título de la misión').fill('Recuperar el Barril');
@@ -179,6 +180,7 @@ test.describe('Quest Board', () => {
 
     await page.goto(`/campaigns/${campaign.id}`);
     await expect(page.getByText('On Scene (1)')).toBeVisible({ timeout: 10_000 });
+    await page.getByTitle('Acciones del DM').hover();
     await page.getByTitle('Tablón de misiones').click();
     await page.getByTitle('Visible para jugadores').click();
     await expect(page.getByTitle('Oculta para jugadores')).toBeVisible();

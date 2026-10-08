@@ -119,6 +119,8 @@ test.describe('AI Provider Layer', () => {
     await page.goto(`/campaigns/${campaign.id}`);
     await page.locator('header select').selectOption(scene.id);
 
+    await page.getByTitle('Acciones del DM').hover();
+    await page.getByTitle('Más acciones').click();
     await page.getByTestId('ai-panel-button').click();
     const panel = page.getByTestId('ai-settings-panel');
     await expect(panel).toBeVisible();

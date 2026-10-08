@@ -89,6 +89,7 @@ test.describe('Scene Transitions', () => {
     const rooms = await seedTwoRooms(request, campaign.id);
 
     await openDashboard(page, campaign.id);
+    await page.getByTitle('Acciones del DM').hover();
     await page.getByTitle('Abrir mapa').click();
 
     const viewer = page.locator('div.fixed.inset-0');
@@ -123,6 +124,7 @@ test.describe('Scene Transitions', () => {
     await seedTransitionViaApi(request, campaign.id, rooms);
 
     await openDashboard(page, campaign.id);
+    await page.getByTitle('Acciones del DM').hover();
     await page.getByTitle('Abrir mapa').click();
 
     const sceneSelect = page.locator('select').first();
@@ -141,6 +143,7 @@ test.describe('Scene Transitions', () => {
     await seedTransitionViaApi(request, campaign.id, rooms, true);
 
     await openDashboard(page, campaign.id);
+    await page.getByTitle('Acciones del DM').hover();
     await page.getByTitle('Abrir mapa').click();
 
     let viewer = page.locator('div.fixed.inset-0');
@@ -162,6 +165,7 @@ test.describe('Scene Transitions', () => {
     const rooms = await seedTwoRooms(request, campaign.id);
 
     await openDashboard(page, campaign.id);
+    await page.getByTitle('Acciones del DM').hover();
     await page.getByTitle('Abrir mapa').click();
 
     const viewer = page.locator('div.fixed.inset-0');
