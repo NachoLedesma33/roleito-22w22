@@ -54,6 +54,29 @@ export default {
       transitionTimingFunction: {
         standard: 'var(--ease-standard)',
       },
+      keyframes: {
+        vortex: {
+          '0%': { transform: 'scale(1) rotate(0deg)', filter: 'blur(0px)', opacity: '1' },
+          '40%': {
+            transform: 'scale(0.85) rotate(90deg)',
+            filter: 'blur(2px)',
+            opacity: '1',
+          },
+          '70%': {
+            transform: 'scale(0.4) rotate(260deg)',
+            filter: 'blur(10px)',
+            opacity: '0.85',
+          },
+          '100%': {
+            transform: 'scale(0.05) rotate(760deg)',
+            filter: 'blur(28px)',
+            opacity: '0',
+          },
+        },
+      },
+      animation: {
+        vortex: 'vortex 0.85s cubic-bezier(0.55, 0, 0.85, 0.35) forwards',
+      },
     },
   },
   plugins: [animate],

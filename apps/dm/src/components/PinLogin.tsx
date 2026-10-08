@@ -144,15 +144,19 @@ export default function PinLogin() {
   );
 
   const shell = (subtitle: string, body: React.ReactNode) => (
-    <div className="min-h-screen flex items-center justify-center bg-bg px-4 py-10">
+    <div className="min-h-screen flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm">
-        <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold text-ink">Roleito</h1>
-          <div className="mt-3 mx-auto h-1 w-16 bg-brand" aria-hidden="true" />
-        </div>
-        <div className="bg-surface border border-border rounded-xl p-8 space-y-5 shadow-lg">
-          <p className="text-sm text-ink-muted text-center">{subtitle}</p>
-          {body}
+        <div className="max-h-[calc(100dvh-4rem)] overflow-y-auto">
+          <div className="text-center mb-6">
+            <h1 className="text-3xl font-bold text-ink [text-shadow:0_2px_12px_rgba(0,0,0,0.8)]">
+              22w22
+            </h1>
+            <div className="mt-3 mx-auto h-1 w-16 bg-brand" aria-hidden="true" />
+          </div>
+          <div className="bg-surface border border-border rounded-xl p-8 space-y-5 shadow-lg">
+            <p className="text-sm text-ink-muted text-center">{subtitle}</p>
+            {body}
+          </div>
         </div>
       </div>
     </div>

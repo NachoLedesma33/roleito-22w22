@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { Navigate, Routes, Route, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
-import PinLogin from '@/components/PinLogin';
+import LoginShell from '@/components/LoginShell';
+import ProfileIntro from '@/components/ProfileIntro';
 import Landing from '@/pages/Landing';
 import Layout from '@/components/Layout';
 import CampaignList from '@/pages/CampaignList';
@@ -51,12 +53,16 @@ function HomeRoute() {
   return <Landing />;
 }
 
-/** Login público: con sesión ya creada, vuelve al lobby. */
+/** Login público: PIN ok → remolino → intro de video → lobby. */
 function LoginRoute() {
   const { session, loading } = useAuth();
+  const [phase, setPhase] = useState<'form' | 'intro' | 'done'>('form');
   if (loading) return <Splash />;
-  if (session) return <Navigate to="/campaigns" replace />;
-  return <PinLogin />;
+  if (!session || phase === 'form') {
+    return <LoginShell onExitComplete={() => setPhase('intro')} />;
+  }
+  if (phase === 'intro') return <ProfileIntro onDone={() => setPhase('done')} />;
+  return <Navigate to="/campaigns" replace />;
 }
 
 function App() {
