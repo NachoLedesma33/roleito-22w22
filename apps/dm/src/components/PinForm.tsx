@@ -1,4 +1,5 @@
 import type { FormEvent, ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 
 export interface PinFormProps {
@@ -39,19 +40,21 @@ export default function PinForm({
   footer,
   testId = 'pin-form',
 }: PinFormProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-5" data-testid={testId}>
       <form onSubmit={onSubmit} className="space-y-5">
         <div>
           <label htmlFor="pin-form-name" className="sr-only">
-            Nombre de perfil
+            {t('login.profileName', 'Nombre de perfil')}
           </label>
           <input
             id="pin-form-name"
             type="text"
             value={nameValue}
             onChange={(e) => onNameChange(e.target.value.trim())}
-            placeholder="Nombre de perfil"
+            placeholder={t('login.profileName', 'Nombre de perfil')}
             autoComplete="username"
             spellCheck={false}
             autoFocus
@@ -62,7 +65,7 @@ export default function PinForm({
 
         <div>
           <label htmlFor="pin-form-pin" className="sr-only">
-            PIN de 4 a 8 dígitos
+            {t('login.pinLabel', 'PIN de 4 a 8 dígitos')}
           </label>
           <input
             id="pin-form-pin"
@@ -79,7 +82,7 @@ export default function PinForm({
             className={`${inputClass} text-3xl tracking-[0.5em]`}
           />
           <p id="pin-form-pin-hint" className="mt-1 text-center text-xs text-ink-muted">
-            4 a 8 dígitos
+            {t('login.pinHint', '4 a 8 dígitos')}
           </p>
         </div>
 

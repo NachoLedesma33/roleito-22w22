@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/Button';
 import PinForm from './PinForm';
@@ -19,6 +20,7 @@ const secondaryClass =
  * del formulario está en `PinForm`, que no depende de auth ni de la pantalla.
  */
 export default function PinLogin() {
+  const { t } = useTranslation();
   const { login, registerDm, changePin, dms } = useAuth();
   const [mode, setMode] = useState<Mode>('login');
   const [dmName, setDmName] = useState('');
@@ -45,18 +47,18 @@ export default function PinLogin() {
     e.preventDefault();
     setError('');
     if (!dmName) {
-      setError('Ingresá el nombre de tu perfil');
+      setError(t('login.errorName', 'Ingresá el nombre de tu perfil'));
       return;
     }
     if (pin.length < 4 || pin.length > 8) {
-      setError('PIN debe tener 4-8 dígitos');
+      setError(t('login.errorPinShort', 'PIN debe tener 4-8 dígitos'));
       return;
     }
     setLoading(true);
     try {
       await login(dmName, pin);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error');
+      setError(err instanceof Error ? err.message : t('login.error', 'Error'));
     } finally {
       setLoading(false);
     }
@@ -66,22 +68,22 @@ export default function PinLogin() {
     e.preventDefault();
     setError('');
     if (!dmName.trim()) {
-      setError('Ingresá un nombre');
+      setError(t('login.errorNameRegister', 'Ingresá un nombre'));
       return;
     }
     if (pin.length < 4 || pin.length > 8) {
-      setError('PIN debe tener 4-8 dígitos');
+      setError(t('login.errorPinShort', 'PIN debe tener 4-8 dígitos'));
       return;
     }
     if (pin !== confirmPin) {
-      setError('Los PINs no coinciden');
+      setError(t('login.errorPinMismatch', 'Los PINs no coinciden'));
       return;
     }
     setLoading(true);
     try {
       await registerDm(dmName.trim(), pin);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error');
+      setError(err instanceof Error ? err.message : t('login.error', 'Error'));
     } finally {
       setLoading(false);
     }
@@ -91,26 +93,26 @@ export default function PinLogin() {
     e.preventDefault();
     setError('');
     if (currentPin && (currentPin.length < 4 || currentPin.length > 8)) {
-      setError('PIN actual debe tener 4-8 dígitos');
+      setError(t('login.errorCurrentPin', 'PIN actual debe tener 4-8 dígitos'));
       return;
     }
     if (pin.length < 4 || pin.length > 8) {
-      setError('PIN nuevo debe tener 4-8 dígitos');
+      setError(t('login.errorNewPin', 'PIN nuevo debe tener 4-8 dígitos'));
       return;
     }
     if (currentPin && pin === currentPin) {
-      setError('El PIN nuevo debe ser diferente al actual');
+      setError(t('login.errorSamePin', 'El PIN nuevo debe ser diferente al actual'));
       return;
     }
     if (pin !== confirmPin) {
-      setError('Los PINs no coinciden');
+      setError(t('login.errorPinMismatch', 'Los PINs no coinciden'));
       return;
     }
     setLoading(true);
     try {
       await changePin(currentPin || undefined, pin);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error');
+      setError(err instanceof Error ? err.message : t('login.error', 'Error'));
     } finally {
       setLoading(false);
     }
@@ -120,7 +122,7 @@ export default function PinLogin() {
     <div data-testid="login-saved-dms">
       {dms.length > 0 ? (
         <>
-          <p className="text-xs text-ink-muted mb-2 text-center">Perfiles en esta máquina</p>
+          <p className="text-xs text-ink-muted mb-2 text-center">{t('login.savedProfiles', 'Perfiles en esta máquina')}</p>
           <div className="space-y-1.5">
             {dms.map((dm) => (
               <button
@@ -137,7 +139,7 @@ export default function PinLogin() {
         </>
       ) : (
         <p className="text-xs text-ink-muted text-center">
-          No hay perfiles en esta máquina. Creá uno nuevo.
+          {t('login.noProfiles', 'No hay perfiles en esta máquina. Creá uno nuevo.')}
         </p>
       )}
     </div>
@@ -149,7 +151,7 @@ export default function PinLogin() {
         <div className="max-h-[calc(100dvh-4rem)] overflow-y-auto">
           <div className="text-center mb-6">
             <h1 className="text-3xl font-bold text-ink [text-shadow:0_2px_12px_rgba(0,0,0,0.8)]">
-              22w22
+              {t('app.name')}
             </h1>
             <div className="mt-3 mx-auto h-1 w-16 bg-brand" aria-hidden="true" />
           </div>
@@ -170,22 +172,22 @@ export default function PinLogin() {
 
   if (mode === 'register') {
     return shell(
-      'Creá tu DM (4-8 dígitos)',
+      t('login.registerSubtitle', 'Creá tu DM (4-8 dígitos)'),
       <form onSubmit={submitRegister} className="space-y-5">
         <label className="sr-only" htmlFor="register-name">
-          Nombre del DM
+          {t('login.dmName', 'Nombre del DM')}
         </label>
         <input
           id="register-name"
           type="text"
           value={dmName}
           onChange={(e) => setDmName(e.target.value)}
-          placeholder="Nombre del DM"
+          placeholder={t('login.dmName', 'Nombre del DM')}
           autoFocus
           className={`${inputClass} text-lg`}
         />
         <label className="sr-only" htmlFor="register-pin">
-          PIN
+          {t('login.pin', 'PIN')}
         </label>
         <input
           id="register-pin"
@@ -199,7 +201,7 @@ export default function PinLogin() {
           className={pinInputClass}
         />
         <label className="sr-only" htmlFor="register-confirm">
-          Confirmar PIN
+          {t('login.confirmPin', 'Confirmar PIN')}
         </label>
         <input
           id="register-confirm"
@@ -209,15 +211,15 @@ export default function PinLogin() {
           maxLength={8}
           value={confirmPin}
           onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
-          placeholder="Confirmar PIN"
+          placeholder={t('login.confirmPin', 'Confirmar PIN')}
           className={pinInputClass}
         />
         {errorMessage}
         <Button type="submit" disabled={loading} className="w-full">
-          {loading ? '...' : 'Crear DM'}
+          {loading ? '...' : t('login.createButton', 'Crear DM')}
         </Button>
         <button type="button" onClick={() => switchTo('login')} className={secondaryClass}>
-          ← Volver
+          ← {t('common.back')}
         </button>
       </form>
     );
@@ -225,10 +227,10 @@ export default function PinLogin() {
 
   if (mode === 'change') {
     return shell(
-      'Cambiar PIN — ingresá el actual y el nuevo',
+      t('login.changeSubtitle', 'Cambiar PIN — ingresá el actual y el nuevo'),
       <form onSubmit={submitChange} className="space-y-5">
         <label className="sr-only" htmlFor="change-current">
-          PIN actual (opcional)
+          {t('login.currentPin', 'PIN actual (opcional)')}
         </label>
         <input
           id="change-current"
@@ -238,12 +240,12 @@ export default function PinLogin() {
           maxLength={8}
           value={currentPin}
           onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, ''))}
-          placeholder="PIN actual (opcional)"
+          placeholder={t('login.currentPin', 'PIN actual (opcional)')}
           autoFocus
           className={pinInputClass}
         />
         <label className="sr-only" htmlFor="change-new">
-          PIN nuevo
+          {t('login.newPin', 'PIN nuevo')}
         </label>
         <input
           id="change-new"
@@ -253,11 +255,11 @@ export default function PinLogin() {
           maxLength={8}
           value={pin}
           onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-          placeholder="PIN nuevo"
+          placeholder={t('login.newPin', 'PIN nuevo')}
           className={pinInputClass}
         />
         <label className="sr-only" htmlFor="change-confirm">
-          Confirmar PIN
+          {t('login.confirmPin', 'Confirmar PIN')}
         </label>
         <input
           id="change-confirm"
@@ -267,40 +269,40 @@ export default function PinLogin() {
           maxLength={8}
           value={confirmPin}
           onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
-          placeholder="Confirmar PIN"
+          placeholder={t('login.confirmPin', 'Confirmar PIN')}
           className={pinInputClass}
         />
         {errorMessage}
         <Button type="submit" disabled={loading} className="w-full">
-          {loading ? '...' : 'Cambiar PIN'}
+          {loading ? '...' : t('login.changeButton', 'Cambiar PIN')}
         </Button>
         <button type="button" onClick={() => switchTo('login')} className={secondaryClass}>
-          ← Volver
+          ← {t('common.back')}
         </button>
       </form>
     );
   }
 
   return shell(
-    'Ingresá el nombre de tu perfil y tu PIN',
+    t('login.subtitle', 'Ingresá el nombre de tu perfil y tu PIN'),
     <PinForm
       nameValue={dmName}
       onNameChange={setDmName}
       pinValue={pin}
       onPinChange={setPin}
       onSubmit={submitLogin}
-      submitLabel="Entrar"
+      submitLabel={t('login.enter', 'Entrar')}
       error={error}
       loading={loading}
       aside={savedDms}
       footer={
         <div className="space-y-1">
           <button type="button" onClick={() => switchTo('register')} className={secondaryClass}>
-            Crear DM nuevo
+            {t('login.createDm', 'Crear DM nuevo')}
           </button>
           {dms.length > 0 && (
             <button type="button" onClick={() => switchTo('change')} className={secondaryClass}>
-              Cambiar PIN
+              {t('login.changePin', 'Cambiar PIN')}
             </button>
           )}
         </div>

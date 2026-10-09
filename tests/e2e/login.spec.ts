@@ -2,7 +2,10 @@ import { expect, test } from '@playwright/test';
 
 // A diferencia del resto de los specs, este usa el `test` de Playwright pelado:
 // el fixture de campaign-fixture inyecta el token en sessionStorage y se
-// saltearía justamente la pantalla que queremos probar.
+// saltearía justamente la pantalla que queremos probar. Idioma fijo para los
+// mensajes de validación (mismos textos que el resto de la suite).
+test.use({ locale: 'es-ES' });
+
 const API = 'http://localhost:8000/api';
 
 test.describe('Login nombre + PIN', () => {

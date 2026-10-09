@@ -4,6 +4,7 @@
     "tagline": "The world your sessions remember"
   },
   "common": {
+    "back": "",
     "cancel": "Cancel",
     "continue": "Continue",
     "loading": "Loading…",
@@ -54,6 +55,34 @@
     "select": "Select",
     "title": "Your table",
     "updatedAt": "Updated"
+  },
+  "login": {
+    "changeButton": "Change PIN",
+    "changePin": "Change PIN",
+    "changeSubtitle": "Change PIN — enter the current one and the new one",
+    "confirmPin": "Confirm PIN",
+    "createButton": "Create DM",
+    "createDm": "Create new DM",
+    "currentPin": "Current PIN (optional)",
+    "dmName": "DM name",
+    "enter": "Enter",
+    "error": "Error",
+    "errorCurrentPin": "Current PIN must be 4-8 digits",
+    "errorName": "Enter your profile name",
+    "errorNameRegister": "Enter a name",
+    "errorNewPin": "New PIN must be 4-8 digits",
+    "errorPinMismatch": "PINs do not match",
+    "errorPinShort": "PIN must be 4-8 digits",
+    "errorSamePin": "The new PIN must differ from the current one",
+    "newPin": "New PIN",
+    "noProfiles": "No profiles on this machine. Create one.",
+    "pin": "PIN",
+    "pinHint": "4 to 8 digits",
+    "pinLabel": "PIN, 4 to 8 digits",
+    "profileName": "Profile name",
+    "registerSubtitle": "Create your DM (4-8 digits)",
+    "savedProfiles": "Profiles on this machine",
+    "subtitle": "Enter your profile name and your PIN"
   },
   "nav": {
     "agents": "Agents",

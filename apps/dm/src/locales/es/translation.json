@@ -4,6 +4,7 @@
     "tagline": "El mundo que tus sesiones recuerdan"
   },
   "common": {
+    "back": "",
     "cancel": "Cancelar",
     "continue": "Continuar",
     "loading": "Cargando…",
@@ -54,6 +55,34 @@
     "select": "Seleccionar",
     "title": "Tu mesa",
     "updatedAt": "Actualizada"
+  },
+  "login": {
+    "changeButton": "Cambiar PIN",
+    "changePin": "Cambiar PIN",
+    "changeSubtitle": "Cambiar PIN — ingresá el actual y el nuevo",
+    "confirmPin": "Confirmar PIN",
+    "createButton": "Crear DM",
+    "createDm": "Crear DM nuevo",
+    "currentPin": "PIN actual (opcional)",
+    "dmName": "Nombre del DM",
+    "enter": "Entrar",
+    "error": "Error",
+    "errorCurrentPin": "PIN actual debe tener 4-8 dígitos",
+    "errorName": "Ingresá el nombre de tu perfil",
+    "errorNameRegister": "Ingresá un nombre",
+    "errorNewPin": "PIN nuevo debe tener 4-8 dígitos",
+    "errorPinMismatch": "Los PINs no coinciden",
+    "errorPinShort": "PIN debe tener 4-8 dígitos",
+    "errorSamePin": "El PIN nuevo debe ser diferente al actual",
+    "newPin": "PIN nuevo",
+    "noProfiles": "No hay perfiles en esta máquina. Creá uno nuevo.",
+    "pin": "PIN",
+    "pinHint": "4 a 8 dígitos",
+    "pinLabel": "PIN de 4 a 8 dígitos",
+    "profileName": "Nombre de perfil",
+    "registerSubtitle": "Creá tu DM (4-8 dígitos)",
+    "savedProfiles": "Perfiles en esta máquina",
+    "subtitle": "Ingresá el nombre de tu perfil y tu PIN"
   },
   "nav": {
     "agents": "Agentes",
