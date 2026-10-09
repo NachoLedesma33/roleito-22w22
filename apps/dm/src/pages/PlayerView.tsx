@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback, useMemo, Suspense } from 'rea
 import { useParams } from 'react-router-dom';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
-import { CalendarDays, Dices, Flame, Flashlight, FolderOpen, Target, Volume2, VolumeX } from 'lucide-react';
+import { BookOpen, CalendarDays, Dices, Flame, Flashlight, FolderOpen, Target, Volume2, VolumeX } from 'lucide-react';
 import * as THREE from 'three';
 import SceneRenderer from '@/components/SceneRenderer';
 import DiceRoller, { rollDice } from '@/components/DiceRoller';
@@ -14,6 +14,8 @@ import { STATUS_OPTIONS } from '@/lib/statusMarkers';
 import { abilityIconView, abilityFallbackGlyph } from '@/lib/abilityIcons';
 import TopBar from '@/components/TopBar';
 import MinimizedBar from '@/components/MinimizedBar';
+import { Island, type IslandItem } from '@/components/ui/Island';
+import { AnimatePresence, motion } from 'motion/react';
 import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastContainer';
 import { api, type DiceRollResponse } from '@/lib/api';
 import { checkWallCollision, extractZonePolygons, extractPortals, crossZoneBorder } from '@/lib/wall-collision';
@@ -208,6 +210,8 @@ export default function PlayerView() {
   const audioStartedRef = useRef(false);
   const [fading, setFading] = useState<'in' | 'out' | null>(null);
   const [sheetTab, setSheetTab] = useState<'stats' | 'inventory' | 'spells' | 'notes'>('stats');
+  const [grimorioOpen, setGrimorioOpen] = useState(false);
+  const [grimorioDetail, setGrimorioDetail] = useState<Spell | null>(null);
   const [notesDraft, setNotesDraft] = useState('');
   const [notesSaving, setNotesSaving] = useState(false);
   const [usingSpellId, setUsingSpellId] = useState<string | null>(null);
@@ -1074,6 +1078,25 @@ export default function PlayerView() {
     [myChar, data],
   );
 
+  const grimorioItems: IslandItem[] = useMemo(() => {
+    if (!myChar) return [];
+    return myChar.spells_json.map((s) => ({
+      id: s.id,
+      label: s.name,
+      icon: <span className="text-lg leading-none">{abilityIconChip(s.icon, s.name)}</span>,
+      hint: `Lv${s.level} · ${s.cost_pm} PM`,
+    }));
+  }, [myChar]);
+
+  useEffect(() => {
+    if (!grimorioDetail) return;
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key === 'Escape') setGrimorioDetail(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [grimorioDetail]);
+
   const handleExportMarkdown = useCallback(() => {
     if (!myChar) return;
     const lines: string[] = [];
@@ -1578,8 +1601,18 @@ export default function PlayerView() {
 
                 {sheetTab === 'spells' && (
                   <div className="space-y-1">
-                    <div className="pb-1 mb-1 border-b border-[var(--bg-tertiary)]">
+                    <div className="pb-1 mb-1 border-b border-[var(--bg-tertiary)] flex items-center gap-2">
                       <StatBar label="PM" current={pm} max={myChar.max_pm} />
+                      <button
+                        type="button"
+                        onClick={() => setGrimorioOpen(true)}
+                        disabled={myChar.spells_json.length === 0}
+                        data-testid="grimorio-toggle"
+                        className="shrink-0 text-[10px] px-1.5 py-0.5 rounded border border-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <BookOpen className="h-3 w-3 mr-1 inline" />
+                        Grimorio
+                      </button>
                     </div>
                     {myChar.spells_json.length === 0 ? (
                       <p className="text-[10px] text-[var(--text-secondary)]">No hay hechizos</p>
@@ -1745,6 +1778,86 @@ export default function PlayerView() {
           onClose={() => setShowHandouts(false)}
         />
       )}
+
+      <Island
+        open={grimorioOpen}
+        onClose={() => setGrimorioOpen(false)}
+        onSelect={(id) => {
+          const s = myChar?.spells_json.find((x) => x.id === id);
+          if (s) {
+            setGrimorioOpen(false);
+            setGrimorioDetail(s);
+          }
+        }}
+        title="Grimorio"
+        items={grimorioItems}
+      />
+
+      <AnimatePresence>
+        {grimorioDetail && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+            onClick={() => setGrimorioDetail(null)}
+            data-testid="grimorio-detail"
+          >
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.92, opacity: 0 }}
+              transition={{ type: 'spring', duration: 0.3 }}
+              className="w-full max-w-sm rounded-xl border border-[var(--bg-tertiary)] bg-[var(--surface)] p-4 space-y-3"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start gap-2.5">
+                <span className="w-8 h-8 shrink-0 flex items-center justify-center overflow-hidden text-lg leading-none">
+                  {abilityIconChip(grimorioDetail.icon, grimorioDetail.name)}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-[var(--text-primary)] leading-tight">
+                    {grimorioDetail.name}
+                  </p>
+                  <p className="text-[10px] text-[var(--text-secondary)] mt-0.5">
+                    Lv{grimorioDetail.level} · {grimorioDetail.cost_pm} PM
+                    {grimorioDetail.audio_path && (
+                      <span className="ml-1.5" title="Tiene sonido: suena al usar">
+                        🔊
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setGrimorioDetail(null)}
+                  className="shrink-0 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                  aria-label="Cerrar Grimorio"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="h-px bg-[var(--bg-tertiary)]" />
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                {grimorioDetail.description || 'Sin descripción.'}
+              </p>
+              <button
+                type="button"
+                onClick={() => void handleUseSpell(grimorioDetail)}
+                disabled={usingSpellId === grimorioDetail.id || grimorioDetail.cost_pm > pm}
+                data-testid="grimorio-detail-use"
+                className="w-full py-1.5 rounded border border-[var(--accent)]/60 text-xs font-semibold text-[var(--accent)] hover:bg-[var(--accent)]/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                {usingSpellId === grimorioDetail.id
+                  ? 'Usando...'
+                  : grimorioDetail.cost_pm > pm
+                    ? 'PM insuficientes'
+                    : `Usar (${grimorioDetail.cost_pm} PM)`}
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <MinimizedBar />
 
