@@ -1134,7 +1134,7 @@ export default function PlayerView() {
 
   if (loading && !missingCode) {
     return (
-      <div className="h-screen flex items-center justify-center bg-black text-gray-400">
+      <div className="h-screen flex items-center justify-center bg-black text-[var(--text-secondary)]">
         Joining campaign...
       </div>
     );
@@ -1159,9 +1159,9 @@ export default function PlayerView() {
       <TopBar
         title={data.campaign_name}
         subtitle={data.scene_name}
-        className="!bg-gray-900/90 !border-gray-700/50"
+        className="!bg-[var(--surface)] !border-[var(--bg-tertiary)]/50"
       >
-        <span className="text-xs text-gray-400 shrink-0" data-testid="player-role">
+        <span className="text-xs text-[var(--text-secondary)] shrink-0" data-testid="player-role">
           {choice?.kind === 'character'
             ? `Viendo como ${myChar?.name ?? '...'}`
             : 'Espectador'}
@@ -1170,7 +1170,7 @@ export default function PlayerView() {
           <button
             type="button"
             onClick={changeCharacter}
-            className="text-[10px] px-2 py-1 rounded border border-gray-700 text-gray-400 hover:text-gray-200 hover:border-gray-500 transition-colors shrink-0"
+            className="text-[10px] px-2 py-1 rounded border border-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] transition-colors shrink-0"
           >
             {choice.kind === 'character' ? 'Cambiar' : 'Elegir personaje'}
           </button>
@@ -1181,8 +1181,8 @@ export default function PlayerView() {
             onClick={() => setShowDiceRoller(!showDiceRoller)}
             className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${
               showDiceRoller
-                ? 'bg-emerald-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:text-gray-200 hover:bg-gray-700'
+                ? 'bg-[var(--accent)] text-white'
+                : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/70'
             }`}
             title="Tirar dados"
           >
@@ -1195,8 +1195,8 @@ export default function PlayerView() {
             onClick={toggleShareLight}
             className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${
               shareLight
-                ? 'bg-emerald-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:text-gray-200 hover:bg-gray-700'
+                ? 'bg-[var(--accent)] text-white'
+                : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/70'
             }`}
             title={shareLight ? 'Compartiendo luz con el grupo' : 'Solo tu luz + luces del DM'}
           >
@@ -1209,8 +1209,8 @@ export default function PlayerView() {
             onClick={() => setAudioOn((v) => !v)}
             className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${
               audioOn
-                ? 'bg-emerald-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:text-gray-200 hover:bg-gray-700'
+                ? 'bg-[var(--accent)] text-white'
+                : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/70'
             }`}
             title={audioOn ? 'Silenciar ambiente' : 'Activar ambiente'}
             data-testid="audio-toggle"
@@ -1223,7 +1223,7 @@ export default function PlayerView() {
             type="button"
             onClick={requestLight}
             disabled={askingLight}
-            className="text-xs px-2 py-1 rounded transition-colors shrink-0 bg-gray-800 text-gray-400 hover:text-gray-200 hover:bg-gray-700 disabled:opacity-40"
+            className="text-xs px-2 py-1 rounded transition-colors shrink-0 bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/70 disabled:opacity-40"
             title="Pedir luz al DM"
           >
             🕯️
@@ -1235,8 +1235,8 @@ export default function PlayerView() {
             onClick={() => setShowQuests(!showQuests)}
             className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${
               showQuests
-                ? 'bg-emerald-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:text-gray-200 hover:bg-gray-700'
+                ? 'bg-[var(--accent)] text-white'
+                : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/70'
             }`}
             title="Misiones"
           >
@@ -1249,8 +1249,8 @@ export default function PlayerView() {
             onClick={() => setShowCalendar(!showCalendar)}
             className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${
               showCalendar
-                ? 'bg-emerald-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:text-gray-200 hover:bg-gray-700'
+                ? 'bg-[var(--accent)] text-white'
+                : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/70'
             }`}
             title="Calendario"
           >
@@ -1264,8 +1264,8 @@ export default function PlayerView() {
             onClick={() => setShowHandouts(!showHandouts)}
             className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${
               showHandouts
-                ? 'bg-emerald-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:text-gray-200 hover:bg-gray-700'
+                ? 'bg-[var(--accent)] text-white'
+                : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/70'
             }`}
             title="Documentos"
           >
@@ -1277,9 +1277,9 @@ export default function PlayerView() {
           title={live ? 'Sincronizado' : 'Reconectando...'}
         >
           <span
-            className={`w-2 h-2 rounded-full ${live ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`}
+            className={`w-2 h-2 rounded-full ${live ? 'bg-[var(--success)]' : 'bg-[var(--warning)] animate-pulse'}`}
           />
-          <span className={live ? 'text-emerald-400' : 'text-amber-400'}>
+          <span className={live ? 'text-[var(--success)]' : 'text-[var(--warning)]'}>
             {live ? 'En vivo' : 'Reconectando...'}
           </span>
         </span>
@@ -1288,16 +1288,16 @@ export default function PlayerView() {
       <div className="flex-1 relative min-h-0 min-w-0">
         {pendingRoll && (
           <div
-            className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-900/95 border border-amber-500/40 shadow-lg"
+            className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--surface)]/95 border border-[var(--warning)]/40 shadow-lg"
             data-testid="initiative-prompt"
           >
-            <span className="text-amber-400 text-sm">⚔️</span>
-            <span className="text-xs text-gray-200">¡Tirá iniciativa!</span>
+            <span className="text-[var(--warning)] text-sm">⚔️</span>
+            <span className="text-xs text-[var(--text-primary)]">¡Tirá iniciativa!</span>
             <button
               type="button"
               onClick={handleInitiativeRoll}
               disabled={rollingInit}
-              className="text-sm px-2.5 py-1 rounded bg-amber-500 text-black font-semibold hover:bg-amber-400 disabled:opacity-40 transition-colors"
+              className="text-sm px-2.5 py-1 rounded bg-[var(--warning)] text-black font-semibold hover:bg-[var(--warning)]/80 disabled:opacity-40 transition-colors"
               data-testid="initiative-roll-btn"
             >
               🎲 d6
@@ -1307,7 +1307,7 @@ export default function PlayerView() {
         {data.background_path ? (
           <Suspense
             fallback={
-              <div className="w-full h-full flex items-center justify-center text-gray-400">
+              <div className="w-full h-full flex items-center justify-center text-[var(--text-secondary)]">
                 Cargando escena...
               </div>
             }
@@ -1400,21 +1400,21 @@ export default function PlayerView() {
             />
           </Suspense>
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-400">
+          <div className="w-full h-full flex items-center justify-center text-[var(--text-secondary)]">
             El DM aún no abrió una escena
           </div>
         )}
 
         {data.characters.length > 0 && (
-          <div className="absolute bottom-4 right-4 z-10 bg-gray-900/80 backdrop-blur border border-gray-700/50 rounded-lg p-2 max-sm:bottom-auto max-sm:top-16 max-sm:right-2 max-sm:max-w-[140px]" data-testid="on-scene-list">
-            <p className="text-[10px] text-gray-500 mb-1 px-1">On Scene ({data.characters.length})</p>
+          <div className="absolute bottom-4 right-4 z-10 bg-[var(--surface)]/80 backdrop-blur border border-[var(--bg-tertiary)]/50 rounded-lg p-2 max-sm:bottom-auto max-sm:top-16 max-sm:right-2 max-sm:max-w-[140px]" data-testid="on-scene-list">
+            <p className="text-[10px] text-[var(--text-secondary)] mb-1 px-1">On Scene ({data.characters.length})</p>
             <div className="space-y-0.5">
               {data.characters.map((c) => (
-                <div key={c.id} className="flex items-center gap-1.5 px-1.5 py-0.5 text-xs text-gray-300">
+                <div key={c.id} className="flex items-center gap-1.5 px-1.5 py-0.5 text-xs text-[var(--text-primary)]">
                   <span
                     className="w-2 h-2 rounded-full shrink-0"
                     style={{
-                      backgroundColor: c.type === 'character' ? '#4ade80' : '#facc15',
+                      backgroundColor: c.type === 'character' ? 'var(--success)' : 'var(--warning)',
                     }}
                   />
                   <span>{c.name}</span>
@@ -1442,13 +1442,13 @@ export default function PlayerView() {
                     className="w-12 h-12 rounded-full object-cover border border-[var(--bg-tertiary)]"
                   />
                 ) : (
-                  <div className="w-12 h-12 rounded-full bg-emerald-900/60 border border-emerald-700/50 flex items-center justify-center text-sm font-bold text-emerald-300">
+                  <div className="w-12 h-12 rounded-full bg-[var(--accent)]/20 border border-[var(--accent)]/40 flex items-center justify-center text-sm font-bold text-[var(--accent)]">
                     {myChar.name.slice(0, 2).toUpperCase()}
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-gray-100 truncate">{myChar.name}</p>
-                  <p className="text-[10px] text-gray-500 truncate">
+                  <p className="text-sm font-semibold text-[var(--text-primary)] truncate">{myChar.name}</p>
+                  <p className="text-[10px] text-[var(--text-secondary)] truncate">
                     {[myChar.race, myChar.class_].filter(Boolean).join(' · ') || '\u00A0'}
                   </p>
                 </div>
@@ -1457,7 +1457,7 @@ export default function PlayerView() {
                     type="button"
                     onClick={handleExportMarkdown}
                     title="Exportar ficha como Markdown"
-                    className="w-5 h-5 rounded bg-gray-800 hover:bg-gray-700 text-[var(--text-primary)] hover:text-white text-xs flex items-center justify-center transition-colors"
+                    className="w-5 h-5 rounded bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary)]/70 text-[var(--text-primary)] hover:text-white text-xs flex items-center justify-center transition-colors"
                   >
                     ↓
                   </button>
@@ -1465,7 +1465,7 @@ export default function PlayerView() {
                     type="button"
                     onClick={() => window.print()}
                     title="Imprimir ficha"
-                    className="w-5 h-5 rounded bg-gray-800 hover:bg-gray-700 text-[var(--text-primary)] hover:text-white text-xs flex items-center justify-center transition-colors"
+                    className="w-5 h-5 rounded bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary)]/70 text-[var(--text-primary)] hover:text-white text-xs flex items-center justify-center transition-colors"
                   >
                     🖨
                   </button>
@@ -1509,7 +1509,7 @@ export default function PlayerView() {
                     onClick={() => setSheetTab(t)}
                     className={`flex-1 py-1 rounded capitalize transition-colors ${
                       sheetTab === t
-                        ? 'bg-emerald-700 text-white'
+                        ? 'bg-[var(--accent)] text-white'
                         : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
                   >
@@ -1563,7 +1563,7 @@ export default function PlayerView() {
                         <div key={i} className="flex items-center gap-1.5">
                           <span
                             className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                              item.equipped ? 'bg-emerald-400' : 'bg-gray-600'
+                              item.equipped ? 'bg-[var(--success)]' : 'bg-[var(--border)]'
                             }`}
                           />
                           <span className="text-[11px] text-[var(--text-primary)]">
@@ -1610,7 +1610,7 @@ export default function PlayerView() {
                                 ? 'PM insuficientes'
                                 : `Gasta ${spell.cost_pm} PM`
                             }
-                            className="ml-auto shrink-0 text-[10px] px-1.5 py-0.5 rounded border border-gray-700 text-gray-400 hover:text-gray-200 hover:border-gray-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            className="ml-auto shrink-0 text-[10px] px-1.5 py-0.5 rounded border border-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                           >
                             Usar
                           </button>
@@ -1644,10 +1644,10 @@ export default function PlayerView() {
 
         {pickerOpen && (
           <div className="absolute inset-0 z-20 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6">
-            <div className="bg-gray-900 border border-gray-700/60 rounded-xl p-4 sm:p-6 w-full max-w-md space-y-4">
+            <div className="bg-[var(--surface)] border border-[var(--bg-tertiary)]/60 rounded-xl p-4 sm:p-6 w-full max-w-md space-y-4">
               <div>
-                <h2 className="text-lg font-bold text-gray-100">¿Quién sos?</h2>
-                <p className="text-xs text-gray-500 mt-0.5">
+                <h2 className="text-lg font-bold text-[var(--text-primary)]">¿Quién sos?</h2>
+                <p className="text-xs text-[var(--text-secondary)] mt-0.5">
                   Elegí tu personaje para ver tu ficha durante la sesión.
                 </p>
               </div>
@@ -1657,12 +1657,12 @@ export default function PlayerView() {
                     key={p.id}
                     type="button"
                     onClick={() => chooseCharacter(p.id)}
-                    className="flex items-center gap-2.5 p-3 rounded-lg border border-gray-700/60 hover:border-emerald-500/70 hover:bg-emerald-950/30 transition-colors text-left"
+                    className="flex items-center gap-2.5 p-3 rounded-lg border border-[var(--bg-tertiary)]/60 hover:border-[var(--accent)]/70 hover:bg-[var(--accent)]/10 transition-colors text-left"
                   >
                     {p.model_path ? (
-                      <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-600 bg-gray-800 shrink-0">
+                      <div className="w-10 h-10 rounded-full overflow-hidden border border-[var(--bg-tertiary)] bg-[var(--bg-tertiary)] shrink-0">
                         <Suspense fallback={
-                          <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-500">3D</div>
+                          <div className="w-full h-full flex items-center justify-center text-[8px] text-[var(--text-secondary)]">3D</div>
                         }>
                           <Canvas camera={{ position: [0, 0.5, 2], fov: 35 }}>
                             <ambientLight intensity={1.2} />
@@ -1675,15 +1675,15 @@ export default function PlayerView() {
                       <img
                         src={staticUrl(p.portrait_path)!}
                         alt={p.name}
-                        className="w-10 h-10 rounded-full object-cover border border-gray-600"
+                        className="w-10 h-10 rounded-full object-cover border border-[var(--bg-tertiary)]"
                       />
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-gray-800 border border-gray-600 flex items-center justify-center text-xs font-bold text-gray-300">
+                      <div className="w-10 h-10 rounded-full bg-[var(--bg-tertiary)] border border-[var(--bg-tertiary)] flex items-center justify-center text-xs font-bold text-[var(--text-primary)]">
                         {p.name.slice(0, 2).toUpperCase()}
                       </div>
                     )}
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-100 truncate">{p.name}</p>
+                      <p className="text-sm font-medium text-[var(--text-primary)] truncate">{p.name}</p>
                   <p className="text-[10px] text-[var(--text-secondary)] truncate">
                         {[p.race, p.class_name].filter(Boolean).join(' · ')}
                       </p>
@@ -1694,7 +1694,7 @@ export default function PlayerView() {
               <button
                 type="button"
                 onClick={chooseSpectator}
-                className="w-full py-2 rounded-lg border border-gray-700 text-xs text-gray-400 hover:text-gray-200 hover:border-gray-500 transition-colors"
+                className="w-full py-2 rounded-lg border border-[var(--bg-tertiary)] text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] transition-colors"
               >
                 Entrar como espectador
               </button>
