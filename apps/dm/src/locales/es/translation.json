@@ -4,9 +4,14 @@
     "tagline": "El mundo que tus sesiones recuerdan"
   },
   "common": {
-    "back": "",
+    "apply": "Aplicar",
+    "back": "Volver",
     "cancel": "Cancelar",
     "continue": "Continuar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "error": "Error",
+    "export": "Exportar",
     "loading": "Cargando…",
     "logout": "Salir",
     "manage": "Gestionar"
@@ -50,9 +55,27 @@
     "subtitle": "Un engine persistente para tu campaña."
   },
   "lobby": {
+    "campaignCount_one": "{{count}} campaña",
+    "campaignCount_other": "{{count}} campañas",
+    "clearSelection": "Limpiar",
+    "confirmBulkDelete_one": "¿Eliminar {{count}} campaña?",
+    "confirmBulkDelete_other": "¿Eliminar {{count}} campañas?",
+    "confirmDelete": "¿Eliminar esta campaña?",
+    "deselectAll": "Deseleccionar todas",
+    "editCount_one": "Editar {{count}} campaña",
+    "editCount_other": "Editar {{count}} campañas",
+    "editDescPlaceholder": "Nueva descripción (vacío = mantener)",
+    "editNamePlaceholder": "Nuevo nombre (vacío = mantener)",
+    "emptyHint": "Creá una o importá una campaña existente.",
+    "emptyTitle": "Todavía no hay campañas",
+    "exportCombined": "Exportar (combinado)",
+    "exportIndividual": "Exportar (individual)",
     "import": "Importar",
     "newCampaign": "Nueva campaña",
     "select": "Seleccionar",
+    "selectAll": "Seleccionar todas",
+    "selectedCount_one": "{{count}} seleccionada",
+    "selectedCount_other": "{{count}} seleccionadas",
     "title": "Tu mesa",
     "updatedAt": "Actualizada"
   },
@@ -110,6 +133,7 @@
     "world-state": "Estado del mundo"
   },
   "settings": {
+    "description": "Preferencias locales de esta consola",
     "language": "Idioma",
     "localNote": "preferencias locales, solo de esta consola",
     "reducedMotion": "Movimiento reducido",

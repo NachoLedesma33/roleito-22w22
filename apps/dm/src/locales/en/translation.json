@@ -4,9 +4,14 @@
     "tagline": "The world your sessions remember"
   },
   "common": {
-    "back": "",
+    "apply": "Apply",
+    "back": "Back",
     "cancel": "Cancel",
     "continue": "Continue",
+    "delete": "Delete",
+    "edit": "Edit",
+    "error": "Error",
+    "export": "Export",
     "loading": "Loading…",
     "logout": "Sign out",
     "manage": "Manage"
@@ -50,9 +55,27 @@
     "subtitle": "A persistent engine for your campaign."
   },
   "lobby": {
+    "campaignCount_one": "{{count}} campaign",
+    "campaignCount_other": "{{count}} campaigns",
+    "clearSelection": "Clear",
+    "confirmBulkDelete_one": "Delete {{count}} campaign?",
+    "confirmBulkDelete_other": "Delete {{count}} campaigns?",
+    "confirmDelete": "Delete this campaign?",
+    "deselectAll": "Deselect all",
+    "editCount_one": "Edit {{count}} campaign",
+    "editCount_other": "Edit {{count}} campaigns",
+    "editDescPlaceholder": "New description (empty = keep)",
+    "editNamePlaceholder": "New name (empty = keep)",
+    "emptyHint": "Create one or import an existing campaign.",
+    "emptyTitle": "No campaigns yet",
+    "exportCombined": "Export (combined)",
+    "exportIndividual": "Export (individually)",
     "import": "Import",
     "newCampaign": "New campaign",
     "select": "Select",
+    "selectAll": "Select all",
+    "selectedCount_one": "{{count}} selected",
+    "selectedCount_other": "{{count}} selected",
     "title": "Your table",
     "updatedAt": "Updated"
   },
@@ -110,6 +133,7 @@
     "world-state": "World state"
   },
   "settings": {
+    "description": "Local preferences for this console",
     "language": "Language",
     "localNote": "local preferences, this console only",
     "reducedMotion": "Reduced motion",

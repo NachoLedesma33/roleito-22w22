@@ -75,7 +75,7 @@ export default function PreferencesDrawer({
         <DialogHeader>
           <DialogTitle>{t('settings.title')}</DialogTitle>
           <DialogDescription>
-            Preferencias locales de esta consola ({t('settings.localNote')}).
+            {t('settings.description', 'Preferencias locales de esta consola')} ({t('settings.localNote')}).
           </DialogDescription>
         </DialogHeader>
 
