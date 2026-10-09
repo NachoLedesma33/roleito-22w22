@@ -4,6 +4,7 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { useGLTF, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { api } from '@/lib/api';
+import { useTranslation } from 'react-i18next';
 import type { VidaAttr } from '@/lib/api';
 import { VidaAttrsInput, NumberInput } from '@/components/VidaInputs';
 import { Button } from '@/components/ui/Button';
@@ -26,6 +27,7 @@ function ModelPreview({ url }: { url: string }) {
 }
 
 export default function CharacterForm() {
+  const { t } = useTranslation();
   const { id: campaignId, characterId } = useParams<{ id: string; characterId: string }>();
   const isEdit = characterId && characterId !== 'new';
   const navigate = useNavigate();
@@ -78,7 +80,7 @@ export default function CharacterForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !campaignId) {
-      setError('El nombre es obligatorio');
+      setError(t('characterForm.nameRequired', 'El nombre es obligatorio'));
       return;
     }
     setSaving(true);
@@ -118,83 +120,83 @@ export default function CharacterForm() {
         navigate(`/campaigns/${campaignId}/characters/${char.id}`);
       }
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'No se pudo guardar');
+      setError(e instanceof Error ? e.message : t('characterForm.saveError', 'No se pudo guardar'));
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
+  if (loading) return <p className="text-[var(--text-secondary)]">{t('common.loading')}</p>;
 
   return (
     <div className="max-w-lg">
       <h1 className="text-2xl font-bold mb-6">
-        {isEdit ? 'Editar personaje' : 'Nuevo personaje'}
+        {isEdit ? t('characterForm.titleEdit', 'Editar personaje') : t('characterForm.titleNew', 'Nuevo personaje')}
       </h1>
 
       {error && <p className="text-[var(--danger)] text-sm mb-4">{error}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-1">Nombre</label>
+          <label className="block text-sm text-[var(--text-secondary)] mb-1">{t('characterForm.name', 'Nombre')}</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full px-3 py-2 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
-            placeholder="Nombre del personaje"
+            placeholder={t('characterForm.namePlaceholder', 'Nombre del personaje')}
             autoFocus
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-1">Tipo</label>
+            <label className="block text-sm text-[var(--text-secondary)] mb-1">{t('characterForm.type', 'Tipo')}</label>
             <select
               value={type}
               onChange={(e) => setType(e.target.value)}
               className="w-full px-3 py-2 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
             >
-              <option value="player">Jugador</option>
-              <option value="npc">PNJ</option>
-              <option value="creature">Criatura</option>
+              <option value="player">{t('characterTypes.player', 'Jugador')}</option>
+              <option value="npc">{t('characterTypes.npc', 'PNJ')}</option>
+              <option value="creature">{t('characterTypes.creature', 'Criatura')}</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-1">Raza</label>
+            <label className="block text-sm text-[var(--text-secondary)] mb-1">{t('characterForm.race', 'Raza')}</label>
             <input
               type="text"
               value={race}
               onChange={(e) => setRace(e.target.value)}
               className="w-full px-3 py-2 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
-              placeholder="Humano, Elfo..."
+              placeholder={t('characterForm.racePlaceholder', 'Humano, Elfo...')}
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-1">Clase</label>
+          <label className="block text-sm text-[var(--text-secondary)] mb-1">{t('characterForm.class', 'Clase')}</label>
           <input
             type="text"
             value={className}
             onChange={(e) => setClassName(e.target.value)}
             className="w-full px-3 py-2 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
-            placeholder="Guerrero, Mago..."
+            placeholder={t('characterForm.classPlaceholder', 'Guerrero, Mago...')}
           />
         </div>
 
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-1">Descripción</label>
+          <label className="block text-sm text-[var(--text-secondary)] mb-1">{t('characterForm.description', 'Descripción')}</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             className="w-full px-3 py-2 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] h-24 resize-none"
-            placeholder="Descripción del personaje..."
+            placeholder={t('characterForm.descriptionPlaceholder', 'Descripción del personaje...')}
           />
         </div>
 
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-1">Retrato</label>
+          <label className="block text-sm text-[var(--text-secondary)] mb-1">{t('characterForm.portrait', 'Retrato')}</label>
           <div className="flex items-center gap-4">
             <button
               type="button"
@@ -202,7 +204,7 @@ export default function CharacterForm() {
               className="w-20 h-20 rounded-lg bg-[var(--bg-tertiary)] flex items-center justify-center text-3xl font-bold text-[var(--accent)] overflow-hidden shrink-0 border-2 border-dashed border-[var(--bg-tertiary)] hover:border-[var(--accent)] transition-all"
             >
               {portraitPreview ? (
-                <img src={portraitPreview} alt="Preview" className="w-full h-full object-cover" />
+                <img src={portraitPreview} alt={t('characterForm.portraitPreviewAlt', 'Preview')} className="w-full h-full object-cover" />
               ) : (
                 <span className="text-sm">📷</span>
               )}
@@ -222,14 +224,14 @@ export default function CharacterForm() {
               }}
             />
             <div className="text-xs text-[var(--text-secondary)]">
-              <p>{portraitFile ? portraitFile.name : 'No hay archivo seleccionado'}</p>
-              <p className="mt-1">Opcional. Subí un retrato para este personaje.</p>
+              <p>{portraitFile ? portraitFile.name : t('characterForm.noFile', 'No hay archivo seleccionado')}</p>
+              <p className="mt-1">{t('characterForm.portraitHint', 'Opcional. Subí un retrato para este personaje.')}</p>
             </div>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-1">Modelo 3D (.glb)</label>
+          <label className="block text-sm text-[var(--text-secondary)] mb-1">{t('characterForm.model', 'Modelo 3D (.glb)')}</label>
           <div className="flex items-start gap-4">
             <button
               type="button"
@@ -238,7 +240,7 @@ export default function CharacterForm() {
             >
               {modelPreviewUrl ? (
                 <div className="w-full h-full">
-                  <Suspense fallback={<div className="w-full h-full flex items-center justify-center text-[10px] text-[var(--text-secondary)]">Cargando...</div>}>
+                  <Suspense fallback={<div className="w-full h-full flex items-center justify-center text-[10px] text-[var(--text-secondary)]">{t('common.loading')}</div>}>
                     <Canvas camera={{ position: [0, 1, 2.5], fov: 40 }}>
                       <ambientLight intensity={1.2} />
                       <directionalLight position={[2, 3, 1]} intensity={1.5} />
@@ -266,15 +268,15 @@ export default function CharacterForm() {
               }}
             />
             <div className="text-xs text-[var(--text-secondary)]">
-              <p>{modelFile ? modelFile.name : 'No hay archivo seleccionado'}</p>
-              <p className="mt-1">Opcional. Subí un modelo 3D .glb. Si se setea, se renderiza como token 3D en la escena.</p>
+              <p>{modelFile ? modelFile.name : t('characterForm.noFile', 'No hay archivo seleccionado')}</p>
+              <p className="mt-1">{t('characterForm.modelHint', 'Opcional. Subí un modelo 3D .glb. Si se setea, se renderiza como token 3D en la escena.')}</p>
               {modelPreviewUrl && (
                 <button
                   type="button"
                   onClick={() => { setModelFile(null); setModelPreviewUrl(null); }}
                   className="mt-1 text-[var(--danger)] hover:opacity-80"
                 >
-                  Quitar modelo
+                  {t('characterForm.removeModel', 'Quitar modelo')}
                 </button>
               )}
             </div>
@@ -282,7 +284,7 @@ export default function CharacterForm() {
         </div>
 
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-2">Atributos (VIDA)</label>
+          <label className="block text-sm text-[var(--text-secondary)] mb-2">{t('characterForm.attributes', 'Atributos (VIDA)')}</label>
           <VidaAttrsInput
             vigor={vigor}
             intelligence={intelligence}
@@ -298,20 +300,24 @@ export default function CharacterForm() {
         </div>
 
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-2">Características</label>
+          <label className="block text-sm text-[var(--text-secondary)] mb-2">{t('characterForm.stats', 'Características')}</label>
           <div className="grid grid-cols-3 gap-3">
-            <NumberInput label="Max PV" value={maxPv} onChange={setMaxPv} />
-            <NumberInput label="Max PM" value={maxPm} onChange={setMaxPm} />
-            <NumberInput label="Defensa" value={defense} onChange={setDefense} />
+            <NumberInput label={t('characterForm.maxPv', 'Max PV')} value={maxPv} onChange={setMaxPv} />
+            <NumberInput label={t('characterForm.maxPm', 'Max PM')} value={maxPm} onChange={setMaxPm} />
+            <NumberInput label={t('characterForm.defense', 'Defensa')} value={defense} onChange={setDefense} />
           </div>
         </div>
 
         <div className="flex gap-3 pt-2">
           <Button type="submit" disabled={saving}>
-            {saving ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear personaje'}
+            {saving
+              ? t('characterForm.saving', 'Guardando...')
+              : isEdit
+                ? t('characterForm.save', 'Guardar cambios')
+                : t('characterForm.create', 'Crear personaje')}
           </Button>
           <Button variant="outline" type="button" onClick={() => navigate(-1)}>
-            Cancelar
+            {t('common.cancel')}
           </Button>
         </div>
       </form>

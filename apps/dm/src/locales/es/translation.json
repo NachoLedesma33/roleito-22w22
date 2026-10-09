@@ -3,6 +3,55 @@
     "name": "22w22",
     "tagline": "El mundo que tus sesiones recuerdan"
   },
+  "characterForm": {
+    "attributes": "Atributos (VIDA)",
+    "class": "Clase",
+    "classPlaceholder": "Guerrero, Mago...",
+    "create": "Crear personaje",
+    "defense": "Defensa",
+    "description": "Descripción",
+    "descriptionPlaceholder": "Descripción del personaje...",
+    "maxPm": "Max PM",
+    "maxPv": "Max PV",
+    "model": "Modelo 3D (.glb)",
+    "modelHint": "Opcional. Subí un modelo 3D .glb. Si se setea, se renderiza como token 3D en la escena.",
+    "name": "Nombre",
+    "namePlaceholder": "Nombre del personaje",
+    "nameRequired": "El nombre es obligatorio",
+    "noFile": "No hay archivo seleccionado",
+    "portrait": "Retrato",
+    "portraitHint": "Opcional. Subí un retrato para este personaje.",
+    "portraitPreviewAlt": "Preview",
+    "race": "Raza",
+    "racePlaceholder": "Humano, Elfo...",
+    "removeModel": "Quitar modelo",
+    "save": "Guardar cambios",
+    "saveError": "No se pudo guardar",
+    "saving": "Guardando...",
+    "stats": "Características",
+    "titleEdit": "Editar personaje",
+    "titleNew": "Nuevo personaje",
+    "type": "Tipo"
+  },
+  "characterList": {
+    "deleteDialogBody": "¿Eliminar a {{name}}? Esta acción no se puede deshacer.",
+    "deleteDialogTitle": "Eliminar personaje",
+    "emptyHint": "Creá tu primer personaje para empezar.",
+    "emptyTitle": "Todavía no hay personajes",
+    "error": "Error: {{error}}",
+    "newCharacter": "Nuevo personaje",
+    "thisCharacter": "este personaje",
+    "title": "Personajes"
+  },
+  "characterStatus": {
+    "alive": "Vivo",
+    "dead": "Muerto"
+  },
+  "characterTypes": {
+    "creature": "Criatura",
+    "npc": "PNJ",
+    "player": "Jugador"
+  },
   "common": {
     "apply": "Aplicar",
     "back": "Volver",

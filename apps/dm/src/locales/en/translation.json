@@ -3,6 +3,55 @@
     "name": "22w22",
     "tagline": "The world your sessions remember"
   },
+  "characterForm": {
+    "attributes": "VIDA Attributes",
+    "class": "Class",
+    "classPlaceholder": "Warrior, Mage...",
+    "create": "Create character",
+    "defense": "Defense",
+    "description": "Description",
+    "descriptionPlaceholder": "Character description...",
+    "maxPm": "Max MP",
+    "maxPv": "Max HP",
+    "model": "3D model (.glb)",
+    "modelHint": "Optional. Upload a 3D .glb model. If set, it renders as a 3D token in the scene.",
+    "name": "Name",
+    "namePlaceholder": "Character name",
+    "nameRequired": "Name is required",
+    "noFile": "No file selected",
+    "portrait": "Portrait",
+    "portraitHint": "Optional. Upload a portrait for this character.",
+    "portraitPreviewAlt": "Preview",
+    "race": "Race",
+    "racePlaceholder": "Human, Elf...",
+    "removeModel": "Remove model",
+    "save": "Save changes",
+    "saveError": "Could not save",
+    "saving": "Saving...",
+    "stats": "Stats",
+    "titleEdit": "Edit character",
+    "titleNew": "New character",
+    "type": "Type"
+  },
+  "characterList": {
+    "deleteDialogBody": "Delete {{name}}? This action cannot be undone.",
+    "deleteDialogTitle": "Delete character",
+    "emptyHint": "Create your first character to get started.",
+    "emptyTitle": "No characters yet",
+    "error": "Error: {{error}}",
+    "newCharacter": "New character",
+    "thisCharacter": "this character",
+    "title": "Characters"
+  },
+  "characterStatus": {
+    "alive": "Alive",
+    "dead": "Dead"
+  },
+  "characterTypes": {
+    "creature": "Creature",
+    "npc": "NPC",
+    "player": "Player"
+  },
   "common": {
     "apply": "Apply",
     "back": "Back",

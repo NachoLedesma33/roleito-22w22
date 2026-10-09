@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router-dom';
 import { api, Character } from '@/lib/api';
 import { VidaBar, VidaAttrs } from '@/components/VidaDisplay';
@@ -15,6 +16,7 @@ import {
 import { cn } from '@/lib/utils';
 
 export default function CharacterList() {
+  const { t } = useTranslation();
   const { id: campaignId } = useParams<{ id: string }>();
   const [characters, setCharacters] = useState<Character[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,26 +39,27 @@ export default function CharacterList() {
   };
 
   const deleteTarget = characters.find((c) => c.id === deleteId) ?? null;
+  const deleteName = deleteTarget?.name ?? t('characterList.thisCharacter', 'este personaje');
 
-  if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
-  if (error) return <p className="text-[var(--danger)]">Error: {error}</p>;
+  if (loading) return <p className="text-[var(--text-secondary)]">{t('common.loading')}</p>;
+  if (error) return <p className="text-[var(--danger)]">{t('characterList.error', 'Error: {{error}}', { error })}</p>;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Personajes</h1>
+        <h1 className="text-2xl font-bold">{t('characterList.title', 'Personajes')}</h1>
         <Link
           to={`/campaigns/${campaignId}/characters/new`}
           className={cn(buttonVariants({ size: 'sm' }))}
         >
-          Nuevo personaje
+          {t('characterList.newCharacter', 'Nuevo personaje')}
         </Link>
       </div>
 
       {characters.length === 0 ? (
         <div className="text-center py-20 text-[var(--text-secondary)]">
-          <p className="text-lg mb-2">Todavía no hay personajes</p>
-          <p className="text-sm">Creá tu primer personaje para empezar.</p>
+          <p className="text-lg mb-2">{t('characterList.emptyTitle', 'Todavía no hay personajes')}</p>
+          <p className="text-sm">{t('characterList.emptyHint', 'Creá tu primer personaje para empezar.')}</p>
         </div>
       ) : (
         <div className="grid gap-4">
@@ -79,7 +82,7 @@ export default function CharacterList() {
                         {c.name}
                       </h2>
                       <p className="text-xs text-[var(--text-secondary)]">
-                        {c.race} {c.class_} · {c.type === 'player' ? 'Jugador' : c.type === 'creature' ? 'Criatura' : c.type}
+                        {c.race} {c.class_} · {c.type === 'player' ? t('characterTypes.player', 'Jugador') : c.type === 'creature' ? t('characterTypes.creature', 'Criatura') : c.type}
                       </p>
                     </div>
                   </div>
@@ -88,14 +91,14 @@ export default function CharacterList() {
                   <Badge
                     variant={c.status === 'alive' ? 'success' : c.status === 'dead' ? 'danger' : 'secondary'}
                   >
-                    {c.status === 'alive' ? 'Vivo' : c.status === 'dead' ? 'Muerto' : c.status}
+                    {c.status === 'alive' ? t('characterStatus.alive', 'Vivo') : c.status === 'dead' ? t('characterStatus.dead', 'Muerto') : c.status}
                   </Badge>
                   <Button
                     variant="destructive"
                     size="sm"
                     onClick={() => setDeleteId(c.id)}
                   >
-                    Eliminar
+                    {t('common.delete')}
                   </Button>
                 </div>
               </div>
@@ -113,21 +116,21 @@ export default function CharacterList() {
       <Dialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
         <DialogContent data-testid="confirm-delete-dialog">
           <DialogHeader>
-            <DialogTitle>Eliminar personaje</DialogTitle>
+            <DialogTitle>{t('characterList.deleteDialogTitle', 'Eliminar personaje')}</DialogTitle>
             <DialogDescription>
-              ¿Eliminar a {deleteTarget?.name ?? 'este personaje'}? Esta acción no se puede deshacer.
+              {t('characterList.deleteDialogBody', '¿Eliminar a {{name}}? Esta acción no se puede deshacer.', { name: deleteName })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteId(null)}>
-              Cancelar
+              {t('common.cancel')}
             </Button>
             <Button
               variant="destructive"
               data-testid="confirm-delete"
               onClick={() => void handleDelete(deleteId!)}
             >
-              Eliminar
+              {t('common.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
