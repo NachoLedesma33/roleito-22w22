@@ -1,6 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api, Map } from '@/lib/api';
+import { Button } from '@/components/ui/Button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/Dialog';
 
 function staticUrl(path: string | null): string | null {
   if (!path) return null;
@@ -18,6 +27,7 @@ export default function MapList() {
   const [saving, setSaving] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const [pendingMapId, setPendingMapId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!campaignId) return;
@@ -61,10 +71,13 @@ export default function MapList() {
   };
 
   const handleDelete = async (mapId: string) => {
-    if (!campaignId || !confirm('¿Eliminar este mapa?')) return;
+    if (!campaignId) return;
     await api.maps.delete(campaignId, mapId);
     setMaps((prev) => prev.filter((m) => m.id !== mapId));
+    setDeleteId(null);
   };
+
+  const deleteTarget = maps.find((m) => m.id === deleteId) ?? null;
 
   if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
 
@@ -72,12 +85,13 @@ export default function MapList() {
     <div className="max-w-3xl">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Biblioteca de imágenes</h1>
-        <button
+        <Button
+          size="sm"
+          variant={showForm ? 'outline' : 'default'}
           onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 text-sm rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
         >
           {showForm ? 'Cancelar' : 'Nuevo mapa'}
-        </button>
+        </Button>
       </div>
 
       <input
@@ -88,7 +102,7 @@ export default function MapList() {
         onChange={handleFileUpload}
       />
 
-      {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+      {error && <p className="text-[var(--danger)] text-sm mb-4">{error}</p>}
 
       {showForm && (
         <form onSubmit={handleCreate} className="border border-[var(--bg-tertiary)] rounded-lg p-4 mb-6 space-y-3">
@@ -113,13 +127,9 @@ export default function MapList() {
               placeholder="Descripción opcional"
             />
           </div>
-          <button
-            type="submit"
-            disabled={saving || !newName.trim()}
-            className="px-4 py-2 rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
-          >
+          <Button type="submit" disabled={saving || !newName.trim()}>
             {saving ? 'Creando...' : 'Crear y subir imagen'}
-          </button>
+          </Button>
         </form>
       )}
 
@@ -161,18 +171,41 @@ export default function MapList() {
                     )}
                     <p className="text-[10px] text-[var(--text-secondary)] mt-1 opacity-60">{m.map_type === 'world' ? 'Mundo' : m.map_type}</p>
                   </div>
-                  <button
-                    onClick={() => handleDelete(m.id)}
-                    className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-red-400 hover:text-red-300"
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setDeleteId(m.id)}
                   >
                     Eliminar
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
           ))}
         </div>
       )}
+      <Dialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <DialogContent data-testid="confirm-delete-dialog">
+          <DialogHeader>
+            <DialogTitle>Eliminar mapa</DialogTitle>
+            <DialogDescription>
+              ¿Eliminar el mapa {deleteTarget?.name ?? 'seleccionado'}? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteId(null)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              data-testid="confirm-delete"
+              onClick={() => void handleDelete(deleteId!)}
+            >
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

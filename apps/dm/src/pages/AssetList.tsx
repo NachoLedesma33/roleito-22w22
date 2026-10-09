@@ -1,6 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api, Asset } from '@/lib/api';
+import { Button } from '@/components/ui/Button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/Dialog';
 
 function staticUrl(path: string): string | null {
   if (!path) return null;
@@ -15,6 +24,7 @@ export default function AssetList() {
   const [error, setError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!campaignId) return;
@@ -40,10 +50,13 @@ export default function AssetList() {
   };
 
   const handleDelete = async (assetId: string) => {
-    if (!campaignId || !confirm('¿Eliminar este recurso?')) return;
+    if (!campaignId) return;
     await api.assets.delete(campaignId, assetId);
     setAssets((prev) => prev.filter((a) => a.id !== assetId));
+    setDeleteId(null);
   };
+
+  const deleteTarget = assets.find((a) => a.id === deleteId) ?? null;
 
   if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
 
@@ -51,13 +64,13 @@ export default function AssetList() {
     <div className="max-w-3xl">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Recursos</h1>
-        <button
+        <Button
+          size="sm"
           onClick={() => fileInput.current?.click()}
           disabled={uploading}
-          className="px-4 py-2 text-sm rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
         >
           {uploading ? 'Subiendo...' : 'Subir recurso'}
-        </button>
+        </Button>
       </div>
 
       <input
@@ -68,7 +81,7 @@ export default function AssetList() {
         onChange={handleUpload}
       />
 
-      {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+      {error && <p className="text-[var(--danger)] text-sm mb-4">{error}</p>}
 
       {assets.length === 0 ? (
         <div className="text-center py-20 text-[var(--text-secondary)]">
@@ -97,18 +110,42 @@ export default function AssetList() {
                 <p className="text-xs font-medium truncate">{a.name}</p>
                 <div className="flex items-center justify-between mt-1">
                   <span className="text-[10px] text-[var(--text-secondary)] opacity-60">{a.asset_type === 'image' ? 'Imagen' : a.asset_type === 'audio' ? 'Audio' : a.asset_type}</span>
-                  <button
-                    onClick={() => handleDelete(a.id)}
-                    className="text-[10px] px-1 py-0.5 rounded bg-[var(--bg-tertiary)] text-red-400 hover:text-red-300 opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity"
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity"
+                    onClick={() => setDeleteId(a.id)}
                   >
                     Borrar
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
           ))}
         </div>
       )}
+      <Dialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <DialogContent data-testid="confirm-delete-dialog">
+          <DialogHeader>
+            <DialogTitle>Eliminar recurso</DialogTitle>
+            <DialogDescription>
+              ¿Eliminar el recurso {deleteTarget?.name ?? 'seleccionado'}? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteId(null)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              data-testid="confirm-delete"
+              onClick={() => void handleDelete(deleteId!)}
+            >
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

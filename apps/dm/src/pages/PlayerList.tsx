@@ -1,6 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api, Player, Character } from '@/lib/api';
+import { Button } from '@/components/ui/Button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/Dialog';
 
 export default function PlayerList() {
   const { id: campaignId } = useParams<{ id: string }>();
@@ -12,6 +21,7 @@ export default function PlayerList() {
   const [newName, setNewName] = useState('');
   const [newCharId, setNewCharId] = useState('');
   const [saving, setSaving] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!campaignId) return;
@@ -45,10 +55,13 @@ export default function PlayerList() {
   };
 
   const handleDelete = async (playerId: string) => {
-    if (!campaignId || !confirm('¿Quitar este jugador?')) return;
+    if (!campaignId) return;
     await api.players.delete(campaignId, playerId);
     setPlayers((prev) => prev.filter((p) => p.id !== playerId));
+    setDeleteId(null);
   };
+
+  const deleteTarget = players.find((p) => p.id === deleteId) ?? null;
 
   const handleAssign = async (playerId: string, characterId: string) => {
     if (!campaignId) return;
@@ -68,15 +81,16 @@ export default function PlayerList() {
     <div className="max-w-2xl">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Jugadores</h1>
-        <button
+        <Button
+          size="sm"
+          variant={showForm ? 'outline' : 'default'}
           onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 text-sm rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
         >
           {showForm ? 'Cancelar' : 'Agregar jugador'}
-        </button>
+        </Button>
       </div>
 
-      {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+      {error && <p className="text-[var(--danger)] text-sm mb-4">{error}</p>}
 
       {showForm && (
         <form onSubmit={handleCreate} className="border border-[var(--bg-tertiary)] rounded-lg p-4 mb-6 space-y-3">
@@ -104,13 +118,9 @@ export default function PlayerList() {
               ))}
             </select>
           </div>
-          <button
-            type="submit"
-            disabled={saving || !newName.trim()}
-            className="px-4 py-2 rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
-          >
+          <Button type="submit" disabled={saving || !newName.trim()}>
             {saving ? 'Agregando...' : 'Agregar jugador'}
-          </button>
+          </Button>
         </form>
       )}
 
@@ -153,12 +163,13 @@ export default function PlayerList() {
                         <option key={c.id} value={c.id}>{c.name}</option>
                       ))}
                     </select>
-                    <button
-                      onClick={() => handleDelete(p.id)}
-                      className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-red-400 hover:text-red-300"
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setDeleteId(p.id)}
                     >
                       Quitar
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -166,6 +177,28 @@ export default function PlayerList() {
           })}
         </div>
       )}
+      <Dialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <DialogContent data-testid="confirm-delete-dialog">
+          <DialogHeader>
+            <DialogTitle>Quitar jugador</DialogTitle>
+            <DialogDescription>
+              ¿Quitar a {deleteTarget?.name ?? 'este jugador'}? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteId(null)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              data-testid="confirm-delete"
+              onClick={() => void handleDelete(deleteId!)}
+            >
+              Quitar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
