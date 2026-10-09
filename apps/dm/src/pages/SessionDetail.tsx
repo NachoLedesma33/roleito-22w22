@@ -1,6 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, Session } from '@/lib/api';
+import { Button, buttonVariants } from '@/components/ui/Button';
+import { Badge, type BadgeProps } from '@/components/ui/Badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/Dialog';
+import { cn } from '@/lib/utils';
 
 export default function SessionDetail() {
   const { id: campaignId, sessionId } = useParams<{ id: string; sessionId: string }>();
@@ -8,6 +19,7 @@ export default function SessionDetail() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   useEffect(() => {
     if (!campaignId || !sessionId) return;
@@ -18,7 +30,7 @@ export default function SessionDetail() {
   }, [campaignId, sessionId]);
 
   const handleDelete = async () => {
-    if (!campaignId || !sessionId || !confirm('¿Eliminar esta sesión?')) return;
+    if (!campaignId || !sessionId) return;
     await api.sessions.delete(campaignId, sessionId);
     navigate(`/campaigns/${campaignId}/sessions`);
   };
@@ -44,7 +56,7 @@ export default function SessionDetail() {
   };
 
   if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
-  if (error) return <p className="text-red-400">Error: {error}</p>;
+  if (error) return <p className="text-[var(--danger)]">Error: {error}</p>;
   if (!session) return <p className="text-[var(--text-secondary)]">Sesión no encontrada</p>;
 
   return (
@@ -63,33 +75,24 @@ export default function SessionDetail() {
         </div>
         <div className="flex gap-2">
           {session.status === 'DRAFT' && (
-            <button
-              onClick={handleStart}
-              className="text-sm px-3 py-1 rounded bg-green-900/50 text-green-400 hover:bg-green-900/80 transition-colors"
-            >
+            <Button size="sm" onClick={() => void handleStart()}>
               Iniciar
-            </button>
+            </Button>
           )}
           {session.status === 'ACTIVE' && (
-            <button
-              onClick={handleEnd}
-              className="text-sm px-3 py-1 rounded bg-blue-900/50 text-blue-400 hover:bg-blue-900/80 transition-colors"
-            >
+            <Button size="sm" variant="secondary" onClick={() => void handleEnd()}>
               Finalizar
-            </button>
+            </Button>
           )}
           <Link
             to={`/campaigns/${campaignId}/sessions/${sessionId}/edit`}
-            className="text-sm px-3 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+            className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
           >
             Editar
           </Link>
-          <button
-            onClick={handleDelete}
-            className="text-sm px-3 py-1 rounded bg-[var(--bg-tertiary)] text-red-400 hover:text-red-300 transition-colors"
-          >
+          <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
             Eliminar
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -127,20 +130,41 @@ export default function SessionDetail() {
           </div>
         )}
       </div>
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent data-testid="confirm-delete-dialog">
+          <DialogHeader>
+            <DialogTitle>Eliminar sesión</DialogTitle>
+            <DialogDescription>
+              ¿Eliminar la sesión {session.title || `#${session.number}`}? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              data-testid="confirm-delete"
+              onClick={() => void handleDelete()}
+            >
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
+const SESSION_STATUS_LABEL: Record<string, string> = {
+  DRAFT: 'Borrador',
+  ACTIVE: 'Activa',
+  COMPLETED: 'Completada',
+  ARCHIVED: 'Archivada',
+};
+
 function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    DRAFT: 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]',
-    ACTIVE: 'bg-green-900/50 text-green-400',
-    COMPLETED: 'bg-blue-900/50 text-blue-400',
-    ARCHIVED: 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]',
-  };
-  return (
-    <span className={`text-xs px-2 py-0.5 rounded ${styles[status] || styles.DRAFT}`}>
-      {status}
-    </span>
-  );
+  const variant: BadgeProps['variant'] =
+    status === 'ACTIVE' ? 'success' : status === 'COMPLETED' ? 'mp' : 'secondary';
+  return <Badge variant={variant}>{SESSION_STATUS_LABEL[status] ?? status}</Badge>;
 }

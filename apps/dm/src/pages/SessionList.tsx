@@ -1,12 +1,24 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api, Session } from '@/lib/api';
+import { Button, buttonVariants } from '@/components/ui/Button';
+import { Badge, type BadgeProps } from '@/components/ui/Badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/Dialog';
+import { cn } from '@/lib/utils';
 
 export default function SessionList() {
   const { id: campaignId } = useParams<{ id: string }>();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!campaignId) return;
@@ -17,13 +29,16 @@ export default function SessionList() {
   }, [campaignId]);
 
   const handleDelete = async (sessionId: string) => {
-    if (!campaignId || !confirm('¿Eliminar esta sesión?')) return;
+    if (!campaignId) return;
     await api.sessions.delete(campaignId, sessionId);
     setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+    setDeleteId(null);
   };
 
+  const deleteTarget = sessions.find((s) => s.id === deleteId) ?? null;
+
   if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
-  if (error) return <p className="text-red-400">Error: {error}</p>;
+  if (error) return <p className="text-[var(--danger)]">Error: {error}</p>;
 
   return (
     <div>
@@ -31,7 +46,7 @@ export default function SessionList() {
         <h1 className="text-2xl font-bold">Sesiones</h1>
         <Link
           to={`/campaigns/${campaignId}/sessions/new`}
-          className="px-4 py-2 text-sm rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
+          className={cn(buttonVariants({ size: 'sm' }))}
         >
           Nueva sesión
         </Link>
@@ -70,12 +85,13 @@ export default function SessionList() {
                 </Link>
                 <div className="flex gap-2 ml-4 items-start">
                   <StatusBadge status={s.status} />
-                  <button
-                    onClick={() => handleDelete(s.id)}
-                    className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-red-400 hover:text-red-300"
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setDeleteId(s.id)}
                   >
                     Eliminar
-                  </button>
+                  </Button>
                 </div>
               </div>
               {(s.summary || s.raw_notes) && (
@@ -87,20 +103,41 @@ export default function SessionList() {
           ))}
         </div>
       )}
+      <Dialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <DialogContent data-testid="confirm-delete-dialog">
+          <DialogHeader>
+            <DialogTitle>Eliminar sesión</DialogTitle>
+            <DialogDescription>
+              ¿Eliminar la sesión {deleteTarget?.title ?? deleteTarget?.number ?? ''}? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteId(null)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              data-testid="confirm-delete"
+              onClick={() => void handleDelete(deleteId!)}
+            >
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
+const SESSION_STATUS_LABEL: Record<string, string> = {
+  DRAFT: 'Borrador',
+  ACTIVE: 'Activa',
+  COMPLETED: 'Completada',
+  ARCHIVED: 'Archivada',
+};
+
 function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    DRAFT: 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]',
-    ACTIVE: 'bg-green-900/50 text-green-400',
-    COMPLETED: 'bg-blue-900/50 text-blue-400',
-    ARCHIVED: 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]',
-  };
-  return (
-    <span className={`text-xs px-2 py-0.5 rounded ${styles[status] || styles.DRAFT}`}>
-      {status === 'DRAFT' ? 'Borrador' : status === 'ACTIVE' ? 'Activa' : status === 'COMPLETED' ? 'Completada' : status === 'ARCHIVED' ? 'Archivada' : status}
-    </span>
-  );
+  const variant: BadgeProps['variant'] =
+    status === 'ACTIVE' ? 'success' : status === 'COMPLETED' ? 'mp' : 'secondary';
+  return <Badge variant={variant}>{SESSION_STATUS_LABEL[status] ?? status}</Badge>;
 }
