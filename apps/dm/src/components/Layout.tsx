@@ -28,68 +28,6 @@ interface Sector {
   tiles?: SectorTile[];
 }
 
-const SECTORS: Sector[] = [
-  {
-    id: 'mesa',
-    label: 'Mesa',
-    icon: <Dices className="h-4 w-4" />,
-    tiles: [
-      { id: 'vtt', label: 'VTT', to: '' },
-      { id: 'manage', label: 'Resumen', to: '/manage' },
-    ],
-  },
-  {
-    id: 'mundo',
-    label: 'Mundo',
-    icon: <Globe className="h-4 w-4" />,
-    tiles: [
-      { id: 'world-state', label: 'Estado del mundo', to: '/world-state' },
-      { id: 'memory', label: 'Memoria', to: '/memory' },
-      { id: 'events', label: 'Eventos', to: '/events' },
-      { id: 'scenes', label: 'Escenas', to: '/scenes' },
-    ],
-  },
-  {
-    id: 'cronica',
-    label: 'Crónica',
-    icon: <Scroll className="h-4 w-4" />,
-    tiles: [
-      { id: 'sessions', label: 'Sesiones', to: '/sessions' },
-      { id: 'narrative', label: 'Narrativa', to: '/narrative' },
-    ],
-  },
-  {
-    id: 'reparto',
-    label: 'Reparto',
-    icon: <Users className="h-4 w-4" />,
-    tiles: [
-      { id: 'characters', label: 'Personajes', to: '/characters' },
-      { id: 'players', label: 'Jugadores', to: '/players' },
-    ],
-  },
-  {
-    id: 'estudio',
-    label: 'Estudio',
-    icon: <Palette className="h-4 w-4" />,
-    tiles: [
-      { id: 'maps', label: 'Imágenes', to: '/maps' },
-      { id: 'assets', label: 'Recursos', to: '/assets' },
-      { id: 'tts', label: 'Voz', to: '/tts' },
-    ],
-  },
-  {
-    id: 'consola',
-    label: 'Consola IA',
-    icon: <Bot className="h-4 w-4" />,
-    tiles: [{ id: 'agents', label: 'Agentes', to: '/agents' }],
-  },
-  {
-    id: 'ajustes',
-    label: 'Ajustes',
-    icon: <Settings className="h-4 w-4" />,
-  },
-];
-
 export default function Layout() {
   const { t } = useTranslation();
   const location = useLocation();
@@ -100,6 +38,68 @@ export default function Layout() {
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [activeSector, setActiveSector] = useState<number | null>(null);
+
+  const SECTORS: Sector[] = [
+    {
+      id: 'mesa',
+      label: t('nav.mesa', 'Mesa'),
+      icon: <Dices className="h-4 w-4" />,
+      tiles: [
+        { id: 'vtt', label: t('nav.vtt', 'VTT'), to: '' },
+        { id: 'manage', label: t('nav.manage', 'Resumen'), to: '/manage' },
+      ],
+    },
+    {
+      id: 'mundo',
+      label: t('nav.mundo', 'Mundo'),
+      icon: <Globe className="h-4 w-4" />,
+      tiles: [
+        { id: 'world-state', label: t('nav.world-state', 'Estado del mundo'), to: '/world-state' },
+        { id: 'memory', label: t('nav.memory', 'Memoria'), to: '/memory' },
+        { id: 'events', label: t('nav.events', 'Eventos'), to: '/events' },
+        { id: 'scenes', label: t('nav.scenes', 'Escenas'), to: '/scenes' },
+      ],
+    },
+    {
+      id: 'cronica',
+      label: t('nav.cronica', 'Crónica'),
+      icon: <Scroll className="h-4 w-4" />,
+      tiles: [
+        { id: 'sessions', label: t('nav.sessions', 'Sesiones'), to: '/sessions' },
+        { id: 'narrative', label: t('nav.narrative', 'Narrativa'), to: '/narrative' },
+      ],
+    },
+    {
+      id: 'reparto',
+      label: t('nav.reparto', 'Reparto'),
+      icon: <Users className="h-4 w-4" />,
+      tiles: [
+        { id: 'characters', label: t('nav.characters', 'Personajes'), to: '/characters' },
+        { id: 'players', label: t('nav.players', 'Jugadores'), to: '/players' },
+      ],
+    },
+    {
+      id: 'estudio',
+      label: t('nav.estudio', 'Estudio'),
+      icon: <Palette className="h-4 w-4" />,
+      tiles: [
+        { id: 'maps', label: t('nav.maps', 'Imágenes'), to: '/maps' },
+        { id: 'assets', label: t('nav.assets', 'Recursos'), to: '/assets' },
+        { id: 'tts', label: t('nav.tts', 'Voz'), to: '/tts' },
+      ],
+    },
+    {
+      id: 'consola',
+      label: t('nav.consola', 'Consola IA'),
+      icon: <Bot className="h-4 w-4" />,
+      tiles: [{ id: 'agents', label: t('nav.agents', 'Agentes'), to: '/agents' }],
+    },
+    {
+      id: 'ajustes',
+      label: t('nav.ajustes', 'Ajustes'),
+      icon: <Settings className="h-4 w-4" />,
+    },
+  ];
 
   // Salir cierra la sesión y vuelve a la landing (no al formulario de PIN).
   const handleLogout = async () => {
@@ -114,20 +114,22 @@ export default function Layout() {
     <Dialog open={logoutOpen} onOpenChange={setLogoutOpen}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>¿Salir de 22w22?</DialogTitle>
-          <DialogDescription>Para volver a entrar vas a necesitar el PIN.</DialogDescription>
+          <DialogTitle>{t('dialog.logoutTitle', '¿Salir de 22w22?')}</DialogTitle>
+          <DialogDescription>
+            {t('dialog.logoutDesc', 'Para volver a entrar vas a necesitar el PIN.')}
+          </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <DialogClose asChild>
             <button className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
-              Cancelar
+              {t('common.cancel')}
             </button>
           </DialogClose>
           <button
             onClick={confirmLogout}
             className="text-sm text-white bg-[var(--accent)] hover:bg-[var(--accent-hover)] rounded px-3 py-1.5 transition-colors"
           >
-            Salir
+            {t('common.logout', 'Salir')}
           </button>
         </DialogFooter>
       </DialogContent>
@@ -152,7 +154,7 @@ export default function Layout() {
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
-              Campañas
+              {t('nav.campaigns', 'Campañas')}
             </Link>
           </nav>
           <div className="ml-auto flex items-center gap-4">
@@ -171,7 +173,7 @@ export default function Layout() {
               onClick={() => setLogoutOpen(true)}
               className="text-sm text-[var(--text-secondary)] hover:text-red-400 transition-colors"
             >
-              Salir
+              {t('common.logout', 'Salir')}
             </button>
           </div>
         </header>
@@ -213,22 +215,22 @@ export default function Layout() {
       <aside className="w-14 border-r border-[var(--bg-tertiary)] flex flex-col items-center py-3 gap-3 shrink-0">
         <Link
           to="/"
-          title="Campañas"
-          aria-label="Campañas"
+          title={t('nav.campaigns', 'Campañas')}
+          aria-label={t('nav.campaigns', 'Campañas')}
           className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
         >
           <ChevronLeft className="h-4 w-4" />
         </Link>
         <Link
           to={basePath}
-          title="VTT"
-          aria-label="VTT"
+          title={t('nav.vtt', 'VTT')}
+          aria-label={t('nav.vtt', 'VTT')}
           className="text-sm font-bold text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors"
         >
           22
         </Link>
 
-        <nav className="flex-1 flex flex-col items-center gap-1" aria-label="Sectores">
+        <nav className="flex-1 flex flex-col items-center gap-1" aria-label={t('nav.sectorGroup', 'Sectores')}>
           {SECTORS.map((sector, index) => (
             <button
               key={sector.id}
@@ -248,8 +250,8 @@ export default function Layout() {
 
         <button
           onClick={() => setLogoutOpen(true)}
-          title="Salir"
-          aria-label="Salir"
+          title={t('common.logout', 'Salir')}
+          aria-label={t('common.logout', 'Salir')}
           className="w-10 h-10 flex items-center justify-center rounded-lg text-[var(--text-secondary)] hover:text-red-400 hover:bg-[var(--bg-tertiary)] transition-colors"
         >
           <LogOut className="h-4 w-4" />

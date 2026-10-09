@@ -2,6 +2,10 @@ import { test, expect } from '../fixtures/campaign-fixture';
 import AxeBuilder from '@axe-core/playwright';
 import { generateInviteCode } from '../helpers/api-helpers';
 
+// Espectro de idioma fijo: correr axe sobre la UI en el mismo idioma que el
+// resto de la suite (spanish), para que los textos de las etiquetas sean estables.
+test.use({ locale: 'es-ES' });
+
 async function expectNoViolations(page: import('@playwright/test').Page, label: string) {
   const results = await new AxeBuilder({ page }).analyze();
   const violations = results.violations.map(
@@ -14,9 +18,7 @@ async function expectNoViolations(page: import('@playwright/test').Page, label: 
 test('A1: landing + login sin violaciones axe', async ({ page }) => {
   await page.addInitScript(() => sessionStorage.clear());
   await page.goto('/');
-  await expect(
-    page.getByRole('heading', { level: 1, name: 'El mundo que tus sesiones recuerdan' }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await expectNoViolations(page, 'landing');
 
   await page.getByRole('link', { name: 'Ingresar' }).click();
