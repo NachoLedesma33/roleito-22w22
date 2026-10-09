@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, Suspense } from 'react';
 import { useParams } from 'react-router-dom';
 import { api, Scene, SceneCharacter, Character, NPC, Map } from '@/lib/api';
 import SceneRenderer from '@/components/SceneRenderer';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
 
 function staticUrl(path: string | null): string | null {
   if (!path) return null;
@@ -133,7 +135,7 @@ export default function SceneDetail() {
   };
 
   if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
-  if (!scene) return <p className="text-red-400">Escena no encontrada</p>;
+  if (!scene) return <p className="text-[var(--danger)]">Escena no encontrada</p>;
 
   const allEntities = [
     ...characters.map((c) => ({ type: 'character' as const, id: c.id, name: c.name, sub: `${c.race} ${c.class_}`, portrait_path: c.portrait_path })),
@@ -171,31 +173,35 @@ export default function SceneDetail() {
                 <option value="bright">Brillante</option>
                 <option value="torchlight">Antorcha</option>
               </select>
-              <button onClick={handleSave} className="px-3 py-1 rounded bg-[var(--accent)] text-white text-sm">Guardar</button>
-              <button onClick={() => setEditing(false)} className="px-3 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] text-sm">Cancelar</button>
+              <Button size="sm" onClick={() => void handleSave()}>Guardar</Button>
+              <Button size="sm" variant="outline" onClick={() => setEditing(false)}>Cancelar</Button>
             </div>
           ) : (
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold">{scene.name}</h1>
               {scene.description && <span className="text-[var(--text-secondary)] text-sm">{scene.description}</span>}
-              <span className={`text-xs px-2 py-0.5 rounded ${scene.status === 'active' ? 'bg-green-900/30 text-green-400' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'}`}>
+              <Badge variant={scene.status === 'active' ? 'success' : 'secondary'}>
                 {scene.status === 'active' ? 'Activa' : 'Inactiva'}
-              </span>
+              </Badge>
             </div>
           )}
         </div>
         <div className="flex gap-2">
           {!editing && (
-            <button onClick={() => setEditing(true)} className="px-3 py-1 text-sm rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+            <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
               Editar
-            </button>
+            </Button>
           )}
-          <button onClick={handleToggleActive} className={`px-3 py-1 text-sm rounded ${scene.status === 'active' ? 'bg-red-900/30 text-red-400' : 'bg-green-900/30 text-green-400'}`}>
+          <Button
+            size="sm"
+            variant={scene.status === 'active' ? 'destructive' : 'default'}
+            onClick={() => void handleToggleActive()}
+          >
             {scene.status === 'active' ? 'Desactivar' : 'Activar'}
-          </button>
-          <button onClick={() => fileInput.current?.click()} className="px-3 py-1 text-sm rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => fileInput.current?.click()}>
             Subir fondo
-          </button>
+          </Button>
           <input ref={fileInput} type="file" accept="image/*,.glb,.gltf" className="hidden" onChange={handleUploadBg} />
           {scene.audio_path ? (
             <div className="hidden md:flex items-center gap-2">
@@ -206,18 +212,19 @@ export default function SceneDetail() {
                 src={staticUrl(scene.audio_path)!}
                 data-testid="scene-audio"
               />
-              <button
-                onClick={handleClearAudio}
-                className="px-2 py-1 text-xs rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-red-400"
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => void handleClearAudio()}
                 title="Quitar audio de la escena"
               >
                 Quitar
-              </button>
+              </Button>
             </div>
           ) : (
-            <button onClick={() => audioFileInput.current?.click()} className="px-3 py-1 text-sm rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+            <Button size="sm" variant="outline" onClick={() => audioFileInput.current?.click()}>
               Subir audio
-            </button>
+            </Button>
           )}
           <input ref={audioFileInput} type="file" accept="audio/*" className="hidden" onChange={handleUploadAudio} />
         </div>
@@ -259,13 +266,14 @@ export default function SceneDetail() {
                 {maps.length > 0 && (
                   <div className="flex gap-2 justify-center flex-wrap">
                     {maps.filter((m) => m.file_path).map((m) => (
-                      <button
+                      <Button
                         key={m.id}
-                        onClick={() => handlePickFromLibrary(m.id)}
-                        className="px-3 py-1 text-xs rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent)] transition-colors"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => void handlePickFromLibrary(m.id)}
                       >
                         {m.name}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 )}
@@ -290,7 +298,7 @@ export default function SceneDetail() {
                       </span>
                       <button
                         onClick={() => handleRemoveFromScene(sc.id)}
-                        className="text-red-400 hover:text-red-300"
+                        className="text-[var(--danger)] hover:opacity-80"
                       >
                         ×
                       </button>

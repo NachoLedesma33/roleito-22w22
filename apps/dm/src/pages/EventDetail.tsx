@@ -1,6 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api, Event } from '@/lib/api';
+import { Button } from '@/components/ui/Button';
+import { Badge, type BadgeProps } from '@/components/ui/Badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/Dialog';
 
 export default function EventDetail() {
   const { eventId } = useParams<{ eventId: string }>();
@@ -8,6 +18,7 @@ export default function EventDetail() {
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   useEffect(() => {
     if (!eventId) return;
@@ -38,13 +49,13 @@ export default function EventDetail() {
   };
 
   const handleDelete = async () => {
-    if (!eventId || !confirm('¿Eliminar este evento?')) return;
+    if (!eventId) return;
     await api.events.delete(eventId);
     navigate(-1);
   };
 
   if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
-  if (error) return <p className="text-red-400">Error: {error}</p>;
+  if (error) return <p className="text-[var(--danger)]">Error: {error}</p>;
   if (!event) return <p className="text-[var(--text-secondary)]">Evento no encontrado</p>;
 
   return (
@@ -52,9 +63,9 @@ export default function EventDetail() {
       <div className="flex items-start justify-between mb-6">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs px-2 py-0.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)]">
+            <Badge variant="secondary">
               {event.type.replace(/_/g, ' ')}
-            </span>
+            </Badge>
             <CanonStatusBadge status={event.status} />
           </div>
           <h1 className="text-2xl font-bold">{event.type.replace(/_/g, ' ')}</h1>
@@ -62,26 +73,17 @@ export default function EventDetail() {
         <div className="flex gap-2">
           {event.status === 'PROPOSED' && (
             <>
-              <button
-                onClick={handleApprove}
-                className="text-sm px-3 py-1 rounded bg-green-900/50 text-green-400 hover:bg-green-900/80 transition-colors"
-              >
+              <Button size="sm" onClick={() => void handleApprove()}>
                 Aprobar
-              </button>
-              <button
-                onClick={handleReject}
-                className="text-sm px-3 py-1 rounded bg-red-900/50 text-red-400 hover:bg-red-900/80 transition-colors"
-              >
+              </Button>
+              <Button size="sm" variant="destructive" onClick={() => void handleReject()}>
                 Rechazar
-              </button>
+              </Button>
             </>
           )}
-          <button
-            onClick={handleDelete}
-            className="text-sm px-3 py-1 rounded bg-[var(--bg-tertiary)] text-red-400 hover:text-red-300 transition-colors"
-          >
+          <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
             Eliminar
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -106,6 +108,28 @@ export default function EventDetail() {
           </div>
         </section>
       </div>
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent data-testid="confirm-delete-dialog">
+          <DialogHeader>
+            <DialogTitle>Eliminar evento</DialogTitle>
+            <DialogDescription>
+              ¿Eliminar este evento? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              data-testid="confirm-delete"
+              onClick={() => void handleDelete()}
+            >
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -120,17 +144,24 @@ function InfoCard({ label, value }: { label: string; value: string }) {
 }
 
 function CanonStatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    CANON: 'bg-green-900/50 text-green-400',
-    PROPOSED: 'bg-yellow-900/50 text-yellow-400',
-    UNCONFIRMED: 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]',
-    REJECTED: 'bg-red-900/50 text-red-400',
-    DM_ONLY: 'bg-purple-900/50 text-purple-400',
-    CONTRADICTORY: 'bg-orange-900/50 text-orange-400',
-  };
-  return (
-    <span className={`text-xs px-2 py-0.5 rounded ${styles[status] || styles.PROPOSED}`}>
-      {status === 'CANON' ? 'Canónico' : status === 'PROPOSED' ? 'Propuesto' : status === 'UNCONFIRMED' ? 'Sin confirmar' : status === 'REJECTED' ? 'Rechazado' : status === 'DM_ONLY' ? 'Solo DM' : status}
-    </span>
-  );
+  const variant: BadgeProps['variant'] = CANON_VARIANT[status] ?? 'secondary';
+  return <Badge variant={variant}>{CANON_LABEL[status] ?? status}</Badge>;
 }
+
+const CANON_VARIANT: Record<string, BadgeProps['variant']> = {
+  CANON: 'canon',
+  PROPOSED: 'proposed',
+  UNCONFIRMED: 'secondary',
+  REJECTED: 'danger',
+  DM_ONLY: 'warning',
+  CONTRADICTORY: 'warning',
+};
+
+const CANON_LABEL: Record<string, string> = {
+  CANON: 'Canónico',
+  PROPOSED: 'Propuesto',
+  UNCONFIRMED: 'Sin confirmar',
+  REJECTED: 'Rechazado',
+  DM_ONLY: 'Solo DM',
+  CONTRADICTORY: 'Contradictorio',
+};

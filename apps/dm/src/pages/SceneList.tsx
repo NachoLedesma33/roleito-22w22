@@ -1,6 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api, Scene } from '@/lib/api';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/Dialog';
 
 export default function SceneList() {
   const { id: campaignId } = useParams<{ id: string }>();
@@ -11,6 +21,7 @@ export default function SceneList() {
   const [newName, setNewName] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [saving, setSaving] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!campaignId) return;
@@ -38,10 +49,13 @@ export default function SceneList() {
   };
 
   const handleDelete = async (sceneId: string) => {
-    if (!campaignId || !confirm('¿Eliminar esta escena?')) return;
+    if (!campaignId) return;
     await api.scenes.delete(campaignId, sceneId);
     setScenes((prev) => prev.filter((s) => s.id !== sceneId));
+    setDeleteId(null);
   };
+
+  const deleteTarget = scenes.find((s) => s.id === deleteId) ?? null;
 
   if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
 
@@ -49,12 +63,13 @@ export default function SceneList() {
     <div className="max-w-3xl">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Escenas</h1>
-        <button
+        <Button
+          size="sm"
+          variant={showForm ? 'outline' : 'default'}
           onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 text-sm rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
         >
           {showForm ? 'Cancelar' : 'Nueva escena'}
-        </button>
+        </Button>
       </div>
 
       {showForm && (
@@ -80,13 +95,12 @@ export default function SceneList() {
               placeholder="Descripción opcional"
             />
           </div>
-          <button
+          <Button
             type="submit"
             disabled={saving || !newName.trim()}
-            className="px-4 py-2 rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
           >
             {saving ? 'Creando...' : 'Crear escena'}
-          </button>
+          </Button>
         </form>
       )}
 
@@ -114,26 +128,49 @@ export default function SceneList() {
                       <p className="text-xs text-[var(--text-secondary)] mt-1">{s.description}</p>
                     )}
                     <div className="flex gap-2 mt-2">
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${s.status === 'active' ? 'bg-green-900/30 text-green-400' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'}`}>
+                      <Badge variant={s.status === 'active' ? 'success' : 'secondary'}>
                         {s.status === 'active' ? 'Activa' : s.status}
-                      </span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)]">
+                      </Badge>
+                      <Badge variant="secondary">
                         {s.lighting === 'neutral' ? 'Neutra' : s.lighting === 'dark' ? 'Oscura' : s.lighting === 'dim' ? 'Tenue' : s.lighting === 'bright' ? 'Brillante' : s.lighting === 'torchlight' ? 'Antorcha' : s.lighting}
-                      </span>
+                      </Badge>
                     </div>
                   </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleDelete(s.id); }}
-                    className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-red-400 hover:text-red-300"
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={(e) => { e.stopPropagation(); setDeleteId(s.id); }}
                   >
                     Eliminar
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
           ))}
         </div>
       )}
+      <Dialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <DialogContent data-testid="confirm-delete-dialog">
+          <DialogHeader>
+            <DialogTitle>Eliminar escena</DialogTitle>
+            <DialogDescription>
+              ¿Eliminar la escena {deleteTarget?.name ?? 'seleccionada'}? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteId(null)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              data-testid="confirm-delete"
+              onClick={() => void handleDelete(deleteId!)}
+            >
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

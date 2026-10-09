@@ -1,12 +1,23 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api, Event } from '@/lib/api';
+import { Button } from '@/components/ui/Button';
+import { Badge, type BadgeProps } from '@/components/ui/Badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/Dialog';
 
 export default function EventList() {
   const { id: campaignId, sessionId } = useParams<{ id: string; sessionId: string }>();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!campaignId) return;
@@ -37,14 +48,16 @@ export default function EventList() {
   };
 
   const handleDelete = async (eventId: string) => {
-    if (!confirm('¿Eliminar este evento?')) return;
     try {
       await api.events.delete(eventId);
       setEvents((prev) => prev.filter((e) => e.id !== eventId));
+      setDeleteId(null);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'No se pudo eliminar');
     }
   };
+
+  const deleteTarget = events.find((e) => e.id === deleteId) ?? null;
 
   if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
 
@@ -64,7 +77,7 @@ export default function EventList() {
         )}
       </div>
 
-      {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+      {error && <p className="text-[var(--danger)] text-sm mb-4">{error}</p>}
 
       {events.length === 0 ? (
         <div className="text-center py-20 text-[var(--text-secondary)]">
@@ -92,72 +105,94 @@ export default function EventList() {
                 <div className="flex gap-2 ml-4">
                   {ev.status === 'PROPOSED' && (
                     <>
-                      <button
-                        onClick={() => handleApprove(ev.id)}
-                        className="text-xs px-2 py-1 rounded bg-green-900/50 text-green-400 hover:bg-green-900/80"
-                      >
+                      <Button size="sm" onClick={() => void handleApprove(ev.id)}>
                         Aprobar
-                      </button>
-                      <button
-                        onClick={() => handleReject(ev.id)}
-                        className="text-xs px-2 py-1 rounded bg-red-900/50 text-red-400 hover:bg-red-900/80"
-                      >
+                      </Button>
+                      <Button size="sm" variant="destructive" onClick={() => void handleReject(ev.id)}>
                         Rechazar
-                      </button>
+                      </Button>
                     </>
                   )}
-                  <button
-                    onClick={() => handleDelete(ev.id)}
-                    className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-red-400 hover:text-red-300"
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setDeleteId(ev.id)}
                   >
                     Eliminar
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
           ))}
         </div>
       )}
+      <Dialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <DialogContent data-testid="confirm-delete-dialog">
+          <DialogHeader>
+            <DialogTitle>Eliminar evento</DialogTitle>
+            <DialogDescription>
+              ¿Eliminar el evento {deleteTarget?.type ?? 'seleccionado'}? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteId(null)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              data-testid="confirm-delete"
+              onClick={() => void handleDelete(deleteId!)}
+            >
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
+const EVENT_TYPE_VARIANT: Record<string, BadgeProps['variant']> = {
+  CHARACTER_DIED: 'danger',
+  CHARACTER_INJURED: 'danger',
+  NPC_DIED: 'danger',
+  COMBAT_STARTED: 'danger',
+  CHARACTER_MOVED: 'mp',
+  DISCOVERY: 'mp',
+  LOCATION_DISCOVERED: 'mp',
+  ITEM_FOUND: 'mp',
+  CHARACTER_CREATED: 'success',
+  NPC_INTRODUCED: 'success',
+  QUEST_COMPLETED: 'success',
+  COMBAT_ENDED: 'success',
+  QUEST_STARTED: 'warning',
+  DECISION: 'warning',
+  DIALOGUE: 'def',
+};
+
 function EventTypeBadge({ type }: { type: string }) {
-  const colors: Record<string, string> = {
-    CHARACTER_CREATED: 'bg-purple-900/50 text-purple-400',
-    CHARACTER_DIED: 'bg-red-900/50 text-red-400',
-    CHARACTER_INJURED: 'bg-orange-900/50 text-orange-400',
-    CHARACTER_MOVED: 'bg-blue-900/50 text-blue-400',
-    NPC_INTRODUCED: 'bg-teal-900/50 text-teal-400',
-    NPC_DIED: 'bg-red-900/50 text-red-400',
-    LOCATION_DISCOVERED: 'bg-cyan-900/50 text-cyan-400',
-    ITEM_FOUND: 'bg-yellow-900/50 text-yellow-400',
-    QUEST_STARTED: 'bg-indigo-900/50 text-indigo-400',
-    QUEST_COMPLETED: 'bg-green-900/50 text-green-400',
-    COMBAT_STARTED: 'bg-red-900/50 text-red-400',
-    COMBAT_ENDED: 'bg-orange-900/50 text-orange-400',
-    DISCOVERY: 'bg-cyan-900/50 text-cyan-400',
-    DECISION: 'bg-violet-900/50 text-violet-400',
-    DIALOGUE: 'bg-blue-900/50 text-blue-400',
-  };
   return (
-    <span className={`text-[10px] px-1.5 py-0.5 rounded ${colors[type] || 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'}`}>
+    <Badge variant={EVENT_TYPE_VARIANT[type] ?? 'secondary'}>
       {type.replace(/_/g, ' ')}
-    </span>
+    </Badge>
   );
 }
 
+const CANON_VARIANT: Record<string, BadgeProps['variant']> = {
+  CANON: 'canon',
+  PROPOSED: 'proposed',
+  UNCONFIRMED: 'secondary',
+  REJECTED: 'danger',
+  DM_ONLY: 'warning',
+};
+
 function CanonBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    CANON: 'bg-green-900/50 text-green-400',
-    PROPOSED: 'bg-yellow-900/50 text-yellow-400',
-    UNCONFIRMED: 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]',
-    REJECTED: 'bg-red-900/50 text-red-400',
-    DM_ONLY: 'bg-purple-900/50 text-purple-400',
+  const labels: Record<string, string> = {
+    CANON: 'Canónico',
+    PROPOSED: 'Propuesto',
+    UNCONFIRMED: 'Sin confirmar',
+    REJECTED: 'Rechazado',
+    DM_ONLY: 'Solo DM',
   };
-  return (
-    <span className={`text-[10px] px-1.5 py-0.5 rounded ${styles[status] || styles.PROPOSED}`}>
-      {status === 'CANON' ? 'Canónico' : status === 'PROPOSED' ? 'Propuesto' : status === 'UNCONFIRMED' ? 'Sin confirmar' : status === 'REJECTED' ? 'Rechazado' : status === 'DM_ONLY' ? 'Solo DM' : status}
-    </span>
-  );
+  return <Badge variant={CANON_VARIANT[status] ?? 'secondary'}>{labels[status] ?? status}</Badge>;
 }
