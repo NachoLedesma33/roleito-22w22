@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 const VIDEO_SRC = '/ui/22w22Logo-animado.mp4';
 
 /**
- * Intro de arranque de perfil (§6.3): tapa la pantalla con el video a 1.25x y
+ * Intro de arranque de perfil (§6.3): tapa la pantalla con el video a 1.6x y
  * solo llama a `onDone` cuando termina (o cuando se salta). Nunca corta el
  * video de golpe aunque el destino ya esté listo: la página de campañas se
  * muestra recién después del `ended`.
@@ -26,7 +26,7 @@ export default function ProfileIntro({ onDone }: { onDone: () => void }) {
     }
     const video = videoRef.current;
     if (!video) return;
-    video.playbackRate = 1.25;
+    video.playbackRate = 1.6;
     const onTime = () => {
       if (video.duration) setProgress((video.currentTime / video.duration) * 100);
     };

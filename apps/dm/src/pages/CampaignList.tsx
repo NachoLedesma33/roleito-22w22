@@ -373,7 +373,7 @@ export default function CampaignList() {
           ))}
           <Link
             to="/campaigns/new"
-            className="rounded-xl border-2 border-dashed border-[var(--bg-tertiary)] hover:border-[var(--accent)] bg-[var(--surface)] flex flex-col items-center justify-center gap-2 aspect-[16/9] text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
+            className="rounded-xl border-2 border-dashed border-[var(--bg-tertiary)] hover:border-[var(--accent)] bg-[var(--surface)]/60 flex flex-col items-center justify-center gap-2 aspect-[16/9] text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
           >
             <span className="text-3xl leading-none">+</span>
             <span className="text-sm">{t('lobby.newCampaign')}</span>
