@@ -38,8 +38,8 @@
   --ink-faint: var(--muted-ink);
   --brand: var(--arcana-500);
   --brand-hover: var(--arcana-600);
-  --on-brand: #ffffff;
-  --on-danger: #ffffff;
+  --on-brand: #0a0d12;
+  --on-danger: #0a0d12;
   --hp: var(--ruby-500);
   --mp: var(--azure-500);
   --def: var(--brass-500);

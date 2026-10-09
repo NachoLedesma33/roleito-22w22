@@ -176,7 +176,7 @@ export default function CampaignList() {
             onClick={() => setSelectMode((v) => !v)}
             className={`px-4 py-2 text-sm rounded transition-colors ${
               selectMode
-                ? 'bg-[var(--accent)] text-white shadow-md'
+                ? 'bg-[var(--accent)] text-[var(--on-brand)] shadow-md'
                 : 'bg-[var(--surface)] border border-[var(--bg-tertiary)] shadow-md text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
@@ -190,7 +190,7 @@ export default function CampaignList() {
           </button>
           <Link
             to="/campaigns/new"
-            className="px-4 py-2 text-sm rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] shadow-md transition-colors"
+            className="px-4 py-2 text-sm rounded bg-[var(--accent)] text-[var(--on-brand)] hover:bg-[var(--accent-hover)] shadow-md transition-colors"
           >
             {t('lobby.newCampaign')}
           </Link>
@@ -260,7 +260,7 @@ export default function CampaignList() {
                 <div className="flex gap-2">
                   <button
                     onClick={handleBulkEdit}
-                    className="px-3 py-1.5 text-sm rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
+                    className="px-3 py-1.5 text-sm rounded bg-[var(--accent)] text-[var(--on-brand)] hover:bg-[var(--accent-hover)] transition-colors"
                   >
                     Aplicar
                   </button>
@@ -340,7 +340,7 @@ export default function CampaignList() {
                   <div className="mt-3 flex items-center gap-2">
                     <Link
                       to={`/campaigns/${c.id}`}
-                      className="px-3 py-1.5 text-sm rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
+                      className="px-3 py-1.5 text-sm rounded bg-[var(--accent)] text-[var(--on-brand)] hover:bg-[var(--accent-hover)] transition-colors"
                     >
                       {t('common.continue')}
                     </Link>

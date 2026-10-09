@@ -1875,6 +1875,7 @@ export default function DmDashboard() {
 
   return (
     <div className="h-full flex flex-col bg-black overflow-hidden select-none">
+      <h1 className="sr-only">Mesa de juego</h1>
       <TopBar
         title={campaign.name}
         titleTo="/"
@@ -1893,6 +1894,7 @@ export default function DmDashboard() {
             <select
               value={activeScene?.id || ''}
               onChange={(e) => handleSceneSwitch(e.target.value)}
+              aria-label="Escena activa"
               className="text-sm bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-2 py-1 text-[var(--text-primary)] cursor-pointer shrink-0"
             >
               {scenes.length === 0 && <option value="">Sin escenas</option>}
@@ -2263,7 +2265,7 @@ export default function DmDashboard() {
                       className="w-full h-1 cursor-pointer"
                       title={`Intensidad del clima (${weatherIntensityK.toFixed(2)}x)`}
                     />
-                    <div className="flex justify-between text-[9px] text-[var(--text-secondary)] opacity-70 mt-0.5">
+                    <div className="flex justify-between text-[9px] text-[var(--text-secondary)] mt-0.5">
                       <span>Tenue</span>
                       <span>Fuerte</span>
                       <span>Torrencial</span>
@@ -2693,7 +2695,7 @@ export default function DmDashboard() {
 
         {/* Rail derecho contextual — capas y niebla (Mesa) */}
         <div className="absolute right-2 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-1 w-[185px] bg-[var(--bg-secondary)]/90 border border-[var(--bg-tertiary)] rounded-lg p-1.5 shadow-lg">
-          <div className="px-1.5 text-[10px] uppercase tracking-wide text-[var(--text-secondary)] opacity-70">Capas</div>
+          <div className="px-1.5 text-[10px] uppercase tracking-wide text-[var(--text-secondary)]">Capas</div>
           <button
             onClick={() => setShowZones((v) => !v)}
             className={`w-full text-xs px-2 py-1 rounded transition-colors text-left ${showZones ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)]' : 'bg-transparent text-[var(--text-secondary)]'}`}
@@ -2703,7 +2705,7 @@ export default function DmDashboard() {
             🧩 Zonas {showZones ? '●' : '○'}
           </button>
           <div className="border-t border-[var(--bg-tertiary)] my-1" />
-          <div className="px-1.5 text-[10px] uppercase tracking-wide text-[var(--text-secondary)] opacity-70">Niebla</div>
+          <div className="px-1.5 text-[10px] uppercase tracking-wide text-[var(--text-secondary)]">Niebla</div>
           <button
             onClick={startFogMode}
             className={`block w-full text-left px-2 py-1 text-xs rounded transition-colors ${fogMode ? 'text-amber-400 bg-[var(--bg-tertiary)]' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}

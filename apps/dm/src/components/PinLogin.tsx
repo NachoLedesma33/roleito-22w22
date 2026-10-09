@@ -11,7 +11,7 @@ const inputClass =
 const pinInputClass = `${inputClass} text-3xl tracking-[0.5em]`;
 
 const secondaryClass =
-  'w-full py-2 text-xs text-brand hover:text-brand-hover underline underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md';
+  'w-full py-2 text-xs text-ink-muted hover:text-ink underline underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md';
 
 /**
  * Pantalla de entrada. El login es nombre de perfil + PIN; a un costado, los

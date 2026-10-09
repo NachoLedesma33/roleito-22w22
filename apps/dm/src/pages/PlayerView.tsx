@@ -1178,7 +1178,8 @@ export default function PlayerView() {
   const myStatuses = data.characters.find((c) => c.id === mySceneCharId)?.statuses ?? [];
 
   return (
-    <div className="h-screen flex flex-col bg-black overflow-hidden select-none">
+    <main className="h-screen flex flex-col bg-black overflow-hidden select-none">
+      <h1 className="sr-only">Vista de jugador</h1>
       <audio ref={audioRef} loop className="hidden" />
       <TopBar
         title={data.campaign_name}
@@ -1466,7 +1467,7 @@ export default function PlayerView() {
                     className="w-12 h-12 rounded-full object-cover border border-[var(--bg-tertiary)]"
                   />
                 ) : (
-                  <div className="w-12 h-12 rounded-full bg-[var(--accent)]/20 border border-[var(--accent)]/40 flex items-center justify-center text-sm font-bold text-[var(--accent)]">
+                  <div className="w-12 h-12 rounded-full bg-[var(--accent)]/20 border border-[var(--accent)]/40 flex items-center justify-center text-sm font-bold text-white">
                     {myChar.name.slice(0, 2).toUpperCase()}
                   </div>
                 )}
@@ -1865,6 +1866,6 @@ export default function PlayerView() {
         toasts={toastQueue}
         onDismiss={(id) => setToastQueue((prev) => prev.filter((t) => t.id !== id))}
       />
-    </div>
+    </main>
   );
 }

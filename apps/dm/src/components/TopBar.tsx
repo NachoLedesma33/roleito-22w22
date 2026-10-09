@@ -54,11 +54,11 @@ export default function TopBar({ title, titleTo, subtitle, left, children, class
       {left}
 
       {titleTo ? (
-        <Link to={titleTo} className="text-sm font-bold text-[var(--accent)] hover:text-[var(--accent-hover)] shrink-0">
+        <Link to={titleTo} className="text-sm font-bold text-[var(--text-primary)] hover:text-[var(--text-primary)] shrink-0">
           {title}
         </Link>
       ) : (
-        <span className="text-sm font-bold text-[var(--accent)] shrink-0">{title}</span>
+        <span className="text-sm font-bold text-[var(--text-primary)] shrink-0">{title}</span>
       )}
 
       {subtitle && (

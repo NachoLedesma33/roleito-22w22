@@ -33,7 +33,7 @@ export default function LoginShell({ onExitComplete }: { onExitComplete: () => v
   }, [exiting]);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-black">
+    <main className="relative min-h-screen overflow-hidden bg-black">
       <video
         ref={videoRef}
         src={VIDEO_SRC}
@@ -55,6 +55,6 @@ export default function LoginShell({ onExitComplete }: { onExitComplete: () => v
       >
         <PinLogin />
       </div>
-    </div>
+    </main>
   );
 }

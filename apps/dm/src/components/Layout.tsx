@@ -140,7 +140,7 @@ export default function Layout() {
     return (
       <div className="min-h-screen flex flex-col">
         <header className="relative z-10 border-b border-[var(--bg-tertiary)] bg-[var(--surface)] px-6 py-3 flex items-center gap-6">
-          <Link to="/" className="text-lg font-bold text-[var(--accent)]">
+          <Link to="/" className="text-lg font-bold text-[var(--text-primary)]">
             22w22
           </Link>
           <nav className="flex gap-4">
