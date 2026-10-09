@@ -12,6 +12,10 @@ export default defineConfig({
     headless: true,
     screenshot: 'only-on-failure',
     trace: 'on-first-retry',
+    // Toda la suite navega la UI en español (la app traduce por navigator.language
+    // vía i18n); fijar el locale evita que specs sin `test.use({ locale })` vean
+    // la interfaz en inglés a medida que los textos migran a claves.
+    locale: 'es-ES',
   },
   webServer: [
     {
