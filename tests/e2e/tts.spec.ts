@@ -1,5 +1,8 @@
 import { expect, test } from '../fixtures/campaign-fixture';
 
+// El rail del Layout traduce (claves i18n); fijar idioma para anclas estables en español.
+test.use({ locale: 'es-ES' });
+
 const API = 'http://localhost:8000/api';
 
 const DEFAULT_TTS = { provider: 'mock', voice: 'mock-voice-1', speed: 1.0, language: 'es' };
