@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '@/lib/api';
+import { Button } from '@/components/ui/Button';
 
 export default function CampaignForm() {
   const { id } = useParams<{ id: string }>();
@@ -57,7 +58,7 @@ export default function CampaignForm() {
       </h1>
 
       {error && (
-        <p className="text-red-400 text-sm mb-4">{error}</p>
+        <p className="text-[var(--danger)] text-sm mb-4">{error}</p>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -88,20 +89,12 @@ export default function CampaignForm() {
         </div>
 
         <div className="flex gap-3 pt-2">
-          <button
-            type="submit"
-            disabled={saving}
-            className="px-4 py-2 rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
-          >
+          <Button type="submit" disabled={saving}>
             {saving ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear campaña'}
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="px-4 py-2 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-          >
+          </Button>
+          <Button variant="outline" type="button" onClick={() => navigate(-1)}>
             Cancelar
-          </button>
+          </Button>
         </div>
       </form>
     </div>

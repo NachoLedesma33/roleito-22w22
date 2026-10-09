@@ -1,6 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, Campaign, Character, NPC, Session, WorldState } from '@/lib/api';
+import { Button, buttonVariants } from '@/components/ui/Button';
+import { Badge, type BadgeProps } from '@/components/ui/Badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/Dialog';
+import { cn } from '@/lib/utils';
 
 export default function CampaignDetail() {
   const { id } = useParams<{ id: string }>();
@@ -12,6 +23,7 @@ export default function CampaignDetail() {
   const [worldState, setWorldState] = useState<WorldState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -34,7 +46,7 @@ export default function CampaignDetail() {
   }, [id]);
 
   const handleDelete = async () => {
-    if (!id || !confirm('¿Eliminar esta campaña?')) return;
+    if (!id) return;
     await api.campaigns.delete(id);
     navigate('/');
   };
@@ -52,7 +64,7 @@ export default function CampaignDetail() {
   };
 
   if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
-  if (error) return <p className="text-red-400">Error: {error}</p>;
+  if (error) return <p className="text-[var(--danger)]">Error: {error}</p>;
   if (!campaign) return <p className="text-[var(--text-secondary)]">Campaña no encontrada</p>;
 
   const activeSession = sessions.find((s) => s.status === 'ACTIVE');
@@ -71,28 +83,26 @@ export default function CampaignDetail() {
         <div className="flex gap-2">
           <Link
             to={`/campaigns/${campaign.id}`}
-            className="text-sm px-3 py-1 rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
+            className={cn(buttonVariants({ size: 'sm' }))}
           >
             Abrir VTT
           </Link>
           <Link
             to={`/campaigns/${campaign.id}/edit`}
-            className="text-sm px-3 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+            className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
           >
             Editar
           </Link>
-          <button
-            onClick={handleExport}
-            className="text-sm px-3 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => void handleExport()}
           >
             Exportar
-          </button>
-          <button
-            onClick={handleDelete}
-            className="text-sm px-3 py-1 rounded bg-[var(--bg-tertiary)] text-red-400 hover:text-red-300 transition-colors"
-          >
+          </Button>
+          <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
             Eliminar
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -115,12 +125,12 @@ export default function CampaignDetail() {
       {activeSession && (
         <Link
           to={`/campaigns/${campaign.id}/sessions/${activeSession.id}`}
-          className="block mb-8 border border-green-900/50 rounded-lg p-4 bg-green-900/10 hover:border-green-500/50 transition-colors"
+          className="block mb-8 border border-[var(--success)] rounded-lg p-4 bg-[var(--bg-tertiary)] hover:opacity-90 transition-opacity"
         >
           <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
+            <div className="w-3 h-3 rounded-full bg-[var(--success)] animate-pulse" />
             <div>
-              <p className="text-sm font-medium text-green-400">
+              <p className="text-sm font-medium text-[var(--success)]">
                 Sesión #{activeSession.number} en progreso
               </p>
               <p className="text-xs text-[var(--text-secondary)]">
@@ -192,8 +202,8 @@ export default function CampaignDetail() {
                   <p className="text-xs text-[var(--text-secondary)]">{c.race} {c.class_}</p>
                 </div>
                 <div className="flex gap-3 text-[10px]">
-                  <span className="text-red-400">PV:{c.current_pv}/{c.max_pv}</span>
-                  <span className="text-blue-400">PM:{c.current_pm}/{c.max_pm}</span>
+                  <span className="text-[var(--hp)]">PV:{c.current_pv}/{c.max_pv}</span>
+                  <span className="text-[var(--mp)]">PM:{c.current_pm}/{c.max_pm}</span>
                 </div>
                 <StatusDot status={c.status} />
               </Link>
@@ -234,6 +244,28 @@ export default function CampaignDetail() {
           </div>
         </section>
       )}
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent data-testid="confirm-delete-dialog">
+          <DialogHeader>
+            <DialogTitle>Eliminar campaña</DialogTitle>
+            <DialogDescription>
+              ¿Eliminar la campaña {campaign.name}? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              data-testid="confirm-delete"
+              onClick={() => void handleDelete()}
+            >
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -242,26 +274,25 @@ function StatusCard({ label, value, accent }: { label: string; value: string; ac
   return (
     <div className="border border-[var(--bg-tertiary)] rounded-lg p-3">
       <p className="text-xs text-[var(--text-secondary)]">{label}</p>
-      <p className={`text-lg font-bold mt-1 ${accent ? 'text-green-400' : ''}`}>{value}</p>
+      <p className={`text-lg font-bold mt-1 ${accent ? 'text-[var(--success)]' : ''}`}>{value}</p>
     </div>
   );
 }
 
 function StatusDot({ status }: { status: string }) {
-  const color = status === 'alive' ? 'bg-green-500' : status === 'dead' ? 'bg-red-500' : 'bg-yellow-500';
+  const color = status === 'alive' ? 'bg-[var(--success)]' : status === 'dead' ? 'bg-[var(--danger)]' : 'bg-[var(--warning)]';
   return <div className={`w-2 h-2 rounded-full ${color}`} />;
 }
 
+const SESSION_STATUS_LABEL: Record<string, string> = {
+  DRAFT: 'Borrador',
+  ACTIVE: 'Activa',
+  COMPLETED: 'Completada',
+  ARCHIVED: 'Archivada',
+};
+
 function SessionStatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    DRAFT: 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]',
-    ACTIVE: 'bg-green-900/50 text-green-400',
-    COMPLETED: 'bg-blue-900/50 text-blue-400',
-    ARCHIVED: 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]',
-  };
-  return (
-    <span className={`text-xs px-2 py-0.5 rounded ${styles[status] || styles.DRAFT}`}>
-      {status === 'DRAFT' ? 'Borrador' : status === 'ACTIVE' ? 'Activa' : status === 'COMPLETED' ? 'Completada' : status === 'ARCHIVED' ? 'Archivada' : status}
-    </span>
-  );
+  const variant: BadgeProps['variant'] =
+    status === 'ACTIVE' ? 'success' : status === 'COMPLETED' ? 'mp' : 'secondary';
+  return <Badge variant={variant}>{SESSION_STATUS_LABEL[status] ?? status}</Badge>;
 }
