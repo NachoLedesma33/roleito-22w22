@@ -59,10 +59,10 @@ test.describe('Character CRUD', () => {
     );
 
     await page.goto(`/campaigns/${campaign.id}/characters`);
-    page.on('dialog', (dialog) => dialog.accept());
 
     const card = page.locator('div.border.rounded-lg', { hasText: 'Nadia' }).first();
     await card.getByRole('button', { name: 'Eliminar' }).click();
+    await page.getByTestId('confirm-delete').click();
 
     await expect(page.getByText('Nadia')).toHaveCount(0);
   });

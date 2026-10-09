@@ -6,6 +6,17 @@ import * as THREE from 'three';
 import { api, Character } from '@/lib/api';
 import type { VidaAttr } from '@/lib/api';
 import { VidaBar, VidaAttrs, VidaDerived } from '@/components/VidaDisplay';
+import { Button, buttonVariants } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/Dialog';
+import { cn } from '@/lib/utils';
 
 const REGEN_TEXT: Record<VidaAttr, string> = {
   '+': 'Rápida (más dados)',
@@ -41,6 +52,7 @@ export default function CharacterDetail() {
   const [character, setCharacter] = useState<Character | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const modelFileInput = useRef<HTMLInputElement>(null);
 
@@ -53,7 +65,7 @@ export default function CharacterDetail() {
   }, [campaignId, characterId]);
 
   const handleDelete = async () => {
-    if (!campaignId || !characterId || !confirm('¿Eliminar este personaje?')) return;
+    if (!campaignId || !characterId) return;
     await api.characters.delete(campaignId, characterId);
     navigate(`/campaigns/${campaignId}/characters`);
   };
@@ -83,7 +95,7 @@ export default function CharacterDetail() {
   };
 
   if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
-  if (error) return <p className="text-red-400">Error: {error}</p>;
+  if (error) return <p className="text-[var(--danger)]">Error: {error}</p>;
   if (!character) return <p className="text-[var(--text-secondary)]">Personaje no encontrado</p>;
 
   const pUrl = portraitUrl(character.portrait_path);
@@ -111,13 +123,11 @@ export default function CharacterDetail() {
               {character.race} {character.class_} · {character.type === 'player' ? 'Jugador' : character.type === 'creature' ? 'Criatura' : character.type}
             </p>
             <div className="flex items-center gap-3 mt-2">
-              <span className={`text-xs px-2 py-0.5 rounded ${
-                character.status === 'alive' ? 'bg-green-900/50 text-green-400' :
-                character.status === 'dead' ? 'bg-red-900/50 text-red-400' :
-                'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'
-              }`}>
+              <Badge
+                variant={character.status === 'alive' ? 'success' : character.status === 'dead' ? 'danger' : 'secondary'}
+              >
                 {character.status === 'alive' ? 'Vivo' : character.status === 'dead' ? 'Muerto' : character.status}
-              </span>
+              </Badge>
               {!pUrl && (
                 <button
                   onClick={() => fileInput.current?.click()}
@@ -127,9 +137,7 @@ export default function CharacterDetail() {
                 </button>
               )}
               {pUrl && (
-                <span
-                  className="text-xs text-red-400"
-                >
+                <span className="text-xs text-[var(--danger)]">
                   Retrato subido
                 </span>
               )}
@@ -139,16 +147,13 @@ export default function CharacterDetail() {
         <div className="flex gap-2">
           <Link
             to={`/campaigns/${campaignId}/characters/${characterId}/edit`}
-            className="text-sm px-3 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+            className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
           >
             Editar
           </Link>
-          <button
-            onClick={handleDelete}
-            className="text-sm px-3 py-1 rounded bg-[var(--bg-tertiary)] text-red-400 hover:text-red-300 transition-colors"
-          >
+          <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
             Eliminar
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -160,12 +165,13 @@ export default function CharacterDetail() {
       <div className="mb-6 border border-[var(--bg-tertiary)] rounded-lg p-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-semibold">Modelo 3D</h2>
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => modelFileInput.current?.click()}
-            className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
           >
             {mUrl ? 'Reemplazar .glb' : 'Subir .glb'}
-          </button>
+          </Button>
           <input ref={modelFileInput} type="file" accept=".glb,.gltf" className="hidden" onChange={handleModelUpload} />
         </div>
         {mUrl ? (
@@ -200,8 +206,8 @@ export default function CharacterDetail() {
         <section>
           <h2 className="text-lg font-semibold mb-3">Estado actual</h2>
           <div className="space-y-3">
-            <VidaBar current={character.current_pv} max={character.max_pv} label="PV (Puntos de Vida)" color="bg-red-500" />
-            <VidaBar current={character.current_pm} max={character.max_pm} label="PM (Puntos de Mente)" color="bg-blue-500" />
+            <VidaBar current={character.current_pv} max={character.max_pv} label="PV (Puntos de Vida)" color="bg-hp" />
+            <VidaBar current={character.current_pm} max={character.max_pm} label="PM (Puntos de Mente)" color="bg-mp" />
           </div>
         </section>
 
@@ -233,6 +239,28 @@ export default function CharacterDetail() {
           </div>
         </section>
       </div>
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent data-testid="confirm-delete-dialog">
+          <DialogHeader>
+            <DialogTitle>Eliminar personaje</DialogTitle>
+            <DialogDescription>
+              ¿Eliminar a {character.name}? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              data-testid="confirm-delete"
+              onClick={() => void handleDelete()}
+            >
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

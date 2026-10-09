@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { api } from '@/lib/api';
 import type { VidaAttr } from '@/lib/api';
 import { VidaAttrsInput, NumberInput } from '@/components/VidaInputs';
+import { Button } from '@/components/ui/Button';
 
 function ModelPreview({ url }: { url: string }) {
   const groupRef = useRef<THREE.Group>(null);
@@ -131,7 +132,7 @@ export default function CharacterForm() {
         {isEdit ? 'Editar personaje' : 'Nuevo personaje'}
       </h1>
 
-      {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+      {error && <p className="text-[var(--danger)] text-sm mb-4">{error}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -271,7 +272,7 @@ export default function CharacterForm() {
                 <button
                   type="button"
                   onClick={() => { setModelFile(null); setModelPreviewUrl(null); }}
-                  className="mt-1 text-red-400 hover:text-red-300"
+                  className="mt-1 text-[var(--danger)] hover:opacity-80"
                 >
                   Quitar modelo
                 </button>
@@ -306,20 +307,12 @@ export default function CharacterForm() {
         </div>
 
         <div className="flex gap-3 pt-2">
-          <button
-            type="submit"
-            disabled={saving}
-            className="px-4 py-2 rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
-          >
+          <Button type="submit" disabled={saving}>
             {saving ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear personaje'}
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="px-4 py-2 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-          >
+          </Button>
+          <Button variant="outline" type="button" onClick={() => navigate(-1)}>
             Cancelar
-          </button>
+          </Button>
         </div>
       </form>
     </div>

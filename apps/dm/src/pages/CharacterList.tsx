@@ -2,12 +2,24 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api, Character } from '@/lib/api';
 import { VidaBar, VidaAttrs } from '@/components/VidaDisplay';
+import { Button, buttonVariants } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/Dialog';
+import { cn } from '@/lib/utils';
 
 export default function CharacterList() {
   const { id: campaignId } = useParams<{ id: string }>();
   const [characters, setCharacters] = useState<Character[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!campaignId) return;
@@ -18,13 +30,16 @@ export default function CharacterList() {
   }, [campaignId]);
 
   const handleDelete = async (charId: string) => {
-    if (!campaignId || !confirm('¿Eliminar este personaje?')) return;
+    if (!campaignId) return;
     await api.characters.delete(campaignId, charId);
     setCharacters((prev) => prev.filter((c) => c.id !== charId));
+    setDeleteId(null);
   };
 
+  const deleteTarget = characters.find((c) => c.id === deleteId) ?? null;
+
   if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
-  if (error) return <p className="text-red-400">Error: {error}</p>;
+  if (error) return <p className="text-[var(--danger)]">Error: {error}</p>;
 
   return (
     <div>
@@ -32,7 +47,7 @@ export default function CharacterList() {
         <h1 className="text-2xl font-bold">Personajes</h1>
         <Link
           to={`/campaigns/${campaignId}/characters/new`}
-          className="px-4 py-2 text-sm rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
+          className={cn(buttonVariants({ size: 'sm' }))}
         >
           Nuevo personaje
         </Link>
@@ -70,32 +85,53 @@ export default function CharacterList() {
                   </div>
                 </Link>
                 <div className="flex gap-2 ml-4 items-start">
-                  <span className={`text-xs px-2 py-0.5 rounded ${
-                    c.status === 'alive' ? 'bg-green-900/50 text-green-400' :
-                    c.status === 'dead' ? 'bg-red-900/50 text-red-400' :
-                    'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'
-                  }`}>
+                  <Badge
+                    variant={c.status === 'alive' ? 'success' : c.status === 'dead' ? 'danger' : 'secondary'}
+                  >
                     {c.status === 'alive' ? 'Vivo' : c.status === 'dead' ? 'Muerto' : c.status}
-                  </span>
-                  <button
-                    onClick={() => handleDelete(c.id)}
-                    className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-red-400 hover:text-red-300"
+                  </Badge>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setDeleteId(c.id)}
                   >
                     Eliminar
-                  </button>
+                  </Button>
                 </div>
               </div>
               <div className="mt-3">
                 <VidaAttrs vigor={c.vigor} intelligence={c.intelligence} dexterity={c.dexterity} cunning={c.cunning} />
               </div>
               <div className="mt-3 space-y-2">
-                <VidaBar current={c.current_pv} max={c.max_pv} label="PV" color="bg-red-500" />
-                <VidaBar current={c.current_pm} max={c.max_pm} label="PM" color="bg-blue-500" />
+                <VidaBar current={c.current_pv} max={c.max_pv} label="PV" color="bg-hp" />
+                <VidaBar current={c.current_pm} max={c.max_pm} label="PM" color="bg-mp" />
               </div>
             </div>
           ))}
         </div>
       )}
+      <Dialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <DialogContent data-testid="confirm-delete-dialog">
+          <DialogHeader>
+            <DialogTitle>Eliminar personaje</DialogTitle>
+            <DialogDescription>
+              ¿Eliminar a {deleteTarget?.name ?? 'este personaje'}? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteId(null)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              data-testid="confirm-delete"
+              onClick={() => void handleDelete(deleteId!)}
+            >
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

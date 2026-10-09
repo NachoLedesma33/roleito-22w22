@@ -2,12 +2,24 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api, NPC } from '@/lib/api';
 import { VidaBar, VidaAttrs } from '@/components/VidaDisplay';
+import { Button, buttonVariants } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/Dialog';
+import { cn } from '@/lib/utils';
 
 export default function NPCList() {
   const { id: campaignId } = useParams<{ id: string }>();
   const [npcs, setNpcs] = useState<NPC[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!campaignId) return;
@@ -18,13 +30,16 @@ export default function NPCList() {
   }, [campaignId]);
 
   const handleDelete = async (npcId: string) => {
-    if (!campaignId || !confirm('¿Eliminar este PNJ?')) return;
+    if (!campaignId) return;
     await api.npcs.delete(campaignId, npcId);
     setNpcs((prev) => prev.filter((n) => n.id !== npcId));
+    setDeleteId(null);
   };
 
+  const deleteTarget = npcs.find((n) => n.id === deleteId) ?? null;
+
   if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
-  if (error) return <p className="text-red-400">Error: {error}</p>;
+  if (error) return <p className="text-[var(--danger)]">Error: {error}</p>;
 
   return (
     <div>
@@ -32,7 +47,7 @@ export default function NPCList() {
         <h1 className="text-2xl font-bold">PNJs</h1>
         <Link
           to={`/campaigns/${campaignId}/npcs/new`}
-          className="px-4 py-2 text-sm rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
+          className={cn(buttonVariants({ size: 'sm' }))}
         >
           Nuevo PNJ
         </Link>
@@ -72,32 +87,49 @@ export default function NPCList() {
                   </div>
                 </Link>
                 <div className="flex gap-2 ml-4 items-start">
-                  <span className={`text-xs px-2 py-0.5 rounded ${
-                    n.status === 'alive' ? 'bg-green-900/50 text-green-400' :
-                    n.status === 'dead' ? 'bg-red-900/50 text-red-400' :
-                    'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'
-                  }`}>
-                    {n.status === 'alive' ? 'Vivo' : n.status === 'dead' ? 'Muerto' : n.status}
-                  </span>
-                  <button
-                    onClick={() => handleDelete(n.id)}
-                    className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-red-400 hover:text-red-300"
+                  <Badge
+                    variant={n.status === 'alive' ? 'success' : n.status === 'dead' ? 'danger' : 'secondary'}
                   >
+                    {n.status === 'alive' ? 'Vivo' : n.status === 'dead' ? 'Muerto' : n.status}
+                  </Badge>
+                  <Button variant="destructive" size="sm" onClick={() => setDeleteId(n.id)}>
                     Eliminar
-                  </button>
+                  </Button>
                 </div>
               </div>
               <div className="mt-3">
                 <VidaAttrs vigor={n.vigor} intelligence={n.intelligence} dexterity={n.dexterity} cunning={n.cunning} />
               </div>
               <div className="mt-3 space-y-2">
-                <VidaBar current={n.current_pv} max={n.max_pv} label="PV" color="bg-red-500" />
-                <VidaBar current={n.current_pm} max={n.max_pm} label="PM" color="bg-blue-500" />
+                <VidaBar current={n.current_pv} max={n.max_pv} label="PV" color="bg-hp" />
+                <VidaBar current={n.current_pm} max={n.max_pm} label="PM" color="bg-mp" />
               </div>
             </div>
           ))}
         </div>
       )}
+      <Dialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <DialogContent data-testid="confirm-delete-dialog">
+          <DialogHeader>
+            <DialogTitle>Eliminar PNJ</DialogTitle>
+            <DialogDescription>
+              ¿Eliminar a {deleteTarget?.name ?? 'este PNJ'}? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteId(null)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              data-testid="confirm-delete"
+              onClick={() => void handleDelete(deleteId!)}
+            >
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

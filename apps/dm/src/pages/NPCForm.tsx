@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '@/lib/api';
 import type { VidaAttr } from '@/lib/api';
 import { VidaAttrsInput, NumberInput } from '@/components/VidaInputs';
+import { Button } from '@/components/ui/Button';
 
 export default function NPCForm() {
   const { id: campaignId, npcId } = useParams<{ id: string; npcId: string }>();
@@ -84,7 +85,7 @@ export default function NPCForm() {
         {isEdit ? 'Editar PNJ' : 'Nuevo PNJ'}
       </h1>
 
-      {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+      {error && <p className="text-[var(--danger)] text-sm mb-4">{error}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -135,20 +136,12 @@ export default function NPCForm() {
         </div>
 
         <div className="flex gap-3 pt-2">
-          <button
-            type="submit"
-            disabled={saving}
-            className="px-4 py-2 rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
-          >
+          <Button type="submit" disabled={saving}>
             {saving ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear PNJ'}
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="px-4 py-2 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-          >
+          </Button>
+          <Button variant="outline" type="button" onClick={() => navigate(-1)}>
             Cancelar
-          </button>
+          </Button>
         </div>
       </form>
     </div>
