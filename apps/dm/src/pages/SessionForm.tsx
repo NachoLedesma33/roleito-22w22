@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
 
 export default function SessionForm() {
+  const { t } = useTranslation();
   const { id: campaignId, sessionId } = useParams<{ id: string; sessionId: string }>();
   const isEdit = sessionId && sessionId !== 'new';
   const navigate = useNavigate();
@@ -44,7 +46,7 @@ export default function SessionForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!date.trim() || !campaignId) {
-      setError('La fecha es obligatoria');
+      setError(t('sessionForm.dateRequired', 'La fecha es obligatoria'));
       return;
     }
     setSaving(true);
@@ -59,18 +61,18 @@ export default function SessionForm() {
         navigate(`/campaigns/${campaignId}/sessions/${sess.id}`);
       }
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'No se pudo guardar');
+      setError(e instanceof Error ? e.message : t('sessionForm.saveError', 'No se pudo guardar'));
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
+  if (loading) return <p className="text-[var(--text-secondary)]">{t('common.loading')}</p>;
 
   return (
     <div className="max-w-lg">
       <h1 className="text-2xl font-bold mb-6">
-        {isEdit ? 'Editar sesión' : 'Nueva sesión'}
+        {isEdit ? t('sessionForm.titleEdit', 'Editar sesión') : t('sessionForm.titleNew', 'Nueva sesión')}
       </h1>
 
       {error && <p className="text-[var(--danger)] text-sm mb-4">{error}</p>}
@@ -78,7 +80,7 @@ export default function SessionForm() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-1">Número</label>
+            <label className="block text-sm text-[var(--text-secondary)] mb-1">{t('sessionForm.number', 'Número')}</label>
             <input
               type="number"
               min={1}
@@ -88,7 +90,7 @@ export default function SessionForm() {
             />
           </div>
           <div>
-            <label className="block text-sm text-[var(--text-secondary)] mb-1">Fecha</label>
+            <label className="block text-sm text-[var(--text-secondary)] mb-1">{t('sessionForm.date', 'Fecha')}</label>
             <input
               type="date"
               value={date}
@@ -99,43 +101,47 @@ export default function SessionForm() {
         </div>
 
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-1">Título</label>
+          <label className="block text-sm text-[var(--text-secondary)] mb-1">{t('sessionForm.title', 'Título')}</label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="w-full px-3 py-2 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
-            placeholder="Título de la sesión..."
+            placeholder={t('sessionForm.titlePlaceholder', 'Título de la sesión...')}
             autoFocus
           />
         </div>
 
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-1">Notas crudas</label>
+          <label className="block text-sm text-[var(--text-secondary)] mb-1">{t('sessionForm.rawNotes', 'Notas crudas')}</label>
           <textarea
             value={rawNotes}
             onChange={(e) => setRawNotes(e.target.value)}
             className="w-full px-3 py-2 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] h-32 resize-none"
-            placeholder="Notas de la sesión, eventos, decisiones..."
+            placeholder={t('sessionForm.rawNotesPlaceholder', 'Notas de la sesión, eventos, decisiones...')}
           />
         </div>
 
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-1">Resumen</label>
+          <label className="block text-sm text-[var(--text-secondary)] mb-1">{t('sessionForm.summary', 'Resumen')}</label>
           <textarea
             value={summary}
             onChange={(e) => setSummary(e.target.value)}
             className="w-full px-3 py-2 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] h-24 resize-none"
-            placeholder="Resumen de la sesión..."
+            placeholder={t('sessionForm.summaryPlaceholder', 'Resumen de la sesión...')}
           />
         </div>
 
         <div className="flex gap-3 pt-2">
           <Button type="submit" disabled={saving}>
-            {saving ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear sesión'}
+            {saving
+              ? t('sessionForm.saving', 'Guardando...')
+              : isEdit
+                ? t('sessionForm.save', 'Guardar cambios')
+                : t('sessionForm.create', 'Crear sesión')}
           </Button>
           <Button variant="outline" type="button" onClick={() => navigate(-1)}>
-            Cancelar
+            {t('common.cancel')}
           </Button>
         </div>
       </form>

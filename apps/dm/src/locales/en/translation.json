@@ -132,6 +132,39 @@
     "vtt": "VTT",
     "world-state": "World state"
   },
+  "sessionForm": {
+    "create": "Create session",
+    "date": "Date",
+    "dateRequired": "Date is required",
+    "number": "Number",
+    "rawNotes": "Raw notes",
+    "rawNotesPlaceholder": "Session notes, events, decisions...",
+    "save": "Save changes",
+    "saveError": "Could not save",
+    "saving": "Saving...",
+    "summary": "Summary",
+    "summaryPlaceholder": "Session summary...",
+    "title": "Title",
+    "titleEdit": "Edit session",
+    "titleNew": "New session",
+    "titlePlaceholder": "Session title..."
+  },
+  "sessionList": {
+    "deleteDialogBody": "Delete session {{name}}? This action cannot be undone.",
+    "deleteDialogTitle": "Delete session",
+    "emptyHint": "Create your first session to start tracking your campaign.",
+    "emptyTitle": "No sessions yet",
+    "error": "Error: {{error}}",
+    "newSession": "New session",
+    "sessionNumber": "Session {{number}}",
+    "title": "Sessions"
+  },
+  "sessionStatus": {
+    "active": "Active",
+    "archived": "Archived",
+    "completed": "Completed",
+    "draft": "Draft"
+  },
   "settings": {
     "description": "Local preferences for this console",
     "language": "Language",

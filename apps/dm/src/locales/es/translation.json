@@ -132,6 +132,39 @@
     "vtt": "VTT",
     "world-state": "Estado del mundo"
   },
+  "sessionForm": {
+    "create": "Crear sesión",
+    "date": "Fecha",
+    "dateRequired": "La fecha es obligatoria",
+    "number": "Número",
+    "rawNotes": "Notas crudas",
+    "rawNotesPlaceholder": "Notas de la sesión, eventos, decisiones...",
+    "save": "Guardar cambios",
+    "saveError": "No se pudo guardar",
+    "saving": "Guardando...",
+    "summary": "Resumen",
+    "summaryPlaceholder": "Resumen de la sesión...",
+    "title": "Título",
+    "titleEdit": "Editar sesión",
+    "titleNew": "Nueva sesión",
+    "titlePlaceholder": "Título de la sesión..."
+  },
+  "sessionList": {
+    "deleteDialogBody": "¿Eliminar la sesión {{name}}? Esta acción no se puede deshacer.",
+    "deleteDialogTitle": "Eliminar sesión",
+    "emptyHint": "Creá tu primera sesión para empezar a registrar tu campaña.",
+    "emptyTitle": "Todavía no hay sesiones",
+    "error": "Error: {{error}}",
+    "newSession": "Nueva sesión",
+    "sessionNumber": "Sesión {{number}}",
+    "title": "Sesiones"
+  },
+  "sessionStatus": {
+    "active": "Activa",
+    "archived": "Archivada",
+    "completed": "Completada",
+    "draft": "Borrador"
+  },
   "settings": {
     "description": "Preferencias locales de esta consola",
     "language": "Idioma",

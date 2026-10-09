@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router-dom';
 import { api, Session } from '@/lib/api';
 import { Button, buttonVariants } from '@/components/ui/Button';
@@ -14,6 +15,7 @@ import {
 import { cn } from '@/lib/utils';
 
 export default function SessionList() {
+  const { t } = useTranslation();
   const { id: campaignId } = useParams<{ id: string }>();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,25 +39,25 @@ export default function SessionList() {
 
   const deleteTarget = sessions.find((s) => s.id === deleteId) ?? null;
 
-  if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
-  if (error) return <p className="text-[var(--danger)]">Error: {error}</p>;
+  if (loading) return <p className="text-[var(--text-secondary)]">{t('common.loading')}</p>;
+  if (error) return <p className="text-[var(--danger)]">{t('sessionList.error', 'Error: {{error}}', { error })}</p>;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Sesiones</h1>
+        <h1 className="text-2xl font-bold">{t('sessionList.title', 'Sesiones')}</h1>
         <Link
           to={`/campaigns/${campaignId}/sessions/new`}
           className={cn(buttonVariants({ size: 'sm' }))}
         >
-          Nueva sesión
+          {t('sessionList.newSession', 'Nueva sesión')}
         </Link>
       </div>
 
       {sessions.length === 0 ? (
         <div className="text-center py-20 text-[var(--text-secondary)]">
-          <p className="text-lg mb-2">Todavía no hay sesiones</p>
-          <p className="text-sm">Creá tu primera sesión para empezar a registrar tu campaña.</p>
+          <p className="text-lg mb-2">{t('sessionList.emptyTitle', 'Todavía no hay sesiones')}</p>
+          <p className="text-sm">{t('sessionList.emptyHint', 'Creá tu primera sesión para empezar a registrar tu campaña.')}</p>
         </div>
       ) : (
         <div className="grid gap-3">
@@ -75,7 +77,7 @@ export default function SessionList() {
                     </div>
                     <div>
                       <h2 className="font-semibold hover:text-[var(--accent)] transition-colors">
-                        {s.title || `Sesión ${s.number}`}
+                        {s.title || t('sessionList.sessionNumber', 'Sesión {{number}}', { number: s.number })}
                       </h2>
                       <p className="text-xs text-[var(--text-secondary)]">
                         {s.date}
@@ -90,7 +92,7 @@ export default function SessionList() {
                     size="sm"
                     onClick={() => setDeleteId(s.id)}
                   >
-                    Eliminar
+                    {t('common.delete')}
                   </Button>
                 </div>
               </div>
@@ -106,21 +108,23 @@ export default function SessionList() {
       <Dialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
         <DialogContent data-testid="confirm-delete-dialog">
           <DialogHeader>
-            <DialogTitle>Eliminar sesión</DialogTitle>
+            <DialogTitle>{t('sessionList.deleteDialogTitle', 'Eliminar sesión')}</DialogTitle>
             <DialogDescription>
-              ¿Eliminar la sesión {deleteTarget?.title ?? deleteTarget?.number ?? ''}? Esta acción no se puede deshacer.
+              {t('sessionList.deleteDialogBody', '¿Eliminar la sesión {{name}}? Esta acción no se puede deshacer.', {
+                name: deleteTarget?.title ?? String(deleteTarget?.number ?? ''),
+              })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteId(null)}>
-              Cancelar
+              {t('common.cancel')}
             </Button>
             <Button
               variant="destructive"
               data-testid="confirm-delete"
               onClick={() => void handleDelete(deleteId!)}
             >
-              Eliminar
+              {t('common.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -129,15 +133,19 @@ export default function SessionList() {
   );
 }
 
-const SESSION_STATUS_LABEL: Record<string, string> = {
-  DRAFT: 'Borrador',
-  ACTIVE: 'Activa',
-  COMPLETED: 'Completada',
-  ARCHIVED: 'Archivada',
-};
-
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation();
   const variant: BadgeProps['variant'] =
     status === 'ACTIVE' ? 'success' : status === 'COMPLETED' ? 'mp' : 'secondary';
-  return <Badge variant={variant}>{SESSION_STATUS_LABEL[status] ?? status}</Badge>;
+  const label =
+    status === 'DRAFT'
+      ? t('sessionStatus.draft', 'Borrador')
+      : status === 'ACTIVE'
+        ? t('sessionStatus.active', 'Activa')
+        : status === 'COMPLETED'
+          ? t('sessionStatus.completed', 'Completada')
+          : status === 'ARCHIVED'
+            ? t('sessionStatus.archived', 'Archivada')
+            : status;
+  return <Badge variant={variant}>{label}</Badge>;
 }
