@@ -1,0 +1,94 @@
+{
+  "app": {
+    "name": "22w22",
+    "tagline": "El mundo que tus sesiones recuerdan"
+  },
+  "common": {
+    "cancel": "Cancelar",
+    "continue": "Continuar",
+    "loading": "Cargando…",
+    "logout": "Salir",
+    "manage": "Gestionar"
+  },
+  "dialog": {
+    "logoutDesc": "Para volver a entrar vas a necesitar el PIN.",
+    "logoutTitle": "¿Salir de 22w22?"
+  },
+  "landing": {
+    "cta": "Comenzar",
+    "demo": "Ver cómo funciona",
+    "features": {
+      "assist": {
+        "desc": "La IA asiste al DM; nunca escribe el canon por su cuenta.",
+        "title": "Narrativa asistida"
+      },
+      "atmosphere": {
+        "desc": "Audio, clima y transiciones para que la mesa suene a lo que pasa.",
+        "title": "Atmósfera"
+      },
+      "canon": {
+        "desc": "Las propuestas pasan por revisión del DM antes de volver mundo.",
+        "title": "Canon aprobado"
+      },
+      "memory": {
+        "desc": "El mundo recuerda lo que pasó y lo usa en la próxima sesión.",
+        "title": "Memoria viva"
+      },
+      "player": {
+        "desc": "Cada jugador ve solo lo que debe ver, sin pestañas ni trampas.",
+        "title": "Vista de jugador"
+      },
+      "vtt": {
+        "desc": "Grid, niebla de guerra, luz e iluminación en tiempo real.",
+        "title": "Mesa VTT"
+      }
+    },
+    "featuresTitle": "Todo en una sola mesa",
+    "footer": "engine local-first para RPGs",
+    "login": "Ingresar",
+    "subtitle": "Un engine persistente para tu campaña."
+  },
+  "lobby": {
+    "import": "Importar",
+    "newCampaign": "Nueva campaña",
+    "select": "Seleccionar",
+    "title": "Tu mesa",
+    "updatedAt": "Actualizada"
+  },
+  "nav": {
+    "agents": "Agentes",
+    "ajustes": "Ajustes",
+    "assets": "Recursos",
+    "campaigns": "Campañas",
+    "characters": "Personajes",
+    "consola": "Consola IA",
+    "cronica": "Crónica",
+    "estudio": "Estudio",
+    "events": "Eventos",
+    "manage": "Resumen",
+    "maps": "Imágenes",
+    "memory": "Memoria",
+    "mesa": "Mesa",
+    "mundo": "Mundo",
+    "narrative": "Narrativa",
+    "players": "Jugadores",
+    "reparto": "Reparto",
+    "scenes": "Escenas",
+    "sectorGroup": "Sectores",
+    "sessions": "Sesiones",
+    "tts": "Voz",
+    "vtt": "VTT",
+    "world-state": "Estado del mundo"
+  },
+  "settings": {
+    "language": "Idioma",
+    "localNote": "preferencias locales, solo de esta consola",
+    "reducedMotion": "Movimiento reducido",
+    "textLarge": "Grande",
+    "textMedium": "Mediano",
+    "textSize": "Tamaño de texto",
+    "textSmall": "Pequeño",
+    "theme": "Tema",
+    "title": "Ajustes"
+  }
+}

@@ -12,6 +12,7 @@
     "lint": "eslint .",
     "typecheck": "npm run typecheck --workspace=apps/dm",
     "test:e2e": "playwright test",
+    "i18n:extract": "node node_modules/i18next-parser/bin/cli.js",
     "perf:budget": "npm run build --workspace=apps/dm && node scripts/perf-budget.mjs"
   },
   "workspaces": [
@@ -25,6 +26,7 @@
     "eslint-plugin-playwright": "^2.11.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.4",
+    "i18next-parser": "^9.0.2",
     "typescript-eslint": "^8.67.0"
   }
 }

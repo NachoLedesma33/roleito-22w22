@@ -1,0 +1,94 @@
+{
+  "app": {
+    "name": "22w22",
+    "tagline": "The world your sessions remember"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "continue": "Continue",
+    "loading": "Loading…",
+    "logout": "Sign out",
+    "manage": "Manage"
+  },
+  "dialog": {
+    "logoutDesc": "To get back in you will need the PIN.",
+    "logoutTitle": "Leave 22w22?"
+  },
+  "landing": {
+    "cta": "Start",
+    "demo": "See how it works",
+    "features": {
+      "assist": {
+        "desc": "AI assists the DM; it never writes canon on its own.",
+        "title": "Assisted narrative"
+      },
+      "atmosphere": {
+        "desc": "Audio, weather and transitions so the table sounds like what is happening.",
+        "title": "Atmosphere"
+      },
+      "canon": {
+        "desc": "Proposals go through DM review before becoming world.",
+        "title": "Approved canon"
+      },
+      "memory": {
+        "desc": "The world remembers what happened and uses it next session.",
+        "title": "Living memory"
+      },
+      "player": {
+        "desc": "Each player sees only what they should, no tabs or tricks.",
+        "title": "Player view"
+      },
+      "vtt": {
+        "desc": "Grid, fog of war, light and real-time lighting.",
+        "title": "VTT table"
+      }
+    },
+    "featuresTitle": "Everything on a single table",
+    "footer": "local-first RPG engine",
+    "login": "Sign in",
+    "subtitle": "A persistent engine for your campaign."
+  },
+  "lobby": {
+    "import": "Import",
+    "newCampaign": "New campaign",
+    "select": "Select",
+    "title": "Your table",
+    "updatedAt": "Updated"
+  },
+  "nav": {
+    "agents": "Agents",
+    "ajustes": "Settings",
+    "assets": "Assets",
+    "campaigns": "Campaigns",
+    "characters": "Characters",
+    "consola": "AI console",
+    "cronica": "Chronicle",
+    "estudio": "Studio",
+    "events": "Events",
+    "manage": "Summary",
+    "maps": "Images",
+    "memory": "Memory",
+    "mesa": "Table",
+    "mundo": "World",
+    "narrative": "Narrative",
+    "players": "Players",
+    "reparto": "Cast",
+    "scenes": "Scenes",
+    "sectorGroup": "Sectors",
+    "sessions": "Sessions",
+    "tts": "Voice",
+    "vtt": "VTT",
+    "world-state": "World state"
+  },
+  "settings": {
+    "language": "Language",
+    "localNote": "local preferences, this console only",
+    "reducedMotion": "Reduced motion",
+    "textLarge": "Large",
+    "textMedium": "Medium",
+    "textSize": "Text size",
+    "textSmall": "Small",
+    "theme": "Theme",
+    "title": "Settings"
+  }
+}
