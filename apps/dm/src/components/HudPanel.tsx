@@ -255,6 +255,7 @@ export default function HudPanel({
   return (
     <div
       ref={panelRef}
+      data-testid={`hud-${panelId}`}
       className={`fixed bg-[var(--bg-primary)] [backdrop-filter:blur(2px)] border border-[var(--bg-tertiary)] rounded-lg shadow-lg flex flex-col ${className}`}
       style={{
         left: pos.x,
