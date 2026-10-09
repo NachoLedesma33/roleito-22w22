@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback, useMemo, Suspense } from 'rea
 import { useParams } from 'react-router-dom';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
+import { CalendarDays, Dices, Flame, Flashlight, FolderOpen, Target, Volume2, VolumeX } from 'lucide-react';
 import * as THREE from 'three';
 import SceneRenderer from '@/components/SceneRenderer';
 import DiceRoller, { rollDice } from '@/components/DiceRoller';
@@ -1186,7 +1187,7 @@ export default function PlayerView() {
             }`}
             title="Tirar dados"
           >
-            🎲
+            <Dices className="h-3.5 w-3.5" />
           </button>
         )}
         {choice?.kind === 'character' && (
@@ -1200,7 +1201,7 @@ export default function PlayerView() {
             }`}
             title={shareLight ? 'Compartiendo luz con el grupo' : 'Solo tu luz + luces del DM'}
           >
-            🔦
+            <Flashlight className="h-3.5 w-3.5" />
           </button>
         )}
         {data.audio_path && choice && (
@@ -1215,7 +1216,7 @@ export default function PlayerView() {
             title={audioOn ? 'Silenciar ambiente' : 'Activar ambiente'}
             data-testid="audio-toggle"
           >
-            {audioOn ? '🔊' : '🔇'}
+            {audioOn ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
           </button>
         )}
         {choice?.kind === 'character' && (
@@ -1226,7 +1227,7 @@ export default function PlayerView() {
             className="text-xs px-2 py-1 rounded transition-colors shrink-0 bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/70 disabled:opacity-40"
             title="Pedir luz al DM"
           >
-            🕯️
+            <Flame className="h-3.5 w-3.5" />
           </button>
         )}
         {choice?.kind === 'character' && (
@@ -1240,7 +1241,7 @@ export default function PlayerView() {
             }`}
             title="Misiones"
           >
-            🎯
+            <Target className="h-3.5 w-3.5" />
           </button>
         )}
         {choice?.kind === 'character' && (
@@ -1254,7 +1255,7 @@ export default function PlayerView() {
             }`}
             title="Calendario"
           >
-            📅
+            <CalendarDays className="h-3.5 w-3.5" />
           </button>
         )}
         {choice?.kind === 'character' && (
@@ -1269,7 +1270,7 @@ export default function PlayerView() {
             }`}
             title="Documentos"
           >
-            🗂
+            <FolderOpen className="h-3.5 w-3.5" />
           </button>
         )}
         <span
