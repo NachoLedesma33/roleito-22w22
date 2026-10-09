@@ -65,7 +65,7 @@ export default function ProfileIntro({ onDone }: { onDone: () => void }) {
         autoPlay
         onEnded={finish}
         onError={finish}
-        className="h-full w-full object-contain"
+        className="h-full w-full object-cover"
       />
 
       <div className="absolute inset-x-0 bottom-0 flex items-center gap-4 bg-gradient-to-t from-black/80 to-transparent px-6 py-4">
