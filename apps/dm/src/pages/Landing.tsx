@@ -76,7 +76,7 @@ export default function Landing() {
           <img
             src="/ui/logo22w22.png"
             alt={t('app.name')}
-            className="absolute left-10 top-6 z-10 h-56 w-auto md:h-72"
+            className="absolute left-11 top-6 z-10 h-56 w-auto md:h-72"
           />
           <div className="flex justify-end pt-4">
             <Link
