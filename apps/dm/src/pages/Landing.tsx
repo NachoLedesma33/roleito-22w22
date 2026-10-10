@@ -1,9 +1,20 @@
 import { Brain, Eye, Map, ScrollText, Sparkles, Volume2, type LucideIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import CyberHiveBackground from '../components/lightswind/cyber-hive';
 
 const linkFocus =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg';
+
+/** Lee un token CSS resolviendo `var(--x)` anidados (para colores del canvas). */
+function cssVar(name: string, seen: ReadonlySet<string> = new Set()): string {
+  if (seen.has(name)) return '#8b5cf6';
+  seen = new Set(seen).add(name);
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const nested = raw.match(/^var\((--[\w-]+)\)$/);
+  if (nested) return cssVar(nested[1], seen);
+  return raw || '#8b5cf6';
+}
 
 /**
  * Landing pública pre-login (§6.1 del plan). Sin sesión, es la pantalla de
@@ -69,9 +80,27 @@ export default function Landing() {
     },
   ];
 
+  const colorGrid = cssVar('--brand');
+  const colorNodes = cssVar('--brand-hover');
+
   return (
-    <div className="min-h-screen bg-bg text-ink">
-      <header className="bg-bg">
+    <div className="relative min-h-screen bg-bg text-ink">
+      <div className="fixed inset-0 z-0">
+        <CyberHiveBackground
+          colorGrid={colorGrid}
+          colorNodes={colorNodes}
+          speed={0.2}
+          gridDensity={0.8}
+          warpRadius={1.5}
+          warpStrength={0.5}
+          interactive
+          hoverIntensity={0.15}
+          mouseDamping={0.025}
+          transparentBg
+          className="opacity-60"
+        />
+      </div>
+      <header className="relative z-10 bg-bg">
         <div className="relative mx-auto max-w-6xl px-6">
           <img
             src="/ui/logo22w22.png"
@@ -89,7 +118,7 @@ export default function Landing() {
         </div>
       </header>
 
-      <main>
+      <main className="relative z-10">
         <section className="mx-auto grid max-w-6xl items-center gap-10 px-6 pb-20 pt-56 md:grid-cols-2 md:pb-28 md:pt-64">
           <div>
             <h1 className="text-4xl font-bold leading-tight md:text-5xl">{t('app.tagline')}</h1>
@@ -163,7 +192,7 @@ export default function Landing() {
         </section>
       </main>
 
-      <footer className="py-6 text-center text-xs text-ink-muted">
+      <footer className="relative z-10 py-6 text-center text-xs text-ink-muted">
         {t('app.name')} · {t('landing.footer', 'engine local-first para RPGs')}
       </footer>
     </div>
