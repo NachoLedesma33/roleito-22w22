@@ -1,4 +1,4 @@
-import { Brain, Eye, Map, ScrollText, Sparkles, Volume2, type LucideIcon } from 'lucide-react';
+import { Brain, Eye, GitFork, Mail, Map, ScrollText, Sparkles, Volume2, type LucideIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import CyberHiveBackground from '../components/lightswind/cyber-hive';
@@ -192,8 +192,122 @@ export default function Landing() {
         </section>
       </main>
 
-      <footer className="relative z-10 py-6 text-center text-xs text-ink-muted">
-        {t('app.name')} · {t('landing.footer', 'engine local-first para RPGs')}
+      <footer className="relative z-10 bg-surface">
+        <div className="mx-auto max-w-6xl px-6 py-14">
+          <div className="grid gap-10 md:grid-cols-[1.5fr_1fr_1fr_1fr]">
+            <div>
+              <div className="flex items-center gap-3">
+                <img
+                  src="/ui/logo22w22.png"
+                  alt=""
+                  aria-hidden="true"
+                  className="h-9 w-auto"
+                />
+                <span className="font-display text-lg font-semibold text-ink">
+                  {t('app.name')}
+                </span>
+              </div>
+              <p className="mt-4 max-w-xs text-sm leading-relaxed text-ink-muted">
+                {t(
+                  'landing.footer.blurb',
+                  'Engine local-first para tus campañas de D&D. El mundo recuerda cada sesión.',
+                )}
+              </p>
+            </div>
+
+            <nav aria-label={t('landing.footer.product', 'Producto')}>
+              <h2 className="text-sm font-semibold text-ink">
+                {t('landing.footer.product', 'Producto')}
+              </h2>
+              <ul className="mt-4 space-y-2 text-sm text-ink-muted">
+                <li>
+                  <a href="#features" className="transition-colors hover:text-ink">
+                    {t('landing.footer.productFeatures', 'Características')}
+                  </a>
+                </li>
+                <li>
+                  <a href="#features" className="transition-colors hover:text-ink">
+                    {t('landing.footer.productLook', 'Cómo funciona')}
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="transition-colors hover:text-ink">
+                    {t('landing.footer.productNews', 'Novedades')}
+                  </a>
+                </li>
+              </ul>
+            </nav>
+
+            <nav aria-label={t('landing.footer.resources', 'Recursos')}>
+              <h2 className="text-sm font-semibold text-ink">
+                {t('landing.footer.resources', 'Recursos')}
+              </h2>
+              <ul className="mt-4 space-y-2 text-sm text-ink-muted">
+                <li>
+                  <a href="#" className="transition-colors hover:text-ink">
+                    {t('landing.footer.resourcesDocs', 'Documentación')}
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="transition-colors hover:text-ink">
+                    {t('landing.footer.resourcesGuide', 'Guía del DM')}
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="transition-colors hover:text-ink">
+                    {t('landing.footer.resourcesFaq', 'Preguntas frecuentes')}
+                  </a>
+                </li>
+              </ul>
+            </nav>
+
+            <nav aria-label={t('landing.footer.community', 'Comunidad')}>
+              <h2 className="text-sm font-semibold text-ink">
+                {t('landing.footer.community', 'Comunidad')}
+              </h2>
+              <ul className="mt-4 space-y-2 text-sm text-ink-muted">
+                <li>
+                  <a href="#" className="transition-colors hover:text-ink">
+                    {t('landing.footer.communityDiscord', 'Discord')}
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="transition-colors hover:text-ink">
+                    {t('landing.footer.communityBlog', 'Blog')}
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="transition-colors hover:text-ink">
+                    {t('landing.footer.communityContact', 'Contacto')}
+                  </a>
+                </li>
+              </ul>
+            </nav>
+          </div>
+
+          <div className="mt-12 flex flex-col gap-4 pt-6 text-xs text-ink-muted md:flex-row md:items-center md:justify-between">
+            <p>
+              © {new Date().getFullYear()} {t('app.name')} ·{' '}
+              {t('landing.footer.rights', 'Hecho para mesas de D&D.')}
+            </p>
+            <div className="flex items-center gap-3">
+              <a
+                href="https://github.com/NachoLedesma33/roleito-22w22"
+                aria-label="GitHub"
+                className={`transition-colors hover:text-ink ${linkFocus}`}
+              >
+                <GitFork className="h-4 w-4" aria-hidden="true" />
+              </a>
+              <a
+                href="#"
+                aria-label={t('landing.footer.contact', 'Contacto')}
+                className={`transition-colors hover:text-ink ${linkFocus}`}
+              >
+                <Mail className="h-4 w-4" aria-hidden="true" />
+              </a>
+            </div>
+          </div>
+        </div>
       </footer>
     </div>
   );
