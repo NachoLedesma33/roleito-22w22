@@ -71,24 +71,26 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-bg text-ink">
-      <header className="border-b border-border bg-bg">
-        <div className="relative mx-auto flex max-w-6xl items-center justify-between px-6">
+      <header className="bg-bg">
+        <div className="relative mx-auto max-w-6xl px-6">
           <img
             src="/ui/logo22w22.png"
             alt={t('app.name')}
-            className="relative z-10 -mb-7 h-24 w-auto md:-mb-10 md:h-32"
+            className="absolute left-10 top-6 z-10 h-56 w-auto md:h-72"
           />
-          <Link
-            to="/login"
-            className={`rounded-md border border-border px-4 py-5 text-sm text-ink transition-colors hover:bg-surface-2 ${linkFocus}`}
-          >
-            {t('landing.login', 'Ingresar')}
-          </Link>
+          <div className="flex justify-end pt-4">
+            <Link
+              to="/login"
+              className={`rounded-md border border-border px-4 py-2 text-sm text-ink transition-colors hover:bg-surface-2 ${linkFocus}`}
+            >
+              {t('landing.login', 'Ingresar')}
+            </Link>
+          </div>
         </div>
       </header>
 
       <main>
-        <section className="mx-auto grid max-w-6xl items-center gap-10 px-6 py-20 md:grid-cols-2 md:py-28">
+        <section className="mx-auto grid max-w-6xl items-center gap-10 px-6 pb-20 pt-52 md:grid-cols-2 md:pb-28 md:pt-64">
           <div>
             <h1 className="text-4xl font-bold leading-tight md:text-5xl">{t('app.tagline')}</h1>
             <div className="mt-6 h-1 w-24 bg-brand" aria-hidden="true" />
@@ -121,7 +123,7 @@ export default function Landing() {
           </div>
         </section>
 
-        <section id="features" className="border-t border-border">
+        <section id="features">
           <div className="mx-auto max-w-6xl px-6 py-16">
             <div className="overflow-hidden rounded-xl border border-border">
               <img
@@ -161,7 +163,7 @@ export default function Landing() {
         </section>
       </main>
 
-      <footer className="border-t border-border py-6 text-center text-xs text-ink-muted">
+      <footer className="py-6 text-center text-xs text-ink-muted">
         {t('app.name')} · {t('landing.footer', 'engine local-first para RPGs')}
       </footer>
     </div>
