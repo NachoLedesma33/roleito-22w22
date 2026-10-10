@@ -74,30 +74,31 @@
     "demo": "See how it works",
     "features": {
       "assist": {
-        "desc": "AI assists the DM; it never writes canon on its own.",
+        "desc": "The AI is your copilot: it proposes, drafts and suggests, but canon is always your call.",
         "title": "Assisted narrative"
       },
       "atmosphere": {
-        "desc": "Audio, weather and transitions so the table sounds like what is happening.",
+        "desc": "Audio, weather and transitions back the scene so the table sounds like what is happening.",
         "title": "Atmosphere"
       },
       "canon": {
-        "desc": "Proposals go through DM review before becoming world.",
+        "desc": "Nothing enters the world without your seal: every proposal — yours or the AI's — is reviewed before becoming canon.",
         "title": "Approved canon"
       },
       "memory": {
-        "desc": "The world remembers what happened and uses it next session.",
+        "desc": "The world remembers every session and draws on it to narrate the next one. What happened keeps happening.",
         "title": "Living memory"
       },
       "player": {
-        "desc": "Each player sees only what they should, no tabs or tricks.",
+        "desc": "Each player sees only what they should: their range, their fog, their map. No spoilers, no DM tabs.",
         "title": "Player view"
       },
       "vtt": {
-        "desc": "Grid, fog of war, light and real-time lighting.",
+        "desc": "Exact grid, fog of war, light and shadow that react live as the scene changes.",
         "title": "VTT table"
       }
     },
+    "featuresIntro": "Six pieces that build themselves as you play: everything the table needs, without configuring anything twice.",
     "featuresTitle": "Everything on a single table",
     "footer": "local-first RPG engine",
     "login": "Sign in",

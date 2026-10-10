@@ -12,36 +12,60 @@ const linkFocus =
 export default function Landing() {
   const { t } = useTranslation();
 
-  const features: ReadonlyArray<{ icon: LucideIcon; title: string; desc: string }> = [
+  const features: ReadonlyArray<{ icon: LucideIcon; img: string; title: string; desc: string }> = [
     {
       icon: Map,
+      img: '/ui/2.jpg',
       title: t('landing.features.vtt.title', 'Mesa VTT'),
-      desc: t('landing.features.vtt.desc', 'Grid, niebla de guerra, luz e iluminación en tiempo real.'),
+      desc: t(
+        'landing.features.vtt.desc',
+        'Grid exacto, niebla de guerra, luz y sombra que responden en vivo mientras la escena cambia.',
+      ),
     },
     {
       icon: ScrollText,
+      img: '/ui/3.jpg',
       title: t('landing.features.canon.title', 'Canon aprobado'),
-      desc: t('landing.features.canon.desc', 'Las propuestas pasan por revisión del DM antes de volver mundo.'),
+      desc: t(
+        'landing.features.canon.desc',
+        'Nada entra al mundo sin tu firma: toda propuesta —tuya o de la IA— pasa por revisión antes de volverse canon.',
+      ),
     },
     {
       icon: Brain,
+      img: '/ui/4.jpg',
       title: t('landing.features.memory.title', 'Memoria viva'),
-      desc: t('landing.features.memory.desc', 'El mundo recuerda lo que pasó y lo usa en la próxima sesión.'),
+      desc: t(
+        'landing.features.memory.desc',
+        'El mundo recuerda cada sesión y lo usa al narrar la siguiente. Lo que pasó, sigue pasando.',
+      ),
     },
     {
       icon: Eye,
+      img: '/ui/5.jpg',
       title: t('landing.features.player.title', 'Vista de jugador'),
-      desc: t('landing.features.player.desc', 'Cada jugador ve solo lo que debe ver, sin pestañas ni trampas.'),
+      desc: t(
+        'landing.features.player.desc',
+        'Cada jugador ve solo lo que debe ver: su alcance, su niebla, su mapa. Sin spoilers ni pestañas de DM.',
+      ),
     },
     {
       icon: Sparkles,
+      img: '/ui/6.jpg',
       title: t('landing.features.assist.title', 'Narrativa asistida'),
-      desc: t('landing.features.assist.desc', 'La IA asiste al DM; nunca escribe el canon por su cuenta.'),
+      desc: t(
+        'landing.features.assist.desc',
+        'La IA es tu copiloto: propone, redacta y sugiere, pero el canon siempre lo decidís vos.',
+      ),
     },
     {
       icon: Volume2,
+      img: '/ui/7.jpg',
       title: t('landing.features.atmosphere.title', 'Atmósfera'),
-      desc: t('landing.features.atmosphere.desc', 'Audio, clima y transiciones para que la mesa suene a lo que pasa.'),
+      desc: t(
+        'landing.features.atmosphere.desc',
+        'Audio, clima y transiciones acompañan la escena para que la mesa suene a lo que está pasando.',
+      ),
     },
   ];
 
@@ -84,13 +108,9 @@ export default function Landing() {
           </div>
 
           <div className="aspect-square overflow-hidden rounded-xl border border-border bg-surface">
-            <video
-              src="/ui/22w22background.mp4"
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="auto"
+            <img
+              src="/ui/1.jpg"
+              alt=""
               aria-hidden="true"
               className="h-full w-full object-cover"
             />
@@ -99,15 +119,37 @@ export default function Landing() {
 
         <section id="features" className="border-t border-border">
           <div className="mx-auto max-w-6xl px-6 py-16">
-            <h2 className="text-2xl font-semibold">
+            <div className="overflow-hidden rounded-xl border border-border">
+              <img
+                src="/ui/8.jpg"
+                alt=""
+                aria-hidden="true"
+                className="h-44 w-full object-cover md:h-64"
+              />
+            </div>
+            <h2 className="mt-10 text-2xl font-semibold">
               {t('landing.featuresTitle', 'Todo en una sola mesa')}
             </h2>
+            <p className="mt-2 max-w-2xl text-ink-muted">
+              {t(
+                'landing.featuresIntro',
+                'Seis piezas que se construyen solas mientras jugás: todo lo que la mesa necesita, sin configurar nada dos veces.',
+              )}
+            </p>
             <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {features.map((feature) => (
-                <div key={feature.title} className="rounded-lg border border-border bg-surface p-5">
-                  <feature.icon className="h-6 w-6 text-brand" aria-hidden="true" />
-                  <h3 className="mt-3 font-medium">{feature.title}</h3>
-                  <p className="mt-1 text-sm text-ink-muted">{feature.desc}</p>
+                <div key={feature.title} className="overflow-hidden rounded-lg border border-border bg-surface">
+                  <img
+                    src={feature.img}
+                    alt=""
+                    aria-hidden="true"
+                    className="h-40 w-full object-cover"
+                  />
+                  <div className="p-5">
+                    <feature.icon className="h-6 w-6 text-brand" aria-hidden="true" />
+                    <h3 className="mt-3 font-medium">{feature.title}</h3>
+                    <p className="mt-1 text-sm text-ink-muted">{feature.desc}</p>
+                  </div>
                 </div>
               ))}
             </div>

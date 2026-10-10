@@ -74,30 +74,31 @@
     "demo": "Ver cómo funciona",
     "features": {
       "assist": {
-        "desc": "La IA asiste al DM; nunca escribe el canon por su cuenta.",
+        "desc": "La IA es tu copiloto: propone, redacta y sugiere, pero el canon siempre lo decidís vos.",
         "title": "Narrativa asistida"
       },
       "atmosphere": {
-        "desc": "Audio, clima y transiciones para que la mesa suene a lo que pasa.",
+        "desc": "Audio, clima y transiciones acompañan la escena para que la mesa suene a lo que está pasando.",
         "title": "Atmósfera"
       },
       "canon": {
-        "desc": "Las propuestas pasan por revisión del DM antes de volver mundo.",
+        "desc": "Nada entra al mundo sin tu firma: toda propuesta —tuya o de la IA— pasa por revisión antes de volverse canon.",
         "title": "Canon aprobado"
       },
       "memory": {
-        "desc": "El mundo recuerda lo que pasó y lo usa en la próxima sesión.",
+        "desc": "El mundo recuerda cada sesión y lo usa al narrar la siguiente. Lo que pasó, sigue pasando.",
         "title": "Memoria viva"
       },
       "player": {
-        "desc": "Cada jugador ve solo lo que debe ver, sin pestañas ni trampas.",
+        "desc": "Cada jugador ve solo lo que debe ver: su alcance, su niebla, su mapa. Sin spoilers ni pestañas de DM.",
         "title": "Vista de jugador"
       },
       "vtt": {
-        "desc": "Grid, niebla de guerra, luz e iluminación en tiempo real.",
+        "desc": "Grid exacto, niebla de guerra, luz y sombra que responden en vivo mientras la escena cambia.",
         "title": "Mesa VTT"
       }
     },
+    "featuresIntro": "Seis piezas que se construyen solas mientras jugás: todo lo que la mesa necesita, sin configurar nada dos veces.",
     "featuresTitle": "Todo en una sola mesa",
     "footer": "engine local-first para RPGs",
     "login": "Ingresar",
