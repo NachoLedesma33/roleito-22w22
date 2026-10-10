@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router-dom';
 import { api, NPC } from '@/lib/api';
 import { VidaBar, VidaAttrs } from '@/components/VidaDisplay';
@@ -15,6 +16,7 @@ import {
 import { cn } from '@/lib/utils';
 
 export default function NPCList() {
+  const { t } = useTranslation();
   const { id: campaignId } = useParams<{ id: string }>();
   const [npcs, setNpcs] = useState<NPC[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,26 +39,27 @@ export default function NPCList() {
   };
 
   const deleteTarget = npcs.find((n) => n.id === deleteId) ?? null;
+  const deleteName = deleteTarget?.name ?? t('npcList.thisNpc', 'este PNJ');
 
-  if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
-  if (error) return <p className="text-[var(--danger)]">Error: {error}</p>;
+  if (loading) return <p className="text-[var(--text-secondary)]">{t('common.loading')}</p>;
+  if (error) return <p className="text-[var(--danger)]">{t('npcList.error', 'Error: {{error}}', { error })}</p>;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">PNJs</h1>
+        <h1 className="text-2xl font-bold">{t('npcList.title', 'PNJs')}</h1>
         <Link
           to={`/campaigns/${campaignId}/npcs/new`}
           className={cn(buttonVariants({ size: 'sm' }))}
         >
-          Nuevo PNJ
+          {t('npcList.newNpc', 'Nuevo PNJ')}
         </Link>
       </div>
 
       {npcs.length === 0 ? (
         <div className="text-center py-20 text-[var(--text-secondary)]">
-          <p className="text-lg mb-2">Todavía no hay PNJs</p>
-          <p className="text-sm">Creá tu primer PNJ para poblar el mundo.</p>
+          <p className="text-lg mb-2">{t('npcList.emptyTitle', 'Todavía no hay PNJs')}</p>
+          <p className="text-sm">{t('npcList.emptyHint', 'Creá tu primer PNJ para poblar el mundo.')}</p>
         </div>
       ) : (
         <div className="grid gap-4">
@@ -90,10 +93,10 @@ export default function NPCList() {
                   <Badge
                     variant={n.status === 'alive' ? 'success' : n.status === 'dead' ? 'danger' : 'secondary'}
                   >
-                    {n.status === 'alive' ? 'Vivo' : n.status === 'dead' ? 'Muerto' : n.status}
+                    {n.status === 'alive' ? t('characterStatus.alive', 'Vivo') : n.status === 'dead' ? t('characterStatus.dead', 'Muerto') : n.status}
                   </Badge>
                   <Button variant="destructive" size="sm" onClick={() => setDeleteId(n.id)}>
-                    Eliminar
+                    {t('common.delete')}
                   </Button>
                 </div>
               </div>
@@ -111,21 +114,21 @@ export default function NPCList() {
       <Dialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
         <DialogContent data-testid="confirm-delete-dialog">
           <DialogHeader>
-            <DialogTitle>Eliminar PNJ</DialogTitle>
+            <DialogTitle>{t('npcList.deleteDialogTitle', 'Eliminar PNJ')}</DialogTitle>
             <DialogDescription>
-              ¿Eliminar a {deleteTarget?.name ?? 'este PNJ'}? Esta acción no se puede deshacer.
+              {t('npcList.deleteDialogBody', '¿Eliminar a {{name}}? Esta acción no se puede deshacer.', { name: deleteName })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteId(null)}>
-              Cancelar
+              {t('common.cancel')}
             </Button>
             <Button
               variant="destructive"
               data-testid="confirm-delete"
               onClick={() => void handleDelete(deleteId!)}
             >
-              Eliminar
+              {t('common.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

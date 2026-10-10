@@ -181,6 +181,34 @@
     "vtt": "VTT",
     "world-state": "World state"
   },
+  "npcForm": {
+    "attributes": "VIDA Attributes",
+    "create": "Create NPC",
+    "defense": "Defense",
+    "description": "Description",
+    "descriptionPlaceholder": "Who is this NPC?",
+    "maxPm": "Max MP",
+    "maxPv": "Max HP",
+    "name": "Name",
+    "namePlaceholder": "NPC name",
+    "nameRequired": "Name is required",
+    "save": "Save changes",
+    "saveError": "Could not save",
+    "saving": "Saving...",
+    "stats": "Stats",
+    "titleEdit": "Edit NPC",
+    "titleNew": "New NPC"
+  },
+  "npcList": {
+    "deleteDialogBody": "Delete {{name}}? This action cannot be undone.",
+    "deleteDialogTitle": "Delete NPC",
+    "emptyHint": "Create your first NPC to populate the world.",
+    "emptyTitle": "No NPCs yet",
+    "error": "Error: {{error}}",
+    "newNpc": "New NPC",
+    "thisNpc": "this NPC",
+    "title": "NPCs"
+  },
   "sessionForm": {
     "create": "Create session",
     "date": "Date",

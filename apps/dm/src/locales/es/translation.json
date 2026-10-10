@@ -181,6 +181,34 @@
     "vtt": "VTT",
     "world-state": "Estado del mundo"
   },
+  "npcForm": {
+    "attributes": "Atributos (VIDA)",
+    "create": "Crear PNJ",
+    "defense": "Defensa",
+    "description": "Descripción",
+    "descriptionPlaceholder": "¿Quién es este PNJ?",
+    "maxPm": "Max PM",
+    "maxPv": "Max PV",
+    "name": "Nombre",
+    "namePlaceholder": "Nombre del PNJ",
+    "nameRequired": "El nombre es obligatorio",
+    "save": "Guardar cambios",
+    "saveError": "No se pudo guardar",
+    "saving": "Guardando...",
+    "stats": "Características",
+    "titleEdit": "Editar PNJ",
+    "titleNew": "Nuevo PNJ"
+  },
+  "npcList": {
+    "deleteDialogBody": "¿Eliminar a {{name}}? Esta acción no se puede deshacer.",
+    "deleteDialogTitle": "Eliminar PNJ",
+    "emptyHint": "Creá tu primer PNJ para poblar el mundo.",
+    "emptyTitle": "Todavía no hay PNJs",
+    "error": "Error: {{error}}",
+    "newNpc": "Nuevo PNJ",
+    "thisNpc": "este PNJ",
+    "title": "PNJs"
+  },
   "sessionForm": {
     "create": "Crear sesión",
     "date": "Fecha",

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '@/lib/api';
 import type { VidaAttr } from '@/lib/api';
@@ -6,6 +7,7 @@ import { VidaAttrsInput, NumberInput } from '@/components/VidaInputs';
 import { Button } from '@/components/ui/Button';
 
 export default function NPCForm() {
+  const { t } = useTranslation();
   const { id: campaignId, npcId } = useParams<{ id: string; npcId: string }>();
   const isEdit = npcId && npcId !== 'new';
   const navigate = useNavigate();
@@ -46,7 +48,7 @@ export default function NPCForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !campaignId) {
-      setError('El nombre es obligatorio');
+      setError(t('npcForm.nameRequired', 'El nombre es obligatorio'));
       return;
     }
     setSaving(true);
@@ -71,47 +73,47 @@ export default function NPCForm() {
         navigate(`/campaigns/${campaignId}/npcs/${npc.id}`);
       }
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'No se pudo guardar');
+      setError(e instanceof Error ? e.message : t('npcForm.saveError', 'No se pudo guardar'));
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
+  if (loading) return <p className="text-[var(--text-secondary)]">{t('common.loading')}</p>;
 
   return (
     <div className="max-w-lg">
       <h1 className="text-2xl font-bold mb-6">
-        {isEdit ? 'Editar PNJ' : 'Nuevo PNJ'}
+        {isEdit ? t('npcForm.titleEdit', 'Editar PNJ') : t('npcForm.titleNew', 'Nuevo PNJ')}
       </h1>
 
       {error && <p className="text-[var(--danger)] text-sm mb-4">{error}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-1">Nombre</label>
+          <label className="block text-sm text-[var(--text-secondary)] mb-1">{t('npcForm.name', 'Nombre')}</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full px-3 py-2 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
-            placeholder="Nombre del PNJ"
+            placeholder={t('npcForm.namePlaceholder', 'Nombre del PNJ')}
             autoFocus
           />
         </div>
 
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-1">Descripción</label>
+          <label className="block text-sm text-[var(--text-secondary)] mb-1">{t('npcForm.description', 'Descripción')}</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             className="w-full px-3 py-2 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)] h-24 resize-none"
-            placeholder="¿Quién es este PNJ?"
+            placeholder={t('npcForm.descriptionPlaceholder', '¿Quién es este PNJ?')}
           />
         </div>
 
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-2">Atributos (VIDA)</label>
+          <label className="block text-sm text-[var(--text-secondary)] mb-2">{t('npcForm.attributes', 'Atributos (VIDA)')}</label>
           <VidaAttrsInput
             vigor={vigor}
             intelligence={intelligence}
@@ -127,20 +129,24 @@ export default function NPCForm() {
         </div>
 
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-2">Características</label>
+          <label className="block text-sm text-[var(--text-secondary)] mb-2">{t('npcForm.stats', 'Características')}</label>
           <div className="grid grid-cols-3 gap-3">
-            <NumberInput label="Max PV" value={maxPv} onChange={setMaxPv} />
-            <NumberInput label="Max PM" value={maxPm} onChange={setMaxPm} />
-            <NumberInput label="Defensa" value={defense} onChange={setDefense} />
+            <NumberInput label={t('npcForm.maxPv', 'Max PV')} value={maxPv} onChange={setMaxPv} />
+            <NumberInput label={t('npcForm.maxPm', 'Max PM')} value={maxPm} onChange={setMaxPm} />
+            <NumberInput label={t('npcForm.defense', 'Defensa')} value={defense} onChange={setDefense} />
           </div>
         </div>
 
         <div className="flex gap-3 pt-2">
           <Button type="submit" disabled={saving}>
-            {saving ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear PNJ'}
+            {saving
+              ? t('npcForm.saving', 'Guardando...')
+              : isEdit
+                ? t('npcForm.save', 'Guardar cambios')
+                : t('npcForm.create', 'Crear PNJ')}
           </Button>
           <Button variant="outline" type="button" onClick={() => navigate(-1)}>
-            Cancelar
+            {t('common.cancel')}
           </Button>
         </div>
       </form>
