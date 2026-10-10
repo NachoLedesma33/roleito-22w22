@@ -71,12 +71,16 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-bg text-ink">
-      <header className="border-b border-border">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <span className="text-lg font-bold tracking-wide">{t('app.name')}</span>
+      <header className="border-b border-border bg-bg">
+        <div className="relative mx-auto flex max-w-6xl items-center justify-between px-6">
+          <img
+            src="/ui/logo22w22.png"
+            alt={t('app.name')}
+            className="relative z-10 -mb-7 h-24 w-auto md:-mb-10 md:h-32"
+          />
           <Link
             to="/login"
-            className={`rounded-md border border-border px-4 py-2 text-sm text-ink transition-colors hover:bg-surface-2 ${linkFocus}`}
+            className={`rounded-md border border-border px-4 py-5 text-sm text-ink transition-colors hover:bg-surface-2 ${linkFocus}`}
           >
             {t('landing.login', 'Ingresar')}
           </Link>

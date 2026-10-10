@@ -156,7 +156,17 @@ body {
   margin: 0;
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Montserrat', 'Inter', system-ui, sans-serif;
+}
+
+/* El Archivo Magitech: títulos display con contraste, cuerpo sans geométrico */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Playfair Display', Georgia, serif;
 }
 
 .scene-transition-overlay {
