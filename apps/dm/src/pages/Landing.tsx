@@ -76,7 +76,7 @@ export default function Landing() {
           <img
             src="/ui/logo22w22.png"
             alt={t('app.name')}
-            className="absolute left-11 top-6 z-10 h-56 w-auto md:h-72"
+            className="absolute left-12 top-7 z-10 h-60 w-auto md:h-80"
           />
           <div className="flex justify-end pt-4">
             <Link
@@ -90,7 +90,7 @@ export default function Landing() {
       </header>
 
       <main>
-        <section className="mx-auto grid max-w-6xl items-center gap-10 px-6 pb-20 pt-52 md:grid-cols-2 md:pb-28 md:pt-64">
+        <section className="mx-auto grid max-w-6xl items-center gap-10 px-6 pb-20 pt-56 md:grid-cols-2 md:pb-28 md:pt-64">
           <div>
             <h1 className="text-4xl font-bold leading-tight md:text-5xl">{t('app.tagline')}</h1>
             <div className="mt-6 h-1 w-24 bg-brand" aria-hidden="true" />
