@@ -85,7 +85,7 @@ export default function Landing() {
 
   return (
     <div className="relative min-h-screen bg-bg text-ink">
-      <div className="fixed inset-0 z-0">
+      <div className="fixed inset-0 z-0" aria-hidden="true">
         <CyberHiveBackground
           colorGrid={colorGrid}
           colorNodes={colorNodes}
