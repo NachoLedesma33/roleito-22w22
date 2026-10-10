@@ -1243,3 +1243,152 @@ async def test_backfill_de_spells_json_legacy(client):
     await _correr_backfill_de_spells()
     got = (await client.get(f"/api/campaigns/{cid}/characters/{char['id']}")).json()
     assert got["spells_json"] == []
+
+
+# ---------------------------------------------------------------------------
+# Dados: contrato congelado (Fase 0 del PLAN-DADOS-3D.md). Estos tests fijan el
+# comportamiento ACTUAL del endpoint de tiradas para no romperlo al sumar datos 3D.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_dice_create_devuelve_lo_guardado(client):
+    """El endpoint de tiradas persiste y devuelve el payload tal cual."""
+    camp = (await client.post("/api/campaigns", json={"name": "Dice Camp"})).json()
+    payload = {
+        "roller_name": "DM",
+        "dice_type": 20,
+        "count": 3,
+        "results": [7, 20, 3],
+        "total": 30,
+        "label": "Sigilo",
+    }
+    res = await client.post(f"/api/campaigns/{camp['id']}/rolls", json=payload)
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["campaign_id"] == camp["id"]
+    assert body["roller_name"] == "DM"
+    assert body["dice_type"] == 20
+    assert body["count"] == 3
+    assert body["results"] == [7, 20, 3]
+    assert body["total"] == 30
+    assert body["label"] == "Sigilo"
+    assert body["entity_type"] is None
+    assert body["id"]
+    assert body["created_at"]
+
+
+@pytest.mark.asyncio
+async def test_dice_valida_longitud_de_results_contra_count(client):
+    """`results` debe traer exactamente `count` elementos (422)."""
+    camp = (await client.post("/api/campaigns", json={"name": "Dice Len"})).json()
+    res = await client.post(
+        f"/api/campaigns/{camp['id']}/rolls",
+        json={"roller_name": "DM", "dice_type": 6, "count": 3, "results": [1, 2], "total": 3},
+    )
+    assert res.status_code == 422
+    assert res.json()["detail"] == "results length must match count"
+
+
+@pytest.mark.asyncio
+async def test_dice_schema_valida_rangos_de_tipo_y_cantidad(client):
+    """El schema valida dice_type en 4..20 y count en 1..10 (422 fuera de rango).
+
+    Quirk documentado: el rango 4..20 deja pasar tipos que no son dados reales
+    (ej. 5); el backend no los restringe a {4,6,8,10,12,20}.
+    """
+    camp = (await client.post("/api/campaigns", json={"name": "Dice Range"})).json()
+    cid = camp["id"]
+
+    async def crear(dice_type, count, results):
+        return await client.post(
+            f"/api/campaigns/{cid}/rolls",
+            json={
+                "roller_name": "DM",
+                "dice_type": dice_type,
+                "count": count,
+                "results": results,
+                "total": sum(results),
+            },
+        )
+
+    assert (await crear(3, 1, [1])).status_code == 422
+    assert (await crear(100, 1, [1])).status_code == 422
+    assert (await crear(6, 0, [])).status_code == 422
+    assert (await crear(6, 11, [1] * 11)).status_code == 422
+    assert (await crear(5, 1, [1])).status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_dice_campana_inexistente_404(client):
+    res = await client.post(
+        "/api/campaigns/no-existe/rolls",
+        json={"roller_name": "DM", "dice_type": 6, "count": 1, "results": [4], "total": 4},
+    )
+    assert res.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_dice_historial_se_recorta_a_20_por_entidad(client):
+    """Cada entity_id conserva las 20 tiradas mas nuevas (trim al crear)."""
+    camp = (await client.post("/api/campaigns", json={"name": "Dice Trim"})).json()
+    cid = camp["id"]
+    char = (await client.post(f"/api/campaigns/{cid}/characters", json={"name": "Tirador"})).json()
+
+    for i in range(23):
+        res = await client.post(
+            f"/api/campaigns/{cid}/rolls",
+            json={
+                "entity_type": "character",
+                "entity_id": char["id"],
+                "roller_name": "DM",
+                "dice_type": 6,
+                "count": 1,
+                "results": [i + 1],
+                "total": i + 1,
+            },
+        )
+        assert res.status_code == 200, res.text
+        await asyncio.sleep(0.003)
+
+    hist = (await client.get(f"/api/campaigns/{cid}/rolls/history/{char['id']}")).json()
+    assert len(hist) == 20
+    assert sorted(r["results"][0] for r in hist) == list(range(4, 24))
+
+
+@pytest.mark.asyncio
+async def test_dice_recent_orden_ascendente_y_filtro_since(client):
+    """`recent` devuelve en orden cronologico ascendente y filtra por `since`."""
+    camp = (await client.post("/api/campaigns", json={"name": "Dice Recent"})).json()
+    cid = camp["id"]
+
+    for v in (1, 2, 3):
+        await client.post(
+            f"/api/campaigns/{cid}/rolls",
+            json={"roller_name": "DM", "dice_type": 6, "count": 1, "results": [v], "total": v},
+        )
+        await asyncio.sleep(0.003)
+
+    recent = (await client.get(f"/api/campaigns/{cid}/rolls/recent")).json()
+    assert [r["results"][0] for r in recent] == [1, 2, 3]
+
+    futuro = int(datetime.utcnow().timestamp() * 1000) + 60_000
+    vacio = (await client.get(f"/api/campaigns/{cid}/rolls/recent?since={futuro}")).json()
+    assert vacio == []
+
+
+@pytest.mark.asyncio
+async def test_dice_recent_all_orden_descendente(client):
+    """`recent/all` devuelve en orden cronologico descendente."""
+    camp = (await client.post("/api/campaigns", json={"name": "Dice All"})).json()
+    cid = camp["id"]
+
+    for v in (1, 2, 3):
+        await client.post(
+            f"/api/campaigns/{cid}/rolls",
+            json={"roller_name": "DM", "dice_type": 6, "count": 1, "results": [v], "total": v},
+        )
+        await asyncio.sleep(0.003)
+
+    todos = (await client.get(f"/api/campaigns/{cid}/rolls/recent/all")).json()
+    assert [r["results"][0] for r in todos][:3] == [3, 2, 1]
