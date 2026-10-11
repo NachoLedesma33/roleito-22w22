@@ -38,6 +38,57 @@ function summarize(pool: DieType[]): string {
   return [...counts.entries()].map(([t, n]) => `${n}d${t}`).join(' + ')
 }
 
+let audioCtx: AudioContext | null = null
+function getAudio(): AudioContext | null {
+  if (typeof window === 'undefined') return null
+  const Ctor =
+    window.AudioContext ||
+    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+  if (!Ctor) return null
+  if (!audioCtx) audioCtx = new Ctor()
+  return audioCtx
+}
+
+/** Traqueteo de dados (ruido corto x10). */
+function playClatter(): void {
+  const ctx = getAudio()
+  if (!ctx) return
+  if (ctx.state === 'suspended') void ctx.resume()
+  const now = ctx.currentTime
+  for (let i = 0; i < 10; i++) {
+    const t = now + i * 0.05 + Math.random() * 0.02
+    const buffer = ctx.createBuffer(1, 256, ctx.sampleRate)
+    const data = buffer.getChannelData(0)
+    for (let j = 0; j < data.length; j++) data[j] = (Math.random() * 2 - 1) * (1 - j / data.length)
+    const src = ctx.createBufferSource()
+    src.buffer = buffer
+    const gain = ctx.createGain()
+    gain.gain.setValueAtTime(0.1, t)
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04)
+    src.connect(gain).connect(ctx.destination)
+    src.start(t)
+    src.stop(t + 0.05)
+  }
+}
+
+/** Golpe grave al asentarse los dados. */
+function playThud(): void {
+  const ctx = getAudio()
+  if (!ctx) return
+  if (ctx.state === 'suspended') void ctx.resume()
+  const now = ctx.currentTime
+  const osc = ctx.createOscillator()
+  const gain = ctx.createGain()
+  osc.type = 'sine'
+  osc.frequency.setValueAtTime(160, now)
+  osc.frequency.exponentialRampToValueAtTime(70, now + 0.18)
+  gain.gain.setValueAtTime(0.16, now)
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2)
+  osc.connect(gain).connect(ctx.destination)
+  osc.start(now)
+  osc.stop(now + 0.22)
+}
+
 function gridPosition(i: number, n: number, height: number): [number, number, number] {
   const cols = Math.ceil(Math.sqrt(n))
   const rows = Math.ceil(n / cols)
@@ -75,11 +126,13 @@ function DieBody({
   position,
   index,
   register,
+  unregister,
 }: {
   spec: DieSpec
   position: [number, number, number]
   index: number
   register: (index: number, body: RapierRigidBody | null) => void
+  unregister: (index: number, body: RapierRigidBody | null) => void
 }) {
   const ref = useRef<RapierRigidBody>(null)
 
@@ -96,8 +149,8 @@ function DieBody({
         true,
       )
     }
-    return () => register(index, null)
-  }, [index, register])
+    return () => unregister(index, body)
+  }, [index, register, unregister])
 
   return (
     <RigidBody
@@ -143,20 +196,23 @@ function RestDetector({
     if (done.current) return
     elapsed.current += delta
     const list = bodies.current
-    if (!list.length || list.some((b) => b === null)) return
+    const present = list.filter((b): b is RapierRigidBody => b !== null)
+    if (!present.length) return
 
     let maxSpeed = 0
-    for (const body of list as RapierRigidBody[]) {
+    for (const body of present) {
       const lv = body.linvel()
       const av = body.angvel()
       maxSpeed = Math.max(maxSpeed, Math.hypot(lv.x, lv.y, lv.z), Math.hypot(av.x, av.y, av.z))
     }
     still.current = maxSpeed < 0.12 ? still.current + 1 : 0
 
-    if (still.current > 24 || elapsed.current > 6) {
+    const allPresent = present.length === list.length
+    if ((allPresent && still.current > 24) || elapsed.current > 7) {
       done.current = true
       onResults(
-        (list as RapierRigidBody[]).map((body, i) => {
+        list.map((body, i) => {
+          if (!body) return 0
           const r = body.rotation()
           return readResult(specs[i], new THREE.Quaternion(r.x, r.y, r.z, r.w))
         }),
@@ -215,6 +271,7 @@ export default function DiceTray({
   const [phase, setPhase] = useState<Phase>('aim')
   const [throwId, setThrowId] = useState(0)
   const [results, setResults] = useState<number[] | null>(null)
+  const [muted, setMuted] = useState(false)
   const bodies = useRef<(RapierRigidBody | null)[]>([])
 
   const reductionMotion = useMemo(
@@ -229,9 +286,15 @@ export default function DiceTray({
     bodies.current[index] = body
   }, [])
 
+  const unregister = useCallback((index: number, body: RapierRigidBody | null) => {
+    if (body && bodies.current[index] !== body) return
+    bodies.current[index] = null
+  }, [])
+
   const finish = (values: number[]) => {
     setResults(values)
     setPhase('settled')
+    if (!muted && !reductionMotion) playThud()
     onRolled({ dice: pool.map((type, i) => ({ type, value: values[i] })) })
   }
 
@@ -255,6 +318,7 @@ export default function DiceTray({
       finish(pool.map((t) => Math.floor(Math.random() * t) + 1))
       return
     }
+    if (!muted) playClatter()
     bodies.current = []
     setResults(null)
     setPhase('rolling')
@@ -311,6 +375,7 @@ export default function DiceTray({
                       position={gridPosition(i, pool.length, 3.2)}
                       index={i}
                       register={register}
+                      unregister={unregister}
                     />
                   ))}
                 {phase !== 'aim' && <RestDetector key={throwId} bodies={bodies} specs={specs} onResults={finish} />}
@@ -373,12 +438,21 @@ export default function DiceTray({
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="absolute right-3 top-3 rounded bg-black/40 px-2 py-1 text-xs text-white/80 hover:text-white"
-          >
-            Cerrar
-          </button>
+          <div className="absolute right-3 top-3 flex gap-2">
+            <button
+              onClick={() => setMuted((m) => !m)}
+              title={muted ? 'Activar sonido' : 'Silenciar'}
+              className="rounded bg-black/40 px-2 py-1 text-xs text-white/80 hover:text-white"
+            >
+              {muted ? '🔇' : '🔊'}
+            </button>
+            <button
+              onClick={onClose}
+              className="rounded bg-black/40 px-2 py-1 text-xs text-white/80 hover:text-white"
+            >
+              Cerrar
+            </button>
+          </div>
         </div>
       </div>
     </div>
