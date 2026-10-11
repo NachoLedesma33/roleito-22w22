@@ -2,6 +2,8 @@ import { expect, test } from '../fixtures/campaign-fixture';
 import { createCharacter } from '../helpers/api-helpers';
 
 async function openRoller(page: import('@playwright/test').Page, campaignId: string) {
+  // La mesa 3D viene prendida por default; estos specs cubren el roller numerico.
+  await page.addInitScript(() => localStorage.setItem('dice3d', '0'));
   await page.goto(`/campaigns/${campaignId}`);
   await page.getByTitle('Acciones del DM').hover();
   await expect(page.getByTitle('Tirar dados (D)')).toBeVisible();

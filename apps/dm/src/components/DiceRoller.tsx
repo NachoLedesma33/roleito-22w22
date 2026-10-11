@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, lazy, Suspense } from 'react';
+import { Component, useState, useCallback, useEffect, useRef, lazy, Suspense, type ErrorInfo, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import HudPanel from './HudPanel';
 import { api, type Character, type NPC, type VidaAttr, type DiceRollResponse } from '@/lib/api';
@@ -87,6 +87,34 @@ function responseToRoll(r: DiceRollResponse): DiceRoll {
 
 const HISTORY_POLL_MS = 1000;
 
+interface ErrorBoundaryState {
+  hasError: boolean
+  error?: Error
+}
+
+class DiceTrayErrorBoundary extends Component<{ children: ReactNode; onError?: (error: Error) => void }, ErrorBoundaryState> {
+  constructor(props: { children: ReactNode; onError?: (error: Error) => void }) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('[DiceTrayErrorBoundary]', error, errorInfo)
+    this.props.onError?.(error)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return null
+    }
+    return this.props.children
+  }
+}
+
 export default function DiceRoller({
   onClose,
   onRoll,
@@ -107,6 +135,7 @@ export default function DiceRoller({
   const [dice3d] = useState(() => isDice3dEnabled());
   const [trayOpen, setTrayOpen] = useState(false);
   const [historyEntityKey, setHistoryEntityKey] = useState<string>(fixedEntityKey ?? '');
+  const [trayError, setTrayError] = useState(false);
   const rollTimeout = useRef<ReturnType<typeof setTimeout>>();
 
   const entities: RollerEntity[] = [
@@ -223,6 +252,15 @@ export default function DiceRoller({
   );
 
   const handleRoll = useCallback(() => {
+    if (trayError) {
+      setRolling(true);
+      rollTimeout.current = setTimeout(async () => {
+        const { results, total } = rollDice(diceType, count);
+        await saveRoll(diceType, count, results, total, buildLabel());
+        setRolling(false);
+      }, 200);
+      return;
+    }
     if (dice3d) {
       setTrayOpen(true);
       return;
@@ -233,7 +271,7 @@ export default function DiceRoller({
       await saveRoll(diceType, count, results, total, buildLabel());
       setRolling(false);
     }, 300);
-  }, [dice3d, diceType, count, saveRoll, buildLabel]);
+  }, [trayError, dice3d, diceType, count, saveRoll, buildLabel]);
 
   useEffect(() => {
     return () => {
@@ -352,7 +390,7 @@ export default function DiceRoller({
               : 'bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] active:scale-[0.98]'
           }`}
         >
-          {dice3d ? 'Abrir mesa de dados' : rolling ? 'Tirando...' : `Tirar ${count}d${diceType}`}
+          {trayError ? (rolling ? 'Tirando...' : `Tirar ${count}d${diceType}`) : dice3d ? 'Abrir mesa de dados' : rolling ? 'Tirando...' : `Tirar ${count}d${diceType}`}
         </button>
 
         {lastRoll && (
@@ -446,16 +484,30 @@ export default function DiceRoller({
         )}
       </div>
 
+      {trayError && (
+        <div className="mt-2 rounded bg-amber-500/10 px-2 py-1 text-[10px] text-amber-400">
+          Mesa 3D no disponible; tirada numerica
+        </div>
+      )}
+
       {dice3d &&
         trayOpen &&
+        !trayError &&
         createPortal(
           <Suspense fallback={null}>
-            <DiceTray
-              onRolled={(r) => {
-                void saveRoll(r.diceType, r.count, r.results, r.total, buildLabel());
+            <DiceTrayErrorBoundary
+              onError={() => {
+                setTrayError(true)
+                setTrayOpen(false)
               }}
-              onClose={() => setTrayOpen(false)}
-            />
+            >
+              <DiceTray
+                onRolled={(r) => {
+                  void saveRoll(r.diceType, r.count, r.results, r.total, buildLabel());
+                }}
+                onClose={() => setTrayOpen(false)}
+              />
+            </DiceTrayErrorBoundary>
           </Suspense>,
           document.body,
         )}
