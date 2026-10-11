@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { CuboidCollider, Physics, RigidBody, type RapierRigidBody } from '@react-three/rapier'
 import * as THREE from 'three'
@@ -190,9 +190,9 @@ export default function DiceTray({
   const spec = getDie(diceType)
   const indices = Array.from({ length: count }, (_, i) => i)
 
-  const register = (index: number, body: RapierRigidBody | null) => {
+  const register = useCallback((index: number, body: RapierRigidBody | null) => {
     bodies.current[index] = body
-  }
+  }, [])
 
   const finish = (values: number[]) => {
     setResults(values)
