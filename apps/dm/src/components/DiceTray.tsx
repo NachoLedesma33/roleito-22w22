@@ -1,8 +1,8 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { CuboidCollider, Physics, RigidBody, type RapierRigidBody } from '@react-three/rapier'
 import * as THREE from 'three'
-import { getDie, readResult, getFaceLabels, getVertexLabels, type DieSpec, type DieType } from '@/lib/dice3d'
+import { getDie, readResult, getFaceLabels, getFaceTexture, type DieSpec, type DieType } from '@/lib/dice3d'
 
 const TRAY_DICE_TYPES: DieType[] = [4, 6, 8, 10, 12, 20]
 const MAX_DICE = 15
@@ -15,6 +15,15 @@ const DIE_COLOR: Record<DieType, string> = {
   10: '#b98b5e',
   12: '#a4b494',
   20: '#c26b6b',
+}
+
+const LABEL_SIZE: Record<DieType, number> = {
+  4: 0.28,
+  6: 0.5,
+  8: 0.42,
+  10: 0.44,
+  12: 0.4,
+  20: 0.36,
 }
 
 type Phase = 'aim' | 'rolling' | 'settled'
@@ -36,7 +45,7 @@ function gridPosition(i: number, n: number, height: number): [number, number, nu
 }
 
 function DieMesh({ spec, position, opacity = 1 }: { spec: DieSpec; position: [number, number, number]; opacity?: number }) {
-  const labels = useMemo(() => (spec.type === 4 ? getVertexLabels(spec) : getFaceLabels(spec)), [spec])
+  const labels = useMemo(() => getFaceLabels(spec), [spec])
   return (
     <group position={position} scale={DIE_SCALE}>
       <mesh geometry={spec.geometry} castShadow>
@@ -49,9 +58,9 @@ function DieMesh({ spec, position, opacity = 1 }: { spec: DieSpec; position: [nu
         />
       </mesh>
       {labels.map((l, i) => (
-        <mesh key={i} position={l.position} quaternion={l.quaternion} scale={spec.type === 4 ? 0.5 : 0.4}>
-          <planeGeometry args={[0.6, 0.6]} />
-          <meshBasicMaterial color="#111111" transparent opacity={0.92} />
+        <mesh key={i} position={l.position} quaternion={l.quaternion}>
+          <planeGeometry args={[LABEL_SIZE[spec.type], LABEL_SIZE[spec.type]]} />
+          <meshBasicMaterial map={getFaceTexture(l.value)} transparent depthWrite={false} />
         </mesh>
       ))}
     </group>
@@ -103,10 +112,10 @@ function DieBody({
         <mesh geometry={spec.geometry} castShadow>
           <meshStandardMaterial color={DIE_COLOR[spec.type]} metalness={0.25} roughness={0.45} />
         </mesh>
-        {useMemo(() => (spec.type === 4 ? getVertexLabels(spec) : getFaceLabels(spec)), [spec]).map((l, i) => (
-          <mesh key={i} position={l.position} quaternion={l.quaternion} scale={spec.type === 4 ? 0.4 : 0.32}>
-            <planeGeometry args={[0.5, 0.5]} />
-            <meshBasicMaterial color="#111111" transparent opacity={0.95} />
+        {useMemo(() => getFaceLabels(spec), [spec]).map((l, i) => (
+          <mesh key={i} position={l.position} quaternion={l.quaternion}>
+            <planeGeometry args={[LABEL_SIZE[spec.type], LABEL_SIZE[spec.type]]} />
+            <meshBasicMaterial map={getFaceTexture(l.value)} transparent depthWrite={false} />
           </mesh>
         ))}
       </group>
@@ -156,23 +165,30 @@ function RestDetector({
 }
 
 function TrayWalls() {
+  const { viewport } = useThree()
+  const w = viewport.width
+  const h = viewport.height
+  const thick = 0.8
+  const wallH = 1.4
+  const baseY = wallH / 2 - 0.15
+
+  const walls: { args: [number, number, number]; pos: [number, number, number] }[] = [
+    { args: [thick, wallH, h], pos: [-(w / 2 - thick / 2), baseY, 0] },
+    { args: [thick, wallH, h], pos: [w / 2 - thick / 2, baseY, 0] },
+    { args: [w, wallH, thick], pos: [0, baseY, -(h / 2 - thick / 2)] },
+    { args: [w, wallH, thick], pos: [0, baseY, h / 2 - thick / 2] },
+  ]
+
   return (
     <>
       <RigidBody type="fixed" colliders={false} position={[0, -0.15, 0]}>
         <mesh receiveShadow>
-          <boxGeometry args={[7, 0.3, 5]} />
+          <boxGeometry args={[w, 0.3, h]} />
           <meshStandardMaterial color="#241c12" roughness={0.95} />
         </mesh>
-        <CuboidCollider args={[3.5, 0.15, 2.5]} />
+        <CuboidCollider args={[w / 2, 0.15, h / 2]} />
       </RigidBody>
-      {(
-        [
-          { args: [0.3, 1.5, 5], pos: [-3.35, 0.6, 0] },
-          { args: [0.3, 1.5, 5], pos: [3.35, 0.6, 0] },
-          { args: [7, 1.5, 0.3], pos: [0, 0.6, -2.35] },
-          { args: [7, 1.5, 0.3], pos: [0, 0.6, 2.35] },
-        ] as { args: [number, number, number]; pos: [number, number, number] }[]
-      ).map((wall, i) => (
+      {walls.map((wall, i) => (
         <RigidBody key={i} type="fixed" colliders={false} position={wall.pos}>
           <mesh receiveShadow>
             <boxGeometry args={wall.args} />
@@ -276,7 +292,7 @@ export default function DiceTray({
         </aside>
 
         <div className="relative flex-1">
-          <Canvas shadows camera={{ position: [0, 7.5, 7], fov: 45 }} onCreated={({ gl }) => (gl.toneMapping = THREE.ACESFilmicToneMapping)}>
+          <Canvas shadows camera={{ position: [0, 9, 0.01], fov: 36 }} onCreated={({ gl, camera }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; camera.lookAt(0, 0, 0) }}>
             <color attach="background" args={['#181410']} />
             <ambientLight intensity={0.6} />
             <directionalLight position={[5, 10, 6]} intensity={1.4} castShadow />

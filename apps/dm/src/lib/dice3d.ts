@@ -258,35 +258,51 @@ export interface FaceLabel {
   value: number
 }
 
+const LABEL_FORWARD = new THREE.Vector3(0, 0, 1)
+const LABEL_EPS = 0.02
+
+/**
+ * Orienta el plano del numero (su frente es +Z) hacia la normal de la cara,
+ * dejando el texto lo mas "parado" posible respecto del mundo.
+ */
+function orientLabel(normal: THREE.Vector3): THREE.Quaternion {
+  const n = normal.clone().normalize()
+  const q = new THREE.Quaternion().setFromUnitVectors(LABEL_FORWARD, n)
+  const worldUp = new THREE.Vector3(0, 1, 0)
+  const projUp = worldUp.clone().sub(n.clone().multiplyScalar(worldUp.dot(n)))
+  if (projUp.lengthSq() > 1e-6) {
+    projUp.normalize()
+    const curUp = new THREE.Vector3(0, 1, 0).applyQuaternion(q)
+    const axis = new THREE.Vector3().crossVectors(curUp, projUp)
+    const angle = Math.atan2(axis.dot(n), curUp.dot(projUp))
+    q.premultiply(new THREE.Quaternion().setFromAxisAngle(n, angle))
+  }
+  return q
+}
+
+/**
+ * Numeros dibujados sobre el dado, en su espacio local.
+ * - d4: un numero por vertice; cada cara muestra los de sus 3 vertices.
+ * - resto: un numero en el centro de cada cara.
+ */
 export function getFaceLabels(spec: DieSpec): FaceLabel[] {
   const labels: FaceLabel[] = []
-  const up = new THREE.Vector3(0, 1, 0)
   for (const face of spec.faces) {
     const normal = new THREE.Vector3(face.normal[0], face.normal[1], face.normal[2])
     const centroid = new THREE.Vector3(face.centroid[0], face.centroid[1], face.centroid[2])
-    const q = new THREE.Quaternion().setFromUnitVectors(up, normal)
-    labels.push({
-      position: [centroid.x, centroid.y, centroid.z],
-      quaternion: [q.x, q.y, q.z, q.w],
-      value: face.value,
-    })
-  }
-  return labels
-}
-
-export function getVertexLabels(spec: DieSpec): FaceLabel[] {
-  const labels: FaceLabel[] = []
-  if (spec.type !== 4 || !spec.vertexValues) return labels
-  const up = new THREE.Vector3(0, 1, 0)
-  for (let i = 0; i < spec.vertices.length; i++) {
-    const v = spec.vertices[i]
-    const dir = v.clone().normalize()
-    const q = new THREE.Quaternion().setFromUnitVectors(up, dir)
-    labels.push({
-      position: [v.x * 1.05, v.y * 1.05, v.z * 1.05],
-      quaternion: [q.x, q.y, q.z, q.w],
-      value: spec.vertexValues[i],
-    })
+    const q = orientLabel(normal)
+    if (spec.type === 4 && spec.vertexValues) {
+      for (let vi = 0; vi < spec.vertices.length; vi++) {
+        const v = spec.vertices[vi]
+        if (Math.abs(v.clone().sub(centroid).dot(normal)) > 0.15) continue
+        const inset = v.clone().add(centroid.clone().sub(v).multiplyScalar(0.55))
+        const p = inset.add(normal.clone().multiplyScalar(LABEL_EPS))
+        labels.push({ position: [p.x, p.y, p.z], quaternion: [q.x, q.y, q.z, q.w], value: spec.vertexValues[vi] })
+      }
+    } else {
+      const p = centroid.add(normal.clone().multiplyScalar(LABEL_EPS))
+      labels.push({ position: [p.x, p.y, p.z], quaternion: [q.x, q.y, q.z, q.w], value: face.value })
+    }
   }
   return labels
 }
@@ -312,29 +328,30 @@ export function buildFaceMaterials(spec: DieSpec): THREE.Material[] {
 
 
 
+const FACE_TEXTURE_CACHE = new Map<number, THREE.CanvasTexture>()
+
 export function getFaceTexture(value: number, size = 128): THREE.CanvasTexture {
-  let canvas: HTMLCanvasElement
-  if (typeof document === 'undefined') {
-    canvas = { width: size, height: size, getContext: () => null } as unknown as HTMLCanvasElement
-  } else {
-    canvas = document.createElement('canvas')
-  }
+  const cached = FACE_TEXTURE_CACHE.get(value)
+  if (cached) return cached
+
+  const canvas =
+    typeof document === 'undefined'
+      ? ({ width: size, height: size, getContext: () => null } as unknown as HTMLCanvasElement)
+      : document.createElement('canvas')
   canvas.width = size
   canvas.height = size
   const ctx = canvas.getContext('2d')
-  if (!ctx) {
-    const tex = new THREE.CanvasTexture(canvas)
-    tex.flipY = false
-    return tex
+  if (ctx) {
+    ctx.clearRect(0, 0, size, size)
+    ctx.fillStyle = '#111111'
+    ctx.font = `bold ${size * 0.6}px system-ui, -apple-system, sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(String(value), size / 2, size / 2)
   }
-  ctx.clearRect(0, 0, size, size)
-  ctx.fillStyle = '#111111'
-  ctx.font = `bold ${size * 0.55}px system-ui, -apple-system, sans-serif`
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText(String(value), size / 2, size / 2)
   const tex = new THREE.CanvasTexture(canvas)
-  tex.flipY = false
+  tex.colorSpace = THREE.SRGBColorSpace
   tex.needsUpdate = true
+  FACE_TEXTURE_CACHE.set(value, tex)
   return tex
 }
