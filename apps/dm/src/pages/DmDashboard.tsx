@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, Suspense, useCallback, useMemo } from 'react';
+import i18n from '@/lib/i18n';
 import { useParams, Link } from 'react-router-dom';
 import { api, Campaign, Scene, SceneCharacter, Character, NPC, Map as GameMap, LightRequest, Asset } from '@/lib/api';
 import { SceneItem, ZoneMetadata, SceneLayer } from '@core/domain/types';
@@ -492,12 +493,12 @@ export default function DmDashboard() {
       handleItemsChange(graphRef.getItems())
       setToastQueue((prevQ) => [...prevQ.slice(-4), {
         id: `portal-${Date.now()}`,
-        rollerName: 'Portal',
+        rollerName: i18n.t('dmToast.rollerPortal', 'Portal'),
         diceType: 20,
         count: 1,
         results: [1],
         total: 1,
-        label: 'portal creado',
+        label: i18n.t('dmToast.portalCreated', 'portal creado'),
         timestamp: Date.now(),
       }])
       return null
@@ -525,7 +526,7 @@ export default function DmDashboard() {
   }, [graphRef, handleItemsChange])
 
   const handleClearAllWalls = useCallback(() => {
-    if (!confirm('¿Eliminar TODAS las paredes y puertas?')) return
+    if (!confirm(i18n.t('dmConfirm.clearWalls', '¿Eliminar TODAS las paredes y puertas?'))) return
     const items = graphRef.getItems()
     const toRemove = items.filter(
       (item: SceneItem) => item.metadata?.type === 'wall' || item.metadata?.type === 'door'
@@ -536,12 +537,12 @@ export default function DmDashboard() {
     handleItemsChange(graphRef.getItems())
     setToastQueue((prev) => [...prev.slice(-4), {
       id: `clear-${Date.now()}`,
-      rollerName: 'Limpiar',
+      rollerName: i18n.t('dmToast.rollerClear', 'Limpiar'),
       diceType: 20,
       count: 1,
       results: [toRemove.length],
       total: toRemove.length,
-      label: `paredes y puertas eliminadas`,
+      label: i18n.t('dmToast.wallsCleared', 'paredes y puertas eliminadas'),
       timestamp: Date.now(),
     }])
   }, [graphRef, handleItemsChange])
@@ -554,12 +555,12 @@ export default function DmDashboard() {
     if (toRemove.length === 0) {
       setToastQueue((prev) => [...prev.slice(-4), {
         id: `clearz-${Date.now()}`,
-        rollerName: 'Limpiar',
+        rollerName: i18n.t('dmToast.rollerClear', 'Limpiar'),
         diceType: 20,
         count: 1,
         results: [0],
         total: 0,
-        label: `no hay zonas para eliminar`,
+        label: i18n.t('dmToast.noZones', 'no hay zonas para eliminar'),
         timestamp: Date.now(),
       }])
       return
@@ -570,12 +571,12 @@ export default function DmDashboard() {
     handleItemsChange(graphRef.getItems())
     setToastQueue((prev) => [...prev.slice(-4), {
       id: `clearz-${Date.now()}`,
-      rollerName: 'Limpiar',
+      rollerName: i18n.t('dmToast.rollerClear', 'Limpiar'),
       diceType: 20,
       count: 1,
       results: [toRemove.length],
       total: toRemove.length,
-      label: `zonas eliminadas`,
+      label: i18n.t('dmToast.zonesCleared', 'zonas eliminadas'),
       timestamp: Date.now(),
     }])
   }, [graphRef, handleItemsChange])
@@ -674,12 +675,12 @@ export default function DmDashboard() {
     handleItemsChange(graphRef.getItems())
     setToastQueue((prev) => [...prev.slice(-4), {
       id: `clearf-${Date.now()}`,
-      rollerName: 'Limpiar',
+      rollerName: i18n.t('dmToast.rollerClear', 'Limpiar'),
       diceType: 20,
       count: 1,
       results: [toRemove.length],
       total: toRemove.length,
-      label: toRemove.length === 0 ? `no hay niebla para eliminar` : `regiones de niebla eliminadas`,
+      label: toRemove.length === 0 ? i18n.t('dmToast.noFog', 'no hay niebla para eliminar') : i18n.t('dmToast.fogCleared', 'regiones de niebla eliminadas'),
       timestamp: Date.now(),
     }])
   }, [graphRef, handleItemsChange])
@@ -692,12 +693,12 @@ export default function DmDashboard() {
     if (toRemove.length === 0) {
       setToastQueue((prev) => [...prev.slice(-4), {
         id: `clearl-${Date.now()}`,
-        rollerName: 'Limpiar',
+        rollerName: i18n.t('dmToast.rollerClear', 'Limpiar'),
         diceType: 20,
         count: 1,
         results: [0],
         total: 0,
-        label: `no hay luces para eliminar`,
+        label: i18n.t('dmToast.noLights', 'no hay luces para eliminar'),
         timestamp: Date.now(),
       }])
       return
@@ -768,12 +769,12 @@ export default function DmDashboard() {
     setSelectedTokenId(null)
     setToastQueue((prev) => [...prev.slice(-4), {
       id: `attach-${Date.now()}`,
-      rollerName: 'Luz',
+      rollerName: i18n.t('dmToast.rollerLight', 'Luz'),
       diceType: 1,
       count: 1,
       results: [1],
       total: 1,
-      label: 'luz agregada al token',
+      label: i18n.t('dmToast.lightAttached', 'luz agregada al token'),
       timestamp: Date.now(),
     }])
   }, [attachLightMode, graphRef, handleItemsChange])
@@ -787,12 +788,12 @@ export default function DmDashboard() {
     setAttachLightMode(null)
     setToastQueue((prev) => [...prev.slice(-4), {
       id: `detach-${Date.now()}`,
-      rollerName: 'Luz',
+      rollerName: i18n.t('dmToast.rollerLight', 'Luz'),
       diceType: 1,
       count: 1,
       results: [1],
       total: 1,
-      label: 'luz quitada del token',
+      label: i18n.t('dmToast.lightDetached', 'luz quitada del token'),
       timestamp: Date.now(),
     }])
   }, [graphRef, handleItemsChange])
@@ -814,12 +815,12 @@ export default function DmDashboard() {
     setLightRequests((prev) => prev.filter((r) => r.id !== request.id))
     setToastQueue((prev) => [...prev.slice(-4), {
       id: `grant-${Date.now()}`,
-      rollerName: 'Luz',
+      rollerName: i18n.t('dmToast.rollerLight', 'Luz'),
       diceType: 1,
       count: 1,
       results: [1],
       total: 1,
-      label: `antorcha entregada a ${request.character_name}`,
+      label: i18n.t('dmToast.torchGranted', 'antorcha entregada a {{name}}', { name: request.character_name }),
       timestamp: Date.now(),
     }])
   }, [campaignId, activeScene, graphRef, handleItemsChange])
@@ -832,12 +833,12 @@ export default function DmDashboard() {
     setLightRequests((prev) => prev.filter((r) => r.id !== request.id))
     setToastQueue((prev) => [...prev.slice(-4), {
       id: `deny-${Date.now()}`,
-      rollerName: 'Luz',
+      rollerName: i18n.t('dmToast.rollerLight', 'Luz'),
       diceType: 1,
       count: 1,
       results: [1],
       total: 1,
-      label: `luz denegada a ${request.character_name}`,
+      label: i18n.t('dmToast.lightDenied', 'luz denegada a {{name}}', { name: request.character_name }),
       timestamp: Date.now(),
     }])
   }, [campaignId])
@@ -879,12 +880,12 @@ export default function DmDashboard() {
     handleItemsChange(graphRef.getItems())
     setToastQueue((prev) => [...prev.slice(-4), {
       id: `zonefog-${Date.now()}`,
-      rollerName: 'Niebla de zona',
+      rollerName: i18n.t('dmToast.rollerZoneFog', 'Niebla de zona'),
       diceType: 20,
       count: 1,
       results: [1],
       total: 1,
-      label: res.applied === 'reveal' ? 'niebla despejada de la zona' : 'niebla cubriendo la zona',
+      label: res.applied === 'reveal' ? i18n.t('dmToast.zoneFogRevealed', 'niebla despejada de la zona') : i18n.t('dmToast.zoneFogHidden', 'niebla cubriendo la zona'),
       timestamp: Date.now(),
     }])
   }, [activeScene, graphRef, handleItemsChange])
@@ -902,35 +903,35 @@ export default function DmDashboard() {
         handleItemsChange(graphRef.getItems())
         setToastQueue((prev) => [...prev.slice(-4), {
           id: `detect-${Date.now()}`,
-          rollerName: 'Detección',
+          rollerName: i18n.t('dmToast.rollerDetect', 'Detección'),
           diceType: 20,
           count: 1,
           results: [result.wall_count],
           total: result.wall_count,
-          label: `paredes + ${result.door_count} puertas detectadas`,
+          label: i18n.t('dmToast.wallsDetected', 'paredes + {{doors}} puertas detectadas', { doors: result.door_count }),
           timestamp: Date.now(),
         }])
       } else {
         setToastQueue((prev) => [...prev.slice(-4), {
           id: `detect-${Date.now()}`,
-          rollerName: 'Detección',
+          rollerName: i18n.t('dmToast.rollerDetect', 'Detección'),
           diceType: 1,
           count: 1,
           results: [1],
           total: 1,
-          label: 'No se detectaron paredes — probá ajustar la imagen',
+          label: i18n.t('dmToast.noWallsDetected', 'No se detectaron paredes — probá ajustar la imagen'),
           timestamp: Date.now(),
         }])
       }
     } catch (_err) {
       setToastQueue((prev) => [...prev.slice(-4), {
         id: `detect-err-${Date.now()}`,
-        rollerName: 'Detección',
+        rollerName: i18n.t('dmToast.rollerDetect', 'Detección'),
         diceType: 1,
         count: 1,
         results: [1],
         total: 1,
-        label: 'No se pudo detectar — revisá el backend',
+        label: i18n.t('dmToast.detectFailed', 'No se pudo detectar — revisá el backend'),
         timestamp: Date.now(),
       }])
     } finally {
@@ -1256,9 +1257,9 @@ export default function DmDashboard() {
     } catch {
       setToastQueue((prev) => [...prev.slice(-4), {
         id: `lighting-err-${Date.now()}`,
-        rollerName: 'Sistema',
+        rollerName: i18n.t('dmToast.rollerSystem', 'Sistema'),
         diceType: 1, count: 1, results: [1], total: 1,
-        label: 'No se pudo actualizar la iluminación',
+        label: i18n.t('dmToast.lightingUpdateFailed', 'No se pudo actualizar la iluminación'),
         timestamp: Date.now(),
       }]);
     }
@@ -1273,9 +1274,9 @@ export default function DmDashboard() {
     } catch {
       setToastQueue((prev) => [...prev.slice(-4), {
         id: `weather-err-${Date.now()}`,
-        rollerName: 'Sistema',
+        rollerName: i18n.t('dmToast.rollerSystem', 'Sistema'),
         diceType: 1, count: 1, results: [1], total: 1,
-        label: 'No se pudo cambiar el clima',
+        label: i18n.t('dmToast.weatherChangeFailed', 'No se pudo cambiar el clima'),
         timestamp: Date.now(),
       }]);
     }
@@ -1292,9 +1293,9 @@ export default function DmDashboard() {
     } catch {
       setToastQueue((prev) => [...prev.slice(-4), {
         id: `weather-int-err-${Date.now()}`,
-        rollerName: 'Sistema',
+        rollerName: i18n.t('dmToast.rollerSystem', 'Sistema'),
         diceType: 1, count: 1, results: [1], total: 1,
-        label: 'No se pudo ajustar la intensidad del clima',
+        label: i18n.t('dmToast.weatherIntensityFailed', 'No se pudo ajustar la intensidad del clima'),
         timestamp: Date.now(),
       }]);
     }
@@ -1321,9 +1322,9 @@ export default function DmDashboard() {
     setSelectedItemId(lightId)
     setToastQueue((prev) => [...prev.slice(-4), {
       id: `attach-ctx-${Date.now()}`,
-      rollerName: 'Luz',
+      rollerName: i18n.t('dmToast.rollerLight', 'Luz'),
       diceType: 1, count: 1, results: [1], total: 1,
-      label: 'luz agregada — editá en la barra de herramientas',
+      label: i18n.t('dmToast.lightAttachedEdit', 'luz agregada — editá en la barra de herramientas'),
       timestamp: Date.now(),
     }])
   }, [graphRef, handleItemsChange])
@@ -1337,9 +1338,9 @@ export default function DmDashboard() {
     setContextMenu(null)
     setToastQueue((prev) => [...prev.slice(-4), {
       id: `detach-ctx-${Date.now()}`,
-      rollerName: 'Luz',
+      rollerName: i18n.t('dmToast.rollerLight', 'Luz'),
       diceType: 1, count: 1, results: [1], total: 1,
-      label: 'luz quitada del token',
+      label: i18n.t('dmToast.lightDetached', 'luz quitada del token'),
       timestamp: Date.now(),
     }])
   }, [graphRef, handleItemsChange])
@@ -1359,9 +1360,9 @@ export default function DmDashboard() {
     setSelectedItemId(attached.id)
     setToastQueue((prev) => [...prev.slice(-4), {
       id: `create-attach-${Date.now()}`,
-      rollerName: 'Luz',
+      rollerName: i18n.t('dmToast.rollerLight', 'Luz'),
       diceType: 1, count: 1, results: [1], total: 1,
-      label: 'luz creada — editá en la barra de herramientas',
+      label: i18n.t('dmToast.lightCreatedEdit', 'luz creada — editá en la barra de herramientas'),
       timestamp: Date.now(),
     }])
   }, [activeScene, graphRef, handleItemsChange])
@@ -1446,12 +1447,12 @@ export default function DmDashboard() {
     if (checkWallCollision(normX, normZ, walls, 0.03)) {
       setToastQueue((prev) => [...prev.slice(-4), {
         id: `wall-block-${Date.now()}`,
-        rollerName: 'Pared',
+        rollerName: i18n.t('dmToast.rollerWall', 'Pared'),
         diceType: 1,
         count: 1,
         results: [1],
         total: 1,
-        label: 'Bloqueado por pared',
+        label: i18n.t('dmToast.blockedByWall', 'Bloqueado por pared'),
         timestamp: Date.now(),
       }]);
       return;
@@ -1654,33 +1655,33 @@ export default function DmDashboard() {
     const lightItems: ContextMenuItem[] = []
     for (const lt of attachedLights) {
       const src = (lt.metadata as { source?: { mode?: string; angle?: number } }).source
-      const modeLabel = src?.mode === 'directional' ? ` (cone ${src.angle ?? 90}°)` : ` (${src?.mode ?? 'hard'})`
-      lightItems.push({ label: `Editar "${lt.name || 'luz'}"${modeLabel}`, icon: '⚙', onClick: () => setSelectedItemId(lt.id) })
-      lightItems.push({ label: `Desprender "${lt.name || 'luz'}"`, icon: '🔥', onClick: () => handleTokenLightDetach(lt.id) })
+      const modeLabel = src?.mode === 'directional' ? i18n.t('dmContext.coneDeg', ' (cono {{angle}}°)', { angle: src.angle ?? 90 }) : i18n.t('dmContext.mode', ' ({{mode}})', { mode: src?.mode ?? 'hard' })
+      lightItems.push({ label: i18n.t('dmContext.editLight', 'Editar "{{name}}"{{mode}}', { name: lt.name || i18n.t('dmContext.light', 'luz'), mode: modeLabel }), icon: '⚙', onClick: () => setSelectedItemId(lt.id) })
+      lightItems.push({ label: i18n.t('dmContext.detachLight', 'Desprender "{{name}}"', { name: lt.name || i18n.t('dmContext.light', 'luz') }), icon: '🔥', onClick: () => handleTokenLightDetach(lt.id) })
     }
     for (const lt of freeLights) {
       const src = (lt.metadata as { source?: { mode?: string } }).source
-      const modeLabel = src?.mode === 'directional' ? ' (cono)' : ''
-      lightItems.push({ label: `Adjuntar "${lt.name || 'luz'}"${modeLabel}`, icon: '💡', onClick: () => handleTokenLightAttach(sceneCharId, lt.id) })
+      const modeLabel = src?.mode === 'directional' ? i18n.t('dmContext.cone', ' (cono)') : ''
+      lightItems.push({ label: i18n.t('dmContext.attachLight', 'Adjuntar "{{name}}"{{mode}}', { name: lt.name || i18n.t('dmContext.light', 'luz'), mode: modeLabel }), icon: '💡', onClick: () => handleTokenLightAttach(sceneCharId, lt.id) })
     }
-    lightItems.push({ label: 'Crear nueva luz', icon: '✨', onClick: () => handleCreateAndAttachLight(sceneCharId) })
+    lightItems.push({ label: i18n.t('dmContext.newLight', 'Crear nueva luz'), icon: '✨', onClick: () => handleCreateAndAttachLight(sceneCharId) })
 
     // Estado: sección "Activas" (quitar rápido) + categorías para marcar — evita lista plana de 18.
     const buildStatusMenuItems = (statusIds: string[]): ContextMenuItem[] => {
       const items: ContextMenuItem[] = [];
       const active = STATUS_OPTIONS.filter((s) => statusIds.includes(s.id));
       if (active.length > 0) {
-        items.push({ label: '· Activas', icon: '✦', disabled: true, onClick: () => {} });
+        items.push({ label: i18n.t('dmContext.activeStatuses', '· Activas'), icon: '✦', disabled: true, onClick: () => {} });
         for (const s of active) {
-          items.push({ label: `Quitar ${s.label}`, icon: '✓', onClick: () => handleToggleStatus(sceneCharId, s.id) });
+          items.push({ label: i18n.t('dmContext.removeStatus', 'Quitar {{name}}', { name: s.label }), icon: '✓', onClick: () => handleToggleStatus(sceneCharId, s.id) });
         }
       }
       for (const g of STATUS_GROUPS) {
         const rest = STATUS_OPTIONS.filter((s) => s.group === g.key && !statusIds.includes(s.id));
         if (rest.length === 0) continue;
-        items.push({ label: `· ${g.label}`, icon: '▸', disabled: true, onClick: () => {} });
+        items.push({ label: i18n.t('dmContext.statusGroup', '· {{name}}', { name: g.label }), icon: '▸', disabled: true, onClick: () => {} });
         for (const s of rest) {
-          items.push({ label: `Marcar ${s.label}`, icon: '＋', onClick: () => handleToggleStatus(sceneCharId, s.id) });
+          items.push({ label: i18n.t('dmContext.markStatus', 'Marcar {{name}}', { name: s.label }), icon: '＋', onClick: () => handleToggleStatus(sceneCharId, s.id) });
         }
       }
       return items;
@@ -1690,17 +1691,17 @@ export default function DmDashboard() {
       x: clientX,
       y: clientY,
       items: [
-        { label: `Seleccionar ${name}`, icon: '◉', onClick: () => setSelectedTokenId(sceneCharId) },
-        { label: sc?.visible ? 'Ocultar a los jugadores' : 'Mostrar a los jugadores', icon: sc?.visible ? '👁' : '🚫', onClick: () => handleToggleVisibility(sceneCharId) },
+        { label: i18n.t('dmContext.selectToken', 'Seleccionar {{name}}', { name }), icon: '◉', onClick: () => setSelectedTokenId(sceneCharId) },
+        { label: sc?.visible ? i18n.t('dmContext.hidePlayers', 'Ocultar a los jugadores') : i18n.t('dmContext.showPlayers', 'Mostrar a los jugadores'), icon: sc?.visible ? '👁' : '🚫', onClick: () => handleToggleVisibility(sceneCharId) },
         { label: '', separator: true, onClick: () => {} },
-        { label: 'Ver ficha de personaje', icon: '📄', onClick: () => setSelectedTokenId(sceneCharId), disabled: !ent },
+        { label: i18n.t('dmContext.viewSheet', 'Ver ficha de personaje'), icon: '📄', onClick: () => setSelectedTokenId(sceneCharId), disabled: !ent },
         { label: '', separator: true, onClick: () => {} },
-        { label: 'Estado', icon: '⚠️', onClick: () => {}, disabled: true },
+        { label: i18n.t('dmContext.statusTitle', 'Estado'), icon: '⚠️', onClick: () => {}, disabled: true },
         ...buildStatusMenuItems(sc?.statuses ?? []),
         { label: '', separator: true, onClick: () => {} },
         ...lightItems,
         { label: '', separator: true, onClick: () => {} },
-        { label: 'Quitar de la escena', icon: '🗑', onClick: () => handleRemoveFromScene(sceneCharId), danger: true },
+        { label: i18n.t('dmContext.removeFromScene', 'Quitar de la escena'), icon: '🗑', onClick: () => handleRemoveFromScene(sceneCharId), danger: true },
       ],
     });
   }, [sceneChars, allEntities, handleToggleVisibility, handleRemoveFromScene, graphRef, handleTokenLightAttach, handleTokenLightDetach, handleCreateAndAttachLight, handleToggleStatus]);
@@ -1916,23 +1917,23 @@ export default function DmDashboard() {
                   setScenes((prev) => prev.map((s) => s.id === updated.id ? updated : { ...s, status: 'inactive' }));
                   setToastQueue((prev) => [...prev.slice(-4), {
                     id: `sync-${Date.now()}`,
-                    rollerName: 'Sincronización',
+                    rollerName: i18n.t('dmToast.rollerSync', 'Sincronización'),
                     diceType: 20,
                     count: 1,
                     results: [1],
                     total: 1,
-                    label: `Escena "${updated.name}" sincronizada con los jugadores`,
+                    label: i18n.t('dmToast.sceneSynced', 'Escena "{{name}}" sincronizada con los jugadores', { name: updated.name }),
                     timestamp: Date.now(),
                   }]);
                 } catch {
                   setToastQueue((prev) => [...prev.slice(-4), {
                     id: `sync-err-${Date.now()}`,
-                    rollerName: 'Sincronización',
+                    rollerName: i18n.t('dmToast.rollerSync', 'Sincronización'),
                     diceType: 20,
                     count: 1,
                     results: [0],
                     total: 0,
-                    label: 'No se pudo sincronizar la escena',
+                    label: i18n.t('dmToast.sceneSyncFailed', 'No se pudo sincronizar la escena'),
                     timestamp: Date.now(),
                   }]);
                 }
