@@ -45,14 +45,46 @@ const SKINS: Skin[] = [
 
 type Phase = 'aim' | 'rolling' | 'settled'
 
+export type RollForm = DieType | 100
+
 export interface DiceTrayResult {
-  dice: { type: DieType; value: number }[]
+  rolls: { diceType: number; count: number; results: number[]; total: number }[]
 }
 
-function summarize(pool: DieType[]): string {
-  const counts = new Map<DieType, number>()
-  for (const t of pool) counts.set(t, (counts.get(t) ?? 0) + 1)
-  return [...counts.entries()].map(([t, n]) => `${n}d${t}`).join(' + ')
+interface PoolEntry {
+  key: string
+  form: RollForm
+}
+
+interface PhysDie {
+  type: DieType
+  entryKey: string
+  tens: boolean
+}
+
+interface LogicalResult {
+  form: RollForm
+  value: number
+  raw?: number[]
+}
+
+function expandPool(pool: PoolEntry[]): PhysDie[] {
+  const out: PhysDie[] = []
+  for (const e of pool) {
+    if (e.form === 100) {
+      out.push({ type: 10, entryKey: e.key, tens: true })
+      out.push({ type: 10, entryKey: e.key, tens: false })
+    } else {
+      out.push({ type: e.form, entryKey: e.key, tens: false })
+    }
+  }
+  return out
+}
+
+function summarize(pool: PoolEntry[]): string {
+  const counts = new Map<RollForm, number>()
+  for (const e of pool) counts.set(e.form, (counts.get(e.form) ?? 0) + 1)
+  return [...counts.entries()].map(([f, n]) => (f === 100 ? `${n}d100` : `${n}d${f}`)).join(' + ')
 }
 
 let audioCtx: AudioContext | null = null
@@ -115,7 +147,7 @@ function gridPosition(i: number, n: number, height: number): [number, number, nu
   return [x, height, z]
 }
 
-function DieMesh({ spec, position, skin, opacity = 1 }: { spec: DieSpec; position: [number, number, number]; skin: Skin; opacity?: number }) {
+function DieMesh({ spec, position, skin, tens = false, opacity = 1 }: { spec: DieSpec; position: [number, number, number]; skin: Skin; tens?: boolean; opacity?: number }) {
   const labels = useMemo(() => getFaceLabels(spec), [spec])
   return (
     <group position={position} scale={DIE_SCALE}>
@@ -131,7 +163,7 @@ function DieMesh({ spec, position, skin, opacity = 1 }: { spec: DieSpec; positio
       {labels.map((l, i) => (
         <mesh key={i} position={l.position} quaternion={l.quaternion}>
           <planeGeometry args={[LABEL_SIZE[spec.type], LABEL_SIZE[spec.type]]} />
-          <meshBasicMaterial map={getFaceTexture(l.value, 128, skin.ink)} transparent depthWrite={false} />
+          <meshBasicMaterial map={getFaceTexture(tens ? (l.value % 10) * 10 : l.value, 128, skin.ink)} transparent depthWrite={false} />
         </mesh>
       ))}
     </group>
@@ -145,6 +177,7 @@ function DieBody({
   register,
   unregister,
   skin,
+  tens = false,
 }: {
   spec: DieSpec
   position: [number, number, number]
@@ -152,6 +185,7 @@ function DieBody({
   register: (index: number, body: RapierRigidBody | null) => void
   unregister: (index: number, body: RapierRigidBody | null) => void
   skin: Skin
+  tens?: boolean
 }) {
   const ref = useRef<RapierRigidBody>(null)
 
@@ -190,7 +224,7 @@ function DieBody({
         {useMemo(() => getFaceLabels(spec), [spec]).map((l, i) => (
           <mesh key={i} position={l.position} quaternion={l.quaternion}>
             <planeGeometry args={[LABEL_SIZE[spec.type], LABEL_SIZE[spec.type]]} />
-            <meshBasicMaterial map={getFaceTexture(l.value, 128, skin.ink)} transparent depthWrite={false} />
+            <meshBasicMaterial map={getFaceTexture(tens ? (l.value % 10) * 10 : l.value, 128, skin.ink)} transparent depthWrite={false} />
           </mesh>
         ))}
       </group>
@@ -286,21 +320,23 @@ export default function DiceTray({
   onRolled: (result: DiceTrayResult) => void
   onClose: () => void
 }) {
-  const [pool, setPool] = useState<DieType[]>([6])
+  const [pool, setPool] = useState<PoolEntry[]>([{ key: 'd0', form: 6 }])
   const [phase, setPhase] = useState<Phase>('aim')
   const [throwId, setThrowId] = useState(0)
-  const [results, setResults] = useState<number[] | null>(null)
+  const [results, setResults] = useState<LogicalResult[] | null>(null)
   const [muted, setMuted] = useState(false)
   const [skin, setSkin] = useState<Skin>(SKINS[0])
   const bodies = useRef<(RapierRigidBody | null)[]>([])
+  const keyRef = useRef(1)
 
   const reductionMotion = useMemo(
     () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
     [],
   )
 
-  const specs = useMemo(() => pool.map((t) => getDie(t)), [pool])
-  const indices = Array.from({ length: pool.length }, (_, i) => i)
+  const phys = useMemo(() => expandPool(pool), [pool])
+  const specs = useMemo(() => phys.map((p) => getDie(p.type)), [phys])
+  const indices = Array.from({ length: phys.length }, (_, i) => i)
 
   const register = useCallback((index: number, body: RapierRigidBody | null) => {
     bodies.current[index] = body
@@ -312,17 +348,52 @@ export default function DiceTray({
   }, [])
 
   const finish = (values: number[]) => {
-    setResults(values)
+    let cursor = 0
+    const logical: LogicalResult[] = []
+    for (const e of pool) {
+      if (e.form === 100) {
+        const tens = values[cursor++] ?? 1
+        const units = values[cursor++] ?? 1
+        let v = (tens % 10) * 10 + (units % 10)
+        if (v === 0) v = 100
+        logical.push({ form: 100, value: v, raw: [tens, units] })
+      } else {
+        logical.push({ form: e.form, value: values[cursor++] ?? 1 })
+      }
+    }
+    setResults(logical)
     setPhase('settled')
     if (!muted && !reductionMotion) playThud()
-    onRolled({ dice: pool.map((type, i) => ({ type, value: values[i] })) })
+
+    const groups = new Map<number, number[]>()
+    const rolls: DiceTrayResult['rolls'] = []
+    for (const r of logical) {
+      if (r.form === 100) {
+        rolls.push({ diceType: 10, count: 2, results: r.raw ?? [1, 1], total: r.value })
+      } else {
+        const arr = groups.get(r.form) ?? []
+        arr.push(r.value)
+        groups.set(r.form, arr)
+      }
+    }
+    for (const [t, res] of groups) {
+      rolls.push({ diceType: t, count: res.length, results: res, total: res.reduce((a, b) => a + b, 0) })
+    }
+    onRolled({ rolls })
   }
 
-  const addDie = (type: DieType) => {
+  const addStd = (type: DieType) => {
     if (phase === 'rolling') return
     setResults(null)
     setPhase('aim')
-    setPool((p) => (p.length >= MAX_DICE ? p : [...p, type]))
+    setPool((p) => (expandPool(p).length + 1 > MAX_DICE ? p : [...p, { key: 'd' + keyRef.current++, form: type }]))
+  }
+
+  const addD100 = () => {
+    if (phase === 'rolling') return
+    setResults(null)
+    setPhase('aim')
+    setPool((p) => (expandPool(p).length + 2 > MAX_DICE ? p : [...p, { key: 'd' + keyRef.current++, form: 100 }]))
   }
 
   const removeLast = () => {
@@ -333,9 +404,9 @@ export default function DiceTray({
   }
 
   const doThrow = () => {
-    if (pool.length === 0 || phase === 'rolling') return
+    if (phys.length === 0 || phase === 'rolling') return
     if (reductionMotion) {
-      finish(pool.map((t) => Math.floor(Math.random() * t) + 1))
+      finish(phys.map((p) => Math.floor(Math.random() * p.type) + 1))
       return
     }
     if (!muted) playClatter()
@@ -359,11 +430,11 @@ export default function DiceTray({
           <p className="mb-2 text-[10px] uppercase tracking-wide text-[var(--text-secondary)]">Dados</p>
           <div className="flex flex-col gap-1">
             {TRAY_DICE_TYPES.map((type) => {
-              const n = pool.filter((t) => t === type).length
+              const n = pool.filter((e) => e.form === type).length
               return (
                 <button
                   key={type}
-                  onClick={() => addDie(type)}
+                  onClick={() => addStd(type)}
                   className={`flex items-center justify-between rounded px-2 py-2 font-mono text-sm font-bold transition-colors ${
                     n > 0
                       ? 'bg-[var(--accent)] text-white'
@@ -375,6 +446,22 @@ export default function DiceTray({
                 </button>
               )
             })}
+            {(() => {
+              const n = pool.filter((e) => e.form === 100).length
+              return (
+                <button
+                  onClick={addD100}
+                  className={`flex items-center justify-between rounded px-2 py-2 font-mono text-sm font-bold transition-colors ${
+                    n > 0
+                      ? 'bg-[var(--accent)] text-white'
+                      : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  <span>d100</span>
+                  {n > 0 && <span className="text-[10px]">×{n}</span>}
+                </button>
+              )
+            })()}
           </div>
           <p className="mb-2 mt-3 text-[10px] uppercase tracking-wide text-[var(--text-secondary)]">Skin</p>
           <div className="flex flex-col gap-1">
@@ -413,18 +500,19 @@ export default function DiceTray({
                     <DieBody
                       key={`${throwId}-${i}`}
                       spec={specs[i]}
-                      position={gridPosition(i, pool.length, 3.2)}
+                      position={gridPosition(i, phys.length, 3.2)}
                       index={i}
                       register={register}
                       unregister={unregister}
                       skin={skin}
+                      tens={phys[i].tens}
                     />
                   ))}
                 {phase !== 'aim' && <RestDetector key={throwId} bodies={bodies} specs={specs} onResults={finish} />}
               </Physics>
               {phase === 'aim' &&
                 indices.map((i) => (
-                  <DieMesh key={i} spec={specs[i]} position={gridPosition(i, pool.length, 1.6)} skin={skin} />
+                  <DieMesh key={i} spec={specs[i]} position={gridPosition(i, phys.length, 1.6)} skin={skin} tens={phys[i].tens} />
                 ))}
             </Suspense>
           </Canvas>
@@ -432,47 +520,49 @@ export default function DiceTray({
           {results && (
             <div
               className="absolute left-1/2 top-3 flex -translate-x-1/2 items-center gap-1 rounded bg-black/50 px-2 py-1"
-              data-results={results.join(',')}
+              data-results={results.map((r) => r.value).join(',')}
             >
               {results.map((r, i) => (
                 <span
                   key={i}
                   className={`inline-flex h-6 w-6 items-center justify-center rounded font-mono text-xs font-bold ${
-                    r === pool[i] ? 'bg-emerald-500/30 text-emerald-300' : 'bg-white/10 text-white'
+                    r.value === (r.form === 100 ? 100 : r.form)
+                      ? 'bg-emerald-500/30 text-emerald-300'
+                      : 'bg-white/10 text-white'
                   }`}
                 >
-                  {r}
+                  {r.value}
                 </span>
               ))}
               <span className="ml-1 font-mono text-xs text-white/80">
-                = {results.reduce((a, b) => a + b, 0)}
+                = {results.reduce((a, r) => a + r.value, 0)}
               </span>
             </div>
           )}
 
           <div className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-2 pb-3">
             <span className="text-[11px] text-[var(--text-secondary)]">
-              {pool.length === 0 ? 'Sin dados' : summarize(pool)}
-              {pool.length >= MAX_DICE ? ' · máximo 15' : ''}
+              {phys.length === 0 ? 'Sin dados' : summarize(pool)}
+              {phys.length >= MAX_DICE ? ' · máximo 15' : ''}
             </span>
             <div className="flex gap-2">
               <button
                 onClick={removeLast}
-                disabled={phase === 'rolling' || pool.length === 0}
+                disabled={phase === 'rolling' || phys.length === 0}
                 className="rounded bg-[var(--bg-tertiary)] px-3 py-1.5 text-xs text-[var(--text-secondary)] disabled:opacity-40"
               >
                 Quitar último
               </button>
               <button
                 onClick={clearTray}
-                disabled={phase === 'rolling' || pool.length === 0}
+                disabled={phase === 'rolling' || phys.length === 0}
                 className="rounded bg-[var(--bg-tertiary)] px-3 py-1.5 text-xs text-[var(--text-secondary)] disabled:opacity-40"
               >
                 Vaciar
               </button>
               <button
                 onClick={doThrow}
-                disabled={phase === 'rolling' || pool.length === 0}
+                disabled={phase === 'rolling' || phys.length === 0}
                 className="rounded bg-[var(--accent)] px-5 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
               >
                 {phase === 'rolling' ? 'Tirando...' : 'Tirar'}

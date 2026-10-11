@@ -503,14 +503,8 @@ export default function DiceRoller({
             >
               <DiceTray
                 onRolled={(r) => {
-                  const groups = new Map<number, number[]>();
-                  for (const d of r.dice) {
-                    const arr = groups.get(d.type) ?? [];
-                    arr.push(d.value);
-                    groups.set(d.type, arr);
-                  }
-                  for (const [type, res] of groups) {
-                    void saveRoll(type, res.length, res, res.reduce((a, b) => a + b, 0), buildLabel());
+                  for (const row of r.rolls) {
+                    void saveRoll(row.diceType, row.count, row.results, row.total, buildLabel());
                   }
                 }}
                 onClose={() => setTrayOpen(false)}
