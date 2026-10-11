@@ -251,3 +251,90 @@ export function readResult(spec: DieSpec, rotation: THREE.Quaternion): number {
   }
   return value
 }
+
+export interface FaceLabel {
+  position: [number, number, number]
+  quaternion: [number, number, number, number]
+  value: number
+}
+
+export function getFaceLabels(spec: DieSpec): FaceLabel[] {
+  const labels: FaceLabel[] = []
+  const up = new THREE.Vector3(0, 1, 0)
+  for (const face of spec.faces) {
+    const normal = new THREE.Vector3(face.normal[0], face.normal[1], face.normal[2])
+    const centroid = new THREE.Vector3(face.centroid[0], face.centroid[1], face.centroid[2])
+    const q = new THREE.Quaternion().setFromUnitVectors(up, normal)
+    labels.push({
+      position: [centroid.x, centroid.y, centroid.z],
+      quaternion: [q.x, q.y, q.z, q.w],
+      value: face.value,
+    })
+  }
+  return labels
+}
+
+export function getVertexLabels(spec: DieSpec): FaceLabel[] {
+  const labels: FaceLabel[] = []
+  if (spec.type !== 4 || !spec.vertexValues) return labels
+  const up = new THREE.Vector3(0, 1, 0)
+  for (let i = 0; i < spec.vertices.length; i++) {
+    const v = spec.vertices[i]
+    const dir = v.clone().normalize()
+    const q = new THREE.Quaternion().setFromUnitVectors(up, dir)
+    labels.push({
+      position: [v.x * 1.05, v.y * 1.05, v.z * 1.05],
+      quaternion: [q.x, q.y, q.z, q.w],
+      value: spec.vertexValues[i],
+    })
+  }
+  return labels
+}
+
+export function getDieFaceMaterials(spec: DieSpec): THREE.Material[] {
+  return buildFaceMaterials(spec)
+}
+
+export function buildFaceMaterials(spec: DieSpec): THREE.Material[] {
+  const materials: THREE.Material[] = []
+  const baseColor = new THREE.Color('#ffffff')
+  for (let i = 0; i < spec.faces.length; i++) {
+    const mat = new THREE.MeshStandardMaterial({
+      color: baseColor,
+      metalness: 0.25,
+      roughness: 0.45,
+      map: getFaceTexture(spec.faces[i].value),
+    })
+    materials.push(mat)
+  }
+  return materials
+}
+
+
+
+export function getFaceTexture(value: number, size = 128): THREE.CanvasTexture {
+  let canvas: HTMLCanvasElement
+  if (typeof document === 'undefined') {
+    canvas = { width: size, height: size, getContext: () => null } as unknown as HTMLCanvasElement
+  } else {
+    canvas = document.createElement('canvas')
+  }
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext('2d')
+  if (!ctx) {
+    const tex = new THREE.CanvasTexture(canvas)
+    tex.flipY = false
+    return tex
+  }
+  ctx.clearRect(0, 0, size, size)
+  ctx.fillStyle = '#111111'
+  ctx.font = `bold ${size * 0.55}px system-ui, -apple-system, sans-serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(String(value), size / 2, size / 2)
+  const tex = new THREE.CanvasTexture(canvas)
+  tex.flipY = false
+  tex.needsUpdate = true
+  return tex
+}

@@ -58,7 +58,7 @@ describe('dice3d · lectura del resultado', () => {
     for (const t of [6, 8, 12, 20] as DieType[]) {
       const spec = getDie(t)
       const maxY = Math.max(...spec.faces.map((f) => f.normal[1]))
-      const expected = spec.faces.find((f) => f.normal[1] === maxY)?.value
+      const expected = spec.faces.find((f) => Math.abs(f.normal[1] - maxY) < 1e-10)?.value
       expect(readResult(spec, new THREE.Quaternion())).toBe(expected)
     }
   })

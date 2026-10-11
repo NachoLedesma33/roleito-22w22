@@ -2,7 +2,7 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { Canvas, useFrame } from '@react-three/fiber'
 import { CuboidCollider, Physics, RigidBody, type RapierRigidBody } from '@react-three/rapier'
 import * as THREE from 'three'
-import { getDie, readResult, type DieSpec, type DieType } from '@/lib/dice3d'
+import { getDie, readResult, getFaceLabels, getVertexLabels, type DieSpec, type DieType } from '@/lib/dice3d'
 
 const TRAY_DICE_TYPES: DieType[] = [4, 6, 8, 10, 12, 20]
 const MAX_DICE = 15
@@ -36,16 +36,25 @@ function gridPosition(i: number, n: number, height: number): [number, number, nu
 }
 
 function DieMesh({ spec, position, opacity = 1 }: { spec: DieSpec; position: [number, number, number]; opacity?: number }) {
+  const labels = useMemo(() => (spec.type === 4 ? getVertexLabels(spec) : getFaceLabels(spec)), [spec])
   return (
-    <mesh geometry={spec.geometry} position={position} scale={DIE_SCALE} castShadow>
-      <meshStandardMaterial
-        color={DIE_COLOR[spec.type]}
-        metalness={0.25}
-        roughness={0.45}
-        transparent={opacity < 1}
-        opacity={opacity}
-      />
-    </mesh>
+    <group position={position} scale={DIE_SCALE}>
+      <mesh geometry={spec.geometry} castShadow>
+        <meshStandardMaterial
+          color={DIE_COLOR[spec.type]}
+          metalness={0.25}
+          roughness={0.45}
+          transparent={opacity < 1}
+          opacity={opacity}
+        />
+      </mesh>
+      {labels.map((l, i) => (
+        <mesh key={i} position={l.position} quaternion={l.quaternion} scale={spec.type === 4 ? 0.5 : 0.4}>
+          <planeGeometry args={[0.6, 0.6]} />
+          <meshBasicMaterial color="#111111" transparent opacity={0.92} />
+        </mesh>
+      ))}
+    </group>
   )
 }
 
@@ -90,9 +99,17 @@ function DieBody({
       angularDamping={0.3}
       ccd
     >
-      <mesh geometry={spec.geometry} castShadow>
-        <meshStandardMaterial color={DIE_COLOR[spec.type]} metalness={0.25} roughness={0.45} />
-      </mesh>
+      <group>
+        <mesh geometry={spec.geometry} castShadow>
+          <meshStandardMaterial color={DIE_COLOR[spec.type]} metalness={0.25} roughness={0.45} />
+        </mesh>
+        {useMemo(() => (spec.type === 4 ? getVertexLabels(spec) : getFaceLabels(spec)), [spec]).map((l, i) => (
+          <mesh key={i} position={l.position} quaternion={l.quaternion} scale={spec.type === 4 ? 0.4 : 0.32}>
+            <planeGeometry args={[0.5, 0.5]} />
+            <meshBasicMaterial color="#111111" transparent opacity={0.95} />
+          </mesh>
+        ))}
+      </group>
     </RigidBody>
   )
 }
