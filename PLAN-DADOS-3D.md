@@ -264,3 +264,21 @@ Al pedir una tirada, se abre un **panel "mesa de dados"** (modal overlay, centra
 - **Luces propias** + `RoomEnvironment` de three. **Nunca** `<Environment preset>` de drei (descarga HDRI del CDN → rompe local-first).
 
 **Núcleo determinista (esta fase):** `apps/dm/src/lib/dice3d.ts` construye las geometrías procedurales (d4–d20) y expone la tabla `FACES` (normal → valor) + `readResult(quaternion)`; es la fuente única que usan tanto la lectura del resultado como el pintado de los números.
+
+## 16. Implementación (2026-10-11) — estado y gotchas
+
+Hecho y verificado en browser (flag `dice3d`, default off):
+
+- **Núcleo** `apps/dm/src/lib/dice3d.ts` (+ `dice3d.spec.ts`, 11 tests): geometrías procedurales d4–d20, tabla `FACES`, `readResult(quaternion)` (d4 = vértice superior). d10 = trapezoedro custom.
+- **Mesa** `apps/dm/src/components/DiceTray.tsx`: overlay modal en portal, Canvas R3F + `@react-three/rapier`, caja con piso y 4 paredes, columna de tipos, hasta 15 dados, detección de reposo (`RestDetector`) y lectura al asentar. Integrada en `DiceRoller.tsx` vía `lazy()` + `createPortal`, detrás del flag.
+- Verificado end-to-end: d6 / d20 / 5×d4 asientan y leen dentro de rango; las tiradas persisten en la API (`dice_type/count/results/total`); sin errores de consola.
+
+Gotchas (lecciones pagadas):
+
+- **Versión de rapier:** `@react-three/rapier@2.x` exige `@react-three/fiber@9`. El repo usa R3F `8.18` → va `@react-three/rapier@^1.5.0`. No subir a 2.x sin migrar R3F.
+- **`<RigidBody>` SIEMPRE dentro de `<Physics>`:** renderizar `TrayWalls` fuera de `<Physics>` tira `useRapier must be used within <Physics />`. Por eso `<Physics>` queda montado siempre y los dados de espera (`aim`) son meshes planos **fuera** de Physics.
+- **Re-armar el detector por tirada:** si se vuelve a tirar sin pasar por `aim`, el `RestDetector` persiste con `done=true` → queda en `rolling` eterno. Solución: `key={throwId}` en `RestDetector` (y `DieBody`), y `pickType` siempre vuelve a `aim`.
+- **Bundle:** DiceTray sale como chunk lazy aparte (~772 KB gz, incluye el WASM de rapier); el bundle inicial no cambia. Requiere `dynamic import` (ya vía `lazy`).
+- **Verificación sin ver la pantalla:** el overlay expone `data-phase` (`aim|rolling|settled`) y `data-results` (valores CSV) para inspeccionar por DOM/consola en el browser.
+
+Pendiente (siguiente): números pintados en las caras (CanvasTexture por cara), skins presets, sonido, d100 (2×d10), validación server-side, y afinar proporciones del d10.
