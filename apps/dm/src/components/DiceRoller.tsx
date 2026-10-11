@@ -1,6 +1,10 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, lazy, Suspense } from 'react';
+import { createPortal } from 'react-dom';
 import HudPanel from './HudPanel';
 import { api, type Character, type NPC, type VidaAttr, type DiceRollResponse } from '@/lib/api';
+import { isDice3dEnabled } from '@/lib/features';
+
+const DiceTray = lazy(() => import('./DiceTray'));
 
 export interface DiceRoll {
   id: string;
@@ -100,6 +104,8 @@ export default function DiceRoller({
   const [lastRoll, setLastRoll] = useState<DiceRoll | null>(null);
   const [history, setHistory] = useState<DiceRoll[]>([]);
   const [rolling, setRolling] = useState(false);
+  const [dice3d] = useState(() => isDice3dEnabled());
+  const [trayOpen, setTrayOpen] = useState(false);
   const [historyEntityKey, setHistoryEntityKey] = useState<string>(fixedEntityKey ?? '');
   const rollTimeout = useRef<ReturnType<typeof setTimeout>>();
 
@@ -161,12 +167,14 @@ export default function DiceRoller({
     };
   }, [campaignId, historyEntityKey]);
 
-  const handleRoll = useCallback(() => {
-    setRolling(true);
-    rollTimeout.current = setTimeout(async () => {
-      const { results, total } = rollDice(diceType, count);
-      const label = [skill.trim(), selected?.name].filter(Boolean).join(' — ') || undefined;
-
+  const saveRoll = useCallback(
+    async (
+      diceTypeValue: number,
+      countValue: number,
+      results: number[],
+      total: number,
+      label: string | undefined,
+    ) => {
       if (campaignId) {
         try {
           const entityType = selected?.key.split(':')[0];
@@ -176,8 +184,8 @@ export default function DiceRoller({
             entity_id: entityId,
             entity_name: selected?.name,
             roller_name: rollerName,
-            dice_type: diceType,
-            count,
+            dice_type: diceTypeValue,
+            count: countValue,
             results,
             total,
             label,
@@ -185,7 +193,6 @@ export default function DiceRoller({
           const roll = responseToRoll(response);
           setLastRoll(roll);
           setHistory((prev) => [roll, ...prev].slice(0, 20));
-          setRolling(false);
           onRoll?.(roll);
           onRollCreated?.(response);
           return;
@@ -196,8 +203,8 @@ export default function DiceRoller({
 
       const roll: DiceRoll = {
         id: crypto.randomUUID(),
-        diceType,
-        count,
+        diceType: diceTypeValue,
+        count: countValue,
         results,
         total,
         timestamp: Date.now(),
@@ -205,10 +212,28 @@ export default function DiceRoller({
       };
       setLastRoll(roll);
       setHistory((prev) => [roll, ...prev].slice(0, 20));
-      setRolling(false);
       onRoll?.(roll);
+    },
+    [campaignId, selected, rollerName, onRoll, onRollCreated],
+  );
+
+  const buildLabel = useCallback(
+    () => [skill.trim(), selected?.name].filter(Boolean).join(' — ') || undefined,
+    [skill, selected],
+  );
+
+  const handleRoll = useCallback(() => {
+    if (dice3d) {
+      setTrayOpen(true);
+      return;
+    }
+    setRolling(true);
+    rollTimeout.current = setTimeout(async () => {
+      const { results, total } = rollDice(diceType, count);
+      await saveRoll(diceType, count, results, total, buildLabel());
+      setRolling(false);
     }, 300);
-  }, [diceType, count, skill, selected, campaignId, rollerName, onRoll, onRollCreated]);
+  }, [dice3d, diceType, count, saveRoll, buildLabel]);
 
   useEffect(() => {
     return () => {
@@ -327,7 +352,7 @@ export default function DiceRoller({
               : 'bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] active:scale-[0.98]'
           }`}
         >
-          {rolling ? 'Tirando...' : `Tirar ${count}d${diceType}`}
+          {dice3d ? 'Abrir mesa de dados' : rolling ? 'Tirando...' : `Tirar ${count}d${diceType}`}
         </button>
 
         {lastRoll && (
@@ -420,6 +445,20 @@ export default function DiceRoller({
           </div>
         )}
       </div>
+
+      {dice3d &&
+        trayOpen &&
+        createPortal(
+          <Suspense fallback={null}>
+            <DiceTray
+              onRolled={(r) => {
+                void saveRoll(r.diceType, r.count, r.results, r.total, buildLabel());
+              }}
+              onClose={() => setTrayOpen(false)}
+            />
+          </Suspense>,
+          document.body,
+        )}
     </HudPanel>
   );
 }
