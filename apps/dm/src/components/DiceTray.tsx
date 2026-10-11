@@ -2,7 +2,7 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { CuboidCollider, Physics, RigidBody, type RapierRigidBody } from '@react-three/rapier'
 import * as THREE from 'three'
-import { getDie, readResult, getFaceLabels, getFaceTexture, type DieSpec, type DieType } from '@/lib/dice3d'
+import { getDie, readResult, getFaceLabels, getFaceTexture, getSkinTexture, type DieSpec, type DieType, type SkinPattern } from '@/lib/dice3d'
 
 const TRAY_DICE_TYPES: DieType[] = [4, 6, 8, 10, 12, 20]
 const MAX_DICE = 15
@@ -33,14 +33,21 @@ interface Skin {
   metalness: number
   roughness: number
   ink: string
+  pattern: SkinPattern
 }
 
 const SKINS: Skin[] = [
-  { id: 'clasico', label: 'Clásico', color: null, metalness: 0.25, roughness: 0.45, ink: '#111111' },
-  { id: 'obsidiana', label: 'Obsidiana', color: '#2b2b33', metalness: 0.6, roughness: 0.25, ink: '#f2f2f2' },
-  { id: 'metal', label: 'Metal', color: '#b8bcc4', metalness: 0.9, roughness: 0.2, ink: '#1a1a1a' },
-  { id: 'madera', label: 'Madera', color: '#6b4a2b', metalness: 0.0, roughness: 0.8, ink: '#f4e9d8' },
-  { id: 'rubi', label: 'Rubí', color: '#8b1e2d', metalness: 0.5, roughness: 0.3, ink: '#ffe6e6' },
+  { id: 'clasico', label: 'Clásico', color: null, metalness: 0.25, roughness: 0.45, ink: '#111111', pattern: 'none' },
+  { id: 'obsidiana', label: 'Obsidiana', color: '#2b2b33', metalness: 0.6, roughness: 0.2, ink: '#f2f2f2', pattern: 'gem' },
+  { id: 'metal', label: 'Metal', color: '#b8bcc4', metalness: 0.9, roughness: 0.25, ink: '#1a1a1a', pattern: 'brushed' },
+  { id: 'oro', label: 'Oro', color: '#c9a24b', metalness: 1.0, roughness: 0.25, ink: '#3a2c10', pattern: 'brushed' },
+  { id: 'madera', label: 'Madera', color: '#7a5230', metalness: 0.0, roughness: 0.85, ink: '#f4e9d8', pattern: 'wood' },
+  { id: 'piedra', label: 'Piedra', color: '#8a8d92', metalness: 0.1, roughness: 0.9, ink: '#1a1a1a', pattern: 'grain' },
+  { id: 'marmol', label: 'Mármol', color: '#d9dce0', metalness: 0.2, roughness: 0.4, ink: '#222222', pattern: 'marble' },
+  { id: 'cuero', label: 'Cuero', color: '#5a3a22', metalness: 0.0, roughness: 0.9, ink: '#f0e0c8', pattern: 'grain' },
+  { id: 'rubi', label: 'Rubí', color: '#8b1e2d', metalness: 0.5, roughness: 0.3, ink: '#ffe6e6', pattern: 'gem' },
+  { id: 'jade', label: 'Jade', color: '#2f8f6b', metalness: 0.3, roughness: 0.35, ink: '#ffffff', pattern: 'marble' },
+  { id: 'meteorito', label: 'Meteorito', color: '#3b3f45', metalness: 0.7, roughness: 0.55, ink: '#eaeaea', pattern: 'grain' },
 ]
 
 type Phase = 'aim' | 'rolling' | 'settled'
@@ -154,6 +161,7 @@ function DieMesh({ spec, position, skin, tens = false, opacity = 1 }: { spec: Di
       <mesh geometry={spec.geometry} castShadow>
         <meshStandardMaterial
           color={skin.color ?? DIE_COLOR[spec.type]}
+          map={getSkinTexture(skin.pattern) ?? undefined}
           metalness={skin.metalness}
           roughness={skin.roughness}
           transparent={opacity < 1}
@@ -219,7 +227,12 @@ function DieBody({
     >
       <group>
         <mesh geometry={spec.geometry} castShadow>
-          <meshStandardMaterial color={skin.color ?? DIE_COLOR[spec.type]} metalness={skin.metalness} roughness={skin.roughness} />
+          <meshStandardMaterial
+            color={skin.color ?? DIE_COLOR[spec.type]}
+            map={getSkinTexture(skin.pattern) ?? undefined}
+            metalness={skin.metalness}
+            roughness={skin.roughness}
+          />
         </mesh>
         {useMemo(() => getFaceLabels(spec), [spec]).map((l, i) => (
           <mesh key={i} position={l.position} quaternion={l.quaternion}>
@@ -426,7 +439,7 @@ export default function DiceTray({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" data-phase={phase}>
       <div className="flex h-[540px] max-h-[92vh] w-[760px] max-w-[95vw] overflow-hidden rounded-lg border border-[var(--bg-tertiary)] bg-[var(--bg-primary)] shadow-2xl">
-        <aside className="w-24 shrink-0 border-r border-[var(--bg-tertiary)] p-2">
+        <aside className="w-24 shrink-0 overflow-y-auto border-r border-[var(--bg-tertiary)] p-2">
           <p className="mb-2 text-[10px] uppercase tracking-wide text-[var(--text-secondary)]">Dados</p>
           <div className="flex flex-col gap-1">
             {TRAY_DICE_TYPES.map((type) => {

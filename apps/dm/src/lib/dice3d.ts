@@ -356,3 +356,111 @@ export function getFaceTexture(value: number, size = 128, ink = '#111111'): THRE
   FACE_TEXTURE_CACHE.set(key, tex)
   return tex
 }
+
+export type SkinPattern = 'none' | 'grain' | 'wood' | 'marble' | 'brushed' | 'gem'
+
+const SKIN_TEXTURE_CACHE = new Map<string, THREE.CanvasTexture>()
+
+function mulberry(seed: number): () => number {
+  let a = seed >>> 0
+  return () => {
+    a |= 0
+    a = (a + 0x6d2b79f5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+/** Textura procedural neutra (gris) para multiplicar por el color del skin. */
+export function getSkinTexture(pattern: SkinPattern, size = 256): THREE.CanvasTexture | null {
+  if (pattern === 'none') return null
+  const key = `${pattern}|${size}`
+  const cached = SKIN_TEXTURE_CACHE.get(key)
+  if (cached) return cached
+
+  const canvas =
+    typeof document === 'undefined'
+      ? ({ width: size, height: size, getContext: () => null } as unknown as HTMLCanvasElement)
+      : document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext('2d')
+  if (ctx) {
+    const rand = mulberry(0x9e3779b9 ^ size ^ pattern.length)
+    ctx.fillStyle = '#e2e2e2'
+    ctx.fillRect(0, 0, size, size)
+
+    if (pattern === 'grain') {
+      for (let i = 0; i < size * size * 0.05; i++) {
+        const g = 150 + Math.floor(rand() * 90)
+        ctx.fillStyle = `rgba(${g},${g},${g},${0.4 + rand() * 0.5})`
+        ctx.beginPath()
+        ctx.arc(rand() * size, rand() * size, 0.5 + rand() * 1.6, 0, Math.PI * 2)
+        ctx.fill()
+      }
+    } else if (pattern === 'wood') {
+      for (let y = 0; y < size; y++) {
+        const band = 205 + Math.floor(38 * Math.sin(y * 0.35 + Math.sin(y * 0.06) * 3))
+        ctx.fillStyle = `rgb(${band},${band},${band})`
+        ctx.fillRect(0, y, size, 1)
+      }
+      for (let i = 0; i < 7; i++) {
+        ctx.strokeStyle = `rgba(90,90,90,${0.25 + rand() * 0.25})`
+        ctx.lineWidth = 1 + rand() * 1.5
+        ctx.beginPath()
+        ctx.ellipse(rand() * size, rand() * size, 4 + rand() * 10, 2 + rand() * 5, rand() * 3, 0, Math.PI * 2)
+        ctx.stroke()
+      }
+    } else if (pattern === 'marble') {
+      for (let v = 0; v < 24; v++) {
+        ctx.strokeStyle = `rgba(120,120,126,${0.1 + rand() * 0.22})`
+        ctx.lineWidth = 0.6 + rand() * 1.6
+        ctx.beginPath()
+        let x = rand() * size
+        let y = rand() * size
+        ctx.moveTo(x, y)
+        for (let s = 0; s < 6; s++) {
+          x += (rand() - 0.5) * size * 0.5
+          y += (rand() - 0.5) * size * 0.5
+          ctx.lineTo(x, y)
+        }
+        ctx.stroke()
+      }
+    } else if (pattern === 'brushed') {
+      for (let y = 0; y < size; y++) {
+        const g = 208 + Math.floor((rand() - 0.5) * 54)
+        ctx.strokeStyle = `rgba(${g},${g},${g},0.5)`
+        ctx.beginPath()
+        ctx.moveTo(0, y)
+        ctx.lineTo(size, y)
+        ctx.stroke()
+      }
+    } else if (pattern === 'gem') {
+      const grad = ctx.createRadialGradient(size * 0.4, size * 0.35, 2, size * 0.5, size * 0.5, size * 0.7)
+      grad.addColorStop(0, '#ffffff')
+      grad.addColorStop(0.5, '#e0e6ee')
+      grad.addColorStop(1, '#aab4c0')
+      ctx.fillStyle = grad
+      ctx.fillRect(0, 0, size, size)
+      const cx = size / 2
+      const cy = size / 2
+      for (let i = 0; i < 10; i++) {
+        const a = (i / 10) * Math.PI * 2 + rand() * 0.4
+        ctx.strokeStyle = `rgba(255,255,255,${0.25 + rand() * 0.4})`
+        ctx.lineWidth = 1 + rand() * 2
+        ctx.beginPath()
+        ctx.moveTo(cx, cy)
+        ctx.lineTo(cx + Math.cos(a) * size * 0.6, cy + Math.sin(a) * size * 0.6)
+        ctx.stroke()
+      }
+    }
+  }
+  const tex = new THREE.CanvasTexture(canvas)
+  tex.colorSpace = THREE.SRGBColorSpace
+  tex.wrapS = THREE.RepeatWrapping
+  tex.wrapT = THREE.RepeatWrapping
+  tex.needsUpdate = true
+  SKIN_TEXTURE_CACHE.set(key, tex)
+  return tex
+}
