@@ -29,10 +29,13 @@ const LABEL_SIZE: Record<DieType, number> = {
 type Phase = 'aim' | 'rolling' | 'settled'
 
 export interface DiceTrayResult {
-  diceType: DieType
-  count: number
-  results: number[]
-  total: number
+  dice: { type: DieType; value: number }[]
+}
+
+function summarize(pool: DieType[]): string {
+  const counts = new Map<DieType, number>()
+  for (const t of pool) counts.set(t, (counts.get(t) ?? 0) + 1)
+  return [...counts.entries()].map(([t, n]) => `${n}d${t}`).join(' + ')
 }
 
 function gridPosition(i: number, n: number, height: number): [number, number, number] {
@@ -125,11 +128,11 @@ function DieBody({
 
 function RestDetector({
   bodies,
-  spec,
+  specs,
   onResults,
 }: {
   bodies: { current: (RapierRigidBody | null)[] }
-  spec: DieSpec
+  specs: DieSpec[]
   onResults: (results: number[]) => void
 }) {
   const still = useRef(0)
@@ -139,11 +142,11 @@ function RestDetector({
   useFrame((_, delta) => {
     if (done.current) return
     elapsed.current += delta
-    const list = bodies.current.filter((b): b is RapierRigidBody => b !== null)
-    if (!list.length) return
+    const list = bodies.current
+    if (!list.length || list.some((b) => b === null)) return
 
     let maxSpeed = 0
-    for (const body of list) {
+    for (const body of list as RapierRigidBody[]) {
       const lv = body.linvel()
       const av = body.angvel()
       maxSpeed = Math.max(maxSpeed, Math.hypot(lv.x, lv.y, lv.z), Math.hypot(av.x, av.y, av.z))
@@ -153,9 +156,9 @@ function RestDetector({
     if (still.current > 24 || elapsed.current > 6) {
       done.current = true
       onResults(
-        list.map((body) => {
+        (list as RapierRigidBody[]).map((body, i) => {
           const r = body.rotation()
-          return readResult(spec, new THREE.Quaternion(r.x, r.y, r.z, r.w))
+          return readResult(specs[i], new THREE.Quaternion(r.x, r.y, r.z, r.w))
         }),
       )
     }
@@ -208,8 +211,7 @@ export default function DiceTray({
   onRolled: (result: DiceTrayResult) => void
   onClose: () => void
 }) {
-  const [diceType, setDiceType] = useState<DieType>(6)
-  const [count, setCount] = useState(1)
+  const [pool, setPool] = useState<DieType[]>([6])
   const [phase, setPhase] = useState<Phase>('aim')
   const [throwId, setThrowId] = useState(0)
   const [results, setResults] = useState<number[] | null>(null)
@@ -220,8 +222,8 @@ export default function DiceTray({
     [],
   )
 
-  const spec = getDie(diceType)
-  const indices = Array.from({ length: count }, (_, i) => i)
+  const specs = useMemo(() => pool.map((t) => getDie(t)), [pool])
+  const indices = Array.from({ length: pool.length }, (_, i) => i)
 
   const register = useCallback((index: number, body: RapierRigidBody | null) => {
     bodies.current[index] = body
@@ -230,30 +232,27 @@ export default function DiceTray({
   const finish = (values: number[]) => {
     setResults(values)
     setPhase('settled')
-    onRolled({
-      diceType,
-      count: values.length,
-      results: values,
-      total: values.reduce((a, b) => a + b, 0),
-    })
+    onRolled({ dice: pool.map((type, i) => ({ type, value: values[i] })) })
   }
 
-  const pickType = (type: DieType) => {
+  const addDie = (type: DieType) => {
     if (phase === 'rolling') return
     setResults(null)
     setPhase('aim')
-    if (type !== diceType) {
-      setDiceType(type)
-      setCount(1)
-      return
-    }
-    setCount((c) => Math.min(MAX_DICE, c + 1))
+    setPool((p) => (p.length >= MAX_DICE ? p : [...p, type]))
+  }
+
+  const removeLast = () => {
+    if (phase === 'rolling') return
+    setResults(null)
+    setPhase('aim')
+    setPool((p) => p.slice(0, -1))
   }
 
   const doThrow = () => {
-    if (count === 0 || phase === 'rolling') return
+    if (pool.length === 0 || phase === 'rolling') return
     if (reductionMotion) {
-      finish(Array.from({ length: count }, () => Math.floor(Math.random() * diceType) + 1))
+      finish(pool.map((t) => Math.floor(Math.random() * t) + 1))
       return
     }
     bodies.current = []
@@ -263,9 +262,10 @@ export default function DiceTray({
   }
 
   const clearTray = () => {
-    setCount(0)
+    if (phase === 'rolling') return
     setResults(null)
     setPhase('aim')
+    setPool([])
   }
 
   return (
@@ -274,20 +274,23 @@ export default function DiceTray({
         <aside className="w-24 shrink-0 border-r border-[var(--bg-tertiary)] p-2">
           <p className="mb-2 text-[10px] uppercase tracking-wide text-[var(--text-secondary)]">Dados</p>
           <div className="flex flex-col gap-1">
-            {TRAY_DICE_TYPES.map((type) => (
-              <button
-                key={type}
-                onClick={() => pickType(type)}
-                aria-pressed={type === diceType}
-                className={`rounded py-2 font-mono text-sm font-bold transition-colors ${
-                  type === diceType
-                    ? 'bg-[var(--accent)] text-white'
-                    : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                }`}
-              >
-                d{type}
-              </button>
-            ))}
+            {TRAY_DICE_TYPES.map((type) => {
+              const n = pool.filter((t) => t === type).length
+              return (
+                <button
+                  key={type}
+                  onClick={() => addDie(type)}
+                  className={`flex items-center justify-between rounded px-2 py-2 font-mono text-sm font-bold transition-colors ${
+                    n > 0
+                      ? 'bg-[var(--accent)] text-white'
+                      : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  <span>d{type}</span>
+                  {n > 0 && <span className="text-[10px]">×{n}</span>}
+                </button>
+              )
+            })}
           </div>
         </aside>
 
@@ -304,17 +307,17 @@ export default function DiceTray({
                   indices.map((i) => (
                     <DieBody
                       key={`${throwId}-${i}`}
-                      spec={spec}
-                      position={gridPosition(i, count, 3.2)}
+                      spec={specs[i]}
+                      position={gridPosition(i, pool.length, 3.2)}
                       index={i}
                       register={register}
                     />
                   ))}
-                {phase !== 'aim' && <RestDetector key={throwId} bodies={bodies} spec={spec} onResults={finish} />}
+                {phase !== 'aim' && <RestDetector key={throwId} bodies={bodies} specs={specs} onResults={finish} />}
               </Physics>
               {phase === 'aim' &&
                 indices.map((i) => (
-                  <DieMesh key={i} spec={spec} position={gridPosition(i, count, 1.6)} />
+                  <DieMesh key={i} spec={specs[i]} position={gridPosition(i, pool.length, 1.6)} />
                 ))}
             </Suspense>
           </Canvas>
@@ -328,7 +331,7 @@ export default function DiceTray({
                 <span
                   key={i}
                   className={`inline-flex h-6 w-6 items-center justify-center rounded font-mono text-xs font-bold ${
-                    r === diceType ? 'bg-emerald-500/30 text-emerald-300' : 'bg-white/10 text-white'
+                    r === pool[i] ? 'bg-emerald-500/30 text-emerald-300' : 'bg-white/10 text-white'
                   }`}
                 >
                   {r}
@@ -342,27 +345,27 @@ export default function DiceTray({
 
           <div className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-2 pb-3">
             <span className="text-[11px] text-[var(--text-secondary)]">
-              {count === 0 ? 'Sin dados' : `${count} × d${diceType}`}
-              {count >= MAX_DICE ? ' · máximo 15' : ''}
+              {pool.length === 0 ? 'Sin dados' : summarize(pool)}
+              {pool.length >= MAX_DICE ? ' · máximo 15' : ''}
             </span>
             <div className="flex gap-2">
               <button
-                onClick={() => setCount((c) => Math.max(0, c - 1))}
-                disabled={phase === 'rolling' || count === 0}
+                onClick={removeLast}
+                disabled={phase === 'rolling' || pool.length === 0}
                 className="rounded bg-[var(--bg-tertiary)] px-3 py-1.5 text-xs text-[var(--text-secondary)] disabled:opacity-40"
               >
                 Quitar último
               </button>
               <button
                 onClick={clearTray}
-                disabled={phase === 'rolling' || count === 0}
+                disabled={phase === 'rolling' || pool.length === 0}
                 className="rounded bg-[var(--bg-tertiary)] px-3 py-1.5 text-xs text-[var(--text-secondary)] disabled:opacity-40"
               >
                 Vaciar
               </button>
               <button
                 onClick={doThrow}
-                disabled={phase === 'rolling' || count === 0}
+                disabled={phase === 'rolling' || pool.length === 0}
                 className="rounded bg-[var(--accent)] px-5 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
               >
                 {phase === 'rolling' ? 'Tirando...' : 'Tirar'}
