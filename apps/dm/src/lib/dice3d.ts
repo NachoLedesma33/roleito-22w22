@@ -328,10 +328,11 @@ export function buildFaceMaterials(spec: DieSpec): THREE.Material[] {
 
 
 
-const FACE_TEXTURE_CACHE = new Map<number, THREE.CanvasTexture>()
+const FACE_TEXTURE_CACHE = new Map<string, THREE.CanvasTexture>()
 
-export function getFaceTexture(value: number, size = 128): THREE.CanvasTexture {
-  const cached = FACE_TEXTURE_CACHE.get(value)
+export function getFaceTexture(value: number, size = 128, ink = '#111111'): THREE.CanvasTexture {
+  const key = `${value}|${ink}`
+  const cached = FACE_TEXTURE_CACHE.get(key)
   if (cached) return cached
 
   const canvas =
@@ -343,7 +344,7 @@ export function getFaceTexture(value: number, size = 128): THREE.CanvasTexture {
   const ctx = canvas.getContext('2d')
   if (ctx) {
     ctx.clearRect(0, 0, size, size)
-    ctx.fillStyle = '#111111'
+    ctx.fillStyle = ink
     ctx.font = `bold ${size * 0.6}px system-ui, -apple-system, sans-serif`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
@@ -352,6 +353,6 @@ export function getFaceTexture(value: number, size = 128): THREE.CanvasTexture {
   const tex = new THREE.CanvasTexture(canvas)
   tex.colorSpace = THREE.SRGBColorSpace
   tex.needsUpdate = true
-  FACE_TEXTURE_CACHE.set(value, tex)
+  FACE_TEXTURE_CACHE.set(key, tex)
   return tex
 }

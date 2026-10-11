@@ -26,6 +26,23 @@ const LABEL_SIZE: Record<DieType, number> = {
   20: 0.36,
 }
 
+interface Skin {
+  id: string
+  label: string
+  color: string | null
+  metalness: number
+  roughness: number
+  ink: string
+}
+
+const SKINS: Skin[] = [
+  { id: 'clasico', label: 'Clásico', color: null, metalness: 0.25, roughness: 0.45, ink: '#111111' },
+  { id: 'obsidiana', label: 'Obsidiana', color: '#2b2b33', metalness: 0.6, roughness: 0.25, ink: '#f2f2f2' },
+  { id: 'metal', label: 'Metal', color: '#b8bcc4', metalness: 0.9, roughness: 0.2, ink: '#1a1a1a' },
+  { id: 'madera', label: 'Madera', color: '#6b4a2b', metalness: 0.0, roughness: 0.8, ink: '#f4e9d8' },
+  { id: 'rubi', label: 'Rubí', color: '#8b1e2d', metalness: 0.5, roughness: 0.3, ink: '#ffe6e6' },
+]
+
 type Phase = 'aim' | 'rolling' | 'settled'
 
 export interface DiceTrayResult {
@@ -98,15 +115,15 @@ function gridPosition(i: number, n: number, height: number): [number, number, nu
   return [x, height, z]
 }
 
-function DieMesh({ spec, position, opacity = 1 }: { spec: DieSpec; position: [number, number, number]; opacity?: number }) {
+function DieMesh({ spec, position, skin, opacity = 1 }: { spec: DieSpec; position: [number, number, number]; skin: Skin; opacity?: number }) {
   const labels = useMemo(() => getFaceLabels(spec), [spec])
   return (
     <group position={position} scale={DIE_SCALE}>
       <mesh geometry={spec.geometry} castShadow>
         <meshStandardMaterial
-          color={DIE_COLOR[spec.type]}
-          metalness={0.25}
-          roughness={0.45}
+          color={skin.color ?? DIE_COLOR[spec.type]}
+          metalness={skin.metalness}
+          roughness={skin.roughness}
           transparent={opacity < 1}
           opacity={opacity}
         />
@@ -114,7 +131,7 @@ function DieMesh({ spec, position, opacity = 1 }: { spec: DieSpec; position: [nu
       {labels.map((l, i) => (
         <mesh key={i} position={l.position} quaternion={l.quaternion}>
           <planeGeometry args={[LABEL_SIZE[spec.type], LABEL_SIZE[spec.type]]} />
-          <meshBasicMaterial map={getFaceTexture(l.value)} transparent depthWrite={false} />
+          <meshBasicMaterial map={getFaceTexture(l.value, 128, skin.ink)} transparent depthWrite={false} />
         </mesh>
       ))}
     </group>
@@ -127,12 +144,14 @@ function DieBody({
   index,
   register,
   unregister,
+  skin,
 }: {
   spec: DieSpec
   position: [number, number, number]
   index: number
   register: (index: number, body: RapierRigidBody | null) => void
   unregister: (index: number, body: RapierRigidBody | null) => void
+  skin: Skin
 }) {
   const ref = useRef<RapierRigidBody>(null)
 
@@ -166,12 +185,12 @@ function DieBody({
     >
       <group>
         <mesh geometry={spec.geometry} castShadow>
-          <meshStandardMaterial color={DIE_COLOR[spec.type]} metalness={0.25} roughness={0.45} />
+          <meshStandardMaterial color={skin.color ?? DIE_COLOR[spec.type]} metalness={skin.metalness} roughness={skin.roughness} />
         </mesh>
         {useMemo(() => getFaceLabels(spec), [spec]).map((l, i) => (
           <mesh key={i} position={l.position} quaternion={l.quaternion}>
             <planeGeometry args={[LABEL_SIZE[spec.type], LABEL_SIZE[spec.type]]} />
-            <meshBasicMaterial map={getFaceTexture(l.value)} transparent depthWrite={false} />
+            <meshBasicMaterial map={getFaceTexture(l.value, 128, skin.ink)} transparent depthWrite={false} />
           </mesh>
         ))}
       </group>
@@ -272,6 +291,7 @@ export default function DiceTray({
   const [throwId, setThrowId] = useState(0)
   const [results, setResults] = useState<number[] | null>(null)
   const [muted, setMuted] = useState(false)
+  const [skin, setSkin] = useState<Skin>(SKINS[0])
   const bodies = useRef<(RapierRigidBody | null)[]>([])
 
   const reductionMotion = useMemo(
@@ -356,6 +376,27 @@ export default function DiceTray({
               )
             })}
           </div>
+          <p className="mb-2 mt-3 text-[10px] uppercase tracking-wide text-[var(--text-secondary)]">Skin</p>
+          <div className="flex flex-col gap-1">
+            {SKINS.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setSkin(s)}
+                title={s.label}
+                className={`flex items-center gap-2 rounded px-2 py-1.5 text-[10px] font-semibold transition-colors ${
+                  s.id === skin.id
+                    ? 'bg-[var(--accent)] text-white'
+                    : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                <span
+                  className="inline-block h-3 w-3 shrink-0 rounded-sm border border-black/30"
+                  style={{ backgroundColor: s.color ?? '#d9c7a3' }}
+                />
+                <span className="truncate">{s.label}</span>
+              </button>
+            ))}
+          </div>
         </aside>
 
         <div className="relative flex-1">
@@ -376,13 +417,14 @@ export default function DiceTray({
                       index={i}
                       register={register}
                       unregister={unregister}
+                      skin={skin}
                     />
                   ))}
                 {phase !== 'aim' && <RestDetector key={throwId} bodies={bodies} specs={specs} onResults={finish} />}
               </Physics>
               {phase === 'aim' &&
                 indices.map((i) => (
-                  <DieMesh key={i} spec={specs[i]} position={gridPosition(i, pool.length, 1.6)} />
+                  <DieMesh key={i} spec={specs[i]} position={gridPosition(i, pool.length, 1.6)} skin={skin} />
                 ))}
             </Suspense>
           </Canvas>
