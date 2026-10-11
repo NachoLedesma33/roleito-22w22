@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, Session } from '@/lib/api';
 import { Button, buttonVariants } from '@/components/ui/Button';
@@ -14,6 +15,7 @@ import {
 import { cn } from '@/lib/utils';
 
 export default function SessionDetail() {
+  const { t } = useTranslation();
   const { id: campaignId, sessionId } = useParams<{ id: string; sessionId: string }>();
   const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(null);
@@ -41,7 +43,7 @@ export default function SessionDetail() {
       const updated = await api.sessions.start(campaignId, sessionId);
       setSession(updated);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'No se pudo iniciar la sesión');
+      setError(e instanceof Error ? e.message : t('sessionDetail.startError', 'No se pudo iniciar la sesión'));
     }
   };
 
@@ -51,13 +53,13 @@ export default function SessionDetail() {
       const updated = await api.sessions.end(campaignId, sessionId);
       setSession(updated);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'No se pudo cerrar la sesión');
+      setError(e instanceof Error ? e.message : t('sessionDetail.endError', 'No se pudo cerrar la sesión'));
     }
   };
 
-  if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
-  if (error) return <p className="text-[var(--danger)]">Error: {error}</p>;
-  if (!session) return <p className="text-[var(--text-secondary)]">Sesión no encontrada</p>;
+  if (loading) return <p className="text-[var(--text-secondary)]">{t('common.loading')}</p>;
+  if (error) return <p className="text-[var(--danger)]">{t('sessionDetail.error', 'Error: {{error}}', { error })}</p>;
+  if (!session) return <p className="text-[var(--text-secondary)]">{t('sessionDetail.notFound', 'Sesión no encontrada')}</p>;
 
   return (
     <div className="max-w-2xl">
@@ -68,7 +70,7 @@ export default function SessionDetail() {
               #{session.number}
             </div>
             <div>
-              <h1 className="text-2xl font-bold">{session.title || `Sesión ${session.number}`}</h1>
+              <h1 className="text-2xl font-bold">{session.title || t('sessionList.sessionNumber', 'Sesión {{number}}', { number: session.number })}</h1>
               <p className="text-[var(--text-secondary)]">{session.date}</p>
             </div>
           </div>
@@ -76,22 +78,22 @@ export default function SessionDetail() {
         <div className="flex gap-2">
           {session.status === 'DRAFT' && (
             <Button size="sm" onClick={() => void handleStart()}>
-              Iniciar
+              {t('sessionDetail.start', 'Iniciar')}
             </Button>
           )}
           {session.status === 'ACTIVE' && (
             <Button size="sm" variant="secondary" onClick={() => void handleEnd()}>
-              Finalizar
+              {t('sessionDetail.finish', 'Finalizar')}
             </Button>
           )}
           <Link
             to={`/campaigns/${campaignId}/sessions/${sessionId}/edit`}
             className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
           >
-            Editar
+            {t('common.edit')}
           </Link>
           <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
-            Eliminar
+            {t('common.delete')}
           </Button>
         </div>
       </div>
@@ -99,33 +101,33 @@ export default function SessionDetail() {
       <div className="flex items-center gap-3 mb-6">
         <StatusBadge status={session.status} />
         <span className="text-xs text-[var(--text-secondary)]">
-          Creada {new Date(session.created_at).toLocaleString()}
+          {t('sessionDetail.createdAt', 'Creada {{date}}', { date: new Date(session.created_at).toLocaleString() })}
         </span>
       </div>
 
       <div className="space-y-6">
         {session.summary && (
           <section>
-            <h2 className="text-lg font-semibold mb-3">Resumen</h2>
+            <h2 className="text-lg font-semibold mb-3">{t('sessionDetail.summary', 'Resumen')}</h2>
             <p className="text-[var(--text-secondary)] whitespace-pre-wrap">{session.summary}</p>
           </section>
         )}
 
         {session.raw_notes && (
           <section>
-            <h2 className="text-lg font-semibold mb-3">Notas crudas</h2>
+            <h2 className="text-lg font-semibold mb-3">{t('sessionDetail.rawNotes', 'Notas crudas')}</h2>
             <p className="text-[var(--text-secondary)] whitespace-pre-wrap">{session.raw_notes}</p>
           </section>
         )}
 
         {!session.summary && !session.raw_notes && (
           <div className="text-center py-12 text-[var(--text-secondary)]">
-            <p>Todavía no hay notas ni resumen.</p>
+            <p>{t('sessionDetail.empty', 'Todavía no hay notas ni resumen.')}</p>
             <Link
               to={`/campaigns/${campaignId}/sessions/${sessionId}/edit`}
               className="text-[var(--accent)] hover:text-[var(--accent-hover)] text-sm mt-2 inline-block"
             >
-              Agregar notas
+              {t('sessionDetail.addNotes', 'Agregar notas')}
             </Link>
           </div>
         )}
@@ -133,21 +135,23 @@ export default function SessionDetail() {
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent data-testid="confirm-delete-dialog">
           <DialogHeader>
-            <DialogTitle>Eliminar sesión</DialogTitle>
+            <DialogTitle>{t('sessionDetail.deleteDialogTitle', 'Eliminar sesión')}</DialogTitle>
             <DialogDescription>
-              ¿Eliminar la sesión {session.title || `#${session.number}`}? Esta acción no se puede deshacer.
+              {t('sessionDetail.deleteDialogBody', '¿Eliminar la sesión {{name}}? Esta acción no se puede deshacer.', {
+                name: session.title || `#${session.number}`,
+              })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteOpen(false)}>
-              Cancelar
+              {t('common.cancel')}
             </Button>
             <Button
               variant="destructive"
               data-testid="confirm-delete"
               onClick={() => void handleDelete()}
             >
-              Eliminar
+              {t('common.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -156,15 +160,19 @@ export default function SessionDetail() {
   );
 }
 
-const SESSION_STATUS_LABEL: Record<string, string> = {
-  DRAFT: 'Borrador',
-  ACTIVE: 'Activa',
-  COMPLETED: 'Completada',
-  ARCHIVED: 'Archivada',
-};
-
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation();
   const variant: BadgeProps['variant'] =
     status === 'ACTIVE' ? 'success' : status === 'COMPLETED' ? 'mp' : 'secondary';
-  return <Badge variant={variant}>{SESSION_STATUS_LABEL[status] ?? status}</Badge>;
+  const label =
+    status === 'DRAFT'
+      ? t('sessionStatus.draft', 'Borrador')
+      : status === 'ACTIVE'
+        ? t('sessionStatus.active', 'Activa')
+        : status === 'COMPLETED'
+          ? t('sessionStatus.completed', 'Completada')
+          : status === 'ARCHIVED'
+            ? t('sessionStatus.archived', 'Archivada')
+            : status;
+  return <Badge variant={variant}>{label}</Badge>;
 }
