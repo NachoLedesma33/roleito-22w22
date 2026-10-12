@@ -171,6 +171,8 @@ test.describe('Dashboard VTT Core', () => {
   });
 
   test('D6: tecla D abre dice roller y Escape cierra', async ({ page, campaign }) => {
+    // La mesa 3D (default) reemplaza al roller numerico; aca probamos este ultimo.
+    await page.addInitScript(() => localStorage.setItem('dice3d', '0'));
     await page.goto(`/campaigns/${campaign.id}`);
     await page.getByTitle('Acciones del DM').hover();
     await expect(page.getByTitle('Tirar dados (D)')).toBeVisible();
