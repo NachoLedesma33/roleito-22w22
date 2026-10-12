@@ -1292,10 +1292,11 @@ async def test_dice_valida_longitud_de_results_contra_count(client):
 
 @pytest.mark.asyncio
 async def test_dice_schema_valida_rangos_de_tipo_y_cantidad(client):
-    """El schema valida dice_type en 4..20 y count en 1..10 (422 fuera de rango).
+    """El schema valida dice_type en 4..20 y count en 1..15 (422 fuera de rango).
 
     Quirk documentado: el rango 4..20 deja pasar tipos que no son dados reales
-    (ej. 5); el backend no los restringe a {4,6,8,10,12,20}.
+    (ej. 5); el backend no los restringe a {4,6,8,10,12,20}. El tope de count
+    acompaña a MAX_DICE=15 de la mesa 3D de apps/dm.
     """
     camp = (await client.post("/api/campaigns", json={"name": "Dice Range"})).json()
     cid = camp["id"]
@@ -1315,8 +1316,9 @@ async def test_dice_schema_valida_rangos_de_tipo_y_cantidad(client):
     assert (await crear(3, 1, [1])).status_code == 422
     assert (await crear(100, 1, [1])).status_code == 422
     assert (await crear(6, 0, [])).status_code == 422
-    assert (await crear(6, 11, [1] * 11)).status_code == 422
+    assert (await crear(6, 16, [1] * 16)).status_code == 422
     assert (await crear(5, 1, [1])).status_code == 200
+    assert (await crear(6, 15, [1] * 15)).status_code == 200
 
 
 @pytest.mark.asyncio
