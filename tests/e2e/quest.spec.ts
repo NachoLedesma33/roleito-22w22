@@ -23,7 +23,7 @@ test.describe('Quest Board', () => {
     const code = await generateInviteCode(request, campaign.id);
 
     await page.goto(`/campaigns/${campaign.id}`);
-    await expect(page.getByText('On Scene (1)')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('En escena (1)')).toBeVisible({ timeout: 10_000 });
     await page.getByTitle('Acciones del DM').hover();
     await page.getByTitle('Tablón de misiones').click();
     await page.getByRole('button', { name: '＋ Nueva misión' }).click();
@@ -179,7 +179,7 @@ test.describe('Quest Board', () => {
     await expect(p.getByText('El último refugio')).toBeVisible();
 
     await page.goto(`/campaigns/${campaign.id}`);
-    await expect(page.getByText('On Scene (1)')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('En escena (1)')).toBeVisible({ timeout: 10_000 });
     await page.getByTitle('Acciones del DM').hover();
     await page.getByTitle('Tablón de misiones').click();
     await page.getByTitle('Visible para jugadores').click();

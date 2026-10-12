@@ -68,7 +68,7 @@ test.describe('Status markers', () => {
     ]);
 
     await page.goto(`/campaigns/${campaign.id}`);
-    await expect(page.getByText('On Scene (1)')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('En escena (1)')).toBeVisible({ timeout: 10_000 });
 
     await openTokenMenu(page, scene.id, request, campaign.id, true);
     await page.getByRole('button', { name: /Marcar Envenenado/ }).click();
@@ -111,7 +111,7 @@ test.describe('Status markers', () => {
     const code = await generateInviteCode(request, campaign.id);
 
     await page.goto(`/campaigns/${campaign.id}`);
-    await expect(page.getByText('On Scene (1)')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('En escena (1)')).toBeVisible({ timeout: 10_000 });
 
     await openTokenMenu(page, scene.id, request, campaign.id, true);
     await page.getByRole('button', { name: /Marcar Concentrando/ }).click();

@@ -22,7 +22,7 @@ test.describe('Initiative Tracker', () => {
     ]);
 
     await page.goto(`/campaigns/${campaignId}`);
-    await expect(page.getByText('On Scene (2)')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('En escena (2)')).toBeVisible({ timeout: 10_000 });
     await page.getByTitle('Acciones del DM').hover();
     await page.getByTitle('Iniciativa').click();
     await expect(page.getByRole('button', { name: 'Iniciar combate' })).toBeVisible();
@@ -104,7 +104,7 @@ test.describe('Initiative Tracker', () => {
     await expect(page.getByText('Ronda 1 — Turno 2/2')).toBeVisible();
 
     await page.reload();
-    await expect(page.getByText('On Scene (2)')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('En escena (2)')).toBeVisible({ timeout: 10_000 });
     await page.getByTitle('Acciones del DM').hover();
     await page.getByTitle('Iniciativa').click();
     await expect(page.getByText('Ronda 1 — Turno 2/2')).toBeVisible();

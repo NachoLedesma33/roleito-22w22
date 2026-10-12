@@ -50,7 +50,7 @@ test.describe('Player View', () => {
     await page.goto(`/campaigns/join/${code}`);
 
     await expect(page.getByText(campaign.name)).toBeVisible();
-    await expect(page.getByTestId('on-scene-list')).toContainText('On Scene (2)');
+    await expect(page.getByTestId('on-scene-list')).toContainText('En escena (2)');
     await expect(page.getByTestId('on-scene-list')).toContainText('Aria');
     await expect(page.getByTestId('on-scene-list')).not.toContainText('Espia Oculto');
   });
@@ -64,7 +64,7 @@ test.describe('Player View', () => {
     const code = await generateInviteCode(request, campaign.id);
 
     await page.goto(`/campaigns/join/${code}`);
-    await expect(page.getByTestId('on-scene-list')).toContainText('On Scene (2)');
+    await expect(page.getByTestId('on-scene-list')).toContainText('En escena (2)');
 
     const nuevo = await createNpc(request, campaign.id, { name: 'Dain Enano' });
     await seedTokens(request, campaign.id, scene.id, [
@@ -73,7 +73,7 @@ test.describe('Player View', () => {
       { entityType: 'npc', entityId: nuevo.id, x: 0, z: 3 },
     ]);
 
-    await expect(page.getByTestId('on-scene-list')).toContainText('On Scene (3)', {
+    await expect(page.getByTestId('on-scene-list')).toContainText('En escena (3)', {
       timeout: 10_000,
     });
     await expect(page.getByTestId('on-scene-list')).toContainText('Dain Enano');
@@ -294,7 +294,7 @@ test.describe('Player View', () => {
     });
 
     await page.goto(`/campaigns/join/${code}`);
-    await expect(page.getByTestId('on-scene-list')).toContainText('On Scene (2)');
+    await expect(page.getByTestId('on-scene-list')).toContainText('En escena (2)');
 
     // dejar que el WS abra y el polling inicial se asiente
     await page.waitForTimeout(2000);
@@ -311,7 +311,7 @@ test.describe('Player View', () => {
     ]);
     await page.waitForTimeout(1500);
     expect(revReqs).toBeGreaterThan(baseline);
-    await expect(page.getByTestId('on-scene-list')).toContainText('On Scene (2)');
+    await expect(page.getByTestId('on-scene-list')).toContainText('En escena (2)');
   });
 
   test('PV12: usar un hechizo gasta PM y se bloquea cuando no alcanzan', async ({
