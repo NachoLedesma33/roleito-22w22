@@ -226,7 +226,9 @@ export default function DiceRoller({
           });
           const roll = responseToRoll(response);
           setLastRoll(roll);
-          setHistory((prev) => [roll, ...prev].slice(0, 20));
+          // Dedup por id: el poll de historial puede habernos ganado de mano e
+          // insertar el mismo roll; sin esto quedaría duplicado en la lista.
+          setHistory((prev) => [roll, ...prev.filter((r) => r.id !== roll.id)].slice(0, 20));
           onRoll?.(roll);
           onRollCreated?.(response);
           return;
