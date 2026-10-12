@@ -1,5 +1,7 @@
 import { useEffect, useState, useRef, useCallback, useMemo, Suspense } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/lib/i18n';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import { BookOpen, CalendarDays, Dices, Flame, Flashlight, FolderOpen, Target, Volume2, VolumeX } from 'lucide-react';
@@ -197,6 +199,7 @@ function StatBar({
 }
 
 export default function PlayerView() {
+  const { t } = useTranslation();
   const { code } = useParams<{ code: string }>();
   const [data, setData] = useState<JoinData | null>(null);
   const [error, setError] = useState('');
@@ -258,7 +261,7 @@ export default function PlayerView() {
 
   const fetchSnapshot = useCallback(async (): Promise<JoinData> => {
     const res = await fetch(`${API_BASE}/campaigns/invite/${code}`);
-    if (!res.ok) throw new Error('Código de invitación inválido');
+    if (!res.ok) throw new Error(i18n.t('pv.invalidCode', 'Código de invitación inválido'));
     return res.json();
   }, [code]);
 
@@ -321,7 +324,7 @@ export default function PlayerView() {
         }
       })
       .catch((err) => {
-        setError(err.message || 'No se pudo unir a la campaña');
+        setError(err.message || i18n.t('pv.joinFailed', 'No se pudo unir a la campaña'));
         setLoading(false);
       });
   }, [code, fetchSnapshot, fetchMyChar]);
@@ -508,12 +511,12 @@ export default function PlayerView() {
           ...prev,
           rollToToast({
             id: `init-${Date.now()}`,
-            roller_name: myChar?.name ?? 'Tú',
+            roller_name: myChar?.name ?? i18n.t('pv.rollerYou', 'Tú'),
             dice_type: 6,
             count: 1,
             results: [value],
             total: value,
-            label: 'Iniciativa',
+            label: i18n.t('pv.initiativeRoll', 'Iniciativa'),
             created_at: new Date().toISOString(),
           } as DiceRollResponse),
         ].slice(-5)
@@ -656,12 +659,12 @@ export default function PlayerView() {
       })
       setToastQueue((prev) => [...prev.slice(-4), {
         id: `asklight-${Date.now()}`,
-        rollerName: '🕯️ Light request',
+        rollerName: i18n.t('pv.lightRequestRoller', '🕯️ Petición de luz'),
         diceType: 1,
         count: 1,
         results: [1],
         total: 1,
-        label: 'solicitud enviada al DM',
+        label: i18n.t('pv.lightRequestSent', 'solicitud enviada al DM'),
         timestamp: Date.now(),
       }])
     } catch {}
@@ -1100,48 +1103,48 @@ export default function PlayerView() {
   const handleExportMarkdown = useCallback(() => {
     if (!myChar) return;
     const lines: string[] = [];
-    lines.push(`# Ficha: ${myChar.name}`);
+    lines.push(i18n.t('pv.mdTitle', '# Ficha: {{name}}', { name: myChar.name }));
     lines.push('');
-    lines.push(`- **Raza**: ${myChar.race}`);
-    lines.push(`- **Clase**: ${myChar.class_}`);
-    lines.push(`- **Estado**: ${myChar.status}`);
-    lines.push(`- **Conocimiento**: ${myChar.knowledge_scope}`);
-    if (myChar.current_location_id) lines.push(`- **Ubicación**: ${myChar.current_location_id}`);
+    lines.push(i18n.t('pv.mdRace', '- **Raza**: {{v}}', { v: myChar.race }));
+    lines.push(i18n.t('pv.mdClass', '- **Clase**: {{v}}', { v: myChar.class_ }));
+    lines.push(i18n.t('pv.mdStatus', '- **Estado**: {{v}}', { v: myChar.status }));
+    lines.push(i18n.t('pv.mdKnowledge', '- **Conocimiento**: {{v}}', { v: myChar.knowledge_scope }));
+    if (myChar.current_location_id) lines.push(i18n.t('pv.mdLocation', '- **Ubicación**: {{v}}', { v: myChar.current_location_id }));
     lines.push('');
-    lines.push('## Atributos (VIDA)');
-    lines.push(`- Vigor: ${myChar.vigor}`);
-    lines.push(`- Inteligencia: ${myChar.intelligence}`);
-    lines.push(`- Destreza: ${myChar.dexterity}`);
-    lines.push(`- Astucia: ${myChar.cunning}`);
+    lines.push(i18n.t('pv.mdAttributes', '## Atributos (VIDA)'));
+    lines.push(i18n.t('pv.mdVigor', '- Vigor: {{v}}', { v: myChar.vigor }));
+    lines.push(i18n.t('pv.mdIntelligence', '- Inteligencia: {{v}}', { v: myChar.intelligence }));
+    lines.push(i18n.t('pv.mdDexterity', '- Destreza: {{v}}', { v: myChar.dexterity }));
+    lines.push(i18n.t('pv.mdCunning', '- Astucia: {{v}}', { v: myChar.cunning }));
     lines.push('');
-    lines.push('## Estadísticas Derivadas');
-    lines.push(`- PV Máx: ${myChar.max_pv}`);
-    lines.push(`- PM Máx: ${myChar.max_pm}`);
-    lines.push(`- Defensa: ${myChar.defense}`);
-    lines.push(`- PV Actual: ${myChar.current_pv ?? myChar.max_pv}`);
-    lines.push(`- PM Actual: ${myChar.current_pm ?? myChar.max_pm}`);
+    lines.push(i18n.t('pv.mdDerived', '## Estadísticas Derivadas'));
+    lines.push(i18n.t('pv.mdPvMax', '- PV Máx: {{v}}', { v: myChar.max_pv }));
+    lines.push(i18n.t('pv.mdPmMax', '- PM Máx: {{v}}', { v: myChar.max_pm }));
+    lines.push(i18n.t('pv.mdDefense', '- Defensa: {{v}}', { v: myChar.defense }));
+    lines.push(i18n.t('pv.mdPvCurrent', '- PV Actual: {{v}}', { v: myChar.current_pv ?? myChar.max_pv }));
+    lines.push(i18n.t('pv.mdPmCurrent', '- PM Actual: {{v}}', { v: myChar.current_pm ?? myChar.max_pm }));
     lines.push('');
-    lines.push('## Inventario');
+    lines.push(i18n.t('pv.mdInventory', '## Inventario'));
     if (myChar.inventory_json.length === 0) {
-      lines.push('- Vacío');
+      lines.push(i18n.t('pv.mdEmpty', '- Vacío'));
     } else {
       myChar.inventory_json.forEach((item) => {
-        const equipped = item.equipped ? ' (Equipado)' : '';
-        lines.push(`- ${item.name || 'Sin nombre'} x${item.quantity || 1}${equipped}`);
+        const equipped = item.equipped ? i18n.t('pv.mdEquipped', ' (Equipado)') : '';
+        lines.push(i18n.t('pv.mdItemLine', '- {{name}} x{{qty}}{{equipped}}', { name: item.name || i18n.t('pv.noName', 'Sin nombre'), qty: item.quantity || 1, equipped }));
       });
     }
     lines.push('');
-    lines.push('## Hechizos');
+    lines.push(i18n.t('pv.mdSpells', '## Hechizos'));
     if (myChar.spells_json.length === 0) {
-      lines.push('- No hay hechizos');
+      lines.push(i18n.t('pv.mdNoSpells', '- No hay hechizos'));
     } else {
       myChar.spells_json.forEach((spell) => {
-        lines.push(`- ${spell.name} (Lv${spell.level}, ${spell.cost_pm} PM)`);
+        lines.push(i18n.t('pv.mdSpellLine', '- {{name}} (Lv{{l}}, {{cost}} PM)', { name: spell.name, l: spell.level, cost: spell.cost_pm }));
       });
     }
     lines.push('');
-    lines.push('## Notas del Jugador');
-    lines.push(myChar.player_notes || '(Sin notas)');
+    lines.push(i18n.t('pv.mdPlayerNotes', '## Notas del Jugador'));
+    lines.push(myChar.player_notes || i18n.t('pv.mdNoNotes', '(Sin notas)'));
     lines.push('');
 
     const content = lines.join('\n');
@@ -1149,7 +1152,7 @@ export default function PlayerView() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${myChar.name.replace(/\s+/g, '_')}-ficha.md`;
+    a.download = `${i18n.t('pv.mdFilename', '{{name}}-ficha', { name: myChar.name.replace(/\s+/g, '_') })}.md`;
     a.click();
     URL.revokeObjectURL(url);
   }, [myChar]);
@@ -1159,7 +1162,7 @@ export default function PlayerView() {
   if (loading && !missingCode) {
     return (
       <div className="h-screen flex items-center justify-center bg-black text-[var(--text-secondary)]">
-        Joining campaign...
+        {t('pv.joining', 'Uniéndose a la campaña...')}
       </div>
     );
   }
@@ -1167,7 +1170,7 @@ export default function PlayerView() {
   if (error || missingCode || !data) {
     return (
       <div className="h-screen flex items-center justify-center bg-black text-red-400">
-        {error || (missingCode ? 'Sin código de invitación' : 'No se pudo unir')}
+        {error || (missingCode ? t('pv.noCode', 'Sin código de invitación') : t('pv.joinFailedShort', 'No se pudo unir'))}
       </div>
     );
   }
@@ -1179,7 +1182,7 @@ export default function PlayerView() {
 
   return (
     <main className="h-screen flex flex-col bg-black overflow-hidden select-none">
-      <h1 className="sr-only">Vista de jugador</h1>
+      <h1 className="sr-only">{t('pv.srTitle', 'Vista de jugador')}</h1>
       <audio ref={audioRef} loop className="hidden" />
       <TopBar
         title={data.campaign_name}
@@ -1188,8 +1191,8 @@ export default function PlayerView() {
       >
         <span className="text-xs text-[var(--text-secondary)] shrink-0" data-testid="player-role">
           {choice?.kind === 'character'
-            ? `Viendo como ${myChar?.name ?? '...'}`
-            : 'Espectador'}
+            ? t('pv.viewingAs', 'Viendo como {{name}}', { name: myChar?.name ?? '...' })
+            : t('pv.spectator', 'Espectador')}
         </span>
         {choice && (
           <button
@@ -1197,7 +1200,7 @@ export default function PlayerView() {
             onClick={changeCharacter}
             className="text-[10px] px-2 py-1 rounded border border-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] transition-colors shrink-0"
           >
-            {choice.kind === 'character' ? 'Cambiar' : 'Elegir personaje'}
+            {choice.kind === 'character' ? t('pv.change', 'Cambiar') : t('pv.chooseChar', 'Elegir personaje')}
           </button>
         )}
         {choice?.kind === 'character' && (
@@ -1209,7 +1212,7 @@ export default function PlayerView() {
                 ? 'bg-[var(--accent)] text-white'
                 : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/70'
             }`}
-            title="Tirar dados"
+            title={t('pv.diceTitle', 'Tirar dados')}
           >
             <Dices className="h-3.5 w-3.5" />
           </button>
@@ -1223,7 +1226,7 @@ export default function PlayerView() {
                 ? 'bg-[var(--accent)] text-white'
                 : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/70'
             }`}
-            title={shareLight ? 'Compartiendo luz con el grupo' : 'Solo tu luz + luces del DM'}
+            title={shareLight ? t('pv.shareLightOn', 'Compartiendo luz con el grupo') : t('pv.shareLightOff', 'Solo tu luz + luces del DM')}
           >
             <Flashlight className="h-3.5 w-3.5" />
           </button>
@@ -1237,7 +1240,7 @@ export default function PlayerView() {
                 ? 'bg-[var(--accent)] text-white'
                 : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/70'
             }`}
-            title={audioOn ? 'Silenciar ambiente' : 'Activar ambiente'}
+            title={audioOn ? t('pv.audioMute', 'Silenciar ambiente') : t('pv.audioActivate', 'Activar ambiente')}
             data-testid="audio-toggle"
           >
             {audioOn ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
@@ -1249,7 +1252,7 @@ export default function PlayerView() {
             onClick={requestLight}
             disabled={askingLight}
             className="text-xs px-2 py-1 rounded transition-colors shrink-0 bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/70 disabled:opacity-40"
-            title="Pedir luz al DM"
+            title={t('pv.askLight', 'Pedir luz al DM')}
           >
             <Flame className="h-3.5 w-3.5" />
           </button>
@@ -1263,7 +1266,7 @@ export default function PlayerView() {
                 ? 'bg-[var(--accent)] text-white'
                 : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/70'
             }`}
-            title="Misiones"
+            title={t('pv.quests', 'Misiones')}
           >
             <Target className="h-3.5 w-3.5" />
           </button>
@@ -1277,7 +1280,7 @@ export default function PlayerView() {
                 ? 'bg-[var(--accent)] text-white'
                 : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/70'
             }`}
-            title="Calendario"
+            title={t('pv.calendar', 'Calendario')}
           >
             <CalendarDays className="h-3.5 w-3.5" />
           </button>
@@ -1292,20 +1295,20 @@ export default function PlayerView() {
                 ? 'bg-[var(--accent)] text-white'
                 : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/70'
             }`}
-            title="Documentos"
+            title={t('pv.handouts', 'Documentos')}
           >
             <FolderOpen className="h-3.5 w-3.5" />
           </button>
         )}
         <span
           className="flex items-center gap-1.5 text-[10px] shrink-0"
-          title={live ? 'Sincronizado' : 'Reconectando...'}
+          title={live ? t('pv.synced', 'Sincronizado') : t('pv.reconnecting', 'Reconectando...')}
         >
           <span
             className={`w-2 h-2 rounded-full ${live ? 'bg-[var(--success)]' : 'bg-[var(--warning)] animate-pulse'}`}
           />
           <span className={live ? 'text-[var(--success)]' : 'text-[var(--warning)]'}>
-            {live ? 'En vivo' : 'Reconectando...'}
+            {live ? t('pv.live', 'En vivo') : t('pv.reconnecting', 'Reconectando...')}
           </span>
         </span>
       </TopBar>
@@ -1317,7 +1320,7 @@ export default function PlayerView() {
             data-testid="initiative-prompt"
           >
             <span className="text-[var(--warning)] text-sm">⚔️</span>
-            <span className="text-xs text-[var(--text-primary)]">¡Tirá iniciativa!</span>
+            <span className="text-xs text-[var(--text-primary)]">{t('pv.rollInitiative', '¡Tirá iniciativa!')}</span>
             <button
               type="button"
               onClick={handleInitiativeRoll}
@@ -1333,7 +1336,7 @@ export default function PlayerView() {
           <Suspense
             fallback={
               <div className="w-full h-full flex items-center justify-center text-[var(--text-secondary)]">
-                Cargando escena...
+                {t('pv.loadingScene', 'Cargando escena...')}
               </div>
             }
           >
@@ -1426,13 +1429,13 @@ export default function PlayerView() {
           </Suspense>
         ) : (
           <div className="w-full h-full flex items-center justify-center text-[var(--text-secondary)]">
-            El DM aún no abrió una escena
+            {t('pv.noSceneYet', 'El DM aún no abrió una escena')}
           </div>
         )}
 
         {data.characters.length > 0 && (
           <div className="absolute bottom-4 right-4 z-10 bg-[var(--surface)]/80 backdrop-blur border border-[var(--bg-tertiary)]/50 rounded-lg p-2 max-sm:bottom-auto max-sm:top-16 max-sm:right-2 max-sm:max-w-[140px]" data-testid="on-scene-list">
-            <p className="text-[10px] text-[var(--text-secondary)] mb-1 px-1">On Scene ({data.characters.length})</p>
+            <p className="text-[10px] text-[var(--text-secondary)] mb-1 px-1">{t('dm.onScene', 'En escena ({{n}})', { n: data.characters.length })}</p>
             <div className="space-y-0.5">
               {data.characters.map((c) => (
                 <div key={c.id} className="flex items-center gap-1.5 px-1.5 py-0.5 text-xs text-[var(--text-primary)]">
@@ -1481,7 +1484,7 @@ export default function PlayerView() {
                   <button
                     type="button"
                     onClick={handleExportMarkdown}
-                    title="Exportar ficha como Markdown"
+                    title={t('pv.exportSheet', 'Exportar ficha como Markdown')}
                     className="w-5 h-5 rounded bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary)]/70 text-[var(--text-primary)] hover:text-white text-xs flex items-center justify-center transition-colors"
                   >
                     ↓
@@ -1489,7 +1492,7 @@ export default function PlayerView() {
                   <button
                     type="button"
                     onClick={() => window.print()}
-                    title="Imprimir ficha"
+                    title={t('pv.printSheet', 'Imprimir ficha')}
                     className="w-5 h-5 rounded bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary)]/70 text-[var(--text-primary)] hover:text-white text-xs flex items-center justify-center transition-colors"
                   >
                     🖨
@@ -1511,7 +1514,7 @@ export default function PlayerView() {
 
               {myStatuses.length > 0 && (
                 <div className="flex flex-wrap gap-1 items-center">
-                  <span className="text-[9px] text-[var(--text-secondary)] uppercase tracking-wide">Estado</span>
+                  <span className="text-[9px] text-[var(--text-secondary)] uppercase tracking-wide">{t('pv.status', 'Estado')}</span>
                   {myStatuses.map((s) => {
                     const opt = STATUS_OPTIONS.find((o) => o.id === s);
                     if (!opt) return null;
@@ -1528,17 +1531,17 @@ export default function PlayerView() {
               )}
 
               <div className="flex gap-0.5 bg-[var(--bg-tertiary)]/50 rounded p-0.5 text-[10px]">
-                {(['stats', 'inventory', 'spells', 'notes'] as const).map((t) => (
+                {(['stats', 'inventory', 'spells', 'notes'] as const).map((tab) => (
                   <button
-                    key={t}
-                    onClick={() => setSheetTab(t)}
+                    key={tab}
+                    onClick={() => setSheetTab(tab)}
                     className={`flex-1 py-1 rounded capitalize transition-colors ${
-                      sheetTab === t
+                      sheetTab === tab
                         ? 'bg-[var(--accent)] text-white'
                         : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
                   >
-                    {t === 'stats' ? 'Stats' : t === 'inventory' ? 'Inv' : t === 'spells' ? 'Hech' : 'Notas'}
+                    {tab === 'stats' ? t('pv.tabStats', 'Stats') : tab === 'inventory' ? t('pv.tabInv', 'Inv') : tab === 'spells' ? t('pv.tabSpells', 'Hech') : t('pv.tabNotes', 'Notas')}
                   </button>
                 ))}
               </div>
@@ -1548,10 +1551,10 @@ export default function PlayerView() {
                   <div className="space-y-2 text-xs">
                     <div className="grid grid-cols-4 gap-1">
                       {[
-                        { label: 'Vigor', value: myChar.vigor },
-                        { label: 'Intel', value: myChar.intelligence },
-                        { label: 'Dest', value: myChar.dexterity },
-                        { label: 'Astuc', value: myChar.cunning },
+                        { label: t('pv.attrVigor', 'Vigor'), value: myChar.vigor },
+                        { label: t('pv.attrIntel', 'Intel'), value: myChar.intelligence },
+                        { label: t('pv.attrDest', 'Dest'), value: myChar.dexterity },
+                        { label: t('pv.attrAstuc', 'Astuc'), value: myChar.cunning },
                       ].map((a) => (
                         <div key={a.label} className="text-center bg-[var(--bg-tertiary)]/50 rounded py-1">
                           <p className="text-[9px] text-[var(--text-secondary)]">{a.label}</p>
@@ -1562,15 +1565,15 @@ export default function PlayerView() {
                     <div className="grid grid-cols-3 gap-1 text-center">
                       <div className="bg-[var(--bg-tertiary)]/50 rounded py-1">
                         <p className="font-bold text-red-400">{myChar.max_pv}</p>
-                        <p className="text-[9px] text-[var(--text-secondary)]">PV máx.</p>
+                        <p className="text-[9px] text-[var(--text-secondary)]">{t('pv.pvMax', 'PV máx.')}</p>
                       </div>
                       <div className="bg-[var(--bg-tertiary)]/50 rounded py-1">
                         <p className="font-bold text-blue-400">{myChar.max_pm}</p>
-                        <p className="text-[9px] text-[var(--text-secondary)]">PM máx.</p>
+                        <p className="text-[9px] text-[var(--text-secondary)]">{t('pv.pmMax', 'PM máx.')}</p>
                       </div>
                       <div className="bg-[var(--bg-tertiary)]/50 rounded py-1">
                         <p className="font-bold text-green-400">{myChar.defense}</p>
-                        <p className="text-[9px] text-[var(--text-secondary)]">Defensa</p>
+                        <p className="text-[9px] text-[var(--text-secondary)]">{t('pv.defense', 'Defensa')}</p>
                       </div>
                     </div>
                     {myChar.description && (
@@ -1582,7 +1585,7 @@ export default function PlayerView() {
                 {sheetTab === 'inventory' && (
                   <div className="space-y-1">
                     {invItems.length === 0 ? (
-                      <p className="text-[10px] text-[var(--text-secondary)]">Vacío</p>
+                      <p className="text-[10px] text-[var(--text-secondary)]">{t('pv.empty', 'Vacío')}</p>
                     ) : (
                       invItems.map((item, i) => (
                         <div key={i} className="flex items-center gap-1.5">
@@ -1592,7 +1595,7 @@ export default function PlayerView() {
                             }`}
                           />
                           <span className="text-[11px] text-[var(--text-primary)]">
-                            {item.name || 'Sin nombre'}{item.quantity ? ` x${Number(item.quantity)}` : ''}
+                            {item.name || t('pv.noName', 'Sin nombre')}{item.quantity ? ` x${Number(item.quantity)}` : ''}
                           </span>
                         </div>
                       ))
@@ -1612,11 +1615,11 @@ export default function PlayerView() {
                         className="shrink-0 text-[10px] px-1.5 py-0.5 rounded border border-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                       >
                         <BookOpen className="h-3 w-3 mr-1 inline" />
-                        Grimorio
+                        {t('pv.grimorio', 'Grimorio')}
                       </button>
                     </div>
                     {myChar.spells_json.length === 0 ? (
-                      <p className="text-[10px] text-[var(--text-secondary)]">No hay hechizos</p>
+                      <p className="text-[10px] text-[var(--text-secondary)]">{t('pv.noSpells', 'No hay hechizos')}</p>
                     ) : (
                       myChar.spells_json.map((spell) => (
                         <div
@@ -1630,7 +1633,7 @@ export default function PlayerView() {
                           {spell.audio_path && (
                             <span
                               className="shrink-0 text-[10px] leading-none"
-                              title="Tiene sonido: suena al usar"
+                              title={t('pv.hasSound', 'Tiene sonido: suena al usar')}
                               data-testid={`spell-audio-${spell.id}`}
                             >
                               🔊
@@ -1642,12 +1645,12 @@ export default function PlayerView() {
                             disabled={usingSpellId === spell.id || spell.cost_pm > pm}
                             title={
                               spell.cost_pm > pm
-                                ? 'PM insuficientes'
-                                : `Gasta ${spell.cost_pm} PM`
+                                ? t('pv.pmNotEnough', 'PM insuficientes')
+                                : t('pv.spendPm', 'Gasta {{n}} PM', { n: spell.cost_pm })
                             }
                             className="ml-auto shrink-0 text-[10px] px-1.5 py-0.5 rounded border border-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                           >
-                            Usar
+                            {t('pv.use', 'Usar')}
                           </button>
                         </div>
                       ))
@@ -1660,7 +1663,7 @@ export default function PlayerView() {
                     <textarea
                       value={notesDraft}
                       onChange={(e) => setNotesDraft(e.target.value)}
-                      placeholder="Mis notas del personaje..."
+                      placeholder={t('pv.notesPlaceholder', 'Mis notas del personaje...')}
                       className="w-full h-24 text-[10px] bg-[var(--bg-tertiary)]/50 border border-[var(--bg-tertiary)] rounded p-1.5 text-[var(--text-primary)] resize-none focus:outline-none focus:border-[var(--accent)] transition-colors"
                     />
                     <button
@@ -1668,7 +1671,7 @@ export default function PlayerView() {
                       disabled={notesSaving}
                       className="w-full text-[10px] py-1 rounded bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white disabled:opacity-50 transition-colors"
                     >
-                      {notesSaving ? 'Guardando...' : 'Guardar notas'}
+                      {notesSaving ? t('pv.saving', 'Guardando...') : t('pv.saveNotes', 'Guardar notas')}
                     </button>
                   </div>
                 )}
@@ -1681,9 +1684,9 @@ export default function PlayerView() {
           <div className="absolute inset-0 z-20 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6">
             <div className="bg-[var(--surface)] border border-[var(--bg-tertiary)]/60 rounded-xl p-4 sm:p-6 w-full max-w-md space-y-4">
               <div>
-                <h2 className="text-lg font-bold text-[var(--text-primary)]">¿Quién sos?</h2>
+                <h2 className="text-lg font-bold text-[var(--text-primary)]">{t('pv.whoAreYou', '¿Quién sos?')}</h2>
                 <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-                  Elegí tu personaje para ver tu ficha durante la sesión.
+                  {t('pv.pickCharHint', 'Elegí tu personaje para ver tu ficha durante la sesión.')}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -1731,7 +1734,7 @@ export default function PlayerView() {
                 onClick={chooseSpectator}
                 className="w-full py-2 rounded-lg border border-[var(--bg-tertiary)] text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] transition-colors"
               >
-                Entrar como espectador
+                {t('pv.enterSpectator', 'Entrar como espectador')}
               </button>
             </div>
           </div>
@@ -1790,7 +1793,7 @@ export default function PlayerView() {
             setGrimorioDetail(s);
           }
         }}
-        title="Grimorio"
+        title={t('pv.grimorio', 'Grimorio')}
         items={grimorioItems}
       />
 
@@ -1823,7 +1826,7 @@ export default function PlayerView() {
                   <p className="text-[10px] text-[var(--text-secondary)] mt-0.5">
                     Lv{grimorioDetail.level} · {grimorioDetail.cost_pm} PM
                     {grimorioDetail.audio_path && (
-                      <span className="ml-1.5" title="Tiene sonido: suena al usar">
+                      <span className="ml-1.5" title={t('pv.hasSound', 'Tiene sonido: suena al usar')}>
                         🔊
                       </span>
                     )}
@@ -1833,14 +1836,14 @@ export default function PlayerView() {
                   type="button"
                   onClick={() => setGrimorioDetail(null)}
                   className="shrink-0 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-                  aria-label="Cerrar Grimorio"
+                  aria-label={t('pv.closeGrimorio', 'Cerrar Grimorio')}
                 >
                   ✕
                 </button>
               </div>
               <div className="h-px bg-[var(--bg-tertiary)]" />
               <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                {grimorioDetail.description || 'Sin descripción.'}
+                {grimorioDetail.description || t('pv.noDescription', 'Sin descripción.')}
               </p>
               <button
                 type="button"
@@ -1850,10 +1853,10 @@ export default function PlayerView() {
                 className="w-full py-1.5 rounded border border-[var(--accent)]/60 text-xs font-semibold text-[var(--accent)] hover:bg-[var(--accent)]/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 {usingSpellId === grimorioDetail.id
-                  ? 'Usando...'
+                  ? t('pv.using', 'Usando...')
                   : grimorioDetail.cost_pm > pm
-                    ? 'PM insuficientes'
-                    : `Usar (${grimorioDetail.cost_pm} PM)`}
+                    ? t('pv.pmNotEnough', 'PM insuficientes')
+                    : t('pv.usePm', 'Usar ({{n}} PM)', { n: grimorioDetail.cost_pm })}
               </button>
             </motion.div>
           </motion.div>
