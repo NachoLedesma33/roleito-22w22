@@ -122,82 +122,67 @@ function getAudio(): AudioContext | null {
   return audioCtx
 }
 
-/** Traqueteo de dados (ruido corto x10). */
-function playClatter(): void {
-  const ctx = getAudio()
-  if (!ctx) return
-  if (ctx.state === 'suspended') void ctx.resume()
-  const now = ctx.currentTime
-  for (let i = 0; i < 10; i++) {
-    const t = now + i * 0.05 + Math.random() * 0.02
-    const buffer = ctx.createBuffer(1, 256, ctx.sampleRate)
-    const data = buffer.getChannelData(0)
-    for (let j = 0; j < data.length; j++) data[j] = (Math.random() * 2 - 1) * (1 - j / data.length)
-    const src = ctx.createBufferSource()
-    src.buffer = buffer
-    const gain = ctx.createGain()
-    gain.gain.setValueAtTime(0.1, t)
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04)
-    src.connect(gain).connect(ctx.destination)
-    src.start(t)
-    src.stop(t + 0.05)
-  }
-}
-
-/** Impacto corto de cada golpe de dado (mesa/otros dados). Se llama en cada
- *  colisión, con la velocidad para modular el volumen; el throttle evita
- *  saturar cuando ruedan muchos dados. */
-let lastImpactAt = 0
+/** Impacto realista de un dado contra la mesa u otro dado.
+ *
+ *  Sintetiza un golpe de madera: un transitorio de banda ancha (el "toc" seco
+ *  del contacto) más una única formante resonante breve que da el cuerpo de la
+ *  madera. NO usa osciladores tonales ni colas largas — eran justamente los que
+ *  producían el timbre a tambor/8-bit. El volumen sigue la energía del golpe
+ *  (∝ velocidad²) y cada impacto varía leve en centro de frecuencia y nivel,
+ *  así ningún golpe suena idéntico. El control de cadencia es POR DADO
+ *  (ver DieBody), no global, para no acallar impactos independientes. */
 function playImpact(strength: number, muted: boolean): void {
   if (muted) return
   const ctx = getAudio()
   if (!ctx) return
   if (ctx.state === 'suspended') void ctx.resume()
   const now = ctx.currentTime
-  if (now - lastImpactAt < 0.028) return
-  lastImpactAt = now
+
+  // Energía normalizada: golpe apenas perceptible (0) .. fuerte (1).
+  const e = Math.min(1, Math.max(0, (strength - 0.8) / 6))
+  const vol = 0.05 + e * 0.3
+
+  // Un único buffer de ruido corto con caída rápida (el transitorio).
   const dur = 0.05
-  const buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate)
+  const buffer = ctx.createBuffer(1, Math.max(32, Math.floor(ctx.sampleRate * dur)), ctx.sampleRate)
   const data = buffer.getChannelData(0)
   for (let j = 0; j < data.length; j++) {
-    data[j] = (Math.random() * 2 - 1) * Math.pow(1 - j / data.length, 2)
+    data[j] = (Math.random() * 2 - 1) * Math.pow(1 - j / data.length, 4)
   }
   const src = ctx.createBufferSource()
   src.buffer = buffer
-  const bp = ctx.createBiquadFilter()
-  bp.type = 'bandpass'
-  bp.frequency.value = 1300 + Math.random() * 700
-  bp.Q.value = 1.2
-  const gain = ctx.createGain()
-  gain.gain.setValueAtTime(Math.min(0.24, 0.05 + strength * 0.03), now)
-  gain.gain.exponentialRampToValueAtTime(0.001, now + dur)
-  src.connect(bp).connect(gain).connect(ctx.destination)
+
+  const master = ctx.createGain()
+  master.gain.value = vol
+  master.connect(ctx.destination)
+
+  // Cuerpo de madera: formante resonante grave-media, muy breve (sin tono).
+  const body = ctx.createBiquadFilter()
+  body.type = 'bandpass'
+  body.frequency.value = 230 + Math.random() * 160
+  body.Q.value = 3.2
+  const bodyGain = ctx.createGain()
+  bodyGain.gain.setValueAtTime(1, now)
+  bodyGain.gain.exponentialRampToValueAtTime(0.001, now + 0.035)
+
+  // Click seco del contacto: agudo, brevísimo y discreto.
+  const click = ctx.createBiquadFilter()
+  click.type = 'bandpass'
+  click.frequency.value = 2400 + Math.random() * 1600
+  click.Q.value = 0.6
+  const clickGain = ctx.createGain()
+  clickGain.gain.setValueAtTime(0.5, now)
+  clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.012)
+
+  src.connect(body).connect(bodyGain).connect(master)
+  src.connect(click).connect(clickGain).connect(master)
   src.start(now)
   src.stop(now + dur)
 }
 
-/** Golpe grave al asentarse los dados. */
-function playThud(): void {
-  const ctx = getAudio()
-  if (!ctx) return
-  if (ctx.state === 'suspended') void ctx.resume()
-  const now = ctx.currentTime
-  const osc = ctx.createOscillator()
-  const gain = ctx.createGain()
-  osc.type = 'sine'
-  osc.frequency.setValueAtTime(160, now)
-  osc.frequency.exponentialRampToValueAtTime(70, now + 0.18)
-  gain.gain.setValueAtTime(0.16, now)
-  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2)
-  osc.connect(gain).connect(ctx.destination)
-  osc.start(now)
-  osc.stop(now + 0.22)
-}
-
-function gridPosition(i: number, n: number, height: number): [number, number, number] {
+function gridPosition(i: number, n: number, height: number, gap = 1.55): [number, number, number] {
   const cols = Math.ceil(Math.sqrt(n))
   const rows = Math.ceil(n / cols)
-  const gap = 1.05
   const x = ((i % cols) - (cols - 1) / 2) * gap
   const z = (Math.floor(i / cols) - (rows - 1) / 2) * gap
   return [x, height, z]
@@ -247,29 +232,29 @@ function DieBody({
   onImpact: (strength: number) => void
 }) {
   const ref = useRef<RapierRigidBody>(null)
+  // Control de cadencia por dado: evita duplicados del mismo impacto y
+  // contactos insignificantes, sin acallar golpes de otros dados.
+  const lastHit = useRef(0)
 
   useEffect(() => {
     const body = ref.current
     register(index, body)
     if (body) {
-      // Lanzamiento enérgico pero contenido: cada dado va hacia el centro de la
-      // mesa (así no salta fuera de las paredes) con un arco bajo y giro fuerte,
-      // de modo que rueda y pica en vez de caer quieto.
-      const [px, , pz] = position
-      const dist = Math.hypot(px, pz)
-      const speed = Math.min(6, 2.5 + dist * 1.6)
-      const dirX = dist > 0.05 ? -px / dist : (Math.random() - 0.5) * 2
-      const dirZ = dist > 0.05 ? -pz / dist : (Math.random() - 0.5) * 2
+      // Lanzamiento caótico: cada dado sale en una dirección aleatoria con
+      // fuerza y giro fuertes para que rueden y piquen. La caja (paredes altas +
+      // techo) garantiza que ninguno se salga, así que podemos ser salvajes.
+      const ang = Math.random() * Math.PI * 2
+      const speed = 3 + Math.random() * 5
       body.setLinvel(
         {
-          x: dirX * speed + (Math.random() - 0.5) * 1.5,
-          y: 0.6 + Math.random() * 1.4,
-          z: dirZ * speed + (Math.random() - 0.5) * 1.5,
+          x: Math.cos(ang) * speed,
+          y: 1 + Math.random() * 1.6,
+          z: Math.sin(ang) * speed,
         },
         true,
       )
       body.setAngvel(
-        { x: (Math.random() - 0.5) * 45, y: (Math.random() - 0.5) * 45, z: (Math.random() - 0.5) * 45 },
+        { x: (Math.random() - 0.5) * 70, y: (Math.random() - 0.5) * 70, z: (Math.random() - 0.5) * 70 },
         true,
       )
     }
@@ -282,16 +267,23 @@ function DieBody({
       colliders="hull"
       position={position}
       scale={DIE_SCALE}
-      restitution={0.5}
-      friction={0.6}
-      linearDamping={0.05}
-      angularDamping={0.15}
+      restitution={0.3}
+      friction={0.8}
+      linearDamping={0.4}
+      angularDamping={0.8}
       ccd
       onCollisionEnter={() => {
         const body = ref.current
         if (!body) return
         const v = body.linvel()
-        onImpact(Math.hypot(v.x, v.y, v.z))
+        const speed = Math.hypot(v.x, v.y, v.z)
+        // Descarta vibraciones/roces demasiado débiles.
+        if (speed < 1.2) return
+        const t = performance.now()
+        // Ventana por dado: corta el duplicado de un mismo impacto.
+        if (t - lastHit.current < 55) return
+        lastHit.current = t
+        onImpact(speed)
       }}
     >
       <group>
@@ -326,24 +318,47 @@ function RestDetector({
   const still = useRef(0)
   const elapsed = useRef(0)
   const done = useRef(false)
+  const frame = useRef(0)
+  const anchor = useRef<{ x: number; y: number; z: number }[]>([])
 
   useFrame((_, delta) => {
     if (done.current) return
     elapsed.current += delta
+    frame.current += 1
     const list = bodies.current
     const present = list.filter((b): b is RapierRigidBody => b !== null)
     if (!present.length) return
 
-    let maxSpeed = 0
-    for (const body of present) {
-      const lv = body.linvel()
+    let maxSpin = 0
+    const cur: { x: number; y: number; z: number }[] = []
+    for (let i = 0; i < list.length; i++) {
+      const body = list[i]
+      if (!body) {
+        cur[i] = anchor.current[i] ?? { x: 0, y: 0, z: 0 }
+        continue
+      }
+      const p = body.translation()
+      cur[i] = { x: p.x, y: p.y, z: p.z }
       const av = body.angvel()
-      maxSpeed = Math.max(maxSpeed, Math.hypot(lv.x, lv.y, lv.z), Math.hypot(av.x, av.y, av.z))
+      maxSpin = Math.max(maxSpin, Math.hypot(av.x, av.y, av.z))
     }
-    still.current = maxSpeed < 0.12 ? still.current + 1 : 0
+
+    // Se evalúa cada ~8 frames comparando la posición contra la última muestra:
+    // el desplazamiento NETO en la ventana ignora el jitter de velocidad del
+    // solver cuando los dados quedan apilados, y sí detecta a los que ruedan.
+    if (frame.current % 8 === 0) {
+      let moved = 0
+      for (let i = 0; i < cur.length; i++) {
+        const a = anchor.current[i]
+        if (a) moved += Math.abs(cur[i].x - a.x) + Math.abs(cur[i].y - a.y) + Math.abs(cur[i].z - a.z)
+      }
+      anchor.current = cur
+      const quiet = moved < 0.8 && maxSpin < 3
+      still.current = quiet ? still.current + 1 : 0
+    }
 
     const allPresent = present.length === list.length
-    if ((allPresent && still.current > 24) || elapsed.current > 7) {
+    if ((allPresent && still.current > 8) || elapsed.current > 5.5) {
       done.current = true
       onResults(
         list.map((body, i) => {
@@ -363,14 +378,17 @@ function TrayWalls() {
   const w = viewport.width
   const h = viewport.height
   const thick = 0.8
-  const wallH = 1.4
+  const wallH = 1.4 // altura visible de la pared (borde de la bandeja)
+  const colliderH = 8 // altura real del collider (invisible): sella la caja y evita rebotes fuera
   const baseY = wallH / 2 - 0.15
+  const colliderBaseY = colliderH / 2 - 0.15
+  const ceilingY = colliderH - 0.15
 
-  const walls: { args: [number, number, number]; pos: [number, number, number] }[] = [
-    { args: [thick, wallH, h], pos: [-(w / 2 - thick / 2), baseY, 0] },
-    { args: [thick, wallH, h], pos: [w / 2 - thick / 2, baseY, 0] },
-    { args: [w, wallH, thick], pos: [0, baseY, -(h / 2 - thick / 2)] },
-    { args: [w, wallH, thick], pos: [0, baseY, h / 2 - thick / 2] },
+  const walls: { size: [number, number, number]; x: number; z: number }[] = [
+    { size: [thick, wallH, h], x: -(w / 2 - thick / 2), z: 0 },
+    { size: [thick, wallH, h], x: w / 2 - thick / 2, z: 0 },
+    { size: [w, wallH, thick], x: 0, z: -(h / 2 - thick / 2) },
+    { size: [w, wallH, thick], x: 0, z: h / 2 - thick / 2 },
   ]
 
   return (
@@ -380,17 +398,26 @@ function TrayWalls() {
           <boxGeometry args={[w, 0.3, h]} />
           <meshStandardMaterial color="#241c12" roughness={0.95} />
         </mesh>
-        <CuboidCollider args={[w / 2, 0.15, h / 2]} />
+        {/* Piso grueso (el collider baja muy por debajo): evita que un dado a
+            alta velocidad lo atraviese (tunneling) y caiga fuera de la caja. */}
+        <CuboidCollider args={[w / 2, 1.0, h / 2]} position={[0, -0.85, 0]} />
       </RigidBody>
       {walls.map((wall, i) => (
-        <RigidBody key={i} type="fixed" colliders={false} position={wall.pos}>
-          <mesh receiveShadow>
-            <boxGeometry args={wall.args} />
+        <RigidBody key={i} type="fixed" colliders={false} position={[wall.x, 0, wall.z]}>
+          <mesh position={[0, baseY, 0]} receiveShadow>
+            <boxGeometry args={wall.size} />
             <meshStandardMaterial color="#3a2c1c" roughness={0.9} />
           </mesh>
-          <CuboidCollider args={[wall.args[0] / 2, wall.args[1] / 2, wall.args[2] / 2]} />
+          <CuboidCollider
+            args={[wall.size[0] / 2, colliderH / 2, wall.size[2] / 2]}
+            position={[0, colliderBaseY, 0]}
+          />
         </RigidBody>
       ))}
+      {/* Techo invisible: garantiza que ningún dado se salga por arriba. */}
+      <RigidBody type="fixed" colliders={false} position={[0, ceilingY, 0]}>
+        <CuboidCollider args={[w / 2, 0.15, h / 2]} />
+      </RigidBody>
     </>
   )
 }
@@ -470,7 +497,6 @@ export default function DiceTray({
     }
     setResults(logical)
     setPhase('settled')
-    if (!muted && !reductionMotion) playThud()
 
     const groups = new Map<number, number[]>()
     const rolls: DiceTrayResult['rolls'] = []
@@ -516,7 +542,6 @@ export default function DiceTray({
       finish(phys.map((p) => Math.floor(Math.random() * p.type) + 1))
       return
     }
-    if (!muted) playClatter()
     bodies.current = []
     setResults(null)
     setPhase('rolling')
@@ -640,18 +665,20 @@ export default function DiceTray({
         <div className="relative flex-1">
           <Canvas shadows camera={{ position: [0, 9, 0.01], fov: 36 }} onCreated={({ gl, camera }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; camera.lookAt(0, 0, 0) }}>
             <color attach="background" args={['#181410']} />
-            <ambientLight intensity={0.6} />
-            <directionalLight position={[5, 10, 6]} intensity={1.4} castShadow />
-            <directionalLight position={[-6, 4, -4]} intensity={0.4} />
+            <ambientLight intensity={0.9} />
+            <hemisphereLight args={['#ffffff', '#3a2c1c', 0.8]} />
+            <directionalLight position={[5, 10, 6]} intensity={1.5} castShadow />
+            <directionalLight position={[-6, 4, -4]} intensity={0.7} />
+            <directionalLight position={[0, 7, 9]} intensity={0.5} />
             <Suspense fallback={null}>
-              <Physics gravity={[0, -9.81, 0]}>
+              <Physics gravity={[0, -9.81, 0]} timeStep={1 / 120}>
                 <TrayWalls />
                 {phase !== 'aim' &&
                   indices.map((i) => (
                     <DieBody
                       key={`${throwId}-${i}`}
                       spec={specs[i]}
-                      position={gridPosition(i, phys.length, 3.2)}
+                      position={gridPosition(i, phys.length, 1.6)}
                       index={i}
                       register={register}
                       unregister={unregister}
@@ -664,7 +691,7 @@ export default function DiceTray({
               </Physics>
               {phase === 'aim' &&
                 indices.map((i) => (
-                  <DieMesh key={i} spec={specs[i]} position={gridPosition(i, phys.length, 1.6)} skin={skin} tens={phys[i].tens} />
+                  <DieMesh key={i} spec={specs[i]} position={gridPosition(i, phys.length, 1)} skin={skin} tens={phys[i].tens} />
                 ))}
             </Suspense>
           </Canvas>
