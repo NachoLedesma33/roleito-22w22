@@ -1,6 +1,9 @@
 import { expect, test } from '../fixtures/campaign-fixture';
 
 async function openRoller(page: import('@playwright/test').Page, campaignId: string) {
+  // Este spec cubre el panel HUD numérico: la mesa 3D viene prendida por
+  // default y lo reemplaza, así que forzamos el kill-switch (dice3d=0).
+  await page.addInitScript(() => localStorage.setItem('dice3d', '0'));
   await page.goto(`/campaigns/${campaignId}`);
   await page.getByTitle('Acciones del DM').hover();
   await expect(page.getByTitle('Tirar dados (D)')).toBeVisible();
