@@ -322,6 +322,284 @@ function FogDrift({
   );
 }
 
+// ---------------------------------------------------------------------------
+// Audio del clima (procedural, sin archivos): lluvia, viento y truenos.
+// Mismo criterio que el sonido de los dados: solo ruido filtrado (sin
+// osciladores tonales ni bucles reconocibles), así no suena a 8 bits ni a
+// "sample". El volumen sigue la intensidad del clima. Es una capa aparte del
+// audio de escena (`audio_path`), que es un archivo subido y suena en loop.
+// ---------------------------------------------------------------------------
+
+let weatherAudioCtx: AudioContext | null = null;
+function getWeatherAudio(): AudioContext | null {
+  if (typeof window === 'undefined') return null;
+  const Ctor =
+    window.AudioContext ||
+    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!Ctor) return null;
+  if (!weatherAudioCtx) weatherAudioCtx = new Ctor();
+  return weatherAudioCtx;
+}
+
+const AUDIO_STILL = 0.0001;
+
+/**
+ * Ruido blanco (agudo) o rosa (grave) con empalme continuo para poder loopear
+ * sin click. El rosa sale del filtro de Voss-McCartney (tres polos + blanco).
+ */
+function makeNoiseBuffer(ctx: AudioContext, color: 'white' | 'pink'): AudioBuffer {
+  const sr = ctx.sampleRate;
+  const n = Math.floor(sr * 4);
+  const fade = Math.floor(sr * 0.08);
+  const buffer = ctx.createBuffer(1, n, sr);
+  const out = buffer.getChannelData(0);
+  const gen = new Float32Array(n + fade);
+  if (color === 'white') {
+    for (let i = 0; i < gen.length; i++) gen[i] = Math.random() * 2 - 1;
+  } else {
+    let b0 = 0;
+    let b1 = 0;
+    let b2 = 0;
+    for (let i = 0; i < gen.length; i++) {
+      const w = Math.random() * 2 - 1;
+      b0 = 0.99765 * b0 + w * 0.099046;
+      b1 = 0.963 * b1 + w * 0.2965164;
+      b2 = 0.57 * b2 + w * 1.0526913;
+      gen[i] = (b0 + b1 + b2 + w * 0.1848) * 0.45;
+    }
+  }
+  // Crossfade de la cola sobre la cabeza: el loop cierra sin discontinuidad.
+  for (let i = 0; i < n; i++) {
+    if (i < fade) {
+      const t = i / fade;
+      out[i] = gen[n + i] * (1 - t) + gen[i] * t;
+    } else {
+      out[i] = gen[i];
+    }
+  }
+  return buffer;
+}
+
+/** Mezcla base por variante: cuánta "lluvia/nieve" aguda y cuánto viento. */
+const WEATHER_AUDIO: Record<string, { hiss: number; wind: number }> = {
+  rain: { hiss: 1, wind: 0.12 },
+  rainDrizzle: { hiss: 0.5, wind: 0.06 },
+  rainStorm: { hiss: 1.7, wind: 0.85 },
+  snow: { hiss: 0.4, wind: 0.35 },
+  snowBlizzard: { hiss: 0.8, wind: 1.4 },
+  fog: { hiss: 0.14, wind: 0.16 },
+  fogDense: { hiss: 0.2, wind: 0.28 },
+};
+
+interface WeatherVoice {
+  /** Ajusta niveles para una intensidad ya normalizada (0.25..4). */
+  setLevel: (k: number) => void;
+  dispose: () => void;
+}
+
+function buildWeatherVoice(ctx: AudioContext, weather: string): WeatherVoice {
+  const layer = WEATHER_AUDIO[weather] ?? { hiss: 0.4, wind: 0.15 };
+  const thunderOn = weather === 'rainStorm';
+  let thunderLevel = 0.45;
+  let disposed = false;
+  let thunderTimer = 0;
+
+  const master = ctx.createGain();
+  master.gain.setValueAtTime(AUDIO_STILL, ctx.currentTime);
+  master.gain.exponentialRampToValueAtTime(1, ctx.currentTime + 1);
+  master.connect(ctx.destination);
+
+  const stops: Array<() => void> = [];
+  const track = (node: AudioBufferSourceNode | OscillatorNode) => {
+    stops.push(() => {
+      try {
+        node.stop();
+      } catch {
+        /* ya detenido */
+      }
+    });
+  };
+
+  // Lluvia/nieve: ruido blanco pasado por un pasa-altos, el "shhh" de las gotas.
+  const hissSrc = ctx.createBufferSource();
+  hissSrc.buffer = makeNoiseBuffer(ctx, 'white');
+  hissSrc.loop = true;
+  const hissHp = ctx.createBiquadFilter();
+  hissHp.type = 'highpass';
+  hissHp.frequency.value = 700;
+  hissHp.Q.value = 0.5;
+  const hissLp = ctx.createBiquadFilter();
+  hissLp.type = 'lowpass';
+  hissLp.frequency.value = 8000;
+  hissLp.Q.value = 0.4;
+  const hissGain = ctx.createGain();
+  hissGain.gain.value = 0;
+  hissSrc.connect(hissHp).connect(hissLp).connect(hissGain).connect(master);
+  hissSrc.start();
+  track(hissSrc);
+
+  // Viento: ruido rosa grave; un LFO lento le da el "resuello" (ráfagas).
+  const windSrc = ctx.createBufferSource();
+  windSrc.buffer = makeNoiseBuffer(ctx, 'pink');
+  windSrc.loop = true;
+  const windLp = ctx.createBiquadFilter();
+  windLp.type = 'lowpass';
+  windLp.frequency.value = 480;
+  windLp.Q.value = 0.7;
+  const windGain = ctx.createGain();
+  windGain.gain.value = 0;
+  const lfo = ctx.createOscillator();
+  lfo.type = 'sine';
+  lfo.frequency.value = 0.07;
+  const lfoDepth = ctx.createGain();
+  lfoDepth.gain.value = 0;
+  lfo.connect(lfoDepth).connect(windGain.gain);
+  lfo.start();
+  track(lfo);
+  windSrc.connect(windLp).connect(windGain).connect(master);
+  windSrc.start();
+  track(windSrc);
+
+  // Trueno: ruido grave con caída larga (retumbo) y, a veces, un chasquido.
+  const playThunder = () => {
+    const now = ctx.currentTime;
+    const level = Math.max(0.15, thunderLevel);
+    const dur = 2.6 + Math.random() * 1.4;
+    const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.Q.value = 0.7;
+    lp.frequency.setValueAtTime(220 + Math.random() * 80, now);
+    lp.frequency.exponentialRampToValueAtTime(60, now + dur);
+    const g = ctx.createGain();
+    const peak = 0.5 * level * (0.7 + Math.random() * 0.6);
+    g.gain.setValueAtTime(AUDIO_STILL, now);
+    g.gain.exponentialRampToValueAtTime(peak, now + 0.05);
+    g.gain.exponentialRampToValueAtTime(AUDIO_STILL, now + dur);
+    src.connect(lp).connect(g).connect(master);
+    src.start(now);
+    src.stop(now + dur);
+    if (Math.random() < 0.55) {
+      const cdur = 0.35;
+      const cbuf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * cdur), ctx.sampleRate);
+      const cd = cbuf.getChannelData(0);
+      for (let i = 0; i < cd.length; i++) {
+        cd[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / cd.length, 3);
+      }
+      const csrc = ctx.createBufferSource();
+      csrc.buffer = cbuf;
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 900 + Math.random() * 1200;
+      bp.Q.value = 0.6;
+      const cg = ctx.createGain();
+      cg.gain.setValueAtTime(0.28 * level, now);
+      cg.gain.exponentialRampToValueAtTime(AUDIO_STILL, now + cdur);
+      csrc.connect(bp).connect(cg).connect(master);
+      csrc.start(now);
+      csrc.stop(now + cdur);
+    }
+  };
+
+  const scheduleThunder = () => {
+    if (disposed || !thunderOn) return;
+    // Más seguido (y más fuerte) cuanto más intensa la tormenta.
+    const base = 11 - 7 * thunderLevel;
+    const delay = base * (0.6 + Math.random() * 0.9) * 1000;
+    thunderTimer = window.setTimeout(() => {
+      playThunder();
+      scheduleThunder();
+    }, delay);
+  };
+  scheduleThunder();
+
+  const setLevel = (k: number) => {
+    const now = ctx.currentTime;
+    hissGain.gain.setTargetAtTime(layer.hiss * 0.05 * k, now, 0.3);
+    const wind = layer.wind * 0.06 * k;
+    windGain.gain.setTargetAtTime(wind, now, 0.4);
+    lfoDepth.gain.setTargetAtTime(wind * 0.6, now, 0.4);
+    thunderLevel = Math.min(1, 0.25 + 0.2 * k);
+  };
+
+  const dispose = () => {
+    disposed = true;
+    window.clearTimeout(thunderTimer);
+    const now = ctx.currentTime;
+    try {
+      master.gain.cancelScheduledValues(now);
+      master.gain.setValueAtTime(Math.max(AUDIO_STILL, master.gain.value), now);
+      master.gain.exponentialRampToValueAtTime(AUDIO_STILL, now + 0.3);
+    } catch {
+      /* contexto cerrado */
+    }
+    window.setTimeout(() => {
+      for (const stop of stops) stop();
+      try {
+        master.disconnect();
+      } catch {
+        /* ya desconectado */
+      }
+    }, 380);
+  };
+
+  return { setLevel, dispose };
+}
+
+/**
+ * Componente sin DOM: monta/actualiza el audio del clima. Reconstruye la voz
+ * solo cuando cambia el tipo de clima; la intensidad se aplica por rampa para
+ * no reiniciar el audio en cada tick.
+ */
+function WeatherAudio({ weather, intensity }: { weather: string; intensity: number }) {
+  const voiceRef = useRef<WeatherVoice | null>(null);
+  useEffect(() => {
+    const ctx = getWeatherAudio();
+    if (!ctx) return;
+    let voice: WeatherVoice | null = null;
+    try {
+      voice = buildWeatherVoice(ctx, weather);
+      voiceRef.current = voice;
+    } catch {
+      // El audio nunca debe romper la escena: si WebAudio falla, siguen las
+      // partículas y el overlay.
+      voice = null;
+    }
+    let resume = () => {};
+    if (ctx.state === 'suspended') {
+      void ctx.resume();
+      // El navegador exige un gesto para desbloquear el audio.
+      resume = () => {
+        if (ctx.state === 'suspended') void ctx.resume();
+      };
+      window.addEventListener('pointerdown', resume, { once: true });
+      window.addEventListener('keydown', resume, { once: true });
+    }
+    return () => {
+      window.removeEventListener('pointerdown', resume);
+      window.removeEventListener('keydown', resume);
+      try {
+        voice?.dispose();
+      } catch {
+        /* contexto ya cerrado */
+      }
+      if (voiceRef.current === voice) voiceRef.current = null;
+    };
+  }, [weather]);
+  useEffect(() => {
+    try {
+      voiceRef.current?.setLevel(clampWeatherIntensity(intensity));
+    } catch {
+      /* contexto ya cerrado */
+    }
+  }, [intensity]);
+  return null;
+}
+
 export default function WeatherFX({
   weather,
   mapWidth,
@@ -336,7 +614,8 @@ export default function WeatherFX({
   if (!meta) return null;
   const { kind, speed, density, grain } = meta;
   const shared = { mapWidth, mapHeight, intensity: k, speed, density, grain };
-  if (kind === 'rain') return <Rain {...shared} />;
-  if (kind === 'snow') return <Snow {...shared} />;
-  return <FogDrift {...shared} />;
+  const audio = <WeatherAudio weather={weather as string} intensity={k} />;
+  if (kind === 'rain') return <>{audio}<Rain {...shared} /></>;
+  if (kind === 'snow') return <>{audio}<Snow {...shared} /></>;
+  return <>{audio}<FogDrift {...shared} /></>;
 }
