@@ -9,40 +9,65 @@ const ROWS: { key: AudioSettingKey; labelKey: string; fallback: string }[] = [
   { key: 'dice', labelKey: 'audio.dice', fallback: 'Dados' },
 ];
 
+const PANEL_W = 224; // w-56
+const PANEL_H = 176;
+
 /**
  * Regulador de volumen compartido (DM y jugador): un master global mas un
  * control por canal, para que los sonidos no se tapen entre si. Los cambios se
  * persisten y se sincronizan entre pestanas (ver lib/audioSettings).
+ *
+ * El panel va en `position: fixed` con la posicion calculada desde el boton y
+ * recortada al viewport: en la barra vertical izquierda del DM un `absolute`
+ * se saldria por el borde de la pantalla y quedaria recortado.
  */
 export default function AudioSettingsMenu({ className = '' }: { className?: string }) {
   const { t } = useTranslation();
   const settings = useAudioSettings();
-  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  const open = pos !== null;
+  const close = () => setPos(null);
+
+  const openMenu = () => {
+    const el = btnRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const left = Math.max(8, Math.min(r.left, window.innerWidth - PANEL_W - 8));
+    let top = r.bottom + 6;
+    if (top + PANEL_H > window.innerHeight - 8) top = Math.max(8, r.top - PANEL_H - 6);
+    setPos({ top, left });
+  };
 
   useEffect(() => {
     if (!open) return;
     const onDown = (e: PointerEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setPos(null);
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key === 'Escape') setPos(null);
     };
+    const onResize = () => setPos(null);
     window.addEventListener('pointerdown', onDown);
     window.addEventListener('keydown', onKey);
+    window.addEventListener('resize', onResize);
     return () => {
       window.removeEventListener('pointerdown', onDown);
       window.removeEventListener('keydown', onKey);
+      window.removeEventListener('resize', onResize);
     };
   }, [open]);
 
   const pct = (v: number) => `${Math.round(v * 100)}%`;
 
   return (
-    <div ref={rootRef} className={`relative shrink-0 ${className}`}>
+    <div ref={rootRef} className={`shrink-0 ${className}`}>
       <button
+        ref={btnRef}
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => (open ? close() : openMenu())}
         aria-expanded={open}
         aria-haspopup="dialog"
         title={t('audio.title', 'Volumen del audio')}
@@ -55,11 +80,12 @@ export default function AudioSettingsMenu({ className = '' }: { className?: stri
       >
         <Volume2 className="h-3.5 w-3.5" />
       </button>
-      {open && (
+      {pos && (
         <div
           role="dialog"
           data-testid="audio-volume-menu"
-          className="absolute right-0 mt-1 z-50 w-56 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] shadow-lg p-3 space-y-2"
+          style={{ top: pos.top, left: pos.left, width: PANEL_W }}
+          className="fixed z-50 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] shadow-lg p-3 space-y-2"
         >
           <p className="text-[10px] uppercase tracking-wide text-[var(--text-secondary)]">
             {t('audio.title', 'Volumen del audio')}
