@@ -3,6 +3,12 @@
     "name": "22w22",
     "tagline": "The world your sessions remember"
   },
+  "audio": {
+    "title": "Audio volume",
+    "master": "Master",
+    "weather": "Weather",
+    "dice": "Dice"
+  },
   "characterForm": {
     "attributes": "VIDA Attributes",
     "class": "Class",

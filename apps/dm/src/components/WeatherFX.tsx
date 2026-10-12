@@ -1,6 +1,7 @@
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
+import { getEffectiveVolume, useAudioSettings } from '@/lib/audioSettings';
 
 export const WEATHER_INTENSITY_MIN = 0.25;
 export const WEATHER_INTENSITY_MAX = 4;
@@ -406,7 +407,7 @@ function buildWeatherVoice(ctx: AudioContext, weather: string): WeatherVoice {
 
   const master = ctx.createGain();
   master.gain.setValueAtTime(AUDIO_STILL, ctx.currentTime);
-  master.gain.exponentialRampToValueAtTime(1, ctx.currentTime + 1);
+  master.gain.exponentialRampToValueAtTime(Math.max(AUDIO_STILL, getEffectiveVolume('weather')), ctx.currentTime + 1);
   master.connect(ctx.destination);
 
   const stops: Array<() => void> = [];
@@ -519,6 +520,8 @@ function buildWeatherVoice(ctx: AudioContext, weather: string): WeatherVoice {
 
   const setLevel = (k: number) => {
     const now = ctx.currentTime;
+    // El master aplica el master global × el canal clima (ver audioSettings).
+    master.gain.setTargetAtTime(Math.max(AUDIO_STILL, getEffectiveVolume('weather')), now, 0.15);
     hissGain.gain.setTargetAtTime(layer.hiss * 0.05 * k, now, 0.3);
     const wind = layer.wind * 0.06 * k;
     windGain.gain.setTargetAtTime(wind, now, 0.4);
@@ -557,6 +560,8 @@ function buildWeatherVoice(ctx: AudioContext, weather: string): WeatherVoice {
  */
 function WeatherAudio({ weather, intensity }: { weather: string; intensity: number }) {
   const voiceRef = useRef<WeatherVoice | null>(null);
+  // Re-lee el volumen cuando cambia (el master global o el canal clima).
+  const settings = useAudioSettings();
   useEffect(() => {
     const ctx = getWeatherAudio();
     if (!ctx) return;
@@ -596,7 +601,7 @@ function WeatherAudio({ weather, intensity }: { weather: string; intensity: numb
     } catch {
       /* contexto ya cerrado */
     }
-  }, [intensity]);
+  }, [intensity, settings.master, settings.weather]);
   return null;
 }
 

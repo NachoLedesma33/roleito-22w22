@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback, useMemo, Suspense } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import AudioSettingsMenu from '@/components/AudioSettingsMenu';
 import i18n from '@/lib/i18n';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
@@ -1246,6 +1247,7 @@ export default function PlayerView() {
             {audioOn ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
           </button>
         )}
+        <AudioSettingsMenu className="ml-1" />
         {choice?.kind === 'character' && (
           <button
             type="button"

@@ -3,6 +3,12 @@
     "name": "22w22",
     "tagline": "El mundo que tus sesiones recuerdan"
   },
+  "audio": {
+    "title": "Volumen del audio",
+    "master": "General",
+    "weather": "Clima",
+    "dice": "Dados"
+  },
   "characterForm": {
     "attributes": "Atributos (VIDA)",
     "class": "Clase",

@@ -38,6 +38,7 @@ import MapViewer from '@/components/MapViewer';
 import DMNotebookHud from '@/components/DMNotebookHud';
 import AISettingsPanel from '@/components/AISettingsPanel';
 import DMAssistant from '@/components/DMAssistant';
+import AudioSettingsMenu from '@/components/AudioSettingsMenu';
 import SceneSettingsHud from '@/components/SceneSettingsHud';
 import ContextMenu, { ContextMenuItem } from '@/components/ContextMenu';
 import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastContainer';
@@ -2195,6 +2196,7 @@ export default function DmDashboard() {
                 ))}
               </div>
             </div>
+            <AudioSettingsMenu className="ml-1" />
             <div className="relative shrink-0" data-menu-root>
               <button
                 onClick={(e) => toggleMenu('weather', e.currentTarget)}

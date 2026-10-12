@@ -4,6 +4,7 @@ import { CuboidCollider, Physics, RigidBody, type RapierRigidBody } from '@react
 import * as THREE from 'three'
 import { getDie, readResult, getFaceLabels, getFaceTexture, getSkinTexture, type DieSpec, type DieType, type SkinPattern } from '@/lib/dice3d'
 import type { VidaAttr } from '@/lib/api'
+import { getEffectiveVolume } from '@/lib/audioSettings'
 
 const TRAY_DICE_TYPES: DieType[] = [4, 6, 8, 10, 12, 20]
 const MAX_DICE = 15
@@ -140,7 +141,8 @@ function playImpact(strength: number, muted: boolean): void {
 
   // Energía normalizada: golpe apenas perceptible (0) .. fuerte (1).
   const e = Math.min(1, Math.max(0, (strength - 0.8) / 6))
-  const vol = 0.05 + e * 0.3
+  // El master global × el canal dados escalan el volumen del impacto.
+  const vol = (0.05 + e * 0.3) * getEffectiveVolume('dice')
 
   // Un único buffer de ruido corto con caída rápida (el transitorio).
   const dur = 0.05
