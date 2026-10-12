@@ -3,6 +3,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { CuboidCollider, Physics, RigidBody, type RapierRigidBody } from '@react-three/rapier'
 import * as THREE from 'three'
 import { getDie, readResult, getFaceLabels, getFaceTexture, getSkinTexture, type DieSpec, type DieType, type SkinPattern } from '@/lib/dice3d'
+import type { VidaAttr } from '@/lib/api'
 
 const TRAY_DICE_TYPES: DieType[] = [4, 6, 8, 10, 12, 20]
 const MAX_DICE = 15
@@ -51,6 +52,22 @@ const SKINS: Skin[] = [
 ]
 
 type Phase = 'aim' | 'rolling' | 'settled'
+
+/** Entidad tiradora (personaje o PNJ) para elegir en la mesa. */
+export interface DiceEntity {
+  key: string
+  name: string
+  vigor: VidaAttr
+  intelligence: VidaAttr
+  dexterity: VidaAttr
+  cunning: VidaAttr
+}
+
+const STATE_NAME: Record<VidaAttr, string> = {
+  '+': 'Más',
+  '/': 'Neutro',
+  '-': 'Menos',
+}
 
 export type RollForm = DieType | 100
 
@@ -127,6 +144,38 @@ function playClatter(): void {
   }
 }
 
+/** Impacto corto de cada golpe de dado (mesa/otros dados). Se llama en cada
+ *  colisión, con la velocidad para modular el volumen; el throttle evita
+ *  saturar cuando ruedan muchos dados. */
+let lastImpactAt = 0
+function playImpact(strength: number, muted: boolean): void {
+  if (muted) return
+  const ctx = getAudio()
+  if (!ctx) return
+  if (ctx.state === 'suspended') void ctx.resume()
+  const now = ctx.currentTime
+  if (now - lastImpactAt < 0.028) return
+  lastImpactAt = now
+  const dur = 0.05
+  const buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate)
+  const data = buffer.getChannelData(0)
+  for (let j = 0; j < data.length; j++) {
+    data[j] = (Math.random() * 2 - 1) * Math.pow(1 - j / data.length, 2)
+  }
+  const src = ctx.createBufferSource()
+  src.buffer = buffer
+  const bp = ctx.createBiquadFilter()
+  bp.type = 'bandpass'
+  bp.frequency.value = 1300 + Math.random() * 700
+  bp.Q.value = 1.2
+  const gain = ctx.createGain()
+  gain.gain.setValueAtTime(Math.min(0.24, 0.05 + strength * 0.03), now)
+  gain.gain.exponentialRampToValueAtTime(0.001, now + dur)
+  src.connect(bp).connect(gain).connect(ctx.destination)
+  src.start(now)
+  src.stop(now + dur)
+}
+
 /** Golpe grave al asentarse los dados. */
 function playThud(): void {
   const ctx = getAudio()
@@ -186,6 +235,7 @@ function DieBody({
   unregister,
   skin,
   tens = false,
+  onImpact,
 }: {
   spec: DieSpec
   position: [number, number, number]
@@ -194,6 +244,7 @@ function DieBody({
   unregister: (index: number, body: RapierRigidBody | null) => void
   skin: Skin
   tens?: boolean
+  onImpact: (strength: number) => void
 }) {
   const ref = useRef<RapierRigidBody>(null)
 
@@ -201,12 +252,24 @@ function DieBody({
     const body = ref.current
     register(index, body)
     if (body) {
+      // Lanzamiento enérgico pero contenido: cada dado va hacia el centro de la
+      // mesa (así no salta fuera de las paredes) con un arco bajo y giro fuerte,
+      // de modo que rueda y pica en vez de caer quieto.
+      const [px, , pz] = position
+      const dist = Math.hypot(px, pz)
+      const speed = Math.min(6, 2.5 + dist * 1.6)
+      const dirX = dist > 0.05 ? -px / dist : (Math.random() - 0.5) * 2
+      const dirZ = dist > 0.05 ? -pz / dist : (Math.random() - 0.5) * 2
       body.setLinvel(
-        { x: (Math.random() - 0.5) * 5, y: -1.5 - Math.random() * 3, z: (Math.random() - 0.5) * 5 },
+        {
+          x: dirX * speed + (Math.random() - 0.5) * 1.5,
+          y: 0.6 + Math.random() * 1.4,
+          z: dirZ * speed + (Math.random() - 0.5) * 1.5,
+        },
         true,
       )
       body.setAngvel(
-        { x: (Math.random() - 0.5) * 24, y: (Math.random() - 0.5) * 24, z: (Math.random() - 0.5) * 24 },
+        { x: (Math.random() - 0.5) * 45, y: (Math.random() - 0.5) * 45, z: (Math.random() - 0.5) * 45 },
         true,
       )
     }
@@ -219,11 +282,17 @@ function DieBody({
       colliders="hull"
       position={position}
       scale={DIE_SCALE}
-      restitution={0.35}
-      friction={0.9}
-      linearDamping={0.2}
-      angularDamping={0.3}
+      restitution={0.5}
+      friction={0.6}
+      linearDamping={0.05}
+      angularDamping={0.15}
       ccd
+      onCollisionEnter={() => {
+        const body = ref.current
+        if (!body) return
+        const v = body.linvel()
+        onImpact(Math.hypot(v.x, v.y, v.z))
+      }}
     >
       <group>
         <mesh geometry={spec.geometry} castShadow>
@@ -329,9 +398,13 @@ function TrayWalls() {
 export default function DiceTray({
   onRolled,
   onClose,
+  entities = [],
+  fixedEntityKey,
 }: {
-  onRolled: (result: DiceTrayResult) => void
+  onRolled: (result: DiceTrayResult, ctx: { entityKey: string; skill: string }) => void
   onClose: () => void
+  entities?: DiceEntity[]
+  fixedEntityKey?: string
 }) {
   const [pool, setPool] = useState<PoolEntry[]>([{ key: 'd0', form: 6 }])
   const [phase, setPhase] = useState<Phase>('aim')
@@ -339,8 +412,29 @@ export default function DiceTray({
   const [results, setResults] = useState<LogicalResult[] | null>(null)
   const [muted, setMuted] = useState(false)
   const [skin, setSkin] = useState<Skin>(SKINS[0])
+  const [entityKey, setEntityKey] = useState(fixedEntityKey ?? '')
+  const [skill, setSkill] = useState('')
   const bodies = useRef<(RapierRigidBody | null)[]>([])
   const keyRef = useRef(1)
+
+  const mutedRef = useRef(muted)
+  mutedRef.current = muted
+
+  const selected = entities.find((e) => e.key === entityKey) ?? null
+  const chars = entities.filter((e) => e.key.startsWith('char:'))
+  const npcs = entities.filter((e) => e.key.startsWith('npc:'))
+
+  const handleImpact = useCallback((strength: number) => {
+    playImpact(strength, mutedRef.current)
+  }, [])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
 
   const reductionMotion = useMemo(
     () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
@@ -392,7 +486,7 @@ export default function DiceTray({
     for (const [t, res] of groups) {
       rolls.push({ diceType: t, count: res.length, results: res, total: res.reduce((a, b) => a + b, 0) })
     }
-    onRolled({ rolls })
+    onRolled({ rolls }, { entityKey, skill })
   }
 
   const addStd = (type: DieType) => {
@@ -438,7 +532,51 @@ export default function DiceTray({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" data-phase={phase}>
-      <div className="flex h-[540px] max-h-[92vh] w-[760px] max-w-[95vw] overflow-hidden rounded-lg border border-[var(--bg-tertiary)] bg-[var(--bg-primary)] shadow-2xl">
+      <div className="flex h-[560px] max-h-[92vh] w-[820px] max-w-[95vw] flex-col overflow-hidden rounded-lg border border-[var(--bg-tertiary)] bg-[var(--bg-primary)] shadow-2xl">
+        {!fixedEntityKey && (
+          <div className="flex shrink-0 items-center gap-2 border-b border-[var(--bg-tertiary)] p-2">
+            <span className="text-[10px] uppercase tracking-wide text-[var(--text-secondary)]">Tirada para</span>
+            <select
+              aria-label="Tirada para"
+              value={entityKey}
+              onChange={(e) => setEntityKey(e.target.value)}
+              className="rounded border border-[var(--bg-tertiary)] bg-[var(--bg-primary)] px-2 py-1 text-xs text-[var(--text-primary)]"
+            >
+              <option value="">— Sin personaje —</option>
+              {chars.length > 0 && (
+                <optgroup label="Personajes">
+                  {chars.map((c) => (
+                    <option key={c.key} value={c.key}>{c.name}</option>
+                  ))}
+                </optgroup>
+              )}
+              {npcs.length > 0 && (
+                <optgroup label="PNJs">
+                  {npcs.map((n) => (
+                    <option key={n.key} value={n.key}>{n.name}</option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
+            <input
+              type="text"
+              value={skill}
+              onChange={(e) => setSkill(e.target.value)}
+              placeholder="Habilidad (ej: Sigilo) — opcional"
+              className="flex-1 rounded border border-[var(--bg-tertiary)] bg-[var(--bg-primary)] px-2 py-1 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]"
+            />
+            {selected && (
+              <div className="flex items-center gap-1">
+                {([['Vigor', selected.vigor], ['Inteligencia', selected.intelligence], ['Destreza', selected.dexterity], ['Astucia', selected.cunning]] as const).map(([n, v]) => (
+                  <span key={n} title={`${n}: ${STATE_NAME[v]}`} className="rounded border border-[var(--bg-tertiary)] px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)]">
+                    <b className="text-[var(--text-primary)]">{v === '-' ? '−' : v}</b> {n[0]}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        <div className="flex min-h-0 flex-1">
         <aside className="w-24 shrink-0 overflow-y-auto border-r border-[var(--bg-tertiary)] p-2">
           <p className="mb-2 text-[10px] uppercase tracking-wide text-[var(--text-secondary)]">Dados</p>
           <div className="flex flex-col gap-1">
@@ -519,6 +657,7 @@ export default function DiceTray({
                       unregister={unregister}
                       skin={skin}
                       tens={phys[i].tens}
+                      onImpact={handleImpact}
                     />
                   ))}
                 {phase !== 'aim' && <RestDetector key={throwId} bodies={bodies} specs={specs} onResults={finish} />}
@@ -598,6 +737,7 @@ export default function DiceTray({
               Cerrar
             </button>
           </div>
+        </div>
         </div>
       </div>
     </div>

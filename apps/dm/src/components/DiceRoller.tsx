@@ -5,6 +5,7 @@ import { api, type Character, type NPC, type VidaAttr, type DiceRollResponse } f
 import { isDice3dEnabled } from '@/lib/features';
 
 const DiceTray = lazy(() => import('./DiceTray'));
+import type { DiceTrayResult } from './DiceTray';
 
 export interface DiceRoll {
   id: string;
@@ -133,7 +134,6 @@ export default function DiceRoller({
   const [history, setHistory] = useState<DiceRoll[]>([]);
   const [rolling, setRolling] = useState(false);
   const [dice3d] = useState(() => isDice3dEnabled());
-  const [trayOpen, setTrayOpen] = useState(false);
   const [historyEntityKey, setHistoryEntityKey] = useState<string>(fixedEntityKey ?? '');
   const [trayError, setTrayError] = useState(false);
   const rollTimeout = useRef<ReturnType<typeof setTimeout>>();
@@ -159,6 +159,10 @@ export default function DiceRoller({
   const selected = entities.find((e) => e.key === entityKey) ?? null;
 
   const isDmMode = !fixedEntityKey;
+
+  // Mesa 3D directa cuando el flag está prendido; el panel numérico solo se
+  // usa si el 3D está apagado (kill-switch) o si la mesa 3D falló.
+  const numericMode = !dice3d || trayError;
 
   useEffect(() => {
     if (isDmMode && entityKey && historyEntityKey !== entityKey) {
@@ -202,16 +206,17 @@ export default function DiceRoller({
       countValue: number,
       results: number[],
       total: number,
+      entity: RollerEntity | null,
       label: string | undefined,
     ) => {
       if (campaignId) {
         try {
-          const entityType = selected?.key.split(':')[0];
-          const entityId = selected?.key.split(':')[1];
+          const entityType = entity?.key.split(':')[0];
+          const entityId = entity?.key.split(':')[1];
           const response = await api.rolls.create(campaignId, {
             entity_type: entityType,
             entity_id: entityId,
-            entity_name: selected?.name,
+            entity_name: entity?.name,
             roller_name: rollerName,
             dice_type: diceTypeValue,
             count: countValue,
@@ -243,41 +248,56 @@ export default function DiceRoller({
       setHistory((prev) => [roll, ...prev].slice(0, 20));
       onRoll?.(roll);
     },
-    [campaignId, selected, rollerName, onRoll, onRollCreated],
+    [campaignId, rollerName, onRoll, onRollCreated],
   );
 
   const buildLabel = useCallback(
-    () => [skill.trim(), selected?.name].filter(Boolean).join(' — ') || undefined,
-    [skill, selected],
+    (entity: RollerEntity | null) =>
+      [skill.trim(), entity?.name].filter(Boolean).join(' — ') || undefined,
+    [skill],
   );
 
   const handleRoll = useCallback(() => {
-    if (trayError) {
-      setRolling(true);
-      rollTimeout.current = setTimeout(async () => {
-        const { results, total } = rollDice(diceType, count);
-        await saveRoll(diceType, count, results, total, buildLabel());
-        setRolling(false);
-      }, 200);
-      return;
-    }
-    if (dice3d) {
-      setTrayOpen(true);
-      return;
-    }
     setRolling(true);
     rollTimeout.current = setTimeout(async () => {
       const { results, total } = rollDice(diceType, count);
-      await saveRoll(diceType, count, results, total, buildLabel());
+      await saveRoll(diceType, count, results, total, selected, buildLabel(selected));
       setRolling(false);
-    }, 300);
-  }, [trayError, dice3d, diceType, count, saveRoll, buildLabel]);
+    }, trayError ? 200 : 300);
+  }, [trayError, diceType, count, saveRoll, buildLabel, selected]);
+
+  const handleTrayRolled = useCallback(
+    (result: DiceTrayResult, ctx: { entityKey: string; skill: string }) => {
+      const entity = entities.find((e) => e.key === ctx.entityKey) ?? null;
+      const label = [ctx.skill.trim(), entity?.name].filter(Boolean).join(' — ') || undefined;
+      for (const row of result.rolls) {
+        void saveRoll(row.diceType, row.count, row.results, row.total, entity, label);
+      }
+    },
+    [entities, saveRoll],
+  );
 
   useEffect(() => {
     return () => {
       if (rollTimeout.current) clearTimeout(rollTimeout.current);
     };
   }, []);
+
+  if (!numericMode) {
+    return createPortal(
+      <Suspense fallback={null}>
+        <DiceTrayErrorBoundary onError={() => setTrayError(true)}>
+          <DiceTray
+            entities={entities}
+            fixedEntityKey={fixedEntityKey}
+            onRolled={handleTrayRolled}
+            onClose={onClose}
+          />
+        </DiceTrayErrorBoundary>
+      </Suspense>,
+      document.body,
+    );
+  }
 
   return (
     <HudPanel
@@ -390,7 +410,7 @@ export default function DiceRoller({
               : 'bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] active:scale-[0.98]'
           }`}
         >
-          {trayError ? (rolling ? 'Tirando...' : `Tirar ${count}d${diceType}`) : dice3d ? 'Abrir mesa de dados' : rolling ? 'Tirando...' : `Tirar ${count}d${diceType}`}
+          {rolling ? 'Tirando...' : `Tirar ${count}d${diceType}`}
         </button>
 
         {lastRoll && (
@@ -490,29 +510,6 @@ export default function DiceRoller({
         </div>
       )}
 
-      {dice3d &&
-        trayOpen &&
-        !trayError &&
-        createPortal(
-          <Suspense fallback={null}>
-            <DiceTrayErrorBoundary
-              onError={() => {
-                setTrayError(true)
-                setTrayOpen(false)
-              }}
-            >
-              <DiceTray
-                onRolled={(r) => {
-                  for (const row of r.rolls) {
-                    void saveRoll(row.diceType, row.count, row.results, row.total, buildLabel());
-                  }
-                }}
-                onClose={() => setTrayOpen(false)}
-              />
-            </DiceTrayErrorBoundary>
-          </Suspense>,
-          document.body,
-        )}
     </HudPanel>
   );
 }
