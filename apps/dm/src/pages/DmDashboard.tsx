@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, Suspense, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import i18n from '@/lib/i18n';
 import { useParams, Link } from 'react-router-dom';
 import { api, Campaign, Scene, SceneCharacter, Character, NPC, Map as GameMap, LightRequest, Asset } from '@/lib/api';
@@ -61,6 +62,7 @@ function staticUrl(path: string | null): string | null {
 }
 
 export default function DmDashboard() {
+  const { t } = useTranslation();
   const { id: campaignId } = useParams<{ id: string }>();
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [scenes, setScenes] = useState<Scene[]>([]);
@@ -1646,7 +1648,7 @@ export default function DmDashboard() {
   const handleTokenContextMenu = useCallback((sceneCharId: string, clientX: number, clientY: number) => {
     const sc = sceneChars.find((s) => s.id === sceneCharId);
     const ent = allEntities.find((x) => x.id === sc?.entity_id);
-    const name = ent?.name || 'Unknown';
+    const name = ent?.name || i18n.t('dm.unknown', 'Desconocido');
 
     const allItems = graphRef.getItems()
     const attachedLights = allItems.filter((it) => it.metadata.type === 'light' && (it.metadata as { attachedTo?: string }).attachedTo === sceneCharId)
@@ -1858,7 +1860,7 @@ export default function DmDashboard() {
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center bg-black text-[var(--text-secondary)]">
-        Cargando campaña...
+        {t('dm.loadingCampaign', 'Cargando campaña...')}
       </div>
     );
   }
@@ -1866,7 +1868,7 @@ export default function DmDashboard() {
   if (!campaign) {
     return (
       <div className="h-screen flex items-center justify-center bg-black text-red-400">
-        Campaña no encontrada
+        {t('dm.campaignNotFound', 'Campaña no encontrada')}
       </div>
     );
   }
@@ -1876,7 +1878,7 @@ export default function DmDashboard() {
 
   return (
     <div className="h-full flex flex-col bg-black overflow-hidden select-none">
-      <h1 className="sr-only">Mesa de juego</h1>
+      <h1 className="sr-only">{t('dm.tableTitle', 'Mesa de juego')}</h1>
       <TopBar
         title={campaign.name}
         titleTo="/"
@@ -1885,7 +1887,7 @@ export default function DmDashboard() {
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="p-1.5 rounded hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0"
-              title="Alternar barra lateral"
+              title={t('dm.toggleSidebar', 'Alternar barra lateral')}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M3 12h18M3 6h18M3 18h18" />
@@ -1895,13 +1897,13 @@ export default function DmDashboard() {
             <select
               value={activeScene?.id || ''}
               onChange={(e) => handleSceneSwitch(e.target.value)}
-              aria-label="Escena activa"
+              aria-label={t('dm.activeScene', 'Escena activa')}
               className="text-sm bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-2 py-1 text-[var(--text-primary)] cursor-pointer shrink-0"
             >
-              {scenes.length === 0 && <option value="">Sin escenas</option>}
+              {scenes.length === 0 && <option value="">{t('dm.noScenes', 'Sin escenas')}</option>}
               {scenes.map((s, i) => (
                 <option key={s.id} value={s.id}>
-                  {s.name || `Escena ${i + 1}`} {s.status === 'active' ? '(activa)' : ''}
+                  {s.name || t('dm.sceneN', 'Escena {{n}}', { n: i + 1 })} {s.status === 'active' ? `(${t('dm.activeShort', 'activa')})` : ''}
                 </option>
               ))}
             </select>
@@ -1943,9 +1945,9 @@ export default function DmDashboard() {
                   ? 'bg-green-600/20 text-green-400 border border-green-600/40'
                   : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
-              title="Sincronizar esta escena con todos los jugadores"
+              title={t('dm.syncTitle', 'Sincronizar esta escena con todos los jugadores')}
             >
-              {activeScene?.status === 'active' ? '✓ Sincronizada' : '⟳ Sincronizar'}
+              {activeScene?.status === 'active' ? t('dm.synced', '✓ Sincronizada') : t('dm.sync', '⟳ Sincronizar')}
             </button>
             <div className="w-px h-5 bg-[var(--bg-tertiary)] shrink-0" />
             
@@ -1957,9 +1959,9 @@ export default function DmDashboard() {
                   ? 'bg-emerald-600 text-white'
                   : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
-              title="Copiar link de invitación para jugadores"
+              title={t('dm.copyInviteTitle', 'Copiar link de invitación para jugadores')}
             >
-              {copiedInvite ? '¡Copiado!' : campaign?.invite_code ? '🔗 Invitar' : '🔗 Obtener invitación'}
+              {copiedInvite ? t('dm.copied', '¡Copiado!') : campaign?.invite_code ? t('dm.invite', '🔗 Invitar') : t('dm.getInvite', '🔗 Obtener invitación')}
             </button>
           </>
         }
@@ -1989,7 +1991,7 @@ export default function DmDashboard() {
                 onClick={handleUndo}
                 disabled={undoStackRef.current.length === 0}
                 className="text-xs px-1.5 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
-                title="Deshacer (Ctrl+Z)"
+                title={t('dm.undo', 'Deshacer (Ctrl+Z)')}
               >
                 ↶
               </button>
@@ -1997,7 +1999,7 @@ export default function DmDashboard() {
                 onClick={handleRedo}
                 disabled={redoStackRef.current.length === 0}
                 className="text-xs px-1.5 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
-                title="Rehacer (Ctrl+Shift+Z)"
+                title={t('dm.redo', 'Rehacer (Ctrl+Shift+Z)')}
               >
                 ↷
               </button>
@@ -2007,7 +2009,7 @@ export default function DmDashboard() {
                 onClick={() => setBuildMenuOpen(!buildMenuOpen)}
                 className={`w-full text-xs px-2 py-1 rounded transition-colors ${drawState || zoneDraft || portalDraft || fogMode || rectFogMode || zoneFogActive || lightPlaceMode || attachLightMode ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
               >
-                🧱 Construir ▾
+                {t('dm.build', '🧱 Construir ▾')}
               </button>
               {buildMenuOpen && (
                 <div className="absolute left-0 top-full mt-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg z-50 min-w-[180px]">
@@ -2015,41 +2017,41 @@ export default function DmDashboard() {
                     onClick={() => startDrawMode('wall')}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawState?.mode === 'wall' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
                   >
-                    🧱 Dibujar pared
+                    {t('dm.drawWall', '🧱 Dibujar pared')}
                   </button>
                   <button
                     onClick={() => startDrawMode('door')}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawState?.mode === 'door' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
                   >
-                    🚪 Colocar puerta
+                    {t('dm.placeDoor', '🚪 Colocar puerta')}
                   </button>
                   <button
                     onClick={() => startZoneMode('rect')}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${zoneDraft?.mode === 'rect' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
                   >
-                    ▭ Zona (rect)
+                    {t('dm.zoneRect', '▭ Zona (rect)')}
                   </button>
                   <button
                     onClick={() => startZoneMode('polygon')}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${zoneDraft?.mode === 'polygon' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
                   >
-                    ⬠ Zona (polígono)
+                    {t('dm.zonePolygon', '⬠ Zona (polígono)')}
                   </button>
                   <button
                     onClick={startPortalMode}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${portalDraft ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
                   >
-                    🚪 Portal (zona↔zona)
+                    {t('dm.portalZone', '🚪 Portal (zona↔zona)')}
                   </button>
                   <button
                     onClick={startLightPlaceMode}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${lightPlaceMode ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
                   >
-                    💡 Luz (colocar)
+                    {t('dm.lightPlace', '💡 Luz (colocar)')}
                   </button>
                   <div className="border-t border-[var(--bg-tertiary)] my-1" />
                   <div className="px-3 py-1">
-                    <p className="text-[10px] text-[var(--text-secondary)] mb-1">Color de zona</p>
+                    <p className="text-[10px] text-[var(--text-secondary)] mb-1">{t('dm.zoneColor', 'Color de zona')}</p>
                     <div className="flex gap-1">
                       {Object.entries(ZONE_COLORS).map(([name, hex]) => (
                         <button
@@ -2067,19 +2069,19 @@ export default function DmDashboard() {
                       onClick={() => setDetectionMode('blueprint')}
                       className={`flex-1 text-[10px] px-2 py-1 rounded transition-colors ${detectionMode === 'blueprint' ? 'bg-blue-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'}`}
                     >
-                      Plano
+                      {t('dm.detectionBlueprint', 'Plano')}
                     </button>
                     <button
                       onClick={() => setDetectionMode('textured')}
                       className={`flex-1 text-[10px] px-2 py-1 rounded transition-colors ${detectionMode === 'textured' ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'}`}
                     >
-                      Texturizado
+                      {t('dm.detectionTextured', 'Texturizado')}
                     </button>
                     <button
                       onClick={() => setUseAi((v) => !v)}
                       className={`flex-1 text-[10px] px-2 py-1 rounded transition-colors ${useAi ? 'bg-purple-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'}`}
                     >
-                      IA
+                      {t('dm.detectionAi', 'IA')}
                     </button>
                   </div>
                   <button
@@ -2087,35 +2089,35 @@ export default function DmDashboard() {
                     disabled={detectingWalls}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${detectingWalls ? 'text-amber-400 animate-pulse' : 'text-[var(--text-secondary)]'}`}
                   >
-                    {detectingWalls ? '⏳ Detectando...' : '🔍 Detectar paredes'}
+                    {detectingWalls ? t('dm.detecting', '⏳ Detectando...') : t('dm.detectWalls', '🔍 Detectar paredes')}
                   </button>
                   <button
                     onClick={handleClearAllWalls}
                     className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-red-400"
                   >
-                    🗑️ Limpiar todas las paredes
+                    {t('dm.clearWalls', '🗑️ Limpiar todas las paredes')}
                   </button>
                   <button
                     onClick={handleClearAllZones}
                     className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-red-400"
                   >
-                    🗑️ Limpiar todas las zonas
+                    {t('dm.clearZones', '🗑️ Limpiar todas las zonas')}
                   </button>
                   <button
                     onClick={handleClearAllFog}
                     className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-red-400"
                   >
-                    🗑️ Limpiar toda la niebla
+                    {t('dm.clearFog', '🗑️ Limpiar toda la niebla')}
                   </button>
                   <button
                     onClick={handleClearAllLights}
                     className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-red-400"
                   >
-                    🗑️ Limpiar todas las luces
+                    {t('dm.clearLights', '🗑️ Limpiar todas las luces')}
                   </button>
                   <div className="border-t border-[var(--bg-tertiary)] my-1" />
                   <div className="px-3 py-1">
-                    <p className="text-[10px] text-[var(--text-secondary)] mb-1">Material de paredes</p>
+                    <p className="text-[10px] text-[var(--text-secondary)] mb-1">{t('dm.wallMaterial', 'Material de paredes')}</p>
                     <div className="flex gap-1">
                       {(['stone', 'wood', 'metal', 'glass', 'magic'] as const).map((m) => (
                         <button
@@ -2129,7 +2131,7 @@ export default function DmDashboard() {
                     </div>
                   </div>
                   <div className="px-3 py-1">
-                    <p className="text-[10px] text-[var(--text-secondary)] mb-1">Material de puertas</p>
+                    <p className="text-[10px] text-[var(--text-secondary)] mb-1">{t('dm.doorMaterial', 'Material de puertas')}</p>
                     <div className="flex gap-1">
                       {(['wood', 'metal', 'glass', 'magic'] as const).map((m) => (
                         <button
@@ -2148,18 +2150,18 @@ export default function DmDashboard() {
             <button
               onClick={() => fileInput.current?.click()}
               className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0"
-              title="Subir fondo de mapa"
+              title={t('dm.uploadBgTitle', 'Subir fondo de mapa')}
             >
-              Subir fondo
+              {t('dm.uploadBg', 'Subir fondo')}
             </button>
             <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={handleUploadBg} data-testid="bg-upload-input" />
             <button
               onClick={handleClassifyBackground}
               disabled={!activeScene?.background_path}
               className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0 disabled:opacity-40"
-              title="Sugerir fondo para el mapa actual"
+              title={t('dm.suggestBgTitle', 'Sugerir fondo para el mapa actual')}
             >
-              Sugerir fondo
+              {t('dm.suggestBg', 'Sugerir fondo')}
             </button>
             <div className="relative shrink-0" data-menu-root>
               <button
@@ -2169,7 +2171,7 @@ export default function DmDashboard() {
                 data-testid="lighting-select"
                 className="w-full text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
               >
-                {{ neutral: 'Neutra', dark: 'Oscura', dim: 'Tenue', bright: 'Brillante', torchlight: 'Antorcha' }[activeScene?.lighting || 'neutral'] || activeScene?.lighting || 'Neutra'} ▾
+                {{ neutral: t('dm.lightNeutral', 'Neutra'), dark: t('dm.lightDark', 'Oscura'), dim: t('dm.lightDim', 'Tenue'), bright: t('dm.lightBright', 'Brillante'), torchlight: t('dm.lightTorch', 'Antorcha') }[activeScene?.lighting || 'neutral'] || activeScene?.lighting || t('dm.lightNeutral', 'Neutra')} ▾
               </button>
               <div
                 role="menu"
@@ -2188,7 +2190,7 @@ export default function DmDashboard() {
                       activeScene?.lighting === mode ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'
                     }`}
                   >
-                    {{ neutral: 'Neutra', dark: 'Oscura', dim: 'Tenue', bright: 'Brillante', torchlight: 'Antorcha' }[mode] || mode}
+                    {{ neutral: t('dm.lightNeutral', 'Neutra'), dark: t('dm.lightDark', 'Oscura'), dim: t('dm.lightDim', 'Tenue'), bright: t('dm.lightBright', 'Brillante'), torchlight: t('dm.lightTorch', 'Antorcha') }[mode] || mode}
                   </button>
                 ))}
               </div>
@@ -2200,7 +2202,7 @@ export default function DmDashboard() {
                 aria-haspopup="menu"
                 className="w-full text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
                 data-testid="weather-select"
-                title="Clima de la escena"
+                title={t('dm.weatherTitle', 'Clima de la escena')}
               >
                 {(activeScene?.weather && WEATHER_META[activeScene.weather] ? WEATHER_META[activeScene.weather].label : WEATHER_NONE_LABEL)} ▾
               </button>
@@ -2250,7 +2252,7 @@ export default function DmDashboard() {
                     onPointerDown={(e) => e.stopPropagation()}
                   >
                     <div className="flex items-center justify-between text-[10px] text-[var(--text-secondary)] mb-1">
-                      <span>Intensidad</span>
+                      <span>{t('dm.weatherIntensity', 'Intensidad')}</span>
                       <span className="text-[var(--accent)]" data-testid="weather-intensity-value">
                         {weatherIntensityK.toFixed(2)}×
                       </span>
@@ -2264,12 +2266,12 @@ export default function DmDashboard() {
                       onChange={(e) => handleChangeWeatherIntensity(parseFloat(e.target.value))}
                       data-testid="weather-intensity"
                       className="w-full h-1 cursor-pointer"
-                      title={`Intensidad del clima (${weatherIntensityK.toFixed(2)}x)`}
+                      title={t('dm.weatherIntensityTitle', 'Intensidad del clima ({{v}}x)', { v: weatherIntensityK.toFixed(2) })}
                     />
                     <div className="flex justify-between text-[9px] text-[var(--text-secondary)] mt-0.5">
-                      <span>Tenue</span>
-                      <span>Fuerte</span>
-                      <span>Torrencial</span>
+                      <span>{t('dm.weatherMild', 'Tenue')}</span>
+                      <span>{t('dm.weatherStrong', 'Fuerte')}</span>
+                      <span>{t('dm.weatherTorrential', 'Torrencial')}</span>
                     </div>
                   </div>
                 )}
@@ -2278,9 +2280,9 @@ export default function DmDashboard() {
             <button
               onClick={() => setShowSceneSettings(!showSceneSettings)}
               className={`w-full text-xs px-2 py-1 rounded transition-colors shrink-0 ${showSceneSettings ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
-              title="Ajustes de escena"
+              title={t('dm.sceneSettingsTitle', 'Ajustes de escena')}
             >
-              ⚙ Escena
+              {t('dm.sceneBtn', '⚙ Escena')}
             </button>
             {maps.length > 0 && (
               <div className="relative shrink-0">
@@ -2288,7 +2290,7 @@ export default function DmDashboard() {
                   onClick={() => setShowMapMenu((v) => !v)}
                   className={`w-full text-[10px] px-1.5 py-1 rounded transition-colors ${showMapMenu ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)]' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
                 >
-                  Mapa ▾
+                  {t('dm.mapBtn', 'Mapa ▾')}
                 </button>
                 {showMapMenu && (
                   <div className="absolute right-0 top-full mt-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg z-50 min-w-[140px]">
@@ -2303,7 +2305,7 @@ export default function DmDashboard() {
                         }}
                         className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-red-400"
                       >
-                        Desvincular mapa
+                        {t('dm.unlinkMap', 'Desvincular mapa')}
                       </button>
                     )}
                     {maps.map((m) => (
@@ -2330,7 +2332,7 @@ export default function DmDashboard() {
             <Link
               to={`/campaigns/${campaignId}/scenes`}
               className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0"
-              title="Gestión de escenas"
+              title={t('dm.sceneMgmtTitle', 'Gestión de escenas')}
             >
               ⚙
             </Link>
@@ -2341,21 +2343,21 @@ export default function DmDashboard() {
         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex flex-wrap items-center justify-center gap-2 max-w-[70%] pointer-events-none">
           {drawState && (
             <span className="text-[10px] text-amber-400 shrink-0">
-              {drawState.mode === 'wall' ? '🧱 Arrastrá para dibujar pared' : '🚪 Arrastrá para colocar puerta'} · ESC cancela
+              {drawState.mode === 'wall' ? t('dm.hintDrawWall', '🧱 Arrastrá para dibujar pared') : t('dm.hintDrawDoor', '🚪 Arrastrá para colocar puerta')} · {t('dm.escCancel', 'ESC cancela')}
             </span>
           )}
           {zoneDraft && (
             <span className="text-[10px] text-amber-400 shrink-0">
               {zoneDraft.mode === 'rect'
-                ? '▭ Arrastrá para dibujar rect de zona'
-                : '⬠ Clic para colocar vértices · clic en el 1er punto para cerrar'} · ESC cancela
+                ? t('dm.hintZoneRect', '▭ Arrastrá para dibujar rect de zona')
+                : t('dm.hintZonePoly', '⬠ Clic para colocar vértices · clic en el 1er punto para cerrar')} · {t('dm.escCancel', 'ESC cancela')}
             </span>
           )}
           {portalDraft && (
             <span className="text-[10px] text-amber-400 shrink-0">
               {portalDraft.zoneAId
-                ? '🚪 Clic en el borde de otra zona para completar el portal'
-                : '🚪 Clic en el borde de la zona A'} · ESC cancela
+                ? t('dm.hintPortalB', '🚪 Clic en el borde de otra zona para completar el portal')
+                : t('dm.hintPortalA', '🚪 Clic en el borde de la zona A')} · {t('dm.escCancel', 'ESC cancela')}
             </span>
           )}
           {fogMode && (
@@ -2364,13 +2366,13 @@ export default function DmDashboard() {
                 onClick={() => setFogMode((prev) => prev ? { ...prev, reveal: true } : prev)}
                 className={`text-[10px] px-2 py-0.5 rounded transition-colors ${fogMode.reveal ? 'bg-green-600 text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
               >
-                Revelar
+                {t('dm.reveal', 'Revelar')}
               </button>
               <button
                 onClick={() => setFogMode((prev) => prev ? { ...prev, reveal: false } : prev)}
                 className={`text-[10px] px-2 py-0.5 rounded transition-colors ${!fogMode.reveal ? 'bg-red-600 text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
               >
-                Ocultar
+                {t('dm.hide', 'Ocultar')}
               </button>
               <input
                 type="range"
@@ -2380,7 +2382,7 @@ export default function DmDashboard() {
                 value={fogMode.radius}
                 onChange={(e) => setFogMode((prev) => prev ? { ...prev, radius: parseFloat(e.target.value) } : prev)}
                 className="w-20 h-1"
-                title="Tamaño del pincel"
+                title={t('dm.brushSize', 'Tamaño del pincel')}
               />
               <span className="text-[9px] text-[var(--text-secondary)] w-8">
                 {(fogMode.radius * 100).toFixed(0)}%
@@ -2389,7 +2391,7 @@ export default function DmDashboard() {
           )}
           {fogMode && (
             <span className="text-[10px] text-amber-400 shrink-0">
-              🌫️ Arrastrá para pintar niebla · ESC cancela
+              {t('dm.hintPaintFog', '🌫️ Arrastrá para pintar niebla')} · {t('dm.escCancel', 'ESC cancela')}
             </span>
           )}
           {rectFogMode && (
@@ -2398,24 +2400,24 @@ export default function DmDashboard() {
                 onClick={() => setRectFogMode((prev) => prev ? { ...prev, reveal: true } : prev)}
                 className={`text-[10px] px-2 py-0.5 rounded transition-colors ${rectFogMode.reveal ? 'bg-green-600 text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
               >
-                Revelar
+                {t('dm.reveal', 'Revelar')}
               </button>
               <button
                 onClick={() => setRectFogMode((prev) => prev ? { ...prev, reveal: false } : prev)}
                 className={`text-[10px] px-2 py-0.5 rounded transition-colors ${!rectFogMode.reveal ? 'bg-red-600 text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
               >
-                Ocultar
+                {t('dm.hide', 'Ocultar')}
               </button>
             </div>
           )}
           {rectFogMode && (
             <span className="text-[10px] text-amber-400 shrink-0">
-              ▭ Arrastrá para dibujar rect de niebla · ESC cancela
+              {t('dm.hintFogRect', '▭ Arrastrá para dibujar rect de niebla')} · {t('dm.escCancel', 'ESC cancela')}
             </span>
           )}
           {zoneFogActive && (
             <span className="text-[10px] text-amber-400 shrink-0">
-              🧩 Clic dentro de una zona para alternar niebla · ESC cancela
+              {t('dm.hintZoneFog', '🧩 Clic dentro de una zona para alternar niebla')} · {t('dm.escCancel', 'ESC cancela')}
             </span>
           )}
           {lightPlaceMode && (
@@ -2433,14 +2435,14 @@ export default function DmDashboard() {
           )}
           {lightPlaceMode && (
             <span className="text-[10px] text-amber-400 shrink-0">
-              💡 Clic para colocar luz · ESC cancela
+              {t('dm.hintPlaceLight', '💡 Clic para colocar luz')} · {t('dm.escCancel', 'ESC cancela')}
             </span>
           )}
           {lightPlaceMode && (
             <div className="pointer-events-auto flex items-center gap-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-1.5 py-0.5 shrink-0">
               <button
                 onClick={() => setLightPlaceMode({ ...lightPlaceMode, fx: undefined, fxRadius: undefined })}
-                title="Sin fuego: solo la luz"
+                title={t('dm.fxNone', 'Sin fuego: solo la luz')}
                 data-testid="light-fx-none"
                 className={`w-6 h-5 rounded text-[10px] transition-colors ${!lightPlaceMode.fx ? 'bg-amber-600 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
               >
@@ -2448,7 +2450,7 @@ export default function DmDashboard() {
               </button>
               <button
                 onClick={() => setLightPlaceMode({ ...lightPlaceMode, fx: 'flame' })}
-                title="Llama (la misma del status Ardiendo)"
+                title={t('dm.fxFlame', 'Llama (la misma del status Ardiendo)')}
                 data-testid="light-fx-flame"
                 className={`w-6 h-5 rounded text-[10px] transition-colors ${lightPlaceMode.fx === 'flame' ? 'bg-orange-600 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
               >
@@ -2456,7 +2458,7 @@ export default function DmDashboard() {
               </button>
               <button
                 onClick={() => setLightPlaceMode({ ...lightPlaceMode, fx: 'embers' })}
-                title="Solo brasas ascendentes"
+                title={t('dm.fxEmbers', 'Solo brasas ascendentes')}
                 data-testid="light-fx-embers"
                 className={`w-6 h-5 rounded text-[10px] transition-colors ${lightPlaceMode.fx === 'embers' ? 'bg-orange-600 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
               >
@@ -2471,7 +2473,7 @@ export default function DmDashboard() {
                     step={FIRE_RADIUS_STEP}
                     value={lightPlaceMode.fxRadius ?? FIRE_RADIUS_DEFAULT}
                     onChange={(e) => setLightPlaceMode({ ...lightPlaceMode, fxRadius: Number(e.target.value) })}
-                    title="Radio del fuego"
+                    title={t('dm.fireRadius', 'Radio del fuego')}
                     data-testid="light-fx-radius"
                     className="w-20 accent-orange-500"
                   />
@@ -2488,8 +2490,8 @@ export default function DmDashboard() {
           {attachLightMode && (
             <span className="text-[10px] text-amber-400 shrink-0">
               {attachLightMode.lightId
-                ? '🔗 Ahora hacé clic en un token para adjuntar esta luz · ESC cancela'
-                : '🔗 Hacé clic en una fuente de luz y luego en un token · ESC cancela'}
+                ? t('dm.hintAttachPick', '🔗 Ahora hacé clic en un token para adjuntar esta luz')
+                : t('dm.hintAttachStart', '🔗 Hacé clic en una fuente de luz y luego en un token')} · {t('dm.escCancel', 'ESC cancela')}
             </span>
           )}
           {attachLightMode?.lightId && (() => {
@@ -2501,7 +2503,7 @@ export default function DmDashboard() {
                   onClick={() => handleLightDetach(attachLightMode.lightId!)}
                   className="text-[10px] px-2 py-0.5 rounded bg-red-600 text-white hover:bg-red-700 transition-colors"
                 >
-                  Desvincular
+                  {t('dm.unlink', 'Desvincular')}
                 </button>
               </div>
             )
@@ -2512,7 +2514,7 @@ export default function DmDashboard() {
               <button
                 onClick={() => { handleDeleteItem(selectedLight.item.id); setSelectedItemId(null) }}
                 className="text-[10px] px-1.5 py-0.5 rounded bg-red-600 text-white hover:bg-red-700 transition-colors ml-1"
-                title="Eliminar luz"
+                title={t('dm.deleteLightTitle', 'Eliminar luz')}
               >
                 🗑
               </button>
@@ -2523,22 +2525,22 @@ export default function DmDashboard() {
                     onClick={() => handleLightSourceChange({ mode: m })}
                     className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${selectedLight.source.mode === m ? 'bg-amber-600 text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
                   >
-                    {m === 'directional' ? 'cone' : m}
+                    {m === 'directional' ? t('dm.modeCone', 'cone') : m}
                   </button>
                 ))}
               </div>
               <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
-                color
+                {t('dm.lightColor', 'color')}
                 <input
                   type="color"
                   value={selectedLight.source.color}
                   onChange={(e) => handleLightSourceChange({ color: e.target.value })}
                   className="w-5 h-5 rounded cursor-pointer bg-transparent border border-[var(--bg-tertiary)]"
-                  title="Color de luz"
+                  title={t('dm.lightColorTitle', 'Color de luz')}
                 />
               </label>
               <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
-                int
+                {t('dm.lightInt', 'int')}
                 <input
                   type="range"
                   min={0.1}
@@ -2547,12 +2549,12 @@ export default function DmDashboard() {
                   value={selectedLight.source.intensity}
                   onChange={(e) => handleLightSourceChange({ intensity: parseFloat(e.target.value) })}
                   className="w-16 h-1"
-                  title="Intensidad"
+                  title={t('dm.lightIntensityTitle', 'Intensidad')}
                 />
                 <span className="w-7">{selectedLight.source.intensity.toFixed(2)}</span>
               </label>
               <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
-                range
+                {t('dm.lightRange', 'range')}
                 <input
                   type="range"
                   min={0.0001}
@@ -2561,7 +2563,7 @@ export default function DmDashboard() {
                   value={selectedLight.source.radius}
                   onChange={(e) => handleLightSourceChange({ radius: parseFloat(e.target.value) })}
                   className="w-16 h-1"
-                  title="Alcance"
+                  title={t('dm.lightRangeTitle', 'Alcance')}
                 />
                 <input
                   type="number"
@@ -2571,11 +2573,11 @@ export default function DmDashboard() {
                   value={selectedLight.source.radius}
                   onChange={(e) => handleLightSourceChange({ radius: parseFloat(e.target.value) || 0.0001 })}
                   className="w-14 h-4 text-[9px] bg-[var(--bg-tertiary)] border border-[var(--bg-tertiary)] rounded px-1 text-[var(--text-primary)] font-mono"
-                  title="Alcance (escribí el valor exacto)"
+                  title={t('dm.lightRangeExactTitle', 'Alcance (escribí el valor exacto)')}
                 />
               </label>
               <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
-                {selectedLight.source.mode === 'hard' ? 'edge' : 'falloff'}
+                {selectedLight.source.mode === 'hard' ? t('dm.lightEdge', 'edge') : t('dm.lightFalloff', 'falloff')}
                 <input
                   type="range"
                   min={0.1}
@@ -2584,7 +2586,7 @@ export default function DmDashboard() {
                   value={selectedLight.source.falloff ?? (selectedLight.source.mode === 'hard' ? 1 : 0.6)}
                   onChange={(e) => handleLightSourceChange({ falloff: parseFloat(e.target.value) })}
                   className="w-14 h-1"
-                  title={selectedLight.source.mode === 'hard' ? 'Posición del borde brillante' : 'Caída brillante→tenue'}
+                  title={selectedLight.source.mode === 'hard' ? t('dm.lightEdgeTitle', 'Posición del borde brillante') : t('dm.lightFalloffTitle', 'Caída brillante→tenue')}
                 />
                 <span className="w-8">{(selectedLight.source.falloff ?? (selectedLight.source.mode === 'hard' ? 1 : 0.6)).toFixed(2)}</span>
               </label>
@@ -2594,9 +2596,9 @@ export default function DmDashboard() {
                     ? { flicker: undefined }
                     : { flicker: { speed: selectedLight.source.flicker?.speed ?? 0.3, variance: selectedLight.source.flicker?.variance ?? 0.1, enabled: true } })}
                   className={`cursor-pointer px-1.5 py-0.5 rounded transition-colors ${selectedLight.source.flicker?.enabled ? 'bg-amber-600 text-white' : 'hover:bg-[var(--bg-tertiary)]'}`}
-                  title="Parpadeo"
+                  title={t('dm.flickerTitle', 'Parpadeo')}
                 >
-                  ✨ flick
+                  {t('dm.flicker', '✨ flick')}
                 </span>
                 {selectedLight.source.flicker?.enabled && (
                   <>
@@ -2608,7 +2610,7 @@ export default function DmDashboard() {
                       value={selectedLight.source.flicker.speed}
                       onChange={(e) => handleLightSourceChange({ flicker: { speed: parseFloat(e.target.value), variance: selectedLight.source.flicker!.variance, enabled: true } })}
                       className="w-12 h-1"
-                      title="Velocidad de parpadeo (ciclos/seg)"
+                      title={t('dm.flickerSpeedTitle', 'Velocidad de parpadeo (ciclos/seg)')}
                     />
                     <input
                       type="range"
@@ -2618,7 +2620,7 @@ export default function DmDashboard() {
                       value={selectedLight.source.flicker.variance}
                       onChange={(e) => handleLightSourceChange({ flicker: { speed: selectedLight.source.flicker!.speed, variance: parseFloat(e.target.value), enabled: true } })}
                       className="w-12 h-1"
-                      title="Variación de parpadeo (oscilación de intensidad)"
+                      title={t('dm.flickerVarTitle', 'Variación de parpadeo (oscilación de intensidad)')}
                     />
                   </>
                 )}
@@ -2629,9 +2631,9 @@ export default function DmDashboard() {
                     ? { pulse: undefined }
                     : { pulse: { speed: selectedLight.source.pulse?.speed ?? 0.6, variance: selectedLight.source.pulse?.variance ?? 0.2, enabled: true } })}
                   className={`cursor-pointer px-1.5 py-0.5 rounded transition-colors ${selectedLight.source.pulse?.enabled ? 'bg-amber-600 text-white' : 'hover:bg-[var(--bg-tertiary)]'}`}
-                  title="Pulso"
+                  title={t('dm.pulseTitle', 'Pulso')}
                 >
-                  🔶 pulse
+                  {t('dm.pulse', '🔶 pulse')}
                 </span>
                 {selectedLight.source.pulse?.enabled && (
                   <>
@@ -2643,7 +2645,7 @@ export default function DmDashboard() {
                       value={selectedLight.source.pulse.speed}
                       onChange={(e) => handleLightSourceChange({ pulse: { speed: parseFloat(e.target.value), variance: selectedLight.source.pulse!.variance, enabled: true } })}
                       className="w-12 h-1"
-                      title="Velocidad del pulso (ciclos/seg)"
+                      title={t('dm.pulseSpeedTitle', 'Velocidad del pulso (ciclos/seg)')}
                     />
                     <input
                       type="range"
@@ -2653,7 +2655,7 @@ export default function DmDashboard() {
                       value={selectedLight.source.pulse.variance}
                       onChange={(e) => handleLightSourceChange({ pulse: { speed: selectedLight.source.pulse!.speed, variance: parseFloat(e.target.value), enabled: true } })}
                       className="w-12 h-1"
-                      title="Variación del pulso (oscilación de intensidad)"
+                      title={t('dm.pulseVarTitle', 'Variación del pulso (oscilación de intensidad)')}
                     />
                   </>
                 )}
@@ -2661,7 +2663,7 @@ export default function DmDashboard() {
               {selectedLight.source.mode === 'directional' && (
                 <>
                   <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
-                    angle
+                    {t('dm.lightAngle', 'angle')}
                     <input
                       type="range"
                       min={5}
@@ -2670,12 +2672,12 @@ export default function DmDashboard() {
                       value={selectedLight.source.angle ?? 90}
                       onChange={(e) => handleLightSourceChange({ angle: parseFloat(e.target.value) })}
                       className="w-14 h-1"
-                      title="Ángulo del cono"
+                      title={t('dm.lightAngleTitle', 'Ángulo del cono')}
                     />
                     <span className="w-8">{selectedLight.source.angle ?? 90}°</span>
                   </label>
                   <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
-                    dir
+                    {t('dm.lightDir', 'dir')}
                     <input
                       type="range"
                       min={0}
@@ -2684,7 +2686,7 @@ export default function DmDashboard() {
                       value={selectedLight.source.direction ?? 0}
                       onChange={(e) => handleLightSourceChange({ direction: parseFloat(e.target.value) })}
                       className="w-14 h-1"
-                      title="Dirección del cono"
+                      title={t('dm.lightDirTitle', 'Dirección del cono')}
                     />
                     <span className="w-8">{selectedLight.source.direction ?? 0}°</span>
                   </label>
@@ -2696,37 +2698,37 @@ export default function DmDashboard() {
 
         {/* Rail derecho contextual — capas y niebla (Mesa) */}
         <div className="absolute right-2 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-1 w-[185px] bg-[var(--bg-secondary)]/90 border border-[var(--bg-tertiary)] rounded-lg p-1.5 shadow-lg">
-          <div className="px-1.5 text-[10px] uppercase tracking-wide text-[var(--text-secondary)]">Capas</div>
+          <div className="px-1.5 text-[10px] uppercase tracking-wide text-[var(--text-secondary)]">{t('dm.layers', 'Capas')}</div>
           <button
             onClick={() => setShowZones((v) => !v)}
             className={`w-full text-xs px-2 py-1 rounded transition-colors text-left ${showZones ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)]' : 'bg-transparent text-[var(--text-secondary)]'}`}
-            title="Mostrar zonas"
+            title={t('dm.showZones', 'Mostrar zonas')}
             data-testid="zones-toggle"
           >
-            🧩 Zonas {showZones ? '●' : '○'}
+            {t('dm.zonesBtn', '🧩 Zonas')} {showZones ? '●' : '○'}
           </button>
           <div className="border-t border-[var(--bg-tertiary)] my-1" />
-          <div className="px-1.5 text-[10px] uppercase tracking-wide text-[var(--text-secondary)]">Niebla</div>
+          <div className="px-1.5 text-[10px] uppercase tracking-wide text-[var(--text-secondary)]">{t('dm.fog', 'Niebla')}</div>
           <button
             onClick={startFogMode}
             className={`block w-full text-left px-2 py-1 text-xs rounded transition-colors ${fogMode ? 'text-amber-400 bg-[var(--bg-tertiary)]' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
-            title="Niebla (pincel)"
+            title={t('dm.fogBrushTitle', 'Niebla (pincel)')}
           >
-            🌫️ Niebla (pincel)
+            {t('dm.fogBrush', '🌫️ Niebla (pincel)')}
           </button>
           <button
             onClick={startRectFogMode}
             className={`block w-full text-left px-2 py-1 text-xs rounded transition-colors ${rectFogMode ? 'text-amber-400 bg-[var(--bg-tertiary)]' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
-            title="Niebla (rect)"
+            title={t('dm.fogRectTitle', 'Niebla (rect)')}
           >
-            ▭ Niebla (rect)
+            {t('dm.fogRect', '▭ Niebla (rect)')}
           </button>
           <button
             onClick={startZoneFogMode}
             className={`block w-full text-left px-2 py-1 text-xs rounded transition-colors ${zoneFogActive ? 'text-amber-400 bg-[var(--bg-tertiary)]' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
-            title="Niebla de zona (alternar)"
+            title={t('dm.fogZoneTitle', 'Niebla de zona (alternar)')}
           >
-            🧩 Niebla de zona (alternar)
+            {t('dm.fogZone', '🧩 Niebla de zona (alternar)')}
           </button>
         </div>
         {/* Dock inferior — acciones de sesión, colapsable */}
@@ -2741,49 +2743,49 @@ export default function DmDashboard() {
                 <button
                   onClick={() => setShowDiceRoller(!showDiceRoller)}
                   className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${showDiceRoller ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
-                  title="Tirar dados (D)"
+                  title={t('dm.diceTitle', 'Tirar dados (D)')}
                 >
                   🎲
                 </button>
                 <button
                   onClick={() => setShowInitiative(!showInitiative)}
                   className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${showInitiative ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
-                  title="Iniciativa"
+                  title={t('dm.initiativeTitle', 'Iniciativa')}
                 >
                   ⚔
                 </button>
                 <button
                   onClick={() => setShowNotebook(!showNotebook)}
                   className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${showNotebook ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
-                  title="Cuaderno del DM (N)"
+                  title={t('dm.notebookTitle', 'Cuaderno del DM (N)')}
                 >
                   📓
                 </button>
                 <button
                   onClick={() => setShowRecap(!showRecap)}
                   className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${showRecap ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
-                  title="Resumen de sesión (R)"
+                  title={t('dm.recapTitle', 'Resumen de sesión (R)')}
                 >
                   📋
                 </button>
                 <button
                   onClick={() => setShowCalendar(!showCalendar)}
                   className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${showCalendar ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
-                  title="Calendario y relojes"
+                  title={t('dm.calendarTitle', 'Calendario y relojes')}
                 >
                   📅
                 </button>
                 <button
                   onClick={() => setShowQuests(!showQuests)}
                   className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${showQuests ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
-                  title="Tablón de misiones"
+                  title={t('dm.questsTitle', 'Tablón de misiones')}
                 >
                   📜
                 </button>
                 <button
                   onClick={() => setShowHandouts(!showHandouts)}
                   className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${showHandouts ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
-                  title="Documentos para jugadores"
+                  title={t('dm.handoutsTitle', 'Documentos para jugadores')}
                   data-testid="handouts-toggle"
                 >
                   🗂
@@ -2795,7 +2797,7 @@ export default function DmDashboard() {
                       if (m) setViewingMap(m);
                     }}
                     className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
-                    title="Abrir mapa"
+                    title={t('dm.openMapTitle', 'Abrir mapa')}
                   >
                     🗺
                   </button>
@@ -2805,8 +2807,8 @@ export default function DmDashboard() {
                   <button
                     onClick={() => setDockMoreOpen((v) => !v)}
                     className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
-                    title="Más acciones"
-                    aria-label="Más acciones"
+                    title={t('dm.moreActions', 'Más acciones')}
+                    aria-label={t('dm.moreActions', 'Más acciones')}
                   >
                     ＋
                   </button>
@@ -2815,39 +2817,39 @@ export default function DmDashboard() {
                     <button
                       onClick={() => setShowAIPanel(!showAIPanel)}
                       className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs rounded transition-colors ${showAIPanel ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
-                      title="Configuración de IA"
+                      title={t('dm.aiPanelTitle', 'Configuración de IA')}
                       data-testid="ai-panel-button"
                     >
-                      🤖 Configuración de IA
+                      {t('dm.aiPanel', '🤖 Configuración de IA')}
                     </button>
                     <button
                       onClick={() => setShowAssistant(!showAssistant)}
                       className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs rounded transition-colors ${showAssistant ? 'bg-violet-700 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
-                      title="Asistente del DM"
+                      title={t('dm.assistantTitle', 'Asistente del DM')}
                       data-testid="dm-assistant-button"
                     >
-                      💬 Asistente del DM
+                      {t('dm.assistant', '💬 Asistente del DM')}
                     </button>
                     <button
                       onClick={() => setShowQuickActions(!showQuickActions)}
                       className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs rounded transition-colors ${showQuickActions ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
-                      title="Acciones rápidas"
+                      title={t('dm.quickActionsTitle', 'Acciones rápidas')}
                     >
-                      ⚡ Acciones rápidas
+                      {t('dm.quickActions', '⚡ Acciones rápidas')}
                     </button>
                     <button
                       onClick={() => setShowSessionLog(!showSessionLog)}
                       className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs rounded transition-colors ${showSessionLog ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
-                      title="Bitácora de sesión"
+                      title={t('dm.sessionLogTitle', 'Bitácora de sesión')}
                     >
-                      📋 Bitácora
+                      {t('dm.sessionLog', '📋 Bitácora')}
                     </button>
                     <button
                       onClick={() => setShowSceneNotes(!showSceneNotes)}
                       className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs rounded transition-colors ${showSceneNotes ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
-                      title="Notas de la escena"
+                      title={t('dm.sceneNotesTitle', 'Notas de la escena')}
                     >
-                      📝 Notas de la escena
+                      {t('dm.sceneNotes', '📝 Notas de la escena')}
                     </button>
                     </div>
                   )}
@@ -2857,8 +2859,8 @@ export default function DmDashboard() {
               <button
                 onClick={() => setDockExpanded(true)}
                 className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
-                title="Acciones del DM"
-                aria-label="Acciones del DM"
+                title={t('dm.dmActions', 'Acciones del DM')}
+                aria-label={t('dm.dmActions', 'Acciones del DM')}
               >
                 ⋯
               </button>
@@ -2880,7 +2882,7 @@ export default function DmDashboard() {
                   className="flex items-center gap-2 px-3 py-2 rounded text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/50 transition-colors"
                 >
                   <span className="text-xs opacity-60">◆</span>
-                  Resumen
+                  {t('dm.sideSummary', 'Resumen')}
                 </Link>
                 <Link
                   to={`/campaigns/${campaignId}/characters`}
@@ -2888,7 +2890,7 @@ export default function DmDashboard() {
                   className="flex items-center gap-2 px-3 py-2 rounded text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/50 transition-colors"
                 >
                   <span className="text-xs opacity-60">♦</span>
-                  Personajes
+                  {t('dm.sideCharacters', 'Personajes')}
                 </Link>
                 <Link
                   to={`/campaigns/${campaignId}/sessions`}
@@ -2896,7 +2898,7 @@ export default function DmDashboard() {
                   className="flex items-center gap-2 px-3 py-2 rounded text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/50 transition-colors"
                 >
                   <span className="text-xs opacity-60">♠</span>
-                  Sesiones
+                  {t('dm.sideSessions', 'Sesiones')}
                 </Link>
                 <Link
                   to={`/campaigns/${campaignId}/scenes`}
@@ -2904,7 +2906,7 @@ export default function DmDashboard() {
                   className="flex items-center gap-2 px-3 py-2 rounded text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/50 transition-colors"
                 >
                   <span className="text-xs opacity-60">▣</span>
-                  Escenas
+                  {t('dm.sideScenes', 'Escenas')}
                 </Link>
                 <Link
                   to={`/campaigns/${campaignId}/events`}
@@ -2912,7 +2914,7 @@ export default function DmDashboard() {
                   className="flex items-center gap-2 px-3 py-2 rounded text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/50 transition-colors"
                 >
                   <span className="text-xs opacity-60">•</span>
-                  Eventos
+                  {t('dm.sideEvents', 'Eventos')}
                 </Link>
                 <Link
                   to={`/campaigns/${campaignId}/players`}
@@ -2920,7 +2922,7 @@ export default function DmDashboard() {
                   className="flex items-center gap-2 px-3 py-2 rounded text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/50 transition-colors"
                 >
                   <span className="text-xs opacity-60">○</span>
-                  Jugadores
+                  {t('dm.sidePlayers', 'Jugadores')}
                 </Link>
                 <Link
                   to={`/campaigns/${campaignId}/maps`}
@@ -2928,7 +2930,7 @@ export default function DmDashboard() {
                   className="flex items-center gap-2 px-3 py-2 rounded text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/50 transition-colors"
                 >
                   <span className="text-xs opacity-60">◇</span>
-                  Imágenes
+                  {t('dm.sideMaps', 'Imágenes')}
                 </Link>
                 <Link
                   to={`/campaigns/${campaignId}/assets`}
@@ -2936,11 +2938,11 @@ export default function DmDashboard() {
                   className="flex items-center gap-2 px-3 py-2 rounded text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/50 transition-colors"
                 >
                   <span className="text-xs opacity-60">□</span>
-                  Recursos
+                  {t('dm.sideAssets', 'Recursos')}
                 </Link>
               </nav>
               <div className="px-4 py-3 border-t border-[var(--bg-tertiary)]">
-                <p className="text-[10px] text-[var(--text-secondary)] opacity-60">Panel del DM</p>
+                <p className="text-[10px] text-[var(--text-secondary)] opacity-60">{t('dm.dmPanel', 'Panel del DM')}</p>
               </div>
             </aside>
           </>
@@ -2954,7 +2956,7 @@ export default function DmDashboard() {
           {activeScene?.background_path ? (
             <Suspense fallback={
               <div className="w-full h-full flex items-center justify-center text-[var(--text-secondary)]">
-                Cargando escena 3D...
+                {t('dm.loadingScene3d', 'Cargando escena 3D...')}
               </div>
             }>
               <SceneRenderer
@@ -2965,7 +2967,7 @@ export default function DmDashboard() {
                   return {
                     id: sc.id,
                     sceneCharId: sc.id,
-                    name: ent?.name || 'Desconocido',
+                    name: ent?.name || t('dm.unknown', 'Desconocido'),
                     type: sc.entity_type,
                     x: interpolated ? interpolated.x : sc.x,
                     y: sc.y,
@@ -3035,24 +3037,24 @@ export default function DmDashboard() {
           ) : (
             <div className="w-full h-full flex items-center justify-center text-[var(--text-secondary)]">
               <div className="text-center">
-                <p className="text-lg mb-2">Sin escena seleccionada</p>
+                <p className="text-lg mb-2">{t('dm.noSceneSelected', 'Sin escena seleccionada')}</p>
                 <p className="text-sm">
                   {scenes.length === 0
-                    ? 'Creá una escena para empezar.'
-                    : 'Seleccioná una escena o subí un fondo de mapa.'}
+                    ? t('dm.noSceneCreate', 'Creá una escena para empezar.')
+                    : t('dm.noSceneSelect', 'Seleccioná una escena o subí un fondo de mapa.')}
                 </p>
               </div>
             </div>
           )}
           {lightRequests.length > 0 && (
             <div onPointerDown={(e) => e.stopPropagation()} className="absolute top-3 right-3 z-10 bg-[var(--bg-primary)]/90 backdrop-blur border border-[var(--bg-tertiary)] rounded-lg p-2 w-60 max-h-48 overflow-y-auto shadow-lg">
-              <p className="text-xs font-medium text-[var(--text-primary)] mb-1.5 px-1">🕯️ Peticiones de luz</p>
+              <p className="text-xs font-medium text-[var(--text-primary)] mb-1.5 px-1">{t('dm.lightRequests', '🕯️ Peticiones de luz')}</p>
               <ul className="space-y-1.5">
                 {lightRequests.map((r) => (
                   <li key={r.id} className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
-                    <span className="truncate flex-1" title={`${r.character_name} pide luz`}>{r.character_name}</span>
-                    <button onClick={() => handleGrantLight(r)} className="px-1.5 py-0.5 rounded bg-emerald-600/80 text-white hover:bg-emerald-500 transition-colors" title="Entregar antorcha">🔦</button>
-                    <button onClick={() => handleDenyLight(r)} className="px-1.5 py-0.5 rounded bg-gray-700 text-gray-400 hover:text-white transition-colors" title="Denegar">✕</button>
+                    <span className="truncate flex-1" title={t('dm.lightRequestTitle', '{{name}} pide luz', { name: r.character_name })}>{r.character_name}</span>
+                    <button onClick={() => handleGrantLight(r)} className="px-1.5 py-0.5 rounded bg-emerald-600/80 text-white hover:bg-emerald-500 transition-colors" title={t('dm.grantTorch', 'Entregar antorcha')}>🔦</button>
+                    <button onClick={() => handleDenyLight(r)} className="px-1.5 py-0.5 rounded bg-gray-700 text-gray-400 hover:text-white transition-colors" title={t('dm.deny', 'Denegar')}>✕</button>
                   </li>
                 ))}
               </ul>
@@ -3070,19 +3072,19 @@ export default function DmDashboard() {
               const dz = to.z - from.z;
               const dist = Math.sqrt(dx * dx + dz * dz);
               const gridSize = activeScene?.grid_size ?? 0;
-              const squares = gridSize > 0 ? ` (${(dist / gridSize).toFixed(1)} squares)` : '';
+              const squares = gridSize > 0 ? t('dm.squares', ' ({{n}} casillas)', { n: (dist / gridSize).toFixed(1) }) : '';
               return (
                 <div className="mb-2 px-2 py-1 bg-[var(--accent)]/20 rounded text-[10px] text-[var(--accent)] text-center">
-                  Distance: {dist.toFixed(2)} units{squares}
+                  {t('dm.distance', 'Distancia: {{v}} unidades{{sq}}', { v: dist.toFixed(2), sq: squares })}
                 </div>
               );
             })()}
             {distanceFrom && !distanceTo && (
               <div className="mb-2 px-2 py-1 bg-[var(--bg-tertiary)] rounded text-[10px] text-[var(--text-secondary)] text-center">
-                Shift+click another token to measure
+                {t('dm.measureHint', 'Shift+clic en otro token para medir')}
               </div>
             )}
-            <p className="text-[10px] text-[var(--text-secondary)] mb-1 px-1">On Scene ({sceneChars.length})</p>
+            <p className="text-[10px] text-[var(--text-secondary)] mb-1 px-1">{t('dm.onScene', 'En escena ({{n}})', { n: sceneChars.length })}</p>
             {sceneChars.length > 0 ? (
               <div className="space-y-0.5 mb-2">
                 {sceneChars.map((sc) => {
@@ -3113,19 +3115,19 @@ export default function DmDashboard() {
                               sc.entity_type === 'npc' ? '#facc15' : '#94a3b8',
                           }}
                         />
-                        <span className="truncate">{ent?.name || 'Unknown'}</span>
+                        <span className="truncate">{ent?.name || t('dm.unknown', 'Desconocido')}</span>
                       </button>
                       <button
                         onClick={() => handleToggleVisibility(sc.id)}
                         className="text-[10px] opacity-50 hover:opacity-100 shrink-0"
-                        title={sc.visible ? 'Hide' : 'Show'}
+                        title={sc.visible ? t('dm.hideShort', 'Ocultar') : t('dm.showShort', 'Mostrar')}
                       >
                         {sc.visible ? '👁' : '🚫'}
                       </button>
                       <button
                         onClick={() => handleRemoveFromScene(sc.id)}
                         className="text-red-400 hover:text-red-300 text-[10px] shrink-0"
-                        title="Quitar"
+                        title={t('dm.removeShort', 'Quitar')}
                       >
                         ×
                       </button>
@@ -3134,15 +3136,15 @@ export default function DmDashboard() {
                 })}
               </div>
             ) : (
-              <p className="text-[10px] text-[var(--text-secondary)] px-1 mb-2">Sin tokens colocados</p>
+              <p className="text-[10px] text-[var(--text-secondary)] px-1 mb-2">{t('dm.noTokens', 'Sin tokens colocados')}</p>
             )}
 
             {/* Disponibles entities to add */}
             {allEntities.filter((e) => !new Set(sceneChars.map((sc) => sc.entity_id)).has(e.id)).length > 0 && (
               <>
-                <p className="text-[10px] text-[var(--text-secondary)] mb-1 px-1">Disponibles</p>
+                <p className="text-[10px] text-[var(--text-secondary)] mb-1 px-1">{t('dm.available', 'Disponibles')}</p>
                 {placingToken && (
-                  <p className="text-[9px] text-amber-400 mb-1 px-1">Hacé clic en el mapa para colocar (Esc cancela)</p>
+                  <p className="text-[9px] text-amber-400 mb-1 px-1">{t('dm.placeHint', 'Hacé clic en el mapa para colocar (Esc cancela)')}</p>
                 )}
                 <div className="space-y-0.5 max-h-32 overflow-y-auto">
                   {allEntities
@@ -3162,7 +3164,7 @@ export default function DmDashboard() {
                       >
                         <span className="text-[var(--accent)]">+</span>
                         <span className="truncate">{ent.name}</span>
-                        <span className="ml-auto text-[9px] opacity-40" title="Arrastrá al mapa o hacé clic para colocar">↗</span>
+                        <span className="ml-auto text-[9px] opacity-40" title={t('dm.dragPlace', 'Arrastrá al mapa o hacé clic para colocar')}>↗</span>
                       </button>
                     ))}
                 </div>
@@ -3172,7 +3174,7 @@ export default function DmDashboard() {
             {/* Recursos del DM — arrastrá al mapa para colocar */}
             {assets.length > 0 && (
               <>
-                <p className="text-[10px] text-[var(--text-secondary)] mb-1 px-1 mt-2">Recursos ({assets.length})</p>
+                <p className="text-[10px] text-[var(--text-secondary)] mb-1 px-1 mt-2">{t('dm.assets', 'Recursos ({{n}})', { n: assets.length })}</p>
                 <div className="grid grid-cols-4 gap-1 max-h-24 overflow-y-auto">
                   {assets.map((a) => (
                     <div
@@ -3186,7 +3188,7 @@ export default function DmDashboard() {
                         e.dataTransfer.effectAllowed = 'copy';
                       }}
                       className="aspect-square rounded overflow-hidden border border-[var(--bg-tertiary)] hover:border-[var(--accent)] transition-colors cursor-grab"
-                      title={`${a.name} (arrastrá al mapa)`}
+                      title={t('dm.assetDrag', '{{name}} (arrastrá al mapa)', { name: a.name })}
                     >
                       <img
                         src={staticUrl(a.file_path)!}
@@ -3209,7 +3211,7 @@ export default function DmDashboard() {
               return (
                 <div className="mt-2 pt-2 border-t border-[var(--bg-tertiary)]">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] text-[var(--text-secondary)]">Tamaño</span>
+                    <span className="text-[10px] text-[var(--text-secondary)]">{t('dm.tokenSize', 'Tamaño')}</span>
                     <span className="text-[10px] text-[var(--accent)] font-mono">{(sc.token_scale ?? 1).toFixed(1)}x</span>
                   </div>
                   <input
@@ -3235,9 +3237,9 @@ export default function DmDashboard() {
                     }}
                     className="w-full h-1 accent-[var(--accent)]"
                   />
-                  <p className="text-[9px] text-[var(--text-secondary)] mt-0.5 truncate">{ent?.name || 'Unknown'}</p>
+                  <p className="text-[9px] text-[var(--text-secondary)] mt-0.5 truncate">{ent?.name || t('dm.unknown', 'Desconocido')}</p>
                   <div className="flex items-center justify-between mb-1 mt-2">
-                    <span className="text-[10px] text-[var(--text-secondary)]">Orientación</span>
+                    <span className="text-[10px] text-[var(--text-secondary)]">{t('dm.tokenFacing', 'Orientación')}</span>
                     <span className="text-[10px] text-[var(--accent)] font-mono">{Math.round(((sc.facing_offset ?? 0) * 180) / Math.PI)}°</span>
                   </div>
                   <input
@@ -3266,7 +3268,7 @@ export default function DmDashboard() {
                 {/* Vision Type */}
                 <div className="mb-3">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] text-[var(--text-secondary)]">Tipo de visión</span>
+                    <span className="text-[10px] text-[var(--text-secondary)]">{t('dm.visionType', 'Tipo de visión')}</span>
                     <span className="text-[10px] text-[var(--accent)] font-mono">{sc.vision_type ?? 'normal'}</span>
                   </div>
                   <select
@@ -3288,16 +3290,16 @@ export default function DmDashboard() {
                     }}
                     className="w-full bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-[10px] rounded px-1 py-0.5 border border-[var(--border)]"
                   >
-                    <option value="normal">Normal</option>
-                    <option value="darkvision">Visión en la oscuridad</option>
-                    <option value="blindsight">Sentido ciego</option>
-                    <option value="tremorsense">Sentido de vibración</option>
-                    <option value="truesight">Visión verdadera</option>
+                    <option value="normal">{t('dm.visionNormal', 'Normal')}</option>
+                    <option value="darkvision">{t('dm.visionDarkvision', 'Visión en la oscuridad')}</option>
+                    <option value="blindsight">{t('dm.visionBlindsight', 'Sentido ciego')}</option>
+                    <option value="tremorsense">{t('dm.visionTremorsense', 'Sentido de vibración')}</option>
+                    <option value="truesight">{t('dm.visionTruesight', 'Visión verdadera')}</option>
                   </select>
                 </div>
                 <div className="mb-3">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] text-[var(--text-secondary)]">Alcance de visión</span>
+                    <span className="text-[10px] text-[var(--text-secondary)]">{t('dm.visionRange', 'Alcance de visión')}</span>
                     <span className="text-[10px] text-[var(--accent)] font-mono">{(sc.vision_range ?? 6.0).toFixed(1)}</span>
                   </div>
                   <input
@@ -3524,7 +3526,7 @@ export default function DmDashboard() {
           x={lightContextMenu.x}
           y={lightContextMenu.y}
           items={[
-            { label: 'Eliminar luz', icon: '🗑️', danger: true, onClick: () => handleDeleteItem(lightContextMenu.itemId) },
+            { label: t('dm.deleteLight', 'Eliminar luz'), icon: '🗑️', danger: true, onClick: () => handleDeleteItem(lightContextMenu.itemId) },
           ]}
           onClose={() => setLightContextMenu(null)}
         />
@@ -3535,7 +3537,7 @@ export default function DmDashboard() {
           x={fogContextMenu.x}
           y={fogContextMenu.y}
           items={[
-            { label: 'Eliminar región de niebla', icon: '🗑️', danger: true, onClick: () => handleDeleteItem(fogContextMenu.itemId) },
+            { label: t('dm.deleteFogRegion', 'Eliminar región de niebla'), icon: '🗑️', danger: true, onClick: () => handleDeleteItem(fogContextMenu.itemId) },
           ]}
           onClose={() => setFogContextMenu(null)}
         />
@@ -3552,46 +3554,46 @@ export default function DmDashboard() {
               value={cmdQuery}
               onChange={(e) => setCmdQuery(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Escape') setCmdOpen(false); }}
-              placeholder="Buscar acción… (Ctrl+K)"
+              placeholder={t('dm.cmdPlaceholder', 'Buscar acción… (Ctrl+K)')}
               className="w-full bg-transparent px-4 py-3 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-secondary)]/60"
             />
             <div className="max-h-72 overflow-y-auto border-t border-[var(--bg-tertiary)]">
               {(() => {
                 const q = cmdQuery.trim().toLowerCase();
                 const links = [
-                  { label: 'VTT', icon: '◆', to: `/campaigns/${campaignId}` },
-                  { label: 'Resumen de la campaña', icon: '◇', to: `/campaigns/${campaignId}/manage` },
-                  { label: 'Personajes', icon: '♦', to: `/campaigns/${campaignId}/characters` },
-                  { label: 'Sesiones', icon: '♠', to: `/campaigns/${campaignId}/sessions` },
-                  { label: 'Escenas', icon: '▣', to: `/campaigns/${campaignId}/scenes` },
-                  { label: 'Narrativa', icon: '✒', to: `/campaigns/${campaignId}/narrative` },
-                  { label: 'Jugadores', icon: '○', to: `/campaigns/${campaignId}/players` },
-                  { label: 'Imágenes', icon: '◇', to: `/campaigns/${campaignId}/maps` },
-                  { label: 'Recursos', icon: '□', to: `/campaigns/${campaignId}/assets` },
-                  { label: 'Voz (TTS)', icon: '♪', to: `/campaigns/${campaignId}/tts` },
-                  { label: 'Agentes', icon: '🤖', to: `/campaigns/${campaignId}/agents` },
-                  { label: 'Estado del mundo', icon: '🌍', to: `/campaigns/${campaignId}/world-state` },
-                  { label: 'Memoria', icon: '🧠', to: `/campaigns/${campaignId}/memory` },
+                  { label: t('dm.cmdVtt', 'VTT'), icon: '◆', to: `/campaigns/${campaignId}` },
+                  { label: t('dm.cmdCampaignSummary', 'Resumen de la campaña'), icon: '◇', to: `/campaigns/${campaignId}/manage` },
+                  { label: t('dm.sideCharacters', 'Personajes'), icon: '♦', to: `/campaigns/${campaignId}/characters` },
+                  { label: t('dm.sideSessions', 'Sesiones'), icon: '♠', to: `/campaigns/${campaignId}/sessions` },
+                  { label: t('dm.sideScenes', 'Escenas'), icon: '▣', to: `/campaigns/${campaignId}/scenes` },
+                  { label: t('dm.cmdNarrative', 'Narrativa'), icon: '✒', to: `/campaigns/${campaignId}/narrative` },
+                  { label: t('dm.sidePlayers', 'Jugadores'), icon: '○', to: `/campaigns/${campaignId}/players` },
+                  { label: t('dm.sideMaps', 'Imágenes'), icon: '◇', to: `/campaigns/${campaignId}/maps` },
+                  { label: t('dm.sideAssets', 'Recursos'), icon: '□', to: `/campaigns/${campaignId}/assets` },
+                  { label: t('dm.cmdTts', 'Voz (TTS)'), icon: '♪', to: `/campaigns/${campaignId}/tts` },
+                  { label: t('dm.cmdAgents', 'Agentes'), icon: '🤖', to: `/campaigns/${campaignId}/agents` },
+                  { label: t('dm.cmdWorldState', 'Estado del mundo'), icon: '🌍', to: `/campaigns/${campaignId}/world-state` },
+                  { label: t('dm.cmdMemory', 'Memoria'), icon: '🧠', to: `/campaigns/${campaignId}/memory` },
                 ];
                 const actions = [
-                  { label: 'Tirar dados', icon: '🎲', run: () => setShowDiceRoller((v) => !v) },
-                  { label: 'Iniciativa', icon: '⚔', run: () => setShowInitiative((v) => !v) },
-                  { label: 'Cuaderno del DM', icon: '📓', run: () => setShowNotebook((v) => !v) },
-                  { label: 'Resumen de sesión', icon: '📋', run: () => setShowRecap((v) => !v) },
-                  { label: 'Calendario y relojes', icon: '📅', run: () => setShowCalendar((v) => !v) },
-                  { label: 'Tablón de misiones', icon: '📜', run: () => setShowQuests((v) => !v) },
-                  { label: 'Documentos para jugadores', icon: '🗂', run: () => setShowHandouts((v) => !v) },
-                  { label: 'Abrir mapa', icon: '🗺', run: () => {
+                  { label: t('dm.dice', 'Tirar dados'), icon: '🎲', run: () => setShowDiceRoller((v) => !v) },
+                  { label: t('dm.initiativeTitle', 'Iniciativa'), icon: '⚔', run: () => setShowInitiative((v) => !v) },
+                  { label: t('dm.notebook', 'Cuaderno del DM'), icon: '📓', run: () => setShowNotebook((v) => !v) },
+                  { label: t('dm.recap', 'Resumen de sesión'), icon: '📋', run: () => setShowRecap((v) => !v) },
+                  { label: t('dm.calendarTitle', 'Calendario y relojes'), icon: '📅', run: () => setShowCalendar((v) => !v) },
+                  { label: t('dm.questsTitle', 'Tablón de misiones'), icon: '📜', run: () => setShowQuests((v) => !v) },
+                  { label: t('dm.handoutsTitle', 'Documentos para jugadores'), icon: '🗂', run: () => setShowHandouts((v) => !v) },
+                  { label: t('dm.openMapTitle', 'Abrir mapa'), icon: '🗺', run: () => {
                     const m = maps.find((mm) => mm.id === activeScene?.map_id);
                     if (m) setViewingMap(m);
                   } },
-                  { label: 'Configuración de IA', icon: '🤖', run: () => setShowAIPanel((v) => !v) },
-                  { label: 'Asistente del DM', icon: '💬', run: () => setShowAssistant((v) => !v) },
-                  { label: 'Acciones rápidas', icon: '⚡', run: () => setShowQuickActions((v) => !v) },
-                  { label: 'Bitácora de sesión', icon: '📋', run: () => setShowSessionLog((v) => !v) },
-                  { label: 'Notas de la escena', icon: '📝', run: () => setShowSceneNotes((v) => !v) },
-                  { label: 'Ajustes de escena', icon: '⚙', run: () => setShowSceneSettings((v) => !v) },
-                  { label: 'Construir', icon: '🧱', run: () => setBuildMenuOpen(true) },
+                  { label: t('dm.aiPanelTitle', 'Configuración de IA'), icon: '🤖', run: () => setShowAIPanel((v) => !v) },
+                  { label: t('dm.assistantTitle', 'Asistente del DM'), icon: '💬', run: () => setShowAssistant((v) => !v) },
+                  { label: t('dm.quickActionsTitle', 'Acciones rápidas'), icon: '⚡', run: () => setShowQuickActions((v) => !v) },
+                  { label: t('dm.sessionLogTitle', 'Bitácora de sesión'), icon: '📋', run: () => setShowSessionLog((v) => !v) },
+                  { label: t('dm.sceneNotesTitle', 'Notas de la escena'), icon: '📝', run: () => setShowSceneNotes((v) => !v) },
+                  { label: t('dm.sceneSettingsTitle', 'Ajustes de escena'), icon: '⚙', run: () => setShowSceneSettings((v) => !v) },
+                  { label: t('dm.buildPlain', 'Construir'), icon: '🧱', run: () => setBuildMenuOpen(true) },
                 ];
                 const filtered = [
                   ...links.filter((l) => !q || l.label.toLowerCase().includes(q)).map((l) => (
@@ -3617,7 +3619,7 @@ export default function DmDashboard() {
                   )),
                 ];
                 return filtered.length > 0 ? filtered : (
-                  <p className="px-4 py-3 text-xs text-[var(--text-secondary)]">Sin resultados</p>
+                  <p className="px-4 py-3 text-xs text-[var(--text-secondary)]">{t('dm.noResults', 'Sin resultados')}</p>
                 );
               })()}
             </div>
