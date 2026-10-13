@@ -39,6 +39,13 @@ import DMNotebookHud from '@/components/DMNotebookHud';
 import AISettingsPanel from '@/components/AISettingsPanel';
 import DMAssistant from '@/components/DMAssistant';
 import AudioSettingsMenu from '@/components/AudioSettingsMenu';
+import {
+  getAudioSettings,
+  getSharedAudio,
+  normalizeSharedAudio,
+  setSharedAudio,
+  type AudioSettingKey,
+} from '@/lib/audioSettings';
 import SceneSettingsHud from '@/components/SceneSettingsHud';
 import ContextMenu, { ContextMenuItem } from '@/components/ContextMenu';
 import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastContainer';
@@ -225,6 +232,17 @@ export default function DmDashboard() {
       })
       .finally(() => setLoading(false));
   }, [campaignId]);
+
+  // Volumen de audio compartido: el DM lo publica en la campaña y llega acá al
+  // recargar. El efecto se re-ejecuta al persistir, pero setSharedAudio ignora
+  // los cambios idénticos (no entra en loop).
+  const campaignRef = useRef<Campaign | null>(null);
+  campaignRef.current = campaign;
+
+  useEffect(() => {
+    if (!campaign) return;
+    setSharedAudio(normalizeSharedAudio(campaign.settings_json?.audio));
+  }, [campaign]);
 
   useEffect(() => {
     if (!campaignId || !activeScene) return;
@@ -1285,6 +1303,45 @@ export default function DmDashboard() {
     }
   };
 
+  // Publica el volumen compartido en la campaña (solo cuando el DM sincroniza).
+  const persistSharedAudio = useCallback(async () => {
+    if (!campaignId) return;
+    const audio = getSharedAudio();
+    if (!audio) return;
+    try {
+      const updated = await api.campaigns.update(campaignId, {
+        settings_json: { ...(campaignRef.current?.settings_json ?? {}), audio },
+      });
+      setCampaign(updated);
+    } catch {
+      setToastQueue((prev) => [...prev.slice(-4), {
+        id: `audio-err-${Date.now()}`,
+        rollerName: i18n.t('dmToast.rollerSystem', 'Sistema'),
+        diceType: 1, count: 1, results: [1], total: 1,
+        label: i18n.t('dmToast.audioSyncFailed', 'No se pudo sincronizar el audio'),
+        timestamp: Date.now(),
+      }]);
+    }
+  }, [campaignId]);
+
+  const handleToggleAudioSync = useCallback((on: boolean) => {
+    const current = getSharedAudio();
+    if (on) {
+      // Al activar, empuja el volumen actual del DM a todos los POV.
+      const local = getAudioSettings();
+      setSharedAudio({ sync: true, master: local.master, weather: local.weather, dice: local.dice });
+    } else {
+      setSharedAudio(current ? { ...current, sync: false } : null);
+    }
+    void persistSharedAudio();
+  }, [persistSharedAudio]);
+
+  const handleSharedVolumeChange = useCallback((key: AudioSettingKey, value: number) => {
+    const base = getSharedAudio() ?? { sync: true, master: 1, weather: 0.8, dice: 0.8 };
+    setSharedAudio({ ...base, [key]: value, sync: true });
+    void persistSharedAudio();
+  }, [persistSharedAudio]);
+
   const weatherIntensityTimerRef = useRef<number>(0);
 
   const commitWeatherIntensity = useCallback(async (sceneId: string, value: number) => {
@@ -2196,7 +2253,12 @@ export default function DmDashboard() {
                 ))}
               </div>
             </div>
-            <AudioSettingsMenu className="ml-1" />
+            <AudioSettingsMenu
+              className="ml-1"
+              canSync
+              onToggleSync={handleToggleAudioSync}
+              onVolumeChange={handleSharedVolumeChange}
+            />
             <div className="relative shrink-0" data-menu-root>
               <button
                 onClick={(e) => toggleMenu('weather', e.currentTarget)}
@@ -2206,7 +2268,7 @@ export default function DmDashboard() {
                 data-testid="weather-select"
                 title={t('dm.weatherTitle', 'Clima de la escena')}
               >
-                {(activeScene?.weather && WEATHER_META[activeScene.weather] ? WEATHER_META[activeScene.weather].label : WEATHER_NONE_LABEL)} ▾
+                {(activeScene?.weather && WEATHER_META[activeScene.weather] ? t(`dm.weather.${activeScene.weather}`, WEATHER_META[activeScene.weather].label) : t('dm.weather.none', WEATHER_NONE_LABEL))} ▾
               </button>
               <div
                 role="menu"
@@ -2223,7 +2285,7 @@ export default function DmDashboard() {
                     !activeScene?.weather ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'
                   }`}
                 >
-                  {WEATHER_NONE_LABEL}
+                  {t('dm.weather.none', WEATHER_NONE_LABEL)}
                 </button>
                 {(['rain', 'snow', 'fog'] as const).map((kind) => {
                   const entries = Object.entries(WEATHER_META).filter(([, meta]) => meta.kind === kind);
@@ -2231,7 +2293,7 @@ export default function DmDashboard() {
                   return (
                     <div key={kind}>
                       <div className="px-3 pt-2 pb-0.5 text-[10px] uppercase tracking-wide text-[var(--text-secondary)] opacity-60">
-                        {WEATHER_KIND_LABEL[kind]}
+                        {t(`dm.weather.kind.${kind}`, WEATHER_KIND_LABEL[kind])}
                       </div>
                       {entries.map(([key, meta]) => (
                         <button
@@ -2242,7 +2304,7 @@ export default function DmDashboard() {
                             activeScene?.weather === key ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'
                           }`}
                         >
-                          {meta.label}
+                          {t(`dm.weather.${key}`, meta.label)}
                         </button>
                       ))}
                     </div>

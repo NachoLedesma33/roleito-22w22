@@ -1208,6 +1208,7 @@ async def join_by_invite_code(
         "audio_path": active_scene.audio_path if active_scene else None,
         "weather": active_scene.weather if active_scene else None,
         "weather_intensity": getattr(active_scene, 'weather_intensity', 1.0) if active_scene else 1.0,
+        "audio": (campaign.settings_json or {}).get("audio"),
         "lighting": lighting,
         "map_scale": getattr(active_scene, 'map_scale', 1.0) if active_scene else 1.0,
         "model_y_offset": getattr(active_scene, 'model_y_offset', 0.0) if active_scene else 0.0,

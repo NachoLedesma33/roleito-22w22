@@ -7,7 +7,10 @@
     "title": "Volumen del audio",
     "master": "General",
     "weather": "Clima",
-    "dice": "Dados"
+    "dice": "Dados",
+    "sync": "Sincronizar sonido",
+    "syncHint": "Aplica este volumen a todos los jugadores",
+    "syncedByDm": "Sincronizado por el DM"
   },
   "characterForm": {
     "attributes": "Atributos (VIDA)",
@@ -258,6 +261,21 @@
     "weatherMild": "Tenue",
     "weatherStrong": "Fuerte",
     "weatherTitle": "Clima de la escena",
+    "weather": {
+      "none": "🌤 Sin clima",
+      "rain": "🌧 Lluvia",
+      "rainDrizzle": "🌦 Llovizna",
+      "rainStorm": "⛈ Tormenta",
+      "snow": "❄ Nieve",
+      "snowBlizzard": "🌨 Ventisca",
+      "fog": "🌫 Niebla",
+      "fogDense": "🌁 Niebla densa",
+      "kind": {
+        "rain": "Lluvia",
+        "snow": "Nieve",
+        "fog": "Niebla"
+      }
+    },
     "weatherTorrential": "Torrencial",
     "zoneColor": "Color de zona",
     "zonePolygon": "⬠ Zona (polígono)",
@@ -312,6 +330,7 @@
     "rollerZoneFog": "Niebla de zona",
     "sceneSyncFailed": "No se pudo sincronizar la escena",
     "sceneSynced": "Escena \"{{name}}\" sincronizada con los jugadores",
+    "audioSyncFailed": "No se pudo sincronizar el audio",
     "torchGranted": "antorcha entregada a {{name}}",
     "wallsCleared": "paredes y puertas eliminadas",
     "wallsDetected": "paredes + {{doors}} puertas detectadas",

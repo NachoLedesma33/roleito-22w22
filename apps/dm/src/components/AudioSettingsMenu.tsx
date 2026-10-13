@@ -10,18 +10,37 @@ const ROWS: { key: AudioSettingKey; labelKey: string; fallback: string }[] = [
 ];
 
 const PANEL_W = 224; // w-56
-const PANEL_H = 176;
+const PANEL_H = 232;
+
+interface AudioSettingsMenuProps {
+  className?: string;
+  /** true en el DM: muestra el checkbox de sincronización. */
+  canSync?: boolean;
+  /** el DM activa/desactiva la sincronización. */
+  onToggleSync?: (synced: boolean) => void;
+  /** además de guardar local, persiste el valor compartido (solo con sync activo). */
+  onVolumeChange?: (key: AudioSettingKey, value: number) => void;
+}
 
 /**
  * Regulador de volumen compartido (DM y jugador): un master global mas un
  * control por canal, para que los sonidos no se tapen entre si. Los cambios se
  * persisten y se sincronizan entre pestanas (ver lib/audioSettings).
  *
+ * El DM puede tildar "Sincronizar sonido" para empujar su volumen a todos los
+ * jugadores; mientras esté sincronizado, los sliders del jugador quedan
+ * bloqueados siguiendo al DM.
+ *
  * El panel va en `position: fixed` con la posicion calculada desde el boton y
  * recortada al viewport: en la barra vertical izquierda del DM un `absolute`
  * se saldria por el borde de la pantalla y quedaria recortado.
  */
-export default function AudioSettingsMenu({ className = '' }: { className?: string }) {
+export default function AudioSettingsMenu({
+  className = '',
+  canSync = false,
+  onToggleSync,
+  onVolumeChange,
+}: AudioSettingsMenuProps) {
   const { t } = useTranslation();
   const settings = useAudioSettings();
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
@@ -30,6 +49,8 @@ export default function AudioSettingsMenu({ className = '' }: { className?: stri
 
   const open = pos !== null;
   const close = () => setPos(null);
+  // El jugador sigue al DM: no puede tocar los sliders mientras esté sincronizado.
+  const locked = settings.synced && !canSync;
 
   const openMenu = () => {
     const el = btnRef.current;
@@ -104,12 +125,41 @@ export default function AudioSettingsMenu({ className = '' }: { className?: stri
                 max={1}
                 step={0.01}
                 value={settings[r.key]}
-                onChange={(e) => setAudioVolume(r.key, Number(e.target.value))}
+                disabled={locked}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  setAudioVolume(r.key, v);
+                  if (settings.synced) onVolumeChange?.(r.key, v);
+                }}
                 data-testid={`audio-volume-${r.key}`}
-                className="w-full accent-[var(--accent)]"
+                className={`w-full accent-[var(--accent)] ${locked ? 'opacity-50 cursor-not-allowed' : ''}`}
               />
             </label>
           ))}
+          {canSync && (
+            <div className="pt-1 border-t border-[var(--bg-tertiary)]">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={settings.synced}
+                  onChange={(e) => onToggleSync?.(e.target.checked)}
+                  data-testid="audio-sync"
+                  className="accent-[var(--accent)]"
+                />
+                <span className="text-[11px] text-[var(--text-secondary)]">
+                  {t('audio.sync', 'Sincronizar sonido')}
+                </span>
+              </label>
+              <p className="text-[10px] text-[var(--text-secondary)] opacity-70 mt-0.5">
+                {t('audio.syncHint', 'Aplica este volumen a todos los jugadores')}
+              </p>
+            </div>
+          )}
+          {locked && (
+            <p className="text-[10px] text-[var(--text-secondary)] opacity-70" data-testid="audio-synced-note">
+              {t('audio.syncedByDm', 'Sincronizado por el DM')}
+            </p>
+          )}
         </div>
       )}
     </div>

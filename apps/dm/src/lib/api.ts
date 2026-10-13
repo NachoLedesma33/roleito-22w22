@@ -524,7 +524,7 @@ export const api = {
     get: (id: string) => request<Campaign>(`/campaigns/${id}`),
     create: (data: { name: string; description?: string }) =>
       request<Campaign>('/campaigns', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: Partial<Pick<Campaign, 'name' | 'description'>>) =>
+    update: (id: string, data: Partial<Pick<Campaign, 'name' | 'description' | 'settings_json'>>) =>
       request<Campaign>(`/campaigns/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: string) =>
       request<{ status: string; id: string }>(`/campaigns/${id}`, { method: 'DELETE' }),

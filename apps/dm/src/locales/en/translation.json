@@ -7,7 +7,10 @@
     "title": "Audio volume",
     "master": "Master",
     "weather": "Weather",
-    "dice": "Dice"
+    "dice": "Dice",
+    "sync": "Sync sound",
+    "syncHint": "Apply this volume to all players",
+    "syncedByDm": "Synced by the DM"
   },
   "characterForm": {
     "attributes": "VIDA Attributes",
@@ -258,6 +261,21 @@
     "weatherMild": "Mild",
     "weatherStrong": "Strong",
     "weatherTitle": "Scene weather",
+    "weather": {
+      "none": "🌤 Clear",
+      "rain": "🌧 Rain",
+      "rainDrizzle": "🌦 Drizzle",
+      "rainStorm": "⛈ Storm",
+      "snow": "❄ Snow",
+      "snowBlizzard": "🌨 Blizzard",
+      "fog": "🌫 Fog",
+      "fogDense": "🌁 Dense fog",
+      "kind": {
+        "rain": "Rain",
+        "snow": "Snow",
+        "fog": "Fog"
+      }
+    },
     "weatherTorrential": "Torrential",
     "zoneColor": "Zone color",
     "zonePolygon": "⬠ Zone (polygon)",
@@ -312,6 +330,7 @@
     "rollerZoneFog": "Zone fog",
     "sceneSyncFailed": "Could not sync the scene",
     "sceneSynced": "Scene \"{{name}}\" synced with players",
+    "audioSyncFailed": "Could not sync the audio",
     "torchGranted": "torch granted to {{name}}",
     "wallsCleared": "walls and doors removed",
     "wallsDetected": "walls + {{doors}} doors detected",

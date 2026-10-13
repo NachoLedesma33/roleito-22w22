@@ -23,6 +23,7 @@ import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastC
 import { api, type DiceRollResponse } from '@/lib/api';
 import { checkWallCollision, extractZonePolygons, extractPortals, crossZoneBorder } from '@/lib/wall-collision';
 import { computeVisionRegions, type CharPos } from '@/lib/playerVision';
+import { normalizeSharedAudio, setSharedAudio } from '@/lib/audioSettings';
 import type { SceneItem, VisionConfig } from '@core/domain/types';
 import type { FogRegion } from '@/lib/fogMask';
 import type { LosJob } from '@/lib/losWorker';
@@ -91,6 +92,7 @@ interface JoinData {
   audio_path: string | null;
   weather: string | null;
   weather_intensity?: number | null;
+  audio?: unknown;
   lighting: string;
   map_scale: number;
   model_y_offset: number;
@@ -293,8 +295,14 @@ export default function PlayerView() {
         setData(snap);
       }
     },
-    []
+    [],
   );
+
+  // Volumen de audio publicado por el DM: si está sincronizado, todos los POV
+  // siguen estos valores y los sliders del jugador quedan bloqueados.
+  useEffect(() => {
+    setSharedAudio(normalizeSharedAudio(data?.audio));
+  }, [data?.audio]);
 
   useEffect(() => {
     if (!code) return;
