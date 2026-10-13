@@ -242,6 +242,8 @@ export default function PlayerView() {
   const [askingLight, setAskingLight] = useState(false);
   const [imageAspect, setImageAspect] = useState(1);
   const myCharRef = useRef<MyChar | null>(null);
+  // Teclas activas (teclado + D-pad táctil). Compartido por el loop de movimiento.
+  const keysPressedRef = useRef(new Set<string>());
 
   const lastRevRef = useRef<string>('');
   const choiceRef = useRef<Choice>(null);
@@ -866,7 +868,7 @@ export default function PlayerView() {
     if (!c || c.kind !== 'character') return;
 
     const ROTATE_SPEED = Math.PI / 8;
-    const keysPressed = new Set<string>();
+    const keysPressed = keysPressedRef.current;
     let moveTimer: number;
 
     const applyMovement = async () => {
@@ -1189,6 +1191,18 @@ export default function PlayerView() {
   const invItems = myChar?.inventory_json ?? [];
   const myStatuses = data.characters.find((c) => c.id === mySceneCharId)?.statuses ?? [];
 
+  // D-pad táctil: alimenta el mismo Set que el teclado en el loop de movimiento.
+  const pad = (key: string) => ({
+    onPointerDown: (e: React.PointerEvent) => {
+      e.preventDefault();
+      keysPressedRef.current.add(key);
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    },
+    onPointerUp: () => keysPressedRef.current.delete(key),
+    onPointerCancel: () => keysPressedRef.current.delete(key),
+    onLostPointerCapture: () => keysPressedRef.current.delete(key),
+  });
+
   return (
     <main className="h-screen flex flex-col bg-black overflow-hidden select-none">
       <h1 className="sr-only">{t('pv.srTitle', 'Vista de jugador')}</h1>
@@ -1460,6 +1474,33 @@ export default function PlayerView() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {choice?.kind === 'character' && (
+          <div
+            data-testid="pv-touch-controls"
+            className="absolute bottom-4 left-4 z-10 hidden [@media(pointer:coarse)]:grid grid-cols-3 gap-1 select-none touch-none"
+          >
+            {[
+              { k: 'q', label: '↺', name: t('pv.rotateLeft', 'Girar a la izquierda') },
+              { k: 'w', label: '▲', name: t('pv.moveUp', 'Mover adelante') },
+              { k: 'e', label: '↻', name: t('pv.rotateRight', 'Girar a la derecha') },
+              { k: 'a', label: '◀', name: t('pv.moveLeft', 'Mover a la izquierda') },
+              { k: 's', label: '▼', name: t('pv.moveDown', 'Mover atrás') },
+              { k: 'd', label: '▶', name: t('pv.moveRight', 'Mover a la derecha') },
+            ].map((b) => (
+              <button
+                key={b.k}
+                type="button"
+                aria-label={b.name}
+                title={b.name}
+                {...pad(b.k)}
+                className="w-12 h-12 touch-none rounded-lg bg-black/60 backdrop-blur border border-[var(--bg-tertiary)] text-[var(--text-primary)] text-lg flex items-center justify-center active:bg-[var(--accent)]/50 active:border-[var(--accent)] transition-colors"
+              >
+                {b.label}
+              </button>
+            ))}
           </div>
         )}
 
