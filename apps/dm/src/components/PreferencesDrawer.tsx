@@ -71,7 +71,7 @@ export default function PreferencesDrawer({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md h-full max-h-full sm:max-h-full rounded-none right-0 left-auto top-0 translate-x-0 -translate-y-0 sm:translate-x-0 sm:translate-y-0 overflow-y-auto">
+      <DialogContent className="max-w-md h-full max-h-full sm:max-h-full rounded-none right-0 left-auto top-0 translate-x-0 -translate-y-0 sm:translate-x-0 sm:translate-y-0 overflow-y-auto max-sm:left-auto max-sm:top-0 max-sm:bottom-auto max-sm:max-h-full">
         <DialogHeader>
           <DialogTitle>{t('settings.title')}</DialogTitle>
           <DialogDescription>
