@@ -60,3 +60,6 @@ Luego solo los relevantes a la tarea. `scripts/check-docs-consistency.py` valida
 | `prototype` | Prototipo desechable para validar modelo de estado (canon, memoria) |
 | `grill-me` / `grill-with-docs` *(solo manual)* | Estresar plan antes de fase grande; ADRs a `docs/adr/` |
 | `find-skills` | Tarea recurrente sin skill conocida |
+| `playwright-best-practices` | Escribir/arreglar e2e `tests/e2e`: selectors, fixtures, flaky (`S2`, `CS8`), canvas/WebGL, mobile/touch |
+| `typescript-advanced-types` | TS strict: genéricos, narrowing, tipos de `apps/dm/src/lib/api.ts`, utilidades reutilizables |
+| `diagnosing-bugs` | Bugs duros / regresiones de perf (canvas `zone Z1/Z2`, `status S1`): loop de feedback antes de tocar código |
