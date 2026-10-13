@@ -18,7 +18,6 @@ from auth import (
     get_dm_by_id,
     is_any_dm_set,
     kill_session,
-    list_dms,
     record_failed_attempt,
     require_dm,
     verify_dm_pin,
@@ -50,12 +49,6 @@ class PinChangeRequest(BaseModel):
     new_pin: str = Field(..., min_length=4, max_length=8, pattern=r"^\d+$")
 
 
-class DMBrief(BaseModel):
-    id: str
-    name: str
-    created_at: str
-
-
 class SessionInfo(BaseModel):
     token: str
     role: str
@@ -77,12 +70,6 @@ class LoginResponse(BaseModel):
 async def auth_status():
     has_dms = await is_any_dm_set()
     return {"dms_registered": has_dms}
-
-
-@router.get("/dms")
-async def get_dms():
-    dms = await list_dms()
-    return [DMBrief(id=d.id, name=d.name, created_at=d.created_at.isoformat()) for d in dms]
 
 
 @router.post("/register", response_model=LoginResponse)

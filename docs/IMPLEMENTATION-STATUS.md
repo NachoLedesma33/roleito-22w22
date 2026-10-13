@@ -415,14 +415,15 @@ Based on dependency analysis and documentation completeness:
 
 | Priority | System | Rationale |
 |----------|--------|-----------|
-| 1 | Login profesional | Pedido del usuario: perfil + PIN contra el back, **sin listar todos los DMs** (hoy `PinLogin.tsx` tiene modo `select-dm` y lista `GET /api/auth/dms`). El back ya valida `dm_id` + PIN |
-| 2 | Mobile pass | Responsive real del dashboard y PlayerView (táctil) |
-| 3 | Filtros de clima por debajo del preset | Cierra fase 15 (chico, mismo archivo). Fuego y variantes de clima ya están hechos — ver sección 6 |
-| 4 | Menús con click-toggle | Reemplaza `hover()` (táctil); rompe `weather.spec` W1, hay que pasarlo a `click()` |
-| 5 | AI Map Analysis | Automation (IA diferida por el usuario) |
-| 6 | AI Agents reales | Fase 12 roadmap |
-| 7 | Voice input | Fase 13 |
+| 1 | Mobile pass | Responsive real del dashboard y PlayerView (táctil) |
+| 2 | Filtros de clima por debajo del preset | Cierra fase 15 (chico, mismo archivo). Fuego y variantes de clima ya están hechos — ver sección 6 |
+| 3 | Menús con click-toggle | Reemplaza `hover()` (táctil); rompe `weather.spec` W1, hay que pasarlo a `click()` |
+| 4 | AI Map Analysis | Automation (IA diferida por el usuario) |
+| 5 | AI Agents reales | Fase 12 roadmap |
+| 6 | Voice input | Fase 13 |
 
+> Login profesional **completado**: perfil + PIN contra el back, con perfiles guardados en el navegador (localStorage) — la pantalla ya no llama a `GET /api/auth/dms` (endpoint removido).
+>
 > Handouts a jugadores **completado** (fases 1 y 2) — ver sección 6.
 >
 > Real-time sync (WebSocket) completado en ambos sentidos (jugador + dashboard DM) — ver secciones 2 y 6.

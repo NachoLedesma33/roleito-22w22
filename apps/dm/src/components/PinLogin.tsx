@@ -21,7 +21,7 @@ const secondaryClass =
  */
 export default function PinLogin() {
   const { t } = useTranslation();
-  const { login, registerDm, changePin, dms } = useAuth();
+  const { login, registerDm, changePin, profiles } = useAuth();
   const [mode, setMode] = useState<Mode>('login');
   const [dmName, setDmName] = useState('');
   const [currentPin, setCurrentPin] = useState('');
@@ -120,19 +120,19 @@ export default function PinLogin() {
 
   const savedDms = (
     <div data-testid="login-saved-dms">
-      {dms.length > 0 ? (
+      {profiles.length > 0 ? (
         <>
           <p className="text-xs text-ink-muted mb-2 text-center">{t('login.savedProfiles', 'Perfiles en esta máquina')}</p>
           <div className="space-y-1.5">
-            {dms.map((dm) => (
+            {profiles.map((profile) => (
               <button
-                key={dm.id}
+                key={profile.id}
                 type="button"
-                onClick={() => { setDmName(dm.name); setError(''); }}
+                onClick={() => { setDmName(profile.name); setError(''); }}
                 data-testid="login-saved-dm"
                 className="w-full px-3 py-2 rounded-lg bg-surface-2 hover:bg-surface border border-border text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                <span className="block text-sm text-ink truncate">{dm.name}</span>
+                <span className="block text-sm text-ink truncate">{profile.name}</span>
               </button>
             ))}
           </div>
@@ -300,7 +300,7 @@ export default function PinLogin() {
           <button type="button" onClick={() => switchTo('register')} className={secondaryClass}>
             {t('login.createDm', 'Crear DM nuevo')}
           </button>
-          {dms.length > 0 && (
+          {profiles.length > 0 && (
             <button type="button" onClick={() => switchTo('change')} className={secondaryClass}>
               {t('login.changePin', 'Cambiar PIN')}
             </button>

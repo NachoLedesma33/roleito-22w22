@@ -36,19 +36,28 @@ test.describe('Login nombre + PIN', () => {
     expect(reg.ok()).toBeTruthy();
     const dm = (await reg.json()) as { dm_id: string };
 
+    // Registrar por API no deja nada en la pantalla: la lista de perfiles es
+    // local del navegador, no un `GET /auth/dms` que enumere la máquina.
+    await page.goto('/login');
+    await expect(page.getByTestId('login-saved-dms')).not.toContainText(name);
+
+    // Un login real guarda el perfil en este navegador.
+    await page.getByTestId('login-dm-name').fill(name);
+    await page.getByTestId('login-pin').fill('1234');
+    await page.getByTestId('login-submit').click();
+    await expect(page.getByTestId('login-submit')).toHaveCount(0, { timeout: 10_000 });
+
+    // Sin sesión, de nuevo en la entrada, aparece el perfil guardado.
+    await page.evaluate(() => sessionStorage.clear());
     await page.goto('/login');
     const card = page.getByTestId('login-saved-dms');
-    await expect(card).toContainText(name, { timeout: 10_000 });
+    await expect(card).toContainText(name);
 
     // El id interno es interno: no aparece en la pantalla.
     await expect(card).not.toContainText(dm.dm_id);
 
-    await card.getByRole('button', { name }).click();
+    await card.getByTestId('login-saved-dm').filter({ hasText: name }).click();
     await expect(page.getByTestId('login-dm-name')).toHaveValue(name);
-
-    await page.getByTestId('login-pin').fill('1234');
-    await page.getByTestId('login-submit').click();
-    await expect(page.getByTestId('login-submit')).toHaveCount(0, { timeout: 10_000 });
   });
 
   test('L3: campos vacíos, PIN corto y nombre inexistente no entran', async ({ page }) => {

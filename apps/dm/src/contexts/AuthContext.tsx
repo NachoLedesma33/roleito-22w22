@@ -1,12 +1,19 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 
 const API_BASE = '/api';
+const PROFILES_KEY = 'roleito:auth:profiles';
+const MAX_PROFILES = 10;
 
-interface DMBrief {
+/**
+ * Perfil ya usado en este navegador. El `id` es interno (dedupe); la pantalla
+ * muestra solo el nombre. La lista es local a propósito: si el login enumerara
+ * los DMs de la máquina, cualquiera vería los nombres de todos.
+ */
+interface DMProfile {
   id: string;
   name: string;
-  created_at: string;
 }
+
 
 interface Session {
   token: string;
@@ -21,30 +28,58 @@ interface Session {
 interface AuthContextType {
   session: Session | null;
   loading: boolean;
-  dms: DMBrief[];
+  profiles: DMProfile[];
   login: (name: string, pin: string) => Promise<void>;
   registerDm: (name: string, pin: string) => Promise<void>;
   changePin: (currentPin: string | undefined, newPin: string) => Promise<void>;
   logout: () => Promise<void>;
   getToken: () => string | null;
-  refreshDms: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+function readProfiles(): DMProfile[] {
+  try {
+    const raw = localStorage.getItem(PROFILES_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (p): p is DMProfile =>
+        !!p &&
+        typeof p === 'object' &&
+        typeof (p as DMProfile).id === 'string' &&
+        typeof (p as DMProfile).name === 'string',
+    );
+  } catch {
+    return [];
+  }
+}
+
+/** Guarda/actualiza `profile` al frente de la lista local (tope MAX_PROFILES). */
+function storeProfile(profile: DMProfile): DMProfile[] {
+  const next = [
+    profile,
+    ...readProfiles().filter((p) => p.id !== profile.id),
+  ].slice(0, MAX_PROFILES);
+  try {
+    localStorage.setItem(PROFILES_KEY, JSON.stringify(next));
+  } catch {
+    // localStorage lleno o bloqueado: la lista igual queda en memoria.
+  }
+  return next;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [dms, setDms] = useState<DMBrief[]>([]);
+  const [profiles, setProfiles] = useState<DMProfile[]>([]);
 
-  const refreshDms = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_BASE}/auth/dms`);
-      if (res.ok) setDms(await res.json());
-    } catch {}
+  const rememberProfile = useCallback((me: { dm_id: string; dm_name: string }) => {
+    setProfiles(storeProfile({ id: me.dm_id, name: me.dm_name }));
   }, []);
 
   useEffect(() => {
+    setProfiles(readProfiles());
     const stored = sessionStorage.getItem('roleito:auth:token');
     if (stored) {
       fetch(`${API_BASE}/auth/me`, {
@@ -61,13 +96,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           sessionStorage.removeItem('roleito:auth:token');
         })
         .finally(() => {
-          refreshDms();
           setLoading(false);
         });
     } else {
-      refreshDms().finally(() => setLoading(false));
+      setLoading(false);
     }
-  }, [refreshDms]);
+  }, []);
 
   const login = useCallback(async (name: string, pin: string) => {
     const res = await fetch(`${API_BASE}/auth/login`, {
@@ -86,7 +120,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     const me = await meRes.json();
     setSession({ ...me, token: data.token });
-  }, []);
+    rememberProfile(me);
+  }, [rememberProfile]);
 
   const registerDm = useCallback(async (name: string, pin: string) => {
     const res = await fetch(`${API_BASE}/auth/register`, {
@@ -105,8 +140,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     const me = await meRes.json();
     setSession({ ...me, token: data.token });
-    refreshDms();
-  }, [refreshDms]);
+    rememberProfile(me);
+  }, [rememberProfile]);
 
   const changePin = useCallback(async (currentPin: string | undefined, newPin: string) => {
     const body: Record<string, string> = { new_pin: newPin };
@@ -130,7 +165,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     const me = await meRes.json();
     setSession({ ...me, token: data.token });
-  }, []);
+    rememberProfile(me);
+  }, [rememberProfile]);
 
   const logout = useCallback(async () => {
     const token = sessionStorage.getItem('roleito:auth:token');
@@ -149,7 +185,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ session, loading, dms, login, registerDm, changePin, logout, getToken, refreshDms }}>
+    <AuthContext.Provider value={{ session, loading, profiles, login, registerDm, changePin, logout, getToken }}>
       {children}
     </AuthContext.Provider>
   );
