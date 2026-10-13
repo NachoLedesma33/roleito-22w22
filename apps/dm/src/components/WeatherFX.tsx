@@ -60,6 +60,8 @@ interface WeatherFXProps {
   mapWidth: number;
   mapHeight: number;
   intensity?: number | null;
+  /** false = el POV silenció el ambiente (el 🔇 del jugador): clima mudo, partículas siguen. */
+  weatherAudioEnabled?: boolean;
 }
 
 const TOP_Y = 6.5;
@@ -558,7 +560,7 @@ function buildWeatherVoice(ctx: AudioContext, weather: string): WeatherVoice {
  * solo cuando cambia el tipo de clima; la intensidad se aplica por rampa para
  * no reiniciar el audio en cada tick.
  */
-function WeatherAudio({ weather, intensity }: { weather: string; intensity: number }) {
+function WeatherAudio({ weather, intensity, enabled }: { weather: string; intensity: number; enabled: boolean }) {
   const voiceRef = useRef<WeatherVoice | null>(null);
   // Re-lee el volumen cuando cambia (el master global o el canal clima).
   const settings = useAudioSettings();
@@ -597,11 +599,11 @@ function WeatherAudio({ weather, intensity }: { weather: string; intensity: numb
   }, [weather]);
   useEffect(() => {
     try {
-      voiceRef.current?.setLevel(clampWeatherIntensity(intensity));
+      voiceRef.current?.setLevel(enabled ? clampWeatherIntensity(intensity) : 0);
     } catch {
       /* contexto ya cerrado */
     }
-  }, [intensity, settings.master, settings.weather]);
+  }, [intensity, settings.master, settings.weather, enabled]);
   return null;
 }
 
@@ -610,6 +612,7 @@ export default function WeatherFX({
   mapWidth,
   mapHeight,
   intensity = 1,
+  weatherAudioEnabled = true,
 }: WeatherFXProps) {
   const k = clampWeatherIntensity(intensity);
   // Se resuelve por id, no por switch: las variantes comparten componente y se
@@ -619,7 +622,7 @@ export default function WeatherFX({
   if (!meta) return null;
   const { kind, speed, density, grain } = meta;
   const shared = { mapWidth, mapHeight, intensity: k, speed, density, grain };
-  const audio = <WeatherAudio weather={weather as string} intensity={k} />;
+  const audio = <WeatherAudio weather={weather as string} intensity={k} enabled={weatherAudioEnabled} />;
   if (kind === 'rain') return <>{audio}<Rain {...shared} /></>;
   if (kind === 'snow') return <>{audio}<Snow {...shared} /></>;
   return <>{audio}<FogDrift {...shared} /></>;

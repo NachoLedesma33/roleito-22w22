@@ -55,6 +55,8 @@ interface SceneRendererProps {
   lighting?: string;
   weather?: string | null;
   weatherIntensity?: number | null;
+  /** false = POV silenciado: el audio del clima queda mudo (el 🔇 del jugador). */
+  weatherAudioEnabled?: boolean;
   selectedTokenId?: string | null;
   selectedItemIds?: string[];
   readOnly?: boolean;
@@ -2024,6 +2026,7 @@ export default function SceneRenderer({
   lighting = 'neutral',
   weather = null,
   weatherIntensity = null,
+  weatherAudioEnabled = true,
   selectedTokenId,
   selectedItemIds = [],
   readOnly = false,
@@ -2187,7 +2190,7 @@ export default function SceneRenderer({
           <SceneBackground url={backgroundUrl} mapScale={mapScale} modelYOffset={modelYOffset} />
         </Suspense>
         {weather && (
-          <WeatherFX weather={weather} mapWidth={mapWidth} mapHeight={mapHeight} intensity={weatherIntensityK} />
+          <WeatherFX weather={weather} mapWidth={mapWidth} mapHeight={mapHeight} intensity={weatherIntensityK} weatherAudioEnabled={weatherAudioEnabled} />
         )}
         {fireSpots.map((s) => (
           <FireSpot key={s.key} x={s.x} z={s.z} variant={s.variant} radius={s.radius} mapHeight={mapHeight} />

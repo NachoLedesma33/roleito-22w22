@@ -1389,6 +1389,7 @@ export default function PlayerView() {
               lighting={data.lighting}
               weather={data.weather ?? null}
               weatherIntensity={data.weather_intensity ?? 1}
+              weatherAudioEnabled={audioOn}
               mapScale={data.map_scale ?? 1}
               modelYOffset={data.model_y_offset ?? 0}
               items={data.items ?? []}
