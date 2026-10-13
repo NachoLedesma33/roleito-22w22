@@ -421,6 +421,7 @@ Based on dependency analysis and documentation completeness:
 | 4 | AI Map Analysis | Automation (IA diferida por el usuario) |
 | 5 | AI Agents reales | Fase 12 roadmap |
 | 6 | Voice input | Fase 13 |
+| 7 | REA (futuro, post-todo) | Docs reales otros VTT vía `rea-agents` externo; solo targets autorizados, reimplementación limpia |
 
 > Login profesional **completado**: perfil + PIN contra el back, con perfiles guardados en el navegador (localStorage) — la pantalla ya no llama a `GET /api/auth/dms` (endpoint removido).
 >
