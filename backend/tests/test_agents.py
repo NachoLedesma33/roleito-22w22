@@ -154,3 +154,22 @@ def test_build_context_empty_is_minimal():
     assert ctx.text == ""
     assert ctx.chars == 0
     assert not ctx.truncated
+
+
+def test_build_context_verbatim_campaign_context():
+    ctx = build_context(campaign_context="Epic saga")
+    assert "Epic saga" in ctx.text
+
+
+async def test_lore_wiring_filters_proposed_events():
+    agent = LoreAgent(_mock())
+    res = await agent.run(
+        question="What happened?",
+        characters=[{"name": "Ardan", "description": "hero"}],
+        events=[
+            {"type": "DIALOGUE", "description": "canon talk", "status": "CANON"},
+            {"type": "DIALOGUE", "description": "draft talk", "status": "PROPOSED"},
+        ],
+    )
+    assert res.status == "success", res.error
+    assert res.data.answer

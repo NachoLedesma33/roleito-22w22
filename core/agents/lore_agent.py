@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from core.agents.base import AgentResult, BaseAgent
+from core.agents.context_manager import build_context
 
 LORE_SYSTEM = """You are a tabletop RPG lore keeper. Given campaign context and a question, provide a helpful answer.
 
@@ -59,31 +60,14 @@ class LoreAgent(BaseAgent):
         if not question.strip():
             return self._error("No question provided")
 
-        context_parts = []
-        if campaign_context:
-            context_parts.append(f"Campaign: {campaign_context}")
-        if characters:
-            context_parts.append("Characters:\n" + "\n".join(
-                f"- {c.get('name', '?')}: {c.get('description', 'no description')}"
-                for c in characters
-            ))
-        if npcs:
-            context_parts.append("NPCs:\n" + "\n".join(
-                f"- {n.get('name', '?')}: {n.get('description', 'no description')}"
-                for n in npcs
-            ))
-        if locations:
-            context_parts.append("Locations:\n" + "\n".join(
-                f"- {l.get('name', '?')}: {l.get('description', 'no description')}"
-                for l in locations
-            ))
-        if events:
-            context_parts.append("Recent Events:\n" + "\n".join(
-                f"- [{e.get('type', '?')}] {e.get('description', '')}"
-                for e in events[-10:]  # last 10 events
-            ))
-
-        context_str = "\n\n".join(context_parts) if context_parts else "No campaign context available."
+        context = build_context(
+            campaign_context=campaign_context,
+            characters=characters,
+            npcs=npcs,
+            locations=locations,
+            events=events,
+        )
+        context_str = context.text or "No campaign context available."
 
         user_msg = f"Campaign Context:\n{context_str}\n\nQuestion: {question}"
 

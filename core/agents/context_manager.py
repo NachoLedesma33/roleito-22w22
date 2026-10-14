@@ -51,6 +51,7 @@ def build_context(
     *,
     campaign_name: str = "",
     campaign_description: str = "",
+    campaign_context: str = "",
     characters: list[dict[str, str]] | None = None,
     npcs: list[dict[str, str]] | None = None,
     locations: list[dict[str, str]] | None = None,
@@ -66,7 +67,9 @@ def build_context(
     kept_events = filter_canon(events or [], profile)
 
     head_parts = []
-    if campaign_name or campaign_description:
+    if campaign_context:
+        head_parts.append(campaign_context)
+    elif campaign_name or campaign_description:
         head_parts.append(f"Campaign: {campaign_name}: {campaign_description or ''}".rstrip(": "))
     if characters:
         head_parts.append(_section("Characters", [
