@@ -100,7 +100,7 @@ export default function VoiceInputButton({ onResult, lang = 'es-ES', disabled = 
       data-testid="voice-input-toggle"
       title={listening ? 'Detener dictado' : 'Dictar por voz'}
       aria-pressed={listening}
-      className={`text-xs px-2 py-1.5 rounded transition-colors disabled:opacity-50 ${
+      className={`shrink-0 text-xs px-2 py-1.5 rounded transition-colors disabled:opacity-50 ${
         listening
           ? 'bg-red-800/70 text-red-200 animate-pulse'
           : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'

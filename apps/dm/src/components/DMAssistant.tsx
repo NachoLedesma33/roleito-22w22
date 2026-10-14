@@ -138,7 +138,7 @@ export default function DMAssistant({ campaignId, onClose }: DMAssistantProps) {
             onKeyDown={handleKeyDown}
             placeholder="Preguntale algo a tu campaña..."
             disabled={loading}
-            className="flex-1 text-xs bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-2.5 py-1.5 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/50 focus:border-[var(--accent)] focus:outline-none disabled:opacity-50"
+            className="flex-1 min-w-0 text-xs bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-2.5 py-1.5 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/50 focus:border-[var(--accent)] focus:outline-none disabled:opacity-50"
             data-testid="dm-assistant-input"
           />
           <VoiceInputButton onResult={handleDictation} disabled={loading} />
@@ -146,7 +146,7 @@ export default function DMAssistant({ campaignId, onClose }: DMAssistantProps) {
             type="button"
             onClick={handleSend}
             disabled={loading || !input.trim()}
-            className="text-xs px-3 py-1.5 rounded bg-violet-800/60 text-violet-300 hover:bg-violet-800 transition-colors disabled:opacity-50"
+            className="shrink-0 text-xs px-3 py-1.5 rounded bg-violet-800/60 text-violet-300 hover:bg-violet-800 transition-colors disabled:opacity-50"
           >
             {loading ? '...' : '→'}
           </button>
