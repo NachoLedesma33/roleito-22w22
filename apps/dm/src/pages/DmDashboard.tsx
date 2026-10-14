@@ -1014,6 +1014,13 @@ export default function DmDashboard() {
   const handleDeleteItem = useCallback((itemId: string) => {
     graphRef.removeItem(itemId)
     handleItemsChange(graphRef.getItems())
+    // Borrado individual durante revisión: la propuesta pierde ese id (si se
+    // vacía, la revisión termina sola).
+    setDetectProposal((prev) => {
+      if (!prev || !prev.ids.includes(itemId)) return prev
+      const ids = prev.ids.filter((id) => id !== itemId)
+      return ids.length > 0 ? { ...prev, ids } : null
+    })
   }, [graphRef, handleItemsChange])
 
   const handleDoorItemClick = useCallback((itemId: string) => {

@@ -390,9 +390,9 @@ def build_room_graph(rooms, doors):
 
 ---
 
-## Phase 4: CollisionGraph (Separate from SceneGraph)
+## Phase 4: CollisionGraph (SUPERSEDED — do not implement, see tree note)
 
-**Goal:** Dedicated collision data structure for movement blocking.
+**Goal (already met elsewhere):** Dedicated collision data structure for movement blocking.
 
 ### 4.1 Data Structure
 
@@ -545,8 +545,8 @@ backend/
     wall_detector.py      # Wall detection (scikit-image Hough + contours)
     door_detector.py      # Door detection (collinear gaps + validation)
     pipeline.py           # Main pipeline (downscale, grid, rooms, walkable)
-    ai_detector.py        # VLM-based detection (Phase 2, not yet)
-    collision_graph.py    # CollisionGraph builder (Phase 4, not yet)
+    ai_detector.py        # VLM-based detection (Phase 2, done)
+    collision_graph.py    # CollisionGraph builder (Phase 4, SUPERSEDED — collision already works via apps/dm wall-collision.ts + lightOcclusion occluders, with unit tests; a second structure adds no behavior)
     config.py             # Detection parameters (not yet)
 ```
 
