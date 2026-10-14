@@ -92,17 +92,14 @@ class OrchestratorAgent:
         result.summary = f"Processed session: status={agent_result.status}"
 
     async def _generate_recap(self, result: OrchestratorResult, campaign_id: str, **kwargs):
-        session_number = kwargs.get("session_number", 1)
-        agent_result = await self.narrator.run(
-            campaign_id=campaign_id,
-            scene_description=f"Generate a recap for session {session_number}",
-            mood="reflective",
+        agent_result = await self.recap_agent.run(
+            session_notes=kwargs.get("raw_notes", ""),
         )
         result.agent_results["recap"] = {
             "status": agent_result.status,
             "data": agent_result.data if agent_result.status == "success" else None,
         }
-        result.summary = f"Generated recap for session {session_number}"
+        result.summary = f"Generated recap: status={agent_result.status}"
 
     async def _lore_inquiry(self, result: OrchestratorResult, campaign_id: str, **kwargs):
         query = kwargs.get("query", "")
