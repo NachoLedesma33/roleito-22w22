@@ -351,7 +351,7 @@ export default function CampaignList() {
                       {t('common.manage')}
                     </Link>
                     {!selectMode && (
-                      <div className="ml-auto flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="ml-auto flex gap-1 opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => handleExport(c.id)}
                           className="px-2 py-1 text-xs rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
