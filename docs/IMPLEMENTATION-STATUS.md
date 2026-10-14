@@ -386,7 +386,7 @@ Reference: `ROADMAP.md` (22,082 bytes)
 - **Fuego colocable implementado**: `LightMetadata.fx: 'flame' | 'embers'` + `fxRadius` (fracción del alto del mapa). El DM lo elige en el toolbar de "Luz (colocar)" — chips `—` / 🔥 / ✨ y un slider de radio que solo aparece con fuego. El render es el MISMO `FireParticles` del status `burning` de un personaje, replicado N veces en un círculo que el DM posiciona con clic. Tres uniforms propios para poder ajustarlo sin tocar el personaje ardiendo: `uSway` (apertura lateral), `uThickness` (grosor del punto) y `uScale` (que arrastra alto y tamaño a la vez, por eso los otros dos existen). `withLight={false}` porque estas luces ya traen su propio PointLight. Renderiza en `SceneRenderer` y no en `ItemRenderer` (evita ciclo de imports). Tests: e2e `E-l5` (roundtrip de `fx`/`fxRadius`) y `E-l6` (el DM elige 🔥 y el item colocado lo guarda); unit en `light.spec.ts` de que el default del radio cae dentro del rango del slider
 - **Variantes de clima implementadas**: `WEATHER_META` pasó de 3 entradas a 7 (`rain`/`rainDrizzle`/`rainStorm`, `snow`/`snowBlizzard`, `fog`/`fogDense`). Las 3 ids viejas quedan con multiplicadores 1 porque hay escenas guardadas con esos strings. Las variantes no son shaders nuevos: cada familia tiene un `kind` y tres multiplicadores (`speed`/`density`/`grain`) sobre el mismo componente. OJO: en niebla `density` es opacidad y `grain` es tamaño de blob, no cantidad de partículas — por eso se llama `density` y no `count`. El menú agrupa por tipo con encabezados, NO con submenús anidados: un submenú real sería `hover()` y en táctil no abre (prioridad 4 del roadmap). Tests: e2e `W5` (los tres encabezados, tres variantes de familias distintas que persisten con su propio id, y `rain` viejo sigue funcionando)
 - **Bug corregido (variantes)**: `N_RAIN_MAX`/`N_SNOW_MAX` se alocaban solo para `N × WEATHER_INTENSITY_MAX` y no por la densidad de la variante, así que el `Math.min` se comía el multiplicador en silencio — la ventisca a 4× pedía 1920 partículas contra un tope de 1280 y perdía un tercio de la diferencia sin avisar. Ahora el tope lleva `MAX_VARIANT_DENSITY` (2.4) adentro. **Tensión conocida**: si se agrega una variante con densidad > 2.4, o se sube `MAX_VARIANT_DENSITY`, el buffer queda corto y el recorte vuelve a ser silencioso. El bucle de `useFrame` itera en JS, no en la GPU: el peor caso es ~5000 partículas por frame.
-- Quedan de fase 15: nieve fina y filtros por debajo del preset; voice input DM (fase 13) y media (16) siguen verdes
+- Fase 15 cerrada: nieve fina (`snowFlurry`, espejo `rainDrizzle`) + filtros ya cubiertos (tint por preset, filtros audio, multiplicadores, slider intensidad); voice input DM con dictado (fase 13 slice) y media (16) siguen verdes
 - Handouts **fase 1 implementada** (entrega): tabla `handouts` (title, content, `image_path` absoluto bajo `data/assets/{cid}/handouts/{hid}`, `visible_to_players`), `backend/handout_routes.py` (CRUD + upload/clear de imagen, cada mutación con `broadcast_revision`), `api.handouts` y panel DM `HandoutPanel.tsx` (botón 🗂, crear/editar, 👁 visibilidad, subir/quitar imagen, borrar)
 - Handouts **fase 2 implementada** (lectura): `PlayerHandoutPanel.tsx` en `PlayerView` (botón 🗂, cards colapsables, texto con `whitespace-pre-wrap` e imagen servida por `/api/static`), recarga al abrir + `⟳ Recargar` + refetch cuando el DM muta. Para que el push sirva, `compute_player_revision` (`backend/routes.py`) ahora incluye los handouts en el hash: sin eso el WS empujaba una revisión idéntica y el panel nunca se enteraba. e2e `H4` (lee visible, no ve el oculto, imagen) y `H5` (aparece sin recargar)
 - Lección e2e: el dashboard DM tiene **2** `input[type=file]` (fondo + handouts), así que un selector `input[type=file]` es ambiguo — anclar por `data-testid`
@@ -415,12 +415,12 @@ Based on dependency analysis and documentation completeness:
 
 | Priority | System | Rationale |
 |----------|--------|-----------|
-| 1 | Mobile pass | Responsive real del dashboard y PlayerView (táctil) |
-| 2 | Filtros de clima por debajo del preset | Cierra fase 15 (chico, mismo archivo). Fuego y variantes de clima ya están hechos — ver sección 6 |
-| 3 | Menús con click-toggle | Reemplaza `hover()` (táctil); rompe `weather.spec` W1, hay que pasarlo a `click()` |
-| 4 | AI Map Analysis | Automation (IA diferida por el usuario) |
-| 5 | AI Agents reales | Fase 12 roadmap |
-| 6 | Voice input | Fase 13 |
+| 1 | Mobile pass | HECHO: D-pad táctil, diálogos bottom-sheet, acciones lobby visibles sin hover |
+| 2 | Filtros de clima por debajo del preset | HECHO: `snowFlurry` cierra fase 15 (filtros ya estaban: tint, audio, multiplicadores, slider) |
+| 3 | Menús con click-toggle | HECHO: clima/lighting/dock/map ya eran click; lobby `group-hover` gateado táctil; W1 ya usaba `click()` |
+| 4 | AI Map Analysis | Revisión DM antes de confirmar (batch + individual); CollisionGraph superado (colisión ya en `wall-collision.ts`) |
+| 5 | AI Agents reales | Fase 12 roadmap (cobertura mock + fix recap hechos; faltan Context/Ingestión/WorldState/Scene) |
+| 6 | Voice input | HECHO slice dictado: `VoiceInputButton` (Web Speech) en asistente DM + notas DM |
 | 7 | REA (futuro, post-todo) | Docs reales otros VTT vía `rea-agents` externo; solo targets autorizados, reimplementación limpia |
 
 > Login profesional **completado**: perfil + PIN contra el back, con perfiles guardados en el navegador (localStorage) — la pantalla ya no llama a `GET /api/auth/dms` (endpoint removido).
