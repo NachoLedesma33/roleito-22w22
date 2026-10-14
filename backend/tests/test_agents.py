@@ -12,6 +12,11 @@ from core.agents.narrator import NarratorAgent
 from core.agents.recap import RecapAgent
 from core.agents.session_processor import SessionProcessor
 from core.agents.orchestrator import OrchestratorAgent, TaskType
+from core.agents.context_manager import (
+    ContextProfile,
+    build_context,
+    filter_canon,
+)
 
 
 class GarbageProvider(AIProvider):
@@ -110,3 +115,42 @@ async def test_orchestrator_process_session_missing_id_is_partial():
     res = await orch.execute(TaskType.PROCESS_SESSION, "camp-1")
     assert res.status == "partial"
     assert res.errors
+
+
+def _events(n, status="CANON"):
+    return [{"type": "DIALOGUE", "description": f"event number {i} with padding text", "status": status} for i in range(n)]
+
+
+def test_filter_canon_drops_proposed_by_default():
+    events = _events(2, "CANON") + _events(2, "PROPOSED")
+    kept = filter_canon(events)
+    assert len(kept) == 2
+    assert all(e["status"] == "CANON" for e in kept)
+
+
+def test_filter_canon_opt_in_keeps_all():
+    events = _events(1, "CANON") + _events(1, "PROPOSED")
+    kept = filter_canon(events, ContextProfile(canon_only=False))
+    assert len(kept) == 2
+
+
+def test_build_context_trims_oldest_first_to_budget():
+    events = _events(20, "CANON")
+    ctx = build_context(
+        campaign_name="Saga",
+        characters=[{"name": "Ardan", "description": "hero"}],
+        events=events,
+        profile=ContextProfile(max_chars=300),
+    )
+    assert ctx.chars <= 300
+    assert ctx.truncated
+    assert ctx.events_included + ctx.events_dropped == 20
+    assert "event number 0" in ctx.text
+    assert "event number 19" not in ctx.text
+
+
+def test_build_context_empty_is_minimal():
+    ctx = build_context()
+    assert ctx.text == ""
+    assert ctx.chars == 0
+    assert not ctx.truncated
