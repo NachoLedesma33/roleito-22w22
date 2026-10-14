@@ -147,6 +147,12 @@ export default function DmDashboard() {
   // hover no existe y el menú era inalcanzable.
   const [openMenu, setOpenMenu] = useState<'lighting' | 'weather' | null>(null);
   const [showZones, setShowZones] = useState(true);
+  // Aspect real del fondo (lo reporta SceneRenderer; 1 = cuadrado). Alinea
+  // dibujo y colisión con el render en mapas no-cuadrados.
+  const [mapAspect, setMapAspect] = useState(1);
+  const handleAspectChange = useCallback((a: number) => {
+    if (Number.isFinite(a) && a > 0) setMapAspect(a);
+  }, []);
 
   const toggleMenu = (which: 'lighting' | 'weather', anchor: HTMLElement) => {
     const r = anchor.getBoundingClientRect();
@@ -405,7 +411,7 @@ export default function DmDashboard() {
       if (!prev || !prev.startPoint || !prev.currentPoint) return null
       const mScale = activeScene?.map_scale ?? 1
       const mapH = 10 * mScale
-      const mapW = mapH
+      const mapW = mapH * mapAspect
       const item = createWallItem(prev, campaignId ?? '', mapW, mapH)
       if (item) {
         graphRef.addItem(item)
@@ -413,7 +419,7 @@ export default function DmDashboard() {
       }
       return null
     })
-  }, [graphRef, handleItemsChange, campaignId, activeScene])
+  }, [graphRef, handleItemsChange, campaignId, activeScene, mapAspect])
 
   const startDrawMode = useCallback((mode: 'wall' | 'door') => {
     setRectFogMode(null)
@@ -436,14 +442,14 @@ export default function DmDashboard() {
       }
       const mScale = activeScene?.map_scale ?? 1
       const mapSize = 10 * mScale
-      const item = createZoneItem(prev, zoneColor, mapSize, mapSize)
+      const item = createZoneItem(prev, zoneColor, mapSize * mapAspect, mapSize)
       if (item) {
         graphRef.addItem(item)
         handleItemsChange(graphRef.getItems())
       }
       return null
     })
-  }, [graphRef, handleItemsChange, activeScene, zoneColor])
+  }, [graphRef, handleItemsChange, activeScene, zoneColor, mapAspect])
 
   const handleZoneAddPoint = useCallback((point: { x: number; y: number }) => {
     setZoneDraft((prev) => {
@@ -492,9 +498,9 @@ export default function DmDashboard() {
     if (!portalDraft && !zoneFogActive) return []
     const mScale = activeScene?.map_scale ?? 1
     const mapSize = 10 * mScale
-    const zones = extractZonePolygons(graphRef.getItems(), mapSize, mapSize)
+    const zones = extractZonePolygons(graphRef.getItems(), mapSize * mapAspect, mapSize)
     return zonesToGeometry(zones)
-  }, [portalDraft, zoneFogActive, activeScene, graphRef])
+  }, [portalDraft, zoneFogActive, activeScene, graphRef, mapAspect])
 
   const handlePortalSelect = useCallback((snap: { zoneId: string; point: { x: number; y: number }; a: { x: number; y: number }; b: { x: number; y: number } }) => {
     setPortalDraft((prev) => {
@@ -758,7 +764,7 @@ export default function DmDashboard() {
     if (!lightPlaceMode) return
     const mScale = activeScene?.map_scale ?? 1
     const mapHeight = 10 * mScale
-    const mapWidth = 10 * mScale
+    const mapWidth = mapHeight * mapAspect
     const item = createLightItem(lightPlaceMode.preset, point, mapWidth, mapHeight)
     if (!item) return
     // El fuego es opcional y va en el metadata del item de luz, no en un item
@@ -770,7 +776,7 @@ export default function DmDashboard() {
     }
     graphRef.addItem(item)
     handleItemsChange(graphRef.getItems())
-  }, [lightPlaceMode, activeScene, graphRef, handleItemsChange])
+  }, [lightPlaceMode, activeScene, graphRef, handleItemsChange, mapAspect])
 
 
   const handleAttachComplete = useCallback((tokenId: string) => {
@@ -824,7 +830,7 @@ export default function DmDashboard() {
     if (!sc || !campaignId) return
     const mScale = activeScene?.map_scale ?? 1
     const mapHeight = 10 * mScale
-    const mapWidth = 10 * mScale
+    const mapWidth = mapHeight * mapAspect
     const item = createLightItem('torch', { x: sc.x / mapWidth + 0.5, y: sc.z / mapHeight + 0.5 }, mapWidth, mapHeight)
     if (!item) return
     const attached = attachLightToToken(item, sc.id)
@@ -844,7 +850,7 @@ export default function DmDashboard() {
       label: i18n.t('dmToast.torchGranted', 'antorcha entregada a {{name}}', { name: request.character_name }),
       timestamp: Date.now(),
     }])
-  }, [campaignId, activeScene, graphRef, handleItemsChange])
+  }, [campaignId, activeScene, graphRef, handleItemsChange, mapAspect])
 
   const handleDenyLight = useCallback(async (request: LightRequest) => {
     if (!campaignId) return
@@ -887,7 +893,7 @@ export default function DmDashboard() {
     const items = graphRef.getItems()
     const zone = items.find((i: SceneItem) => i.id === snap.zoneId && i.metadata?.type === 'zone')
     if (!zone) return
-    const zonePoly: [number, number][] = extractZonePolygons([zone], mapSize, mapSize)[0].points
+    const zonePoly: [number, number][] = extractZonePolygons([zone], mapSize * mapAspect, mapSize)[0].points
     const res = toggleZoneFog(items, snap.zoneId, zonePoly)
     if (res.applied === 'none') return
     for (const item of res.items) {
@@ -909,7 +915,7 @@ export default function DmDashboard() {
       label: res.applied === 'reveal' ? i18n.t('dmToast.zoneFogRevealed', 'niebla despejada de la zona') : i18n.t('dmToast.zoneFogHidden', 'niebla cubriendo la zona'),
       timestamp: Date.now(),
     }])
-  }, [activeScene, graphRef, handleItemsChange])
+  }, [activeScene, graphRef, handleItemsChange, mapAspect])
 
   const handleAutoDetect = useCallback(async () => {
     if (!campaignId || !activeScene) return
@@ -1410,7 +1416,7 @@ export default function DmDashboard() {
     if (!sc || !activeScene) return
     const mScale = activeScene.map_scale ?? 1
     const mapHeight = 10 * mScale
-    const mapWidth = 10 * mScale
+    const mapWidth = mapHeight * mapAspect
     const item = createLightItem('lantern', { x: sc.x / mapWidth + 0.5, y: sc.z / mapHeight + 0.5 }, mapWidth, mapHeight)
     if (!item) return
     const attached = attachLightToToken(item, sc.id)
@@ -1425,7 +1431,7 @@ export default function DmDashboard() {
       label: i18n.t('dmToast.lightCreatedEdit', 'luz creada — editá en la barra de herramientas'),
       timestamp: Date.now(),
     }])
-  }, [activeScene, graphRef, handleItemsChange])
+  }, [activeScene, graphRef, handleItemsChange, mapAspect])
 
   const handleTokenClick = useCallback((tokenId: string) => {
     if (attachLightMode?.lightId) {
@@ -1493,7 +1499,7 @@ export default function DmDashboard() {
     draggingTokenIdRef.current = null;
     const mScale = activeScene.map_scale ?? 1;
     const mapH = 10 * mScale;
-    const mapW = mapH;
+    const mapW = mapH * mapAspect;
     const normX = (x / mapW) + 0.5;
     const normZ = (z / mapH) + 0.5;
 
@@ -1548,7 +1554,7 @@ export default function DmDashboard() {
     } catch (err) {
       console.error('Failed to persist token position:', err);
     }
-  }, [campaignId, activeScene, graphRef]);
+  }, [campaignId, activeScene, graphRef, mapAspect]);
 
   // F7: movement range overlay for the selected token (A* reachable cells).
   const movementRange = useMemo(() => {
@@ -1557,7 +1563,7 @@ export default function DmDashboard() {
     if (!sc) return null;
     const mScale = activeScene.map_scale ?? 1;
     const mapH = 10 * mScale;
-    const mapW = mapH;
+    const mapW = mapH * mapAspect;
     const cellSize = activeScene.grid_size && activeScene.grid_size > 0 ? activeScene.grid_size : 0.5;
     const occluders = buildOccluders(sceneItems, mapW, mapH);
     const { cells } = computeReachableCells(
@@ -1566,7 +1572,7 @@ export default function DmDashboard() {
       occluders, cellSize, mapW, mapH,
     );
     return { tokenId: sc.id, cellSize, cells };
-  }, [activeScene, selectedTokenId, sceneChars, sceneItems]);
+  }, [activeScene, selectedTokenId, sceneChars, sceneItems, mapAspect]);
 
   const handleTokenPlace = useCallback(async (entityType: string, entityId: string, x: number, z: number) => {
     if (!campaignId || !activeScene) return;
@@ -3053,6 +3059,7 @@ export default function DmDashboard() {
                 selectedTokenId={selectedTokenId}
                 selectedItemIds={selectedItemId ? [selectedItemId] : []}
                 mapScale={activeScene.map_scale ?? 1}
+                onAspectChange={handleAspectChange}
                 modelYOffset={activeScene.model_y_offset ?? 0}
                 gridSize={activeScene.grid_size ?? 0}
                 gridSnap={activeScene.grid_snap ?? false}

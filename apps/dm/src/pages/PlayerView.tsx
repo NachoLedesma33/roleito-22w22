@@ -241,6 +241,9 @@ export default function PlayerView() {
   });
   const [askingLight, setAskingLight] = useState(false);
   const [imageAspect, setImageAspect] = useState(1);
+  const handleAspectChange = useCallback((a: number) => {
+    if (Number.isFinite(a) && a > 0) setImageAspect(a);
+  }, []);
   const myCharRef = useRef<MyChar | null>(null);
   // Teclas activas (teclado + D-pad táctil). Compartido por el loop de movimiento.
   const keysPressedRef = useRef(new Set<string>());
@@ -697,7 +700,7 @@ export default function PlayerView() {
 
     const mScale = currentData.map_scale ?? 1;
     const mapH = 10 * mScale;
-    const mapW = mapH;
+    const mapW = mapH * imageAspect;
 
     const sc = currentData.characters.find(
       (ch) => ch.type === 'character' && currentData.player_characters.some((p) => p.id === ch.entity_id && p.id === cur.id)
@@ -934,7 +937,7 @@ export default function PlayerView() {
         lastMoveAtRef.current = Date.now();
         const mapScale = currentData.map_scale ?? 1;
         const mapH = 10 * mapScale;
-        const mapW = mapH;
+        const mapW = mapH * imageAspect;
         const tokenRadius = 0.4;
         x = Math.max(-mapW / 2 + tokenRadius, Math.min(mapW / 2 - tokenRadius, x));
         z = Math.max(-mapH / 2 + tokenRadius, Math.min(mapH / 2 - tokenRadius, z));
@@ -997,7 +1000,7 @@ export default function PlayerView() {
       window.removeEventListener('keyup', onKeyUp);
       clearTimeout(moveTimer);
     };
-  }, [choice?.kind, choice?.kind === 'character' ? (choice as { kind: 'character'; id: string }).id : null]);
+  }, [choice?.kind, choice?.kind === 'character' ? (choice as { kind: 'character'; id: string }).id : null, imageAspect]);
 
   const chooseCharacter = useCallback(
     (id: string) => {
@@ -1405,6 +1408,7 @@ export default function PlayerView() {
               weatherIntensity={data.weather_intensity ?? 1}
               weatherAudioEnabled={audioOn}
               mapScale={data.map_scale ?? 1}
+              onAspectChange={handleAspectChange}
               modelYOffset={data.model_y_offset ?? 0}
               items={data.items ?? []}
               readOnly

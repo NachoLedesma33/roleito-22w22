@@ -106,6 +106,8 @@ interface SceneRendererProps {
   onTokenPlace?: (entityType: string, entityId: string, x: number, z: number) => void;
   onAssetDrop?: (asset: { name: string; url: string; assetId: string }, x: number, z: number) => void;
   renderMode?: import('@/lib/overlayY').RenderMode;
+  /** Reporta el aspect real del fondo (1 = cuadrado). El DM/jugador lo usan para alinear dibujo y colisión con el render. */
+  onAspectChange?: (aspect: number) => void;
 }
 
 type DragStarter = (
@@ -2072,6 +2074,7 @@ export default function SceneRenderer({
   onTokenPlace,
   onAssetDrop,
   renderMode = '2d',
+  onAspectChange,
 }: SceneRendererProps) {
   const weatherIntensityK = clampWeatherIntensity(weatherIntensity);
   const visibleChars = useMemo(() => characters.filter((c) => c.visible), [characters]);
@@ -2154,6 +2157,10 @@ export default function SceneRenderer({
     };
     img.src = backgroundUrl;
   }, [backgroundUrl]);
+
+  useEffect(() => {
+    onAspectChange?.(imageAspect);
+  }, [imageAspect, onAspectChange]);
 
   const handleCanvasPointerMissed = useCallback(() => {
     if (justSelectedRef.current) {

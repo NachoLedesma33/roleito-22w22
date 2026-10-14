@@ -61,8 +61,8 @@ export function buildOccluders(
         for (let i = 0; i + 2 < p.length + 1; i += 2) {
           const j = (i + 2) % p.length
           out.push({
-            a: [(p[i] - 0.5) * mapHeight, (p[i + 1] - 0.5) * mapHeight],
-            b: [(p[j] - 0.5) * mapHeight, (p[j + 1] - 0.5) * mapHeight],
+            a: [(p[i] - 0.5) * mapWidth, (p[i + 1] - 0.5) * mapHeight],
+            b: [(p[j] - 0.5) * mapWidth, (p[j + 1] - 0.5) * mapHeight],
           })
         }
       }

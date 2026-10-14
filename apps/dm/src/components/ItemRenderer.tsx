@@ -42,7 +42,7 @@ export default function ItemRenderer({ item, isSelected, readOnly = false, showZ
 
   if (item.metadata.type === 'zone') {
     if (!showZones) return null
-    return <ZoneRenderer item={item} isSelected={isSelected} onClick={onClick} onContextMenu={onContextMenu} mapScale={mapScale} renderMode={renderMode} />
+    return <ZoneRenderer item={item} isSelected={isSelected} onClick={onClick} onContextMenu={onContextMenu} mapScale={mapScale} imageAspect={imageAspect} renderMode={renderMode} />
   }
 
   if (item.metadata.type === 'fog') {
@@ -379,10 +379,10 @@ function ShapeRenderer({ item, isSelected, onClick, renderMode = DEFAULT_RENDER_
   return null
 }
 
-function ZoneRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, renderMode = DEFAULT_RENDER_MODE }: ItemRendererProps) {
+function ZoneRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, imageAspect = 1, renderMode = DEFAULT_RENDER_MODE }: ItemRendererProps) {
   const meta = item.metadata as ZoneMetadata
   const mapHeight = 10 * mapScale
-  const mapWidth = mapHeight
+  const mapWidth = mapHeight * imageAspect
   const Y = getY(renderMode)
 
   const groupPos = [item.x, 0, item.y] as const
