@@ -41,6 +41,7 @@ export const WEATHER_META: Record<string, WeatherMeta> = {
   // llovizna aunque haya el doble de partículas.
   rainStorm: { label: '⛈ Tormenta', tint: 'rgba(38, 56, 86, 0.28)', kind: 'rain', speed: 1.8, density: 2.4, grain: 1.3 },
   snow: { label: '❄ Nieve', tint: 'rgba(198, 210, 232, 0.14)', kind: 'snow', speed: 1, density: 1, grain: 1 },
+  snowFlurry: { label: '❅ Nieve fina', tint: 'rgba(210, 220, 238, 0.10)', kind: 'snow', speed: 0.7, density: 0.5, grain: 0.8 },
   snowBlizzard: { label: '🌨 Ventisca', tint: 'rgba(226, 234, 248, 0.26)', kind: 'snow', speed: 2.2, density: 2.4, grain: 0.85 },
   fog: { label: '🌫 Niebla', tint: 'rgba(212, 212, 218, 0.18)', kind: 'fog', speed: 1, density: 1, grain: 1 },
   fogDense: { label: '🌁 Niebla densa', tint: 'rgba(198, 200, 210, 0.34)', kind: 'fog', speed: 0.5, density: 1.6, grain: 1.7 },
@@ -389,6 +390,7 @@ const WEATHER_AUDIO: Record<string, { hiss: number; wind: number }> = {
   rainDrizzle: { hiss: 0.5, wind: 0.06 },
   rainStorm: { hiss: 1.7, wind: 0.85 },
   snow: { hiss: 0.4, wind: 0.35 },
+  snowFlurry: { hiss: 0.25, wind: 0.2 },
   snowBlizzard: { hiss: 0.8, wind: 1.4 },
   fog: { hiss: 0.14, wind: 0.16 },
   fogDense: { hiss: 0.2, wind: 0.28 },

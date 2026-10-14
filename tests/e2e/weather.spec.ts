@@ -211,6 +211,38 @@ test.describe('Weather / Atmosphere', () => {
       }, { timeout: 10_000 })
       .toBe('rain');
   });
+
+  test('W6: la nieve fina se elige, persiste con su propio id y agrupa en Nieve', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    const scene = await createScene(request, campaign.id, 'Meseta W6');
+    await request.post(`${API}/campaigns/${campaign.id}/scenes/${scene.id}/upload-background`, {
+      multipart: { file: { name: 'bg.png', mimeType: 'image/png', buffer: PNG_1PX } },
+    });
+    await page.goto(`/campaigns/${campaign.id}`);
+    await expect(page.locator('header select')).toContainText('Meseta W6', { timeout: 10_000 });
+    await page.locator('header select').selectOption(scene.id);
+
+    const weatherSelect = page.getByTestId('weather-select');
+    await weatherSelect.click();
+    const menu = page.getByTestId('weather-menu');
+    await expect(menu).toBeVisible();
+
+    // Aparece bajo el encabezado Nieve, junto a Nieve y Ventisca.
+    await expect(menu.getByText('Nieve', { exact: true })).toBeVisible();
+    await menu.getByRole('menuitem', { name: '❅ Nieve fina' }).click();
+    await expect(weatherSelect).toContainText('Nieve fina', { timeout: 10_000 });
+    await expect
+      .poll(async () => {
+        const s = (await (
+          await request.get(`${API}/campaigns/${campaign.id}/scenes/${scene.id}`)
+        ).json()) as { weather: string | null };
+        return s.weather;
+      }, { timeout: 10_000 })
+      .toBe('snowFlurry');
+  });
 });
 
 const WEATHER_NONE = 'Sin clima';
