@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import HudPanel from './HudPanel';
+import VoiceInputButton from './VoiceInputButton';
 import { api, DMNotebook, DMNotebookVersion } from '@/lib/api';
 
 interface DMNotebookHudProps {
@@ -61,6 +62,10 @@ export default function DMNotebookHud({ campaignId, onClose }: DMNotebookHudProp
   const filtered = filterCat === 'all'
     ? notebooks
     : notebooks.filter((n) => n.category === filterCat);
+
+  const handleDictation = useCallback((text: string) => {
+    setContentDraft((prev) => (prev ? `${prev} ${text}` : text));
+  }, []);
 
   const handleCreate = useCallback(async () => {
     const nb = await api.notebooks.create(campaignId, { title: 'Nueva nota', category: 'notes' });
@@ -224,6 +229,7 @@ export default function DMNotebookHud({ campaignId, onClose }: DMNotebookHudProp
               >
                 {selected.pinned ? '📌' : '📍'}
               </button>
+              <VoiceInputButton onResult={handleDictation} disabled={!editing} />
               <button
                 onClick={() => handleDelete(selected.id)}
                 className="text-[var(--text-secondary)] hover:text-red-400 text-xs"

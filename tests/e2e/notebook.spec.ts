@@ -218,4 +218,22 @@ test.describe('DM Notebook', () => {
     await expect(panel.getByText('Nota basura')).toHaveCount(0);
     await expect(panel.getByText(/Sin notas todavía/)).toBeVisible();
   });
+
+  test('NB8: dictado por voz en edición — click no rompe el textarea', async ({ page, campaign }) => {
+    await openDashboard(page, campaign.id);
+    const panel = await openNotebook(page);
+
+    const getPromise = noteDetailGet(page);
+    await panel.getByRole('button', { name: '+ Nueva nota' }).click();
+    await getPromise;
+
+    const area = panel.locator('textarea');
+    await expect(area).toBeVisible();
+    const toggle = panel.getByTestId('voice-input-toggle');
+    await expect(toggle).toBeVisible();
+    await expect(toggle).toBeEnabled();
+    await toggle.click();
+    await area.fill('nota dictada');
+    await expect(area).toHaveValue('nota dictada');
+  });
 });
