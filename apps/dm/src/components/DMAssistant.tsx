@@ -78,10 +78,10 @@ export default function DMAssistant({ campaignId, onClose }: DMAssistantProps) {
 
   return (
     <HudPanel title="Asistente del DM" panelId="dm-assistant" onClose={onClose} defaultX={500} defaultY={150} defaultWidth={380}>
-      <div className="flex flex-col gap-2" style={{ height: '400px' }}>
+      <div className="flex flex-col gap-2 h-full min-h-0">
         <div
           ref={scrollRef}
-          className="flex-1 overflow-y-auto space-y-2 pr-1"
+          className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1"
           data-testid="dm-assistant-messages"
         >
           {messages.length === 0 && (
