@@ -188,6 +188,9 @@ export default function DmDashboard() {
   const applyingHistoryRef = useRef(false);
   const lastUndoAtRef = useRef(0);
   const [detectingWalls, setDetectingWalls] = useState(false);
+  // Propuesta de detección sin revisar: ids agregados al grafo que el DM aún
+  // no aprobó ni descartó. Mientras viva, la barra de revisión sigue visible.
+  const [detectProposal, setDetectProposal] = useState<{ ids: string[]; walls: number; doors: number } | null>(null);
   const [detectionMode, setDetectionMode] = useState<'blueprint' | 'textured'>('blueprint');
   const [useAi, setUseAi] = useState(false);
   const [bgSelector, setBgSelector] = useState<{
@@ -923,22 +926,30 @@ export default function DmDashboard() {
     setDetectingWalls(true)
     try {
       const result = await api.scenes.detectWalls(campaignId, activeScene.id, useAi ? 'ai' : detectionMode)
-      if (result.items && result.items.length > 0) {
-        for (const item of result.items) {
-          graphRef.addItem(item as SceneItem)
-        }
-        handleItemsChange(graphRef.getItems())
+      // Una detección nueva reemplaza la propuesta anterior sin revisar.
+      const prevIds = new Set(detectProposal?.ids ?? [])
+      if (prevIds.size > 0) {
+        for (const id of prevIds) graphRef.removeItem(id)
+      }
+      const items = ((result.items ?? []) as SceneItem[]).filter((item) => item && item.id)
+      for (const item of items) {
+        graphRef.addItem(item)
+      }
+      handleItemsChange(graphRef.getItems())
+      if (items.length > 0) {
+        setDetectProposal({ ids: items.map((item) => item.id), walls: result.wall_count ?? items.length, doors: result.door_count ?? 0 })
         setToastQueue((prev) => [...prev.slice(-4), {
           id: `detect-${Date.now()}`,
           rollerName: i18n.t('dmToast.rollerDetect', 'Detección'),
           diceType: 20,
           count: 1,
-          results: [result.wall_count],
-          total: result.wall_count,
-          label: i18n.t('dmToast.wallsDetected', 'paredes + {{doors}} puertas detectadas', { doors: result.door_count }),
+          results: [items.length],
+          total: items.length,
+          label: i18n.t('dmToast.detectProposed', '{{walls}} paredes + {{doors}} puertas propuestas — revisar', { walls: result.wall_count ?? items.length, doors: result.door_count ?? 0 }),
           timestamp: Date.now(),
         }])
       } else {
+        setDetectProposal(null)
         setToastQueue((prev) => [...prev.slice(-4), {
           id: `detect-${Date.now()}`,
           rollerName: i18n.t('dmToast.rollerDetect', 'Detección'),
@@ -964,7 +975,41 @@ export default function DmDashboard() {
     } finally {
       setDetectingWalls(false)
     }
-  }, [campaignId, activeScene, graphRef, handleItemsChange, detectionMode, useAi])
+  }, [campaignId, activeScene, graphRef, handleItemsChange, detectionMode, useAi, detectProposal])
+
+  const handleDetectApprove = useCallback(() => {
+    if (!detectProposal) return
+    const n = detectProposal.ids.length
+    setDetectProposal(null)
+    setToastQueue((prev) => [...prev.slice(-4), {
+      id: `detect-ok-${Date.now()}`,
+      rollerName: i18n.t('dmToast.rollerDetect', 'Detección'),
+      diceType: 1,
+      count: 1,
+      results: [n],
+      total: n,
+      label: i18n.t('dmToast.detectApproved', '{{n}} paredes confirmadas', { n }),
+      timestamp: Date.now(),
+    }])
+  }, [detectProposal])
+
+  const handleDetectDiscard = useCallback(() => {
+    if (!detectProposal) return
+    const ids = new Set(detectProposal.ids)
+    for (const id of ids) graphRef.removeItem(id)
+    handleItemsChange(graphRef.getItems())
+    setDetectProposal(null)
+    setToastQueue((prev) => [...prev.slice(-4), {
+      id: `detect-no-${Date.now()}`,
+      rollerName: i18n.t('dmToast.rollerDetect', 'Detección'),
+      diceType: 1,
+      count: 1,
+      results: [1],
+      total: 1,
+      label: i18n.t('dmToast.detectDiscarded', 'detección descartada'),
+      timestamp: Date.now(),
+    }])
+  }, [detectProposal, graphRef, handleItemsChange])
 
   const handleDeleteItem = useCallback((itemId: string) => {
     graphRef.removeItem(itemId)
@@ -2937,6 +2982,32 @@ export default function DmDashboard() {
             )}
           </div>
         </div>
+        {detectProposal && (
+          <div
+            data-testid="detect-review"
+            className="absolute bottom-16 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] shadow-xl text-xs whitespace-nowrap"
+          >
+            <span className="text-[var(--text-secondary)]">
+              {t('dm.detectReviewTitle', 'Revisar detección')}: {detectProposal.walls}+{detectProposal.doors}
+            </span>
+            <button
+              type="button"
+              data-testid="detect-approve"
+              onClick={handleDetectApprove}
+              className="px-2 py-1 rounded bg-[var(--accent)] text-white hover:opacity-90 transition-opacity"
+            >
+              {t('dm.detectApprove', 'Aprobar ({{n}})', { n: detectProposal.ids.length })}
+            </button>
+            <button
+              type="button"
+              data-testid="detect-discard"
+              onClick={handleDetectDiscard}
+              className="px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+            >
+              {t('dm.detectDiscard', 'Descartar')}
+            </button>
+          </div>
+        )}
         {/* Sidebar — lg+: permanent toggle, md/sm: overlay */}
         {sidebarOpen && (
           <>
