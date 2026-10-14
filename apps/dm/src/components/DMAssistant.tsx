@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import HudPanel from './HudPanel';
+import VoiceInputButton from './VoiceInputButton';
 import { api } from '@/lib/api';
 
 interface DMAssistantProps {
@@ -71,6 +72,10 @@ export default function DMAssistant({ campaignId, onClose }: DMAssistantProps) {
     [handleSend],
   );
 
+  const handleDictation = useCallback((text: string) => {
+    setInput((prev) => (prev ? `${prev} ${text}` : text));
+  }, []);
+
   return (
     <HudPanel title="Asistente del DM" panelId="dm-assistant" onClose={onClose} defaultX={500} defaultY={150} defaultWidth={380}>
       <div className="flex flex-col gap-2" style={{ height: '400px' }}>
@@ -136,6 +141,7 @@ export default function DMAssistant({ campaignId, onClose }: DMAssistantProps) {
             className="flex-1 text-xs bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-2.5 py-1.5 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/50 focus:border-[var(--accent)] focus:outline-none disabled:opacity-50"
             data-testid="dm-assistant-input"
           />
+          <VoiceInputButton onResult={handleDictation} disabled={loading} />
           <button
             type="button"
             onClick={handleSend}

@@ -143,4 +143,33 @@ test.describe('AI Provider Layer', () => {
     const cfg = await request.get(`${API}/ai/config`, { headers: authHeaders });
     expect((await cfg.json()).provider).toBe('local');
   });
+
+  test('AI7: asistente con dictado por voz — sin micrófono no se rompe', async ({
+    page,
+    campaign,
+    request,
+    dmToken,
+  }) => {
+    const scene = await createScene(request, campaign.id, 'Escena AI7');
+    await page.goto('/');
+    await page.evaluate((token) => {
+      sessionStorage.setItem('roleito:auth:token', token);
+    }, dmToken);
+    await page.goto(`/campaigns/${campaign.id}`);
+    await page.locator('header select').selectOption(scene.id);
+
+    await page.getByTitle('Acciones del DM').hover();
+    await page.getByTitle('Más acciones').click();
+    await page.getByTestId('dm-assistant-button').click();
+    const input = page.getByTestId('dm-assistant-input');
+    await expect(input).toBeVisible();
+
+    // Headless Chromium expone SpeechRecognition (falla al usarlo sin red/mic).
+    // El botón debe renderizarse y clickearlo no puede romper el input.
+    const toggle = page.getByTestId('voice-input-toggle');
+    await expect(toggle).toBeVisible();
+    await toggle.click();
+    await input.fill('hola dictado');
+    await expect(input).toHaveValue('hola dictado');
+  });
 });
