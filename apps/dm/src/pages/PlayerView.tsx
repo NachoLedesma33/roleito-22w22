@@ -1340,7 +1340,7 @@ export default function PlayerView() {
         </span>
       </TopBar>
 
-      <div className="flex-1 relative min-h-0 min-w-0">
+      <div className="flex-1 relative min-h-0 min-w-0" data-hud-stage>
         {pendingRoll && (
           <div
             className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--surface)]/95 border border-[var(--warning)]/40 shadow-lg"

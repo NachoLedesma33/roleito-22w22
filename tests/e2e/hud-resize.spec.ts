@@ -71,6 +71,7 @@ test.describe('HUD resize/snap/minimizar', () => {
     await openRoller(page, campaign.id);
     const panel = page.getByTestId('hud-dice-roller');
     const viewport = page.viewportSize()!;
+    const stage = page.locator('[data-hud-stage]');
 
     // Arrastrar a la esquina inferior izquierda antes de minimizar.
     const box = (await panel.boundingBox())!;
@@ -87,6 +88,14 @@ test.describe('HUD resize/snap/minimizar', () => {
     await expect(pill).toBeVisible();
     await expect(page.getByTestId('minimized-bottom-left')).toContainText('Tirada de dados');
     await expect(page.getByTestId('minimized-bottom-right')).toHaveCount(0);
+
+    // El chip va dentro de la pantalla del VTT: no sobre el riel ni el TopBar.
+    const stageBox = (await stage.boundingBox())!;
+    const pillBox = (await pill.boundingBox())!;
+    expect(pillBox.x).toBeGreaterThanOrEqual(stageBox.x);
+    expect(pillBox.y).toBeGreaterThanOrEqual(stageBox.y);
+    expect(pillBox.x + pillBox.width).toBeLessThanOrEqual(stageBox.x + stageBox.width + 1);
+    expect(pillBox.y + pillBox.height).toBeLessThanOrEqual(stageBox.y + stageBox.height + 1);
 
     // Restaurar desde el chip y volver a minimizar desde arriba-izquierda.
     await pill.click();

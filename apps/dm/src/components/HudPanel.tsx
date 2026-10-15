@@ -93,18 +93,36 @@ function emitMinimizedChange() {
 }
 
 /**
- * Esquina del viewport más cercana al panel. Al minimizar, el chip aparece donde
- * el panel estaba: si lo arrastraste a la esquina inferior izquierda, el chip
- * tiene que caer ahí y no siempre abajo a la derecha.
+ * Caja jugable (la pantalla del VTT): el canvas con escena. Los chips
+ * minimizados viven acá adentro, no sobre el viewport, para no tapar el riel
+ * lateral ni el TopBar. Si la página no markuppea la zona, cae al viewport.
+ */
+export function getStageRect(): { left: number; top: number; width: number; height: number } {
+  const fallback = {
+    left: 0,
+    top: 0,
+    width: typeof window !== 'undefined' ? window.innerWidth : 1024,
+    height: typeof window !== 'undefined' ? window.innerHeight : 768,
+  };
+  if (typeof document === 'undefined') return fallback;
+  const el = document.querySelector('[data-hud-stage]');
+  if (!el) return fallback;
+  const r = el.getBoundingClientRect();
+  return r.width > 0 && r.height > 0 ? r : fallback;
+}
+
+/**
+ * Esquina de la pantalla del VTT más cercana al panel. Al minimizar, el chip
+ * aparece donde el panel estaba: si lo arrastraste a la esquina inferior
+ * izquierda, el chip tiene que caer ahí y no siempre abajo a la derecha.
  */
 function nearestCorner(x: number, y: number, width: number, height: number): MinimizedCorner {
-  const vw = typeof window !== 'undefined' ? window.innerWidth : 1024;
-  const vh = typeof window !== 'undefined' ? window.innerHeight : 768;
-  // Centro del panel: decide el lado horizontal y vertical.
+  const stage = getStageRect();
+  // Centro del panel contra el centro de la pantalla del VTT.
   const cx = x + width / 2;
   const cy = y + height / 2;
-  const vertical = cy < vh / 2 ? 'top' : 'bottom';
-  const horizontal = cx < vw / 2 ? 'left' : 'right';
+  const vertical = cy < stage.top + stage.height / 2 ? 'top' : 'bottom';
+  const horizontal = cx < stage.left + stage.width / 2 ? 'left' : 'right';
   return `${vertical}-${horizontal}`;
 }
 
@@ -181,14 +199,15 @@ export default function HudPanel({
 
   const handleMinimize = useCallback(() => {
     setMinimized(true);
+    const stage = getStageRect();
     registerMinimized({
       panelId,
       title,
       onRestore: () => setMinimized(false),
-      // Geometría visible: si está maximizado ocupa casi todo el viewport, así
-      // que usamos la ventana directamente para no mandarlo a una esquina rara.
+      // Geometría visible: si está maximizado ocupa casi toda la pantalla, así
+      // que usamos la caja entera para no mandarlo a una esquina rara.
       corner: maximized
-        ? nearestCorner(0, 0, window.innerWidth, window.innerHeight)
+        ? nearestCorner(stage.left, stage.top, stage.width, stage.height)
         : nearestCorner(pos.x, pos.y, size.width, size.height),
     });
   }, [panelId, title, maximized, pos.x, pos.y, size.width, size.height]);

@@ -3133,6 +3133,7 @@ export default function DmDashboard() {
         {/* 3D Scene Canvas */}
         <div
           className="flex-1 relative min-h-0 min-w-0"
+          data-hud-stage
           style={bgCSS ? { background: bgCSS } : undefined}
         >
           {activeScene?.background_path ? (
