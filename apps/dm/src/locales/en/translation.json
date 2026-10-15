@@ -124,6 +124,7 @@
     "distance": "Distance: {{v}} units{{sq}}",
     "dmActions": "DM actions",
     "dmPanel": "DM panel",
+    "layersFogTitle": "Layers and fog",
     "doorMaterial": "Door material",
     "dragPlace": "Drag onto the map or click to place",
     "drawWall": "🧱 Draw wall",

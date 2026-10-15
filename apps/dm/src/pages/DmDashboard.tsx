@@ -2824,8 +2824,16 @@ export default function DmDashboard() {
           )}
         </div>
 
-        {/* Rail derecho contextual — capas y niebla (Mesa) */}
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-1 w-[185px] bg-[var(--bg-secondary)]/90 border border-[var(--bg-tertiary)] rounded-lg p-1.5 shadow-lg">
+        {/* Rail capas/niebla — HudPanel arrastrable/minimizable */}
+        <HudPanel
+          title={t('dm.layersFogTitle', 'Capas y niebla')}
+          panelId="dm-layers"
+          onClose={() => {}}
+          hideClose
+          defaultX={typeof window !== 'undefined' ? window.innerWidth - 201 : 1000}
+          defaultY={200}
+          defaultWidth={185}
+        >
           <div className="px-1.5 text-[10px] uppercase tracking-wide text-[var(--text-secondary)]">{t('dm.layers', 'Capas')}</div>
           <button
             onClick={() => setShowZones((v) => !v)}
@@ -2858,7 +2866,7 @@ export default function DmDashboard() {
           >
             {t('dm.fogZone', '🧩 Niebla de zona (alternar)')}
           </button>
-        </div>
+        </HudPanel>
         {/* Dock inferior — acciones de sesión, siempre abierto en desktop */}
         <div
           className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 max-w-[94vw]"
