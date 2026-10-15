@@ -51,6 +51,7 @@ import ContextMenu, { ContextMenuItem } from '@/components/ContextMenu';
 import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastContainer';
 import TopBar from '@/components/TopBar';
 import MinimizedBar from '@/components/MinimizedBar';
+import HudPanel from '@/components/HudPanel';
 import { Dices, Swords, NotebookPen, ClipboardList, CalendarDays, ScrollText, FolderOpen, Map as MapIcon, Bot, MessageCircle, Zap, BookOpen, StickyNote } from 'lucide-react';
 
 const MAX_HISTORY = 30;
@@ -3188,8 +3189,15 @@ export default function DmDashboard() {
             </div>
           )}
 
-          {/* Token Tray — bottom left, responsive */}
-          <div onPointerDown={(e) => e.stopPropagation()} className="absolute bottom-4 left-4 z-10 bg-[var(--bg-primary)]/90 backdrop-blur border border-[var(--bg-tertiary)] rounded-lg p-2 max-h-64 overflow-y-auto w-44 md:w-52">
+          {/* Token Tray — HudPanel arrastrable/minimizable */}
+          <HudPanel
+            title={t('dm.tokenTrayTitle', 'Fichas')}
+            panelId="dm-token-tray"
+            onClose={() => {}}
+            defaultX={16}
+            defaultY={typeof window !== 'undefined' ? window.innerHeight - 340 : 400}
+            defaultWidth={208}
+          >
             {/* Distance measurement overlay */}
             {distanceFrom && distanceTo && (() => {
               const from = sceneChars.find((s) => s.id === distanceFrom);
@@ -3456,7 +3464,7 @@ export default function DmDashboard() {
               </div>
             );
           })()}
-        </div>
+          </HudPanel>
 
           {/* Character Sheet HUD — bottom right on desktop, bottom sheet on mobile */}
           {selectedChar && selectedEntity && campaignId && (
