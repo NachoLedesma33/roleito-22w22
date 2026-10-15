@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { SquareCheck, Trophy } from 'lucide-react';
 import HudPanel from './HudPanel';
 import { api, type QuestResponse } from '@/lib/api';
 
@@ -53,7 +54,7 @@ export default function PlayerQuestPanel({ campaignId, onClose, revision }: Play
 
   return (
     <HudPanel
-      title="🎯 Misiones"
+      title="Misiones"
       panelId="player-quests"
       onClose={onClose}
       defaultX={window.innerWidth - 380}
@@ -119,13 +120,21 @@ function QuestCard({ q, dim }: { q: QuestResponse; dim?: boolean }) {
                 o.done ? 'text-[var(--text-secondary)] line-through' : ''
               }`}
             >
-              <span className="shrink-0">{o.done ? '☑' : '☐'}</span>
+              <SquareCheck
+                className={`h-3 w-3 shrink-0 ${o.done ? 'text-emerald-500' : ''}`}
+                strokeWidth={o.done ? 2.5 : 1.5}
+              />
               <span className="truncate">{o.label}</span>
             </li>
           ))}
         </ul>
       )}
-      {q.reward && <p className="text-[10px] text-amber-300/80">🏆 {q.reward}</p>}
+      {q.reward && (
+        <p className="text-[10px] text-amber-300/80 flex items-center gap-1">
+          <Trophy className="h-3 w-3 shrink-0" />
+          {q.reward}
+        </p>
+      )}
     </div>
   );
 }

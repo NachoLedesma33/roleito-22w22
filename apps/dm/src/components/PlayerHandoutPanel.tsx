@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import HudPanel from './HudPanel';
 import { api, type HandoutResponse } from '@/lib/api';
 
@@ -53,7 +54,7 @@ export default function PlayerHandoutPanel({
 
   return (
     <HudPanel
-      title="🗂 Documentos"
+      title="Documentos"
       panelId="player-handouts"
       onClose={onClose}
       defaultX={window.innerWidth - 700}
@@ -78,7 +79,11 @@ export default function PlayerHandoutPanel({
                 className="w-full flex items-center gap-1.5 text-left"
               >
                 <span className="shrink-0 text-[10px] text-[var(--text-secondary)]">
-                  {open ? '▾' : '▸'}
+                  {open ? (
+                    <ChevronDown className="h-3 w-3" />
+                  ) : (
+                    <ChevronRight className="h-3 w-3" />
+                  )}
                 </span>
                 <span className="flex-1 truncate text-xs font-medium">{h.title}</span>
               </button>

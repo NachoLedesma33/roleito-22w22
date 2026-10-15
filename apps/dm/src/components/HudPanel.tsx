@@ -1,4 +1,5 @@
 import { useRef, useCallback, useState, useEffect } from 'react';
+import { Copy, Minus, Square, X } from 'lucide-react';
 
 interface HudPanelProps {
   title: string;
@@ -348,27 +349,35 @@ export default function HudPanel({
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
       >
+        <span className="absolute left-2 top-1 text-[10px] leading-none font-medium text-[var(--text-secondary)] truncate max-w-[60%] pointer-events-none select-none">
+          {title}
+        </span>
+
         <div className="absolute right-1 top-1 flex gap-1">
           <button
             onClick={handleMinimize}
-            className="bg-[var(--bg-tertiary)] text-[var(--text-primary)] hover:text-white text-xs leading-none px-1.5 py-0.5 rounded"
+            className="bg-[var(--bg-tertiary)] text-[var(--text-primary)] hover:text-white p-1 rounded"
             title="Minimizar"
+            aria-label="Minimizar"
           >
-            –
+            <Minus className="h-3 w-3" />
           </button>
           <button
             onClick={handleMaximize}
-            className="bg-[var(--bg-tertiary)] text-[var(--text-primary)] hover:text-white text-xs leading-none px-1.5 py-0.5 rounded"
+            className="bg-[var(--bg-tertiary)] text-[var(--text-primary)] hover:text-white p-1 rounded"
             title={maximized ? 'Restaurar' : 'Maximizar'}
+            aria-label={maximized ? 'Restaurar' : 'Maximizar'}
           >
-            {maximized ? '❐' : '☐'}
+            {maximized ? <Copy className="h-3 w-3" /> : <Square className="h-3 w-3" />}
           </button>
           {hideClose ? null : (
             <button
               onClick={onClose}
-              className="bg-[var(--bg-tertiary)] text-[var(--text-primary)] hover:text-white text-xs leading-none px-1.5 py-0.5 rounded"
+              className="bg-[var(--bg-tertiary)] text-[var(--text-primary)] hover:text-white p-1 rounded"
+              title="Cerrar"
+              aria-label="Cerrar"
             >
-              ×
+              <X className="h-3 w-3" />
             </button>
           )}
         </div>

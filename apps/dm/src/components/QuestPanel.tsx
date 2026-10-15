@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { Eye, EyeOff, Pencil, SquareCheck, Trash2, Trophy, X } from 'lucide-react';
 import HudPanel from './HudPanel';
 import { api, type QuestInput, type QuestObjective, type QuestResponse } from '@/lib/api';
 
@@ -135,7 +136,11 @@ export default function QuestPanel({ campaignId, onClose }: QuestPanelProps) {
                   disabled={busy}
                   className="text-[10px] opacity-70 hover:opacity-100"
                 >
-                  {q.visible_to_players ? '👁' : '🚫'}
+                  {q.visible_to_players ? (
+                    <Eye className="h-3.5 w-3.5" />
+                  ) : (
+                    <EyeOff className="h-3.5 w-3.5" />
+                  )}
                 </button>
                 <button
                   type="button"
@@ -143,7 +148,7 @@ export default function QuestPanel({ campaignId, onClose }: QuestPanelProps) {
                   onClick={() => setEditingId(editingId === q.id ? null : q.id)}
                   className="text-[10px] opacity-70 hover:opacity-100"
                 >
-                  ✏️
+                  <Pencil className="h-3.5 w-3.5" />
                 </button>
                 <button
                   type="button"
@@ -152,7 +157,7 @@ export default function QuestPanel({ campaignId, onClose }: QuestPanelProps) {
                   disabled={busy}
                   className="text-[10px] opacity-70 hover:opacity-100"
                 >
-                  🗑
+                  <Trash2 className="h-3.5 w-3.5" />
                 </button>
               </div>
 
@@ -188,14 +193,20 @@ export default function QuestPanel({ campaignId, onClose }: QuestPanelProps) {
                             o.done ? 'text-[var(--text-secondary)] line-through' : ''
                           }`}
                         >
-                          <span className="shrink-0">{o.done ? '☑' : '☐'}</span>
+                          <SquareCheck
+                            className={`h-3 w-3 shrink-0 ${o.done ? 'text-emerald-500' : ''}`}
+                            strokeWidth={o.done ? 2.5 : 1.5}
+                          />
                           <span className="truncate">{o.label}</span>
                         </li>
                       ))}
                     </ul>
                   )}
                   {q.reward && (
-                    <p className="text-[10px] text-amber-300/80">🏆 {q.reward}</p>
+                    <p className="text-[10px] text-amber-300/80 flex items-center gap-1">
+                      <Trophy className="h-3 w-3 shrink-0" />
+                      {q.reward}
+                    </p>
                   )}
                 </>
               )}
@@ -281,8 +292,9 @@ function QuestForm({
               type="button"
               onClick={() => setObjectives((prev) => prev.filter((_, j) => j !== i))}
               className="text-[10px] opacity-60 hover:opacity-100"
+              title="Quitar objetivo"
             >
-              ✕
+              <X className="h-3.5 w-3.5" />
             </button>
           </div>
         ))}

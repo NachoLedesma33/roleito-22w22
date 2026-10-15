@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { Eye, EyeOff, Trash2 } from 'lucide-react';
 import HudPanel from './HudPanel';
 import { api, type CalendarState } from '@/lib/api';
 
@@ -136,7 +137,7 @@ export default function CalendarPanel({ campaignId, onClose }: CalendarPanelProp
 
   return (
     <HudPanel
-      title="📅 Calendario y Relojes"
+      title="Calendario y relojes"
       panelId="calendar"
       onClose={onClose}
       defaultX={window.innerWidth - 420}
@@ -203,7 +204,9 @@ export default function CalendarPanel({ campaignId, onClose }: CalendarPanelProp
               <div>
                 <div className="font-medium">
                   {c.title}
-                  {!c.visible_to_players && <span className="ml-1 text-xs">🚫</span>}
+                  {!c.visible_to_players && (
+                    <EyeOff className="inline h-3 w-3 ml-1 align-[-1px] text-[var(--text-secondary)]" />
+                  )}
                 </div>
                 <Segments total={c.segments_total} filled={c.segments_filled} />
               </div>
@@ -233,7 +236,11 @@ export default function CalendarPanel({ campaignId, onClose }: CalendarPanelProp
                   className="px-1.5 py-0.5 rounded bg-[var(--bg-tertiary)] hover:text-[var(--accent)]"
                   title="Visible para jugadores"
                 >
-                  {c.visible_to_players ? '👁' : '🚫'}
+                  {c.visible_to_players ? (
+                    <Eye className="h-3.5 w-3.5" />
+                  ) : (
+                    <EyeOff className="h-3.5 w-3.5" />
+                  )}
                 </button>
                 <button
                   type="button"
@@ -242,7 +249,7 @@ export default function CalendarPanel({ campaignId, onClose }: CalendarPanelProp
                   className="px-1.5 py-0.5 rounded bg-[var(--bg-tertiary)] hover:text-red-400"
                   title="Eliminar reloj"
                 >
-                  🗑
+                  <Trash2 className="h-3.5 w-3.5" />
                 </button>
               </div>
             </div>

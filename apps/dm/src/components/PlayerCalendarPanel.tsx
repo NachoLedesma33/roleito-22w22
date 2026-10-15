@@ -27,7 +27,7 @@ export default function PlayerCalendarPanel({ campaignId, onClose }: PlayerCalen
 
   return (
     <HudPanel
-      title="📅 Calendario"
+      title="Calendario"
       panelId="player-calendar"
       onClose={onClose}
       defaultX={window.innerWidth - 360}

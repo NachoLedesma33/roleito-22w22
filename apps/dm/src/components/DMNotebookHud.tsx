@@ -1,4 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
+import {
+  ArrowLeft,
+  BookOpen,
+  Map as MapIcon,
+  MapPin,
+  NotebookPen,
+  Pin,
+  Scale,
+  ScrollText,
+  Trash2,
+  Users,
+  type LucideIcon,
+} from 'lucide-react';
 import HudPanel from './HudPanel';
 import VoiceInputButton from './VoiceInputButton';
 import { api, DMNotebook, DMNotebookVersion } from '@/lib/api';
@@ -17,14 +30,19 @@ const CATEGORIES = [
   { value: 'decisions', label: 'Decisiones' },
 ];
 
-const CATEGORY_ICONS: Record<string, string> = {
-  notes: '📝',
-  rules: '📜',
-  lore: '📖',
-  locations: '🗺',
-  npcs: '👤',
-  decisions: '⚖️',
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  notes: NotebookPen,
+  rules: ScrollText,
+  lore: BookOpen,
+  locations: MapIcon,
+  npcs: Users,
+  decisions: Scale,
 };
+
+function CategoryGlyph({ category }: { category: string }) {
+  const Icon = CATEGORY_ICONS[category] ?? NotebookPen;
+  return <Icon className="h-3.5 w-3.5 shrink-0 text-[var(--text-secondary)]" />;
+}
 
 function formatTime(ts: string): string {
   return new Date(ts).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -157,7 +175,8 @@ export default function DMNotebookHud({ campaignId, onClose }: DMNotebookHudProp
                   filterCat === c.value ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
-                {CATEGORY_ICONS[c.value]} {c.label} ({count})
+                <CategoryGlyph category={c.value} />
+                {c.label} ({count})
               </button>
             );
           })}
@@ -227,7 +246,11 @@ export default function DMNotebookHud({ campaignId, onClose }: DMNotebookHudProp
                 className="text-xs"
                 title={selected.pinned ? 'Desfijar' : 'Fijar'}
               >
-                {selected.pinned ? '📌' : '📍'}
+                {selected.pinned ? (
+                  <Pin className="h-3.5 w-3.5" />
+                ) : (
+                  <MapPin className="h-3.5 w-3.5" />
+                )}
               </button>
               <VoiceInputButton onResult={handleDictation} disabled={!editing} />
               <button
@@ -235,7 +258,7 @@ export default function DMNotebookHud({ campaignId, onClose }: DMNotebookHudProp
                 className="text-[var(--text-secondary)] hover:text-red-400 text-xs"
                 title="Eliminar"
               >
-                🗑
+                <Trash2 className="h-3.5 w-3.5" />
               </button>
             </div>
 
@@ -265,7 +288,9 @@ export default function DMNotebookHud({ campaignId, onClose }: DMNotebookHudProp
               }}
               className="text-[10px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             >
-              ← Volver a la lista
+              <span className="inline-flex items-center gap-1">
+                <ArrowLeft className="h-3 w-3" /> Volver a la lista
+              </span>
             </button>
           </div>
         ) : showVersions ? (
@@ -274,7 +299,9 @@ export default function DMNotebookHud({ campaignId, onClose }: DMNotebookHudProp
               onClick={() => setShowVersions(false)}
               className="text-[10px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             >
-              ← Volver a la nota
+              <span className="inline-flex items-center gap-1">
+                <ArrowLeft className="h-3 w-3" /> Volver a la nota
+              </span>
             </button>
             <p className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">Historial de versiones</p>
             {versions.length === 0 ? (
@@ -317,9 +344,10 @@ export default function DMNotebookHud({ campaignId, onClose }: DMNotebookHudProp
                   onClick={() => setSelectedId(n.id)}
                   className="w-full text-left px-2 py-1.5 rounded hover:bg-[var(--bg-tertiary)] transition-colors flex items-center gap-2"
                 >
-                  <span className="text-xs shrink-0">{CATEGORY_ICONS[n.category] || '📝'}</span>
-                  <span className="text-xs font-medium truncate flex-1">
-                    {n.pinned ? '📌 ' : ''}{n.title}
+                  <CategoryGlyph category={n.category} />
+                  <span className="text-xs font-medium truncate flex-1 flex items-center gap-1">
+                    {n.pinned && <Pin className="h-3 w-3 shrink-0 text-amber-400" />}
+                    {n.title}
                   </span>
                   <span className="text-[10px] text-[var(--text-secondary)] shrink-0">
                     {formatTime(n.updated_at)}

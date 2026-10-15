@@ -5,7 +5,7 @@ import AudioSettingsMenu from '@/components/AudioSettingsMenu';
 import i18n from '@/lib/i18n';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
-import { BookOpen, CalendarDays, Dices, Flame, Flashlight, FolderOpen, Target, Volume2, VolumeX } from 'lucide-react';
+import { BookOpen, CalendarDays, Dices, Flame, Flashlight, FolderOpen, Target, Volume2, VolumeX, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, RotateCcw, RotateCw } from 'lucide-react';
 import * as THREE from 'three';
 import SceneRenderer from '@/components/SceneRenderer';
 import DiceRoller, { rollDice } from '@/components/DiceRoller';
@@ -1487,12 +1487,12 @@ export default function PlayerView() {
             className="absolute bottom-4 left-4 z-10 hidden [@media(pointer:coarse)]:grid grid-cols-3 gap-1 select-none touch-none"
           >
             {[
-              { k: 'q', label: '↺', name: t('pv.rotateLeft', 'Girar a la izquierda') },
-              { k: 'w', label: '▲', name: t('pv.moveUp', 'Mover adelante') },
-              { k: 'e', label: '↻', name: t('pv.rotateRight', 'Girar a la derecha') },
-              { k: 'a', label: '◀', name: t('pv.moveLeft', 'Mover a la izquierda') },
-              { k: 's', label: '▼', name: t('pv.moveDown', 'Mover atrás') },
-              { k: 'd', label: '▶', name: t('pv.moveRight', 'Mover a la derecha') },
+              { k: 'q', label: <RotateCcw className="h-4 w-4" />, name: t('pv.rotateLeft', 'Girar a la izquierda') },
+              { k: 'w', label: <ArrowUp className="h-4 w-4" />, name: t('pv.moveUp', 'Mover adelante') },
+              { k: 'e', label: <RotateCw className="h-4 w-4" />, name: t('pv.rotateRight', 'Girar a la derecha') },
+              { k: 'a', label: <ArrowLeft className="h-4 w-4" />, name: t('pv.moveLeft', 'Mover a la izquierda') },
+              { k: 's', label: <ArrowDown className="h-4 w-4" />, name: t('pv.moveDown', 'Mover atrás') },
+              { k: 'd', label: <ArrowRight className="h-4 w-4" />, name: t('pv.moveRight', 'Mover a la derecha') },
             ].map((b) => (
               <button
                 key={b.k}

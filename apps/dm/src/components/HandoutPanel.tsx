@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { Eye, EyeOff, Image as ImageIcon, Pencil, Trash2 } from 'lucide-react';
 import HudPanel from './HudPanel';
 import { api, type HandoutInput, type HandoutResponse } from '@/lib/api';
 
@@ -171,7 +172,11 @@ export default function HandoutPanel({ campaignId, onClose }: HandoutPanelProps)
                     disabled={busy}
                     className="text-[10px] opacity-70 hover:opacity-100"
                   >
-                    {h.visible_to_players ? '👁' : '🚫'}
+                    {h.visible_to_players ? (
+                      <Eye className="h-3.5 w-3.5" />
+                    ) : (
+                      <EyeOff className="h-3.5 w-3.5" />
+                    )}
                   </button>
                   <button
                     type="button"
@@ -179,7 +184,7 @@ export default function HandoutPanel({ campaignId, onClose }: HandoutPanelProps)
                     onClick={() => setEditingId(editingId === h.id ? null : h.id)}
                     className="text-[10px] opacity-70 hover:opacity-100"
                   >
-                    ✏️
+                    <Pencil className="h-3.5 w-3.5" />
                   </button>
                   <button
                     type="button"
@@ -188,7 +193,7 @@ export default function HandoutPanel({ campaignId, onClose }: HandoutPanelProps)
                     disabled={busy}
                     className="text-[10px] opacity-70 hover:opacity-100"
                   >
-                    🗑
+                    <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
 
@@ -209,7 +214,8 @@ export default function HandoutPanel({ campaignId, onClose }: HandoutPanelProps)
                         : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
                   >
-                    🖼 {img ? 'Reemplazar imagen' : 'Subir imagen'}
+                    <ImageIcon className="inline h-3 w-3 align-[-1px] mr-1" />
+                    {img ? 'Reemplazar imagen' : 'Subir imagen'}
                     <input
                       type="file"
                       accept="image/*"

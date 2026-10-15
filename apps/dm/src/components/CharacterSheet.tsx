@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { Volume2 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import HudPanel from './HudPanel';
 import { api, Character, NPC, InventoryItem, Spell, CampaignAbility } from '@/lib/api';
@@ -364,8 +365,11 @@ export default function CharacterSheet({
     return (
       <div className="mt-1 p-1.5 rounded bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] space-y-1.5">
         <div className="flex items-center gap-1 text-[10px]">
-          <span className={audioPath ? 'text-emerald-400' : 'text-[var(--text-secondary)]'}>
-            {audioPath ? '♪ Tiene sonido' : 'Sin sonido'}
+          <span
+            className={`inline-flex items-center gap-1 ${audioPath ? 'text-emerald-400' : 'text-[var(--text-secondary)]'}`}
+          >
+            {audioPath && <Volume2 className="h-3 w-3" />}
+            {audioPath ? 'Tiene sonido' : 'Sin sonido'}
           </span>
           <button
             onClick={() => {
