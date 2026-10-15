@@ -51,6 +51,7 @@ import ContextMenu, { ContextMenuItem } from '@/components/ContextMenu';
 import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastContainer';
 import TopBar from '@/components/TopBar';
 import MinimizedBar from '@/components/MinimizedBar';
+import { Dices, Swords, NotebookPen, ClipboardList, CalendarDays, ScrollText, FolderOpen, Map as MapIcon, Bot, MessageCircle, Zap, BookOpen, StickyNote } from 'lucide-react';
 
 const MAX_HISTORY = 30;
 
@@ -100,22 +101,13 @@ export default function DmDashboard() {
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [showAssistant, setShowAssistant] = useState(false);
   const [showSceneSettings, setShowSceneSettings] = useState(false);
-  const [dockExpanded, setDockExpanded] = useState(false);
-  const [dockMoreOpen, setDockMoreOpen] = useState(false);
+  // Dock abierto por defecto en desktop; colapsado en pantallas chicas (el
+  // pill ⋯ lo reabre). Sin auto-colapso por click-afuera: en desktop queda fijo.
+  const [dockExpanded, setDockExpanded] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches,
+  );
   const [cmdOpen, setCmdOpen] = useState(false);
   const [cmdQuery, setCmdQuery] = useState('');
-  const dockRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const closeDock = (e: MouseEvent) => {
-      if (dockRef.current && !dockRef.current.contains(e.target as Node)) {
-        setDockExpanded(false);
-        setDockMoreOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', closeDock);
-    return () => document.removeEventListener('mousedown', closeDock);
-  }, []);
   const [distanceFrom, setDistanceFrom] = useState<string | null>(null);
   const [distanceTo, setDistanceTo] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
@@ -2853,64 +2845,64 @@ export default function DmDashboard() {
             {t('dm.fogZone', '🧩 Niebla de zona (alternar)')}
           </button>
         </div>
-        {/* Dock inferior — acciones de sesión, colapsable */}
+        {/* Dock inferior — acciones de sesión, siempre abierto en desktop */}
         <div
-          ref={dockRef}
-          className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30"
+          className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 max-w-[94vw]"
           onMouseEnter={() => setDockExpanded(true)}
+          title={t('dm.dmActions', 'Acciones del DM')}
         >
-          <div className="flex items-center gap-0.5 rounded-full bg-[var(--bg-primary)]/95 backdrop-blur border border-[var(--bg-tertiary)] px-2 py-1.5 shadow-xl">
+          <div className="flex items-center gap-0.5 rounded-full bg-[var(--bg-primary)]/95 backdrop-blur border border-[var(--bg-tertiary)] px-2 py-1.5 shadow-xl overflow-x-auto">
             {dockExpanded ? (
               <>
                 <button
                   onClick={() => setShowDiceRoller(!showDiceRoller)}
-                  className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${showDiceRoller ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
+                  className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${showDiceRoller ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
                   title={t('dm.diceTitle', 'Tirar dados (D)')}
                 >
-                  🎲
+                  <Dices className="h-5 w-5" />
                 </button>
                 <button
                   onClick={() => setShowInitiative(!showInitiative)}
-                  className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${showInitiative ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
+                  className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${showInitiative ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
                   title={t('dm.initiativeTitle', 'Iniciativa')}
                 >
-                  ⚔
+                  <Swords className="h-5 w-5" />
                 </button>
                 <button
                   onClick={() => setShowNotebook(!showNotebook)}
-                  className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${showNotebook ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
+                  className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${showNotebook ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
                   title={t('dm.notebookTitle', 'Cuaderno del DM (N)')}
                 >
-                  📓
+                  <NotebookPen className="h-5 w-5" />
                 </button>
                 <button
                   onClick={() => setShowRecap(!showRecap)}
-                  className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${showRecap ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
+                  className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${showRecap ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
                   title={t('dm.recapTitle', 'Resumen de sesión (R)')}
                 >
-                  📋
+                  <ClipboardList className="h-5 w-5" />
                 </button>
                 <button
                   onClick={() => setShowCalendar(!showCalendar)}
-                  className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${showCalendar ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
+                  className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${showCalendar ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
                   title={t('dm.calendarTitle', 'Calendario y relojes')}
                 >
-                  📅
+                  <CalendarDays className="h-5 w-5" />
                 </button>
                 <button
                   onClick={() => setShowQuests(!showQuests)}
-                  className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${showQuests ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
+                  className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${showQuests ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
                   title={t('dm.questsTitle', 'Tablón de misiones')}
                 >
-                  📜
+                  <ScrollText className="h-5 w-5" />
                 </button>
                 <button
                   onClick={() => setShowHandouts(!showHandouts)}
-                  className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${showHandouts ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
+                  className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${showHandouts ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
                   title={t('dm.handoutsTitle', 'Documentos para jugadores')}
                   data-testid="handouts-toggle"
                 >
-                  🗂
+                  <FolderOpen className="h-5 w-5" />
                 </button>
                 {activeScene?.map_id && (
                   <button
@@ -2918,64 +2910,50 @@ export default function DmDashboard() {
                       const m = maps.find((m) => m.id === activeScene.map_id);
                       if (m) setViewingMap(m);
                     }}
-                    className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                    className="w-10 h-10 flex items-center justify-center rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
                     title={t('dm.openMapTitle', 'Abrir mapa')}
                   >
-                    🗺
+                    <MapIcon className="h-5 w-5" />
                   </button>
                 )}
                 <div className="w-px h-5 bg-[var(--bg-tertiary)] mx-1" />
-                <div className="relative">
-                  <button
-                    onClick={() => setDockMoreOpen((v) => !v)}
-                    className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
-                    title={t('dm.moreActions', 'Más acciones')}
-                    aria-label={t('dm.moreActions', 'Más acciones')}
-                  >
-                    ＋
-                  </button>
-                  {dockMoreOpen && (
-                    <div className="absolute bottom-full right-0 mb-2 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded-lg shadow-xl p-1 min-w-[180px]">
-                    <button
-                      onClick={() => setShowAIPanel(!showAIPanel)}
-                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs rounded transition-colors ${showAIPanel ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
-                      title={t('dm.aiPanelTitle', 'Configuración de IA')}
-                      data-testid="ai-panel-button"
-                    >
-                      {t('dm.aiPanel', '🤖 Configuración de IA')}
-                    </button>
-                    <button
-                      onClick={() => setShowAssistant(!showAssistant)}
-                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs rounded transition-colors ${showAssistant ? 'bg-violet-700 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
-                      title={t('dm.assistantTitle', 'Asistente del DM')}
-                      data-testid="dm-assistant-button"
-                    >
-                      {t('dm.assistant', '💬 Asistente del DM')}
-                    </button>
-                    <button
-                      onClick={() => setShowQuickActions(!showQuickActions)}
-                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs rounded transition-colors ${showQuickActions ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
-                      title={t('dm.quickActionsTitle', 'Acciones rápidas')}
-                    >
-                      {t('dm.quickActions', '⚡ Acciones rápidas')}
-                    </button>
-                    <button
-                      onClick={() => setShowSessionLog(!showSessionLog)}
-                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs rounded transition-colors ${showSessionLog ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
-                      title={t('dm.sessionLogTitle', 'Bitácora de sesión')}
-                    >
-                      {t('dm.sessionLog', '📋 Bitácora')}
-                    </button>
-                    <button
-                      onClick={() => setShowSceneNotes(!showSceneNotes)}
-                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs rounded transition-colors ${showSceneNotes ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
-                      title={t('dm.sceneNotesTitle', 'Notas de la escena')}
-                    >
-                      {t('dm.sceneNotes', '📝 Notas de la escena')}
-                    </button>
-                    </div>
-                  )}
-                </div>
+                <button
+                  onClick={() => setShowAIPanel(!showAIPanel)}
+                  className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${showAIPanel ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
+                  title={t('dm.aiPanelTitle', 'Configuración de IA')}
+                  data-testid="ai-panel-button"
+                >
+                  <Bot className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => setShowAssistant(!showAssistant)}
+                  className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${showAssistant ? 'bg-violet-700 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
+                  title={t('dm.assistantTitle', 'Asistente del DM')}
+                  data-testid="dm-assistant-button"
+                >
+                  <MessageCircle className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => setShowQuickActions(!showQuickActions)}
+                  className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${showQuickActions ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
+                  title={t('dm.quickActionsTitle', 'Acciones rápidas')}
+                >
+                  <Zap className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => setShowSessionLog(!showSessionLog)}
+                  className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${showSessionLog ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
+                  title={t('dm.sessionLogTitle', 'Bitácora de sesión')}
+                >
+                  <BookOpen className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => setShowSceneNotes(!showSceneNotes)}
+                  className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${showSceneNotes ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
+                  title={t('dm.sceneNotesTitle', 'Notas de la escena')}
+                >
+                  <StickyNote className="h-5 w-5" />
+                </button>
               </>
             ) : (
               <button

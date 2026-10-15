@@ -119,8 +119,7 @@ test.describe('AI Provider Layer', () => {
     await page.goto(`/campaigns/${campaign.id}`);
     await page.locator('header select').selectOption(scene.id);
 
-    await page.getByTitle('Acciones del DM').hover();
-    await page.getByTitle('Más acciones').click();
+    // Dock siempre abierto en desktop: botones directos, sin ＋ intermedio.
     await page.getByTestId('ai-panel-button').click();
     const panel = page.getByTestId('ai-settings-panel');
     await expect(panel).toBeVisible();
@@ -158,8 +157,7 @@ test.describe('AI Provider Layer', () => {
     await page.goto(`/campaigns/${campaign.id}`);
     await page.locator('header select').selectOption(scene.id);
 
-    await page.getByTitle('Acciones del DM').hover();
-    await page.getByTitle('Más acciones').click();
+    // Dock siempre abierto en desktop: botones directos, sin ＋ intermedio.
     await page.getByTestId('dm-assistant-button').click();
     const input = page.getByTestId('dm-assistant-input');
     await expect(input).toBeVisible();
