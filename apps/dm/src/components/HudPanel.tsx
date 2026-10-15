@@ -278,14 +278,14 @@ export default function HudPanel({
         <div className="absolute right-1 top-1 opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity flex gap-1">
           <button
             onClick={handleMinimize}
-            className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs leading-none px-1"
+            className="bg-[var(--bg-tertiary)] text-[var(--text-primary)] hover:text-white text-xs leading-none px-1.5 py-0.5 rounded"
             title="Minimizar"
           >
             –
           </button>
           <button
             onClick={onClose}
-            className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs leading-none px-1"
+            className="bg-[var(--bg-tertiary)] text-[var(--text-primary)] hover:text-white text-xs leading-none px-1.5 py-0.5 rounded"
           >
             ×
           </button>

@@ -6,7 +6,7 @@ export default function MinimizedBar() {
   if (panels.length === 0) return null;
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-30">
+    <div className="fixed bottom-20 left-1/2 -translate-x-1/2 flex gap-2 z-30">
       {panels.map((p) => (
         <button
           key={p.panelId}
