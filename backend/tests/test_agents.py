@@ -13,6 +13,7 @@ from core.agents.recap import RecapAgent
 from core.agents.session_processor import SessionProcessor
 from core.agents.orchestrator import OrchestratorAgent, TaskType
 from core.agents.ingestion import IngestionAgent, ingest_text, ingest_document
+from core.agents.world_state import WorldStateAgent
 from core.agents.context_manager import (
     ContextProfile,
     build_context,
@@ -200,3 +201,29 @@ async def test_ingestion_agent_run_ok_and_blank_errors():
     assert ok.data.title == "Night"
     bad = await agent.run(text="   \n  ")
     assert bad.status == "error"
+
+
+async def test_world_state_success():
+    agent = WorldStateAgent(_mock())
+    res = await agent.run(
+        question="Where is Ardan?",
+        characters=[{"name": "Ardan", "location": "Dungeon entrance"}],
+        quests=[{"title": "Find the amulet", "status": "active"}],
+    )
+    assert res.status == "success", res.error
+    assert res.agent_id == "world-state"
+    assert res.data.answer
+    assert isinstance(res.data.positions, list)
+    assert isinstance(res.data.active_quests, list)
+
+
+async def test_world_state_empty_question_errors():
+    agent = WorldStateAgent(_mock())
+    res = await agent.run(question="  ")
+    assert res.status == "error"
+
+
+async def test_world_state_garbage_json_errors():
+    agent = WorldStateAgent(GarbageProvider())
+    res = await agent.run(question="Where is Ardan?")
+    assert res.status == "error"

@@ -113,5 +113,13 @@ class MockProvider(AIProvider):
                 "suggested_effects": ["fog", "flickering light", "ambient sounds"],
             })
 
+        if "world state" in system.lower():
+            return json.dumps({
+                "answer": "Ardan is at the Dungeon entrance. Active quest: Find the amulet.",
+                "positions": [{"entity": "Ardan", "location": "Dungeon entrance"}],
+                "active_quests": ["Find the amulet"],
+                "confidence": 0.7,
+            })
+
         digest = hashlib.sha1(f"{system}|{prompt}".encode()).hexdigest()[:8]
         return f"[mock:{model or 'mock-1'}:{digest}] {prompt[:120]}"
