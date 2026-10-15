@@ -18,6 +18,7 @@ const MIN_WIDTH = 200;
 const MAX_WIDTH = 600;
 const MIN_HEIGHT = 150;
 const BASE_Z = 20;
+const MAX_Z = 29;
 let nextZ = BASE_Z;
 const STORAGE_PREFIX = 'roleito:hud:';
 const EDGE = 6;
@@ -136,7 +137,7 @@ export default function HudPanel({
   const resizeStart = useRef({ x: 0, y: 0, w: 0, h: 0, px: 0, py: 0 });
 
   const bringToFront = useCallback(() => {
-    nextZ++;
+    nextZ = Math.min(nextZ + 1, MAX_Z);
     setZIndex(nextZ);
   }, []);
 

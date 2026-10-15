@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, Suspense, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/lib/i18n';
 import { useParams, Link } from 'react-router-dom';
@@ -136,6 +137,7 @@ export default function DmDashboard() {
   const [buildMenuOpen, setBuildMenuOpen] = useState(false);
   const [lightingMenuRect, setLightingMenuRect] = useState<{ left: number; top: number } | null>(null);
   const [weatherMenuRect, setWeatherMenuRect] = useState<{ left: number; top: number } | null>(null);
+  const [buildMenuRect, setBuildMenuRect] = useState<{ left: number; top: number } | null>(null);
   // Los menús de clima y lighting abren con click, no con hover: en táctil el
   // hover no existe y el menú era inalcanzable.
   const [openMenu, setOpenMenu] = useState<'lighting' | 'weather' | null>(null);
@@ -160,7 +162,7 @@ export default function DmDashboard() {
   useEffect(() => {
     if (!openMenu) return;
     const onPointerDown = (e: MouseEvent) => {
-      if (!(e.target as HTMLElement).closest('[data-menu-root]')) setOpenMenu(null);
+      if (!(e.target as HTMLElement).closest('[data-menu-root],[data-testid="lighting-menu"],[data-testid="weather-menu"]')) setOpenMenu(null);
     };
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpenMenu(null);
@@ -1173,7 +1175,11 @@ export default function DmDashboard() {
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      if (buildMenuRef.current && !buildMenuRef.current.contains(e.target as Node)) {
+      if (
+        buildMenuRef.current &&
+        !buildMenuRef.current.contains(e.target as Node) &&
+        !(e.target as HTMLElement).closest?.('[data-testid="build-menu"]')
+      ) {
         setBuildMenuOpen(false)
       }
     }
@@ -2115,13 +2121,17 @@ export default function DmDashboard() {
             </div>
             <div ref={buildMenuRef} className="relative shrink-0">
               <button
-                onClick={() => setBuildMenuOpen(!buildMenuOpen)}
+                onClick={(e) => {
+                  const r = e.currentTarget.getBoundingClientRect();
+                  setBuildMenuRect({ left: Math.max(8, r.left), top: r.bottom + 2 });
+                  setBuildMenuOpen(!buildMenuOpen);
+                }}
                 className={`w-full text-xs px-2 py-1 rounded transition-colors ${drawState || zoneDraft || portalDraft || fogMode || rectFogMode || zoneFogActive || lightPlaceMode || attachLightMode ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
               >
                 {t('dm.build', '🧱 Construir ▾')}
               </button>
-              {buildMenuOpen && (
-                <div className="absolute left-0 top-full mt-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg z-50 min-w-[180px]">
+              {buildMenuOpen && createPortal(
+                <div data-testid="build-menu" className="fixed bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg z-50 min-w-[180px]" style={{ left: buildMenuRect?.left ?? -9999, top: buildMenuRect?.top ?? -9999 }}>
                   <button
                     onClick={() => startDrawMode('wall')}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawState?.mode === 'wall' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
@@ -2253,7 +2263,8 @@ export default function DmDashboard() {
                       ))}
                     </div>
                   </div>
-                </div>
+                </div>,
+                document.body,
               )}
             </div>
             <button
@@ -2282,12 +2293,11 @@ export default function DmDashboard() {
               >
                 {{ neutral: t('dm.lightNeutral', 'Neutra'), dark: t('dm.lightDark', 'Oscura'), dim: t('dm.lightDim', 'Tenue'), bright: t('dm.lightBright', 'Brillante'), torchlight: t('dm.lightTorch', 'Antorcha') }[activeScene?.lighting || 'neutral'] || activeScene?.lighting || t('dm.lightNeutral', 'Neutra')} ▾
               </button>
+              {openMenu === 'lighting' && createPortal(
               <div
                 role="menu"
                 data-testid="lighting-menu"
-                className={`fixed bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg transition-all z-50 min-w-[150px] py-0.5 ${
-                  openMenu === 'lighting' ? 'opacity-100 visible' : 'opacity-0 invisible'
-                }`}
+                className="fixed bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg z-50 min-w-[150px] py-0.5"
                 style={{ left: lightingMenuRect?.left ?? -9999, top: lightingMenuRect?.top ?? -9999 }}
               >
                 {['neutral', 'dark', 'dim', 'bright', 'torchlight'].map((mode) => (
@@ -2302,7 +2312,9 @@ export default function DmDashboard() {
                     {{ neutral: t('dm.lightNeutral', 'Neutra'), dark: t('dm.lightDark', 'Oscura'), dim: t('dm.lightDim', 'Tenue'), bright: t('dm.lightBright', 'Brillante'), torchlight: t('dm.lightTorch', 'Antorcha') }[mode] || mode}
                   </button>
                 ))}
-              </div>
+              </div>,
+              document.body,
+              )}
             </div>
             <AudioSettingsMenu
               className="ml-1"
@@ -2321,12 +2333,11 @@ export default function DmDashboard() {
               >
                 {(activeScene?.weather && WEATHER_META[activeScene.weather] ? t(`dm.weather.${activeScene.weather}`, WEATHER_META[activeScene.weather].label) : t('dm.weather.none', WEATHER_NONE_LABEL))} ▾
               </button>
+              {openMenu === 'weather' && createPortal(
               <div
                 role="menu"
                 data-testid="weather-menu"
-                className={`fixed bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg transition-all z-50 min-w-[170px] py-0.5 ${
-                  openMenu === 'weather' ? 'opacity-100 visible' : 'opacity-0 invisible'
-                }`}
+                className="fixed bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg z-50 min-w-[170px] py-0.5"
                 style={{ left: weatherMenuRect?.left ?? -9999, top: weatherMenuRect?.top ?? -9999 }}
               >
                 <button
@@ -2390,7 +2401,9 @@ export default function DmDashboard() {
                     </div>
                   </div>
                 )}
-              </div>
+              </div>,
+              document.body,
+              )}
             </div>
             <button
               onClick={() => setShowSceneSettings(!showSceneSettings)}

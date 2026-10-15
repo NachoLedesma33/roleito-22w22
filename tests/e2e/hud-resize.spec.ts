@@ -57,7 +57,7 @@ test.describe('HUD resize/snap/minimizar', () => {
     const box = (await panel.boundingBox())!;
 
     await page.mouse.move(box.x + box.width - 24, box.y + 4);
-    await page.getByTitle('Minimizar').click();
+    await panel.getByTitle('Minimizar').click();
 
     await expect(panel).not.toBeVisible();
     const pill = page.getByRole('button', { name: 'Tirada de dados' });
