@@ -133,6 +133,8 @@ export default function HudPanel({
   const [resizeEdge, setResizeEdge] = useState<ResizeEdge | null>(null);
   const [zIndex, setZIndex] = useState(BASE_Z);
   const [minimized, setMinimized] = useState(false);
+  const [maximized, setMaximized] = useState(false);
+  const prevGeom = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
   const dragOffset = useRef({ x: 0, y: 0 });
   const resizeStart = useRef({ x: 0, y: 0, w: 0, h: 0, px: 0, py: 0 });
 
@@ -158,6 +160,20 @@ export default function HudPanel({
     });
   }, [panelId, title]);
 
+  const handleMaximize = useCallback(() => {
+    if (maximized) {
+      const g = prevGeom.current;
+      if (g) {
+        setPos({ x: g.x, y: g.y });
+        setSize({ width: g.w, height: g.h });
+      }
+      setMaximized(false);
+    } else {
+      prevGeom.current = { x: pos.x, y: pos.y, w: size.width, h: size.height };
+      setMaximized(true);
+    }
+  }, [maximized, pos, size]);
+
   useEffect(() => {
     if (!minimized) {
       unregisterMinimized(panelId);
@@ -166,7 +182,7 @@ export default function HudPanel({
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
-      if (!panelRef.current) return;
+      if (!panelRef.current || maximized) return;
       e.preventDefault();
       e.stopPropagation();
       bringToFront();
@@ -177,7 +193,7 @@ export default function HudPanel({
       setIsDragging(true);
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
     },
-    [pos, bringToFront]
+    [pos, bringToFront, maximized]
   );
 
   const handlePointerMove = useCallback(
@@ -200,6 +216,7 @@ export default function HudPanel({
 
   const handleResizeDown = useCallback(
     (edge: ResizeEdge) => (e: React.PointerEvent) => {
+      if (maximized) return;
       e.preventDefault();
       e.stopPropagation();
       bringToFront();
@@ -214,7 +231,7 @@ export default function HudPanel({
       setResizeEdge(edge);
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
     },
-    [size, pos, bringToFront]
+    [size, pos, bringToFront, maximized]
   );
 
   const handleResizeMove = useCallback(
@@ -258,30 +275,41 @@ export default function HudPanel({
       ref={panelRef}
       data-testid={`hud-${panelId}`}
       className={`fixed bg-[var(--bg-primary)] [backdrop-filter:blur(2px)] border border-[var(--bg-tertiary)] rounded-lg shadow-lg flex flex-col ${className}`}
-      style={{
-        left: pos.x,
-        top: pos.y,
-        width: size.width,
-        height: size.height,
-        maxHeight: '80vh',
-        zIndex,
-        cursor: isDragging ? 'grabbing' : resizeEdge ? CURSORS[resizeEdge] : 'default',
-      }}
+      style={
+        maximized
+          ? { left: '4vw', top: '4vh', width: '92vw', height: '88vh', zIndex, cursor: 'default' }
+          : {
+              left: pos.x,
+              top: pos.y,
+              width: size.width,
+              height: size.height,
+              maxHeight: '80vh',
+              zIndex,
+              cursor: isDragging ? 'grabbing' : resizeEdge ? CURSORS[resizeEdge] : 'default',
+            }
+      }
     >
-      {/* Drag bar — invisible but functional */}
+      {/* Drag bar — botones siempre visibles */}
       <div
-        className="absolute inset-x-0 top-0 h-6 cursor-grab active:cursor-grabbing opacity-0 group"
+        className="absolute inset-x-0 top-0 h-6 cursor-grab active:cursor-grabbing group"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
       >
-        <div className="absolute right-1 top-1 opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity flex gap-1">
+        <div className="absolute right-1 top-1 flex gap-1">
           <button
             onClick={handleMinimize}
             className="bg-[var(--bg-tertiary)] text-[var(--text-primary)] hover:text-white text-xs leading-none px-1.5 py-0.5 rounded"
             title="Minimizar"
           >
             –
+          </button>
+          <button
+            onClick={handleMaximize}
+            className="bg-[var(--bg-tertiary)] text-[var(--text-primary)] hover:text-white text-xs leading-none px-1.5 py-0.5 rounded"
+            title={maximized ? 'Restaurar' : 'Maximizar'}
+          >
+            {maximized ? '❐' : '☐'}
           </button>
           <button
             onClick={onClose}
