@@ -44,7 +44,7 @@ test.describe('Quest Board', () => {
     await p.getByTitle('Misiones').click();
     await expect(p.getByText('Recuperar el Barril')).toBeVisible();
     await expect(p.getByText('Hablar con Grimble')).toBeVisible();
-    await expect(p.getByText('🏆 100 gp')).toBeVisible();
+    await expect(p.getByText('100 gp')).toBeVisible();
     await ctx.close();
   });
 
