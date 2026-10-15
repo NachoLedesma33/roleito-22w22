@@ -3525,7 +3525,7 @@ export default function DmDashboard() {
 
           {/* Character Sheet HUD — bottom right on desktop, bottom sheet on mobile */}
           {selectedChar && selectedEntity && campaignId && (
-            <div onPointerDown={(e) => e.stopPropagation()} className="absolute bottom-4 right-4 z-10 max-sm:left-4 max-sm:right-4 max-sm:bottom-0 max-sm:rounded-b-none">
+            <div onPointerDown={(e) => e.stopPropagation()} className="absolute bottom-4 right-4 z-50 max-sm:left-4 max-sm:right-4 max-sm:bottom-0 max-sm:rounded-b-none">
               <CharacterSheet
                 entity={selectedChar}
                 entityType={selectedEntity.entity_type as 'character' | 'npc'}
