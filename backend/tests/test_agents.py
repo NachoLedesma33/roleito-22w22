@@ -14,6 +14,7 @@ from core.agents.session_processor import SessionProcessor
 from core.agents.orchestrator import OrchestratorAgent, TaskType
 from core.agents.ingestion import IngestionAgent, ingest_text, ingest_document
 from core.agents.world_state import WorldStateAgent
+from core.agents.scene_agent import SceneAgent
 from core.agents.context_manager import (
     ContextProfile,
     build_context,
@@ -226,4 +227,26 @@ async def test_world_state_empty_question_errors():
 async def test_world_state_garbage_json_errors():
     agent = WorldStateAgent(GarbageProvider())
     res = await agent.run(question="Where is Ardan?")
+    assert res.status == "error"
+
+
+async def test_scene_success():
+    agent = SceneAgent(_mock())
+    res = await agent.run(scene_description="The party enters an underground prison.", mood="tense")
+    assert res.status == "success", res.error
+    assert res.agent_id == "scene"
+    assert res.data.environment
+    assert res.data.lighting in ("dark", "dim", "neutral", "bright")
+    assert isinstance(res.data.structures, list)
+
+
+async def test_scene_empty_description_errors():
+    agent = SceneAgent(_mock())
+    res = await agent.run(scene_description="  ")
+    assert res.status == "error"
+
+
+async def test_scene_garbage_json_errors():
+    agent = SceneAgent(GarbageProvider())
+    res = await agent.run(scene_description="The party enters an underground prison.")
     assert res.status == "error"

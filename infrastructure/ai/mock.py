@@ -121,5 +121,14 @@ class MockProvider(AIProvider):
                 "confidence": 0.7,
             })
 
+        if "scene designer" in system.lower():
+            return json.dumps({
+                "environment": "underground-prison",
+                "lighting": "dark",
+                "atmosphere": {"fog": "low", "dust": "medium"},
+                "structures": ["prison-cells", "stone-walls", "iron-gates"],
+                "mood": "tense",
+            })
+
         digest = hashlib.sha1(f"{system}|{prompt}".encode()).hexdigest()[:8]
         return f"[mock:{model or 'mock-1'}:{digest}] {prompt[:120]}"
