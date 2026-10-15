@@ -12,6 +12,7 @@ from core.agents.narrator import NarratorAgent
 from core.agents.recap import RecapAgent
 from core.agents.session_processor import SessionProcessor
 from core.agents.orchestrator import OrchestratorAgent, TaskType
+from core.agents.ingestion import IngestionAgent, ingest_text, ingest_document
 from core.agents.context_manager import (
     ContextProfile,
     build_context,
@@ -160,7 +161,6 @@ def test_build_context_verbatim_campaign_context():
     ctx = build_context(campaign_context="Epic saga")
     assert "Epic saga" in ctx.text
 
-
 async def test_lore_wiring_filters_proposed_events():
     agent = LoreAgent(_mock())
     res = await agent.run(
@@ -173,3 +173,30 @@ async def test_lore_wiring_filters_proposed_events():
     )
     assert res.status == "success", res.error
     assert res.data.answer
+
+
+def test_ingest_text_normalizes_and_segments():
+    raw = ingest_text("  Title line\r\n\n\nBody  \nline2\n\n\n\nTail", source="dm-notes", title="S1")
+    assert raw.title == "S1"
+    assert raw.source == "dm-notes"
+    assert "\r" not in raw.body
+    assert "\n\n\n" not in raw.body
+    assert raw.segments == ["  Title line", "Body\nline2", "Tail"]
+    assert raw.chars == len(raw.body)
+
+
+def test_ingest_document_titles_from_filename():
+    raw = ingest_document("quests.md", "Find the amulet.")
+    assert raw.title == "quests"
+    assert raw.source == "document"
+    assert raw.segments == ["Find the amulet."]
+
+
+async def test_ingestion_agent_run_ok_and_blank_errors():
+    agent = IngestionAgent(_mock())
+    ok = await agent.run(text="Party rests.", title="Night")
+    assert ok.status == "success"
+    assert ok.agent_id == "ingestion"
+    assert ok.data.title == "Night"
+    bad = await agent.run(text="   \n  ")
+    assert bad.status == "error"
