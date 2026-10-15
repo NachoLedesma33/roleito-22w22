@@ -40,9 +40,9 @@ export default function SceneSettingsHud({ scene, onUpdate, onClose }: SceneSett
           </div>
           <input
             type="range"
-            min={0.5}
-            max={isModel ? 50 : 10}
-            step={0.5}
+            min={0.1}
+            max={isModel ? 100 : 30}
+            step={0.1}
             value={mapScale}
             onChange={(e) => {
               const v = parseFloat(e.target.value);
