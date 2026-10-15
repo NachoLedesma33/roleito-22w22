@@ -3207,6 +3207,7 @@ export default function DmDashboard() {
             title={t('dm.tokenTrayTitle', 'Fichas')}
             panelId="dm-token-tray"
             onClose={() => {}}
+            hideClose
             defaultX={16}
             defaultY={typeof window !== 'undefined' ? window.innerHeight - 340 : 400}
             defaultWidth={208}

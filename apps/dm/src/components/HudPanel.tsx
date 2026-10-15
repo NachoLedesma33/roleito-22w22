@@ -12,6 +12,8 @@ interface HudPanelProps {
   maxWidth?: number;
   minHeight?: number;
   className?: string;
+  /** Oculta la × (el panel no se puede cerrar, solo minimizar). */
+  hideClose?: boolean;
 }
 
 const MIN_WIDTH = 200;
@@ -116,6 +118,7 @@ export default function HudPanel({
   maxWidth = MAX_WIDTH,
   minHeight = MIN_HEIGHT,
   className = '',
+  hideClose = false,
 }: HudPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const saved = useRef(loadSize(panelId));
@@ -311,12 +314,14 @@ export default function HudPanel({
           >
             {maximized ? '❐' : '☐'}
           </button>
-          <button
-            onClick={onClose}
-            className="bg-[var(--bg-tertiary)] text-[var(--text-primary)] hover:text-white text-xs leading-none px-1.5 py-0.5 rounded"
-          >
-            ×
-          </button>
+          {hideClose ? null : (
+            <button
+              onClick={onClose}
+              className="bg-[var(--bg-tertiary)] text-[var(--text-primary)] hover:text-white text-xs leading-none px-1.5 py-0.5 rounded"
+            >
+              ×
+            </button>
+          )}
         </div>
       </div>
 
