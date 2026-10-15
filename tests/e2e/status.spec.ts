@@ -130,7 +130,15 @@ test.describe('Status markers', () => {
     const p = await ctx.newPage();
     await p.goto(`/campaigns/join/${code}`);
     await p.getByRole('button', { name: /Aria/ }).click();
-    await expect(p.getByTestId('player-role')).toContainText('Aria', { timeout: 10_000 });
+    // chooseCharacter hace fetchMyChar async: bajo carga de CI el snapshot del
+    // jugador tarda en reflejar el personaje activo. Poll hasta que player-role
+    // muestre el nombre del personaje en lugar de "Viendo como ...".
+    await expect
+      .poll(async () => {
+        const el = p.getByTestId('player-role');
+        return (await el.textContent()) ?? '';
+      }, { timeout: 20_000 })
+      .toContain('Aria');
     // El jugador recibe el status en su snapshot (la badge 3D no es assertable en DOM).
     await ctx.close();
   });
