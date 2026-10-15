@@ -77,12 +77,35 @@ const CURSORS: Record<ResizeEdge, string> = {
 };
 
 // Global minimize registry
-type MinimizedEntry = { panelId: string; title: string; onRestore: () => void };
+export type MinimizedCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+type MinimizedEntry = {
+  panelId: string;
+  title: string;
+  onRestore: () => void;
+  /** Esquina donde cae el chip al minimizar: la más cercana al panel. */
+  corner: MinimizedCorner;
+};
 let minimizedListeners: Array<() => void> = [];
 const minimizedMap = new Map<string, MinimizedEntry>();
 
 function emitMinimizedChange() {
   minimizedListeners.forEach((l) => l());
+}
+
+/**
+ * Esquina del viewport más cercana al panel. Al minimizar, el chip aparece donde
+ * el panel estaba: si lo arrastraste a la esquina inferior izquierda, el chip
+ * tiene que caer ahí y no siempre abajo a la derecha.
+ */
+function nearestCorner(x: number, y: number, width: number, height: number): MinimizedCorner {
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 1024;
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 768;
+  // Centro del panel: decide el lado horizontal y vertical.
+  const cx = x + width / 2;
+  const cy = y + height / 2;
+  const vertical = cy < vh / 2 ? 'top' : 'bottom';
+  const horizontal = cx < vw / 2 ? 'left' : 'right';
+  return `${vertical}-${horizontal}`;
 }
 
 export function useMinimizedPanels(): MinimizedEntry[] {
@@ -162,8 +185,13 @@ export default function HudPanel({
       panelId,
       title,
       onRestore: () => setMinimized(false),
+      // Geometría visible: si está maximizado ocupa casi todo el viewport, así
+      // que usamos la ventana directamente para no mandarlo a una esquina rara.
+      corner: maximized
+        ? nearestCorner(0, 0, window.innerWidth, window.innerHeight)
+        : nearestCorner(pos.x, pos.y, size.width, size.height),
     });
-  }, [panelId, title]);
+  }, [panelId, title, maximized, pos.x, pos.y, size.width, size.height]);
 
   const handleMaximize = useCallback(() => {
     if (maximized) {

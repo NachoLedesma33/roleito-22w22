@@ -67,6 +67,40 @@ test.describe('HUD resize/snap/minimizar', () => {
     await expect(pill).not.toBeVisible();
   });
 
+  test('H5: el chip minimizado cae en la esquina más cercana al panel', async ({ page, campaign }) => {
+    await openRoller(page, campaign.id);
+    const panel = page.getByTestId('hud-dice-roller');
+    const viewport = page.viewportSize()!;
+
+    // Arrastrar a la esquina inferior izquierda antes de minimizar.
+    const box = (await panel.boundingBox())!;
+    await page.mouse.move(box.x + 40, box.y + 12);
+    await page.mouse.down();
+    await page.mouse.move(30, viewport.height - 60, { steps: 8 });
+    await page.mouse.up();
+    await expect
+      .poll(async () => (await panel.boundingBox())?.y ?? 0)
+      .toBeGreaterThan(viewport.height / 2);
+
+    await panel.getByTitle('Minimizar').click();
+    const pill = page.getByRole('button', { name: 'Tirada de dados' });
+    await expect(pill).toBeVisible();
+    await expect(page.getByTestId('minimized-bottom-left')).toContainText('Tirada de dados');
+    await expect(page.getByTestId('minimized-bottom-right')).toHaveCount(0);
+
+    // Restaurar desde el chip y volver a minimizar desde arriba-izquierda.
+    await pill.click();
+    await expect(panel).toBeVisible();
+    const moved = (await panel.boundingBox())!;
+    await page.mouse.move(moved.x + 40, moved.y + 12);
+    await page.mouse.down();
+    await page.mouse.move(30, 30, { steps: 8 });
+    await page.mouse.up();
+    await panel.getByTitle('Minimizar').click();
+    await expect(page.getByTestId('minimized-top-left')).toContainText('Tirada de dados');
+    await expect(page.getByTestId('minimized-bottom-left')).toHaveCount(0);
+  });
+
   test('H4: el tamaño persiste tras recargar', async ({ page, campaign }) => {
     await openRoller(page, campaign.id);
     const panel = page.getByTestId('hud-dice-roller');
