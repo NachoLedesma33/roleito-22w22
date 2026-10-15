@@ -138,6 +138,7 @@ export default function DmDashboard() {
   const [lightingMenuRect, setLightingMenuRect] = useState<{ left: number; top: number } | null>(null);
   const [weatherMenuRect, setWeatherMenuRect] = useState<{ left: number; top: number } | null>(null);
   const [buildMenuRect, setBuildMenuRect] = useState<{ left: number; top: number } | null>(null);
+  const [mapMenuRect, setMapMenuRect] = useState<{ left: number; top: number } | null>(null);
   // Los menús de clima y lighting abren con click, no con hover: en táctil el
   // hover no existe y el menú era inalcanzable.
   const [openMenu, setOpenMenu] = useState<'lighting' | 'weather' | null>(null);
@@ -195,6 +196,7 @@ export default function DmDashboard() {
   } | null>(null);
   const [bgCSS, setBgCSS] = useState<string | null>(null);
   const buildMenuRef = useRef<HTMLDivElement>(null);
+  const mapMenuRef = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const lastRollTsRef = useRef<number>(0);
   const serverPosRef = useRef<Map<string, { x: number; z: number; rotation: number }>>(new Map());
@@ -1187,6 +1189,22 @@ export default function DmDashboard() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [buildMenuOpen]);
 
+  // El menú de mapa también vive en un portal: si no, el click fuera lo deja
+  // pegado encima del canvas.
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (
+        mapMenuRef.current &&
+        !mapMenuRef.current.contains(e.target as Node) &&
+        !(e.target as HTMLElement).closest?.('[data-testid="map-menu"]')
+      ) {
+        setShowMapMenu(false);
+      }
+    };
+    if (showMapMenu) document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showMapMenu]);
+
   useEffect(() => {
     let running = true;
     const tick = () => {
@@ -2098,9 +2116,19 @@ export default function DmDashboard() {
       </TopBar>
 
       <div className="flex-1 flex overflow-hidden relative min-w-0">
-        {/* Toolbar canvas — herramientas de escena (izquierda) */}
-        <div className="absolute left-2 top-2 z-20 flex flex-col gap-1.5 pointer-events-none">
-          <div className="pointer-events-auto flex flex-col items-stretch gap-1 rounded-lg bg-[var(--bg-primary)]/90 backdrop-blur border border-[var(--bg-tertiary)] p-1 shadow-lg">
+        {/* Toolbar canvas — HudPanel arrastrable/minimizable */}
+        <HudPanel
+          title={t('dm.toolbarTitle', 'Herramientas')}
+          panelId="dm-toolbar"
+          onClose={() => {}}
+          hideClose
+          defaultX={8}
+          defaultY={8}
+          defaultWidth={190}
+          defaultHeight={typeof window !== 'undefined' ? Math.min(720, window.innerHeight - 120) : 600}
+          minWidth={150}
+        >
+          <div className="flex flex-col items-stretch gap-1">
             <div className="flex items-center gap-1 shrink-0">
               <button
                 onClick={handleUndo}
@@ -2413,15 +2441,19 @@ export default function DmDashboard() {
               {t('dm.sceneBtn', '⚙ Escena')}
             </button>
             {maps.length > 0 && (
-              <div className="relative shrink-0">
+              <div ref={mapMenuRef} className="relative shrink-0">
                 <button
-                  onClick={() => setShowMapMenu((v) => !v)}
+                  onClick={(e) => {
+                    const r = e.currentTarget.getBoundingClientRect();
+                    setMapMenuRect({ left: Math.max(8, r.right - 140), top: r.bottom + 2 });
+                    setShowMapMenu((v) => !v);
+                  }}
                   className={`w-full text-[10px] px-1.5 py-1 rounded transition-colors ${showMapMenu ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)]' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
                 >
                   {t('dm.mapBtn', 'Mapa ▾')}
                 </button>
-                {showMapMenu && (
-                  <div className="absolute right-0 top-full mt-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg z-50 min-w-[140px]">
+                {showMapMenu && createPortal(
+                  <div data-testid="map-menu" className="fixed bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg z-50 min-w-[140px]" style={{ left: mapMenuRect?.left ?? -9999, top: mapMenuRect?.top ?? -9999 }}>
                     {activeScene?.map_id && (
                       <button
                         onClick={async () => {
@@ -2453,7 +2485,8 @@ export default function DmDashboard() {
                         {activeScene?.map_id === m.id ? '✓ ' : ''}{m.name}
                       </button>
                     ))}
-                  </div>
+                  </div>,
+                  document.body,
                 )}
               </div>
             )}
@@ -2465,7 +2498,7 @@ export default function DmDashboard() {
               ⚙
             </Link>
           </div>
-        </div>
+        </HudPanel>
 
         {/* Hints de modo de dibujo + luz seleccionada — contextual arriba-centro */}
         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex flex-wrap items-center justify-center gap-2 max-w-[70%] pointer-events-none">
@@ -2833,6 +2866,7 @@ export default function DmDashboard() {
           defaultX={typeof window !== 'undefined' ? window.innerWidth - 201 : 1000}
           defaultY={200}
           defaultWidth={185}
+          defaultHeight={380}
         >
           <div className="px-1.5 text-[10px] uppercase tracking-wide text-[var(--text-secondary)]">{t('dm.layers', 'Capas')}</div>
           <button

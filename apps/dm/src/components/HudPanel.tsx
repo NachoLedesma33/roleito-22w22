@@ -8,6 +8,7 @@ interface HudPanelProps {
   defaultX?: number;
   defaultY?: number;
   defaultWidth?: number;
+  defaultHeight?: number;
   minWidth?: number;
   maxWidth?: number;
   minHeight?: number;
@@ -114,6 +115,7 @@ export default function HudPanel({
   defaultX = 100,
   defaultY = 100,
   defaultWidth = 300,
+  defaultHeight = 300,
   minWidth = MIN_WIDTH,
   maxWidth = MAX_WIDTH,
   minHeight = MIN_HEIGHT,
@@ -130,7 +132,7 @@ export default function HudPanel({
   });
   const [size, setSize] = useState({
     width: saved.current?.width ?? defaultWidth,
-    height: saved.current?.height ?? 300,
+    height: saved.current?.height ?? defaultHeight,
   });
   const [isDragging, setIsDragging] = useState(false);
   const [resizeEdge, setResizeEdge] = useState<ResizeEdge | null>(null);
