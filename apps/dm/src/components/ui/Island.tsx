@@ -42,6 +42,20 @@ export function Island({ open, onClose, onSelect, title, items, className }: Isl
     return () => window.clearTimeout(t)
   }, [open])
 
+  // Escape tiene que cerrar aunque el foco esté fuera del diálogo. El
+  // `onKeyDown` del div solo alcanza si el foco está adentro, y el foco se
+  // lleva un `setTimeout(0)`: si se abre y se pulsa Escape antes de que corra,
+  // la tecla se queda en el disparador y el panel no cierra. Se escucha en el
+  // documento, que es lo que hace un diálogo modal de verdad.
+  useEffect(() => {
+    if (!open) return
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (event.key === 'Escape') {
       event.preventDefault()

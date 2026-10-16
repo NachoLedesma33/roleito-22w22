@@ -167,4 +167,27 @@ test.describe('Player Shell — Grimorio', () => {
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog', { name: 'Grimorio' })).toHaveCount(0);
   });
+
+  // Regresión de CI (shard 3, 2026-10-16): `Island` escuchaba Escape en el
+  // `onKeyDown` de su propio div, así que la tecla solo llegaba con el foco
+  // adentro. El foco se lleva un `setTimeout(0)` al abrir, y si Escape se
+  // pulsaba antes de que corriera, se quedaba en el disparador. Este test lo
+  // hace determinista: el foco está explícitamente AFUERA del diálogo.
+  test('G5: Esc cierra el Grimorio aunque el foco esté en el disparador', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    await setupGrimorio(request, campaign.id, 'Kaelen');
+    await joinAs(page, request, campaign.id, 'Kaelen');
+    await openGrimorio(page);
+
+    const toggle = page.getByTestId('grimorio-toggle');
+    await toggle.focus();
+    await expect(toggle).toBeFocused();
+
+    await page.keyboard.press('Escape');
+
+    await expect(page.getByRole('dialog', { name: 'Grimorio' })).toHaveCount(0);
+  });
 });
