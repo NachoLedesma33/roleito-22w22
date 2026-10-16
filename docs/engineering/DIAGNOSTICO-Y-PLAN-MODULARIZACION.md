@@ -161,6 +161,20 @@ Eso no es un componente de presentación con props: es un **panel de control ata
 2. `DmToolbar` como componente que consume ese hook, con una prop de herramientas en vez de 36.
 
 **Lo que sí quedó pendiente de este bloque, y es duplicación real:** el shell de menú anclado se repite 4 veces con 3 mecanismos distintos de click-afuera — `getBoundingClientRect` → rect state → `createPortal` con `left/top ?? -9999`. Un `useAnchoredMenu` + `<AnchoredMenu>` lo eliminaría sin mover el contenido. No se hizo acá porque unificar los 3 mecanismos de dismissal cambia comportamiento de un control muy usado; conviene su propio commit con sus e2e (`zone`, `map`, `weather`, `dashboard`).
+
+**Fase 2-bis — `useAnchoredMenu` + `AnchoredMenu` (HECHA)**
+- Nuevo `apps/dm/src/lib/useAnchoredMenu.ts`: rect + cierre por click fuera / Escape. Nuevo `apps/dm/src/components/ui/AnchoredMenu.tsx`: el portal (primitiva de UI, va en `components/ui/`).
+- Migrados los 4 menús (construir, mapa, luz, clima). Eliminados: 4 `useState` de rect, 2 refs, `createPortal` de `DmDashboard`, y los **3 efectos de click-afuera**, cada uno con su propio selector.
+- El hook **no** guarda el estado de apertura: lo mantiene el dueño, porque luz y clima comparten un `openMenu` para ser mutuamente excluyentes. Decidir si abre y calcular dónde abre son dos cosas distintas.
+- Parámetros por menú: `align: 'start' | 'end'`, `width`, `gap`. Cubren las 4 variantes existentes sin flags.
+
+**Cambios de comportamiento (intencionales, documentados):**
+1. Construir y mapa ahora también cierran con `Escape` (antes solo luz y clima lo hacían).
+2. `role="menu"` quedó en los 4 menús (antes solo luz/clima) y `role="menuitem"` solo en los hijos que ya lo tenían.
+3. Click en el disparador de construir/mapa con el menú de luz abierto: antes el de luz **quedaba abierto** porque su listener aceptaba cualquier `[data-menu-root]`; ahora se cierra. Cada menú ignora solo su propio `data-anchor`.
+4. `data-menu-root` desaparece (era el selector del mecanismo viejo); cada disparador declara `data-anchor="<id>"`.
+
+Gates: lint 0 err/39 warn, typecheck limpio, e2e **91/91** (`zone`+`map`+`weather`+`dashboard`+`light`+`transitions` = 37; `hud-resize`+`handout`+`notebook`+`quest`+`recap`+`calendar`+`ai`+`dice` = 54).
 **Problema:** 3830 líneas renderizando toolbar, dock, menús, context menus, toasts y ~15 paneles.  
 **Diseño:** extraer componentes de presentación pura (reciben props, emiten callbacks). `DmDashboard` queda como orquestador de estado.
 - `DmToolbar` — escena + toolbar vertical + menús lighting/weather/build/mapa

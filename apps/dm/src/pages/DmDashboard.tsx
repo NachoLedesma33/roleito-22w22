@@ -1,5 +1,4 @@
 import { useEffect, useState, useRef, Suspense, useCallback, useMemo } from 'react';
-import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/lib/i18n';
 import { useParams, Link } from 'react-router-dom';
@@ -19,6 +18,8 @@ import { LightMetadata } from '@core/domain/types';
 import DmContextMenus from '@/components/dm/DmContextMenus';
 import DmCommandPalette from '@/components/dm/DmCommandPalette';
 import DmDock from '@/components/dm/DmDock';
+import AnchoredMenu from '@/components/ui/AnchoredMenu';
+import { useAnchoredMenu } from '@/lib/useAnchoredMenu';
 import { extractZonePolygons, checkWallCollision } from '@/lib/wall-collision';
 import { buildOccluders } from '@/lib/lightOcclusion';
 import { computeReachableCells } from '@/lib/movementRange';
@@ -132,10 +133,6 @@ export default function DmDashboard() {
   const [zoneContextMenu, setZoneContextMenu] = useState<{ x: number; y: number; itemId: string } | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [buildMenuOpen, setBuildMenuOpen] = useState(false);
-  const [lightingMenuRect, setLightingMenuRect] = useState<{ left: number; top: number } | null>(null);
-  const [weatherMenuRect, setWeatherMenuRect] = useState<{ left: number; top: number } | null>(null);
-  const [buildMenuRect, setBuildMenuRect] = useState<{ left: number; top: number } | null>(null);
-  const [mapMenuRect, setMapMenuRect] = useState<{ left: number; top: number } | null>(null);
   // Los menús de clima y lighting abren con click, no con hover: en táctil el
   // hover no existe y el menú era inalcanzable.
   const [openMenu, setOpenMenu] = useState<'lighting' | 'weather' | null>(null);
@@ -148,30 +145,19 @@ export default function DmDashboard() {
   }, []);
 
   const toggleMenu = (which: 'lighting' | 'weather', anchor: HTMLElement) => {
-    const r = anchor.getBoundingClientRect();
-    if (which === 'lighting') {
-      setLightingMenuRect({ left: Math.max(8, r.right - 150), top: r.bottom - 2 });
-    } else {
-      setWeatherMenuRect({ left: Math.max(8, r.right - 170), top: r.bottom - 2 });
-    }
+    if (which === 'lighting') lightingMenu.anchorFrom(anchor);
+    else weatherMenu.anchorFrom(anchor);
     setOpenMenu((prev) => (prev === which ? null : which));
   };
 
-  useEffect(() => {
-    if (!openMenu) return;
-    const onPointerDown = (e: MouseEvent) => {
-      if (!(e.target as HTMLElement).closest('[data-menu-root],[data-testid="lighting-menu"],[data-testid="weather-menu"]')) setOpenMenu(null);
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpenMenu(null);
-    };
-    document.addEventListener('mousedown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [openMenu]);
+  const closeLightingMenu = useCallback(() => setOpenMenu(null), []);
+  const closeBuildMenu = useCallback(() => setBuildMenuOpen(false), []);
+  const closeMapMenu = useCallback(() => setShowMapMenu(false), []);
+  const lightingMenu = useAnchoredMenu({ open: openMenu === 'lighting', onClose: closeLightingMenu, anchorId: 'lighting', align: 'end', width: 150, gap: -2 });
+  const weatherMenu = useAnchoredMenu({ open: openMenu === 'weather', onClose: closeLightingMenu, anchorId: 'weather', align: 'end', width: 170, gap: -2 });
+  const buildMenu = useAnchoredMenu({ open: buildMenuOpen, onClose: closeBuildMenu, anchorId: 'build' });
+  const mapMenu = useAnchoredMenu({ open: showMapMenu, onClose: closeMapMenu, anchorId: 'map', align: 'end', width: 140, gap: 2 });
+
   const [lightContextMenu, setLightContextMenu] = useState<{ x: number; y: number; itemId: string } | null>(null);
   const [fogContextMenu, setFogContextMenu] = useState<{ x: number; y: number; itemId: string } | null>(null);
   const [, setUndoBump] = useState(0);
@@ -192,8 +178,6 @@ export default function DmDashboard() {
     dominantColors: string[];
   } | null>(null);
   const [bgCSS, setBgCSS] = useState<string | null>(null);
-  const buildMenuRef = useRef<HTMLDivElement>(null);
-  const mapMenuRef = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const lastRollTsRef = useRef<number>(0);
   const serverPosRef = useRef<Map<string, { x: number; z: number; rotation: number }>>(new Map());
@@ -1189,36 +1173,6 @@ export default function DmDashboard() {
   }, [sceneChars]);
 
   useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (
-        buildMenuRef.current &&
-        !buildMenuRef.current.contains(e.target as Node) &&
-        !(e.target as HTMLElement).closest?.('[data-testid="build-menu"]')
-      ) {
-        setBuildMenuOpen(false)
-      }
-    }
-    if (buildMenuOpen) document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [buildMenuOpen]);
-
-  // El menú de mapa también vive en un portal: si no, el click fuera lo deja
-  // pegado encima del canvas.
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (
-        mapMenuRef.current &&
-        !mapMenuRef.current.contains(e.target as Node) &&
-        !(e.target as HTMLElement).closest?.('[data-testid="map-menu"]')
-      ) {
-        setShowMapMenu(false);
-      }
-    };
-    if (showMapMenu) document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [showMapMenu]);
-
-  useEffect(() => {
     let running = true;
     const tick = () => {
       if (!running) return;
@@ -2157,19 +2111,17 @@ export default function DmDashboard() {
                 ↷
               </button>
             </div>
-            <div ref={buildMenuRef} className="relative shrink-0">
+            <div className="relative shrink-0" data-anchor="build">
               <button
                 onClick={(e) => {
-                  const r = e.currentTarget.getBoundingClientRect();
-                  setBuildMenuRect({ left: Math.max(8, r.left), top: r.bottom + 2 });
+                  buildMenu.anchorFrom(e.currentTarget);
                   setBuildMenuOpen(!buildMenuOpen);
                 }}
                 className={`w-full text-xs px-2 py-1 rounded transition-colors ${drawState || zoneDraft || portalDraft || fogMode || rectFogMode || zoneFogActive || lightPlaceMode || attachLightMode ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
               >
                 {t('dm.build', '🧱 Construir ▾')}
               </button>
-              {buildMenuOpen && createPortal(
-                <div data-testid="build-menu" className="fixed bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg z-50 min-w-[180px]" style={{ left: buildMenuRect?.left ?? -9999, top: buildMenuRect?.top ?? -9999 }}>
+              <AnchoredMenu open={buildMenuOpen} rect={buildMenu.rect} anchorId="build" testId="build-menu" minWidth={180}>
                   <button
                     onClick={() => startDrawMode('wall')}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawState?.mode === 'wall' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
@@ -2301,9 +2253,9 @@ export default function DmDashboard() {
                       ))}
                     </div>
                   </div>
-                </div>,
-                document.body,
-              )}
+                </AnchoredMenu>
+
+
             </div>
             <button
               onClick={() => fileInput.current?.click()}
@@ -2321,7 +2273,7 @@ export default function DmDashboard() {
             >
               {t('dm.suggestBg', 'Sugerir fondo')}
             </button>
-            <div className="relative shrink-0" data-menu-root>
+            <div className="relative shrink-0" data-anchor="lighting">
               <button
                 onClick={(e) => toggleMenu('lighting', e.currentTarget)}
                 aria-expanded={openMenu === 'lighting'}
@@ -2331,13 +2283,7 @@ export default function DmDashboard() {
               >
                 {{ neutral: t('dm.lightNeutral', 'Neutra'), dark: t('dm.lightDark', 'Oscura'), dim: t('dm.lightDim', 'Tenue'), bright: t('dm.lightBright', 'Brillante'), torchlight: t('dm.lightTorch', 'Antorcha') }[activeScene?.lighting || 'neutral'] || activeScene?.lighting || t('dm.lightNeutral', 'Neutra')} ▾
               </button>
-              {openMenu === 'lighting' && createPortal(
-              <div
-                role="menu"
-                data-testid="lighting-menu"
-                className="fixed bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg z-50 min-w-[150px] py-0.5"
-                style={{ left: lightingMenuRect?.left ?? -9999, top: lightingMenuRect?.top ?? -9999 }}
-              >
+              <AnchoredMenu open={openMenu === 'lighting'} rect={lightingMenu.rect} anchorId="lighting" testId="lighting-menu" minWidth={150}>
                 {['neutral', 'dark', 'dim', 'bright', 'torchlight'].map((mode) => (
                   <button
                     key={mode}
@@ -2350,9 +2296,7 @@ export default function DmDashboard() {
                     {{ neutral: t('dm.lightNeutral', 'Neutra'), dark: t('dm.lightDark', 'Oscura'), dim: t('dm.lightDim', 'Tenue'), bright: t('dm.lightBright', 'Brillante'), torchlight: t('dm.lightTorch', 'Antorcha') }[mode] || mode}
                   </button>
                 ))}
-              </div>,
-              document.body,
-              )}
+              </AnchoredMenu>
             </div>
             <AudioSettingsMenu
               className="ml-1"
@@ -2360,7 +2304,7 @@ export default function DmDashboard() {
               onToggleSync={handleToggleAudioSync}
               onVolumeChange={handleSharedVolumeChange}
             />
-            <div className="relative shrink-0" data-menu-root>
+            <div className="relative shrink-0" data-anchor="weather">
               <button
                 onClick={(e) => toggleMenu('weather', e.currentTarget)}
                 aria-expanded={openMenu === 'weather'}
@@ -2371,13 +2315,7 @@ export default function DmDashboard() {
               >
                 {(activeScene?.weather && WEATHER_META[activeScene.weather] ? t(`dm.weather.${activeScene.weather}`, WEATHER_META[activeScene.weather].label) : t('dm.weather.none', WEATHER_NONE_LABEL))} ▾
               </button>
-              {openMenu === 'weather' && createPortal(
-              <div
-                role="menu"
-                data-testid="weather-menu"
-                className="fixed bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg z-50 min-w-[170px] py-0.5"
-                style={{ left: weatherMenuRect?.left ?? -9999, top: weatherMenuRect?.top ?? -9999 }}
-              >
+              <AnchoredMenu open={openMenu === 'weather'} rect={weatherMenu.rect} anchorId="weather" testId="weather-menu" minWidth={170}>
                 <button
                   role="menuitem"
                   onClick={() => handleChangeWeather(null)}
@@ -2439,9 +2377,7 @@ export default function DmDashboard() {
                     </div>
                   </div>
                 )}
-              </div>,
-              document.body,
-              )}
+              </AnchoredMenu>
             </div>
             <button
               onClick={() => setShowSceneSettings(!showSceneSettings)}
@@ -2451,19 +2387,17 @@ export default function DmDashboard() {
               {t('dm.sceneBtn', '⚙ Escena')}
             </button>
             {maps.length > 0 && (
-              <div ref={mapMenuRef} className="relative shrink-0">
+              <div className="relative shrink-0" data-anchor="map">
                 <button
                   onClick={(e) => {
-                    const r = e.currentTarget.getBoundingClientRect();
-                    setMapMenuRect({ left: Math.max(8, r.right - 140), top: r.bottom + 2 });
+                    mapMenu.anchorFrom(e.currentTarget);
                     setShowMapMenu((v) => !v);
                   }}
                   className={`w-full text-[10px] px-1.5 py-1 rounded transition-colors ${showMapMenu ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)]' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
                 >
                   {t('dm.mapBtn', 'Mapa ▾')}
                 </button>
-                {showMapMenu && createPortal(
-                  <div data-testid="map-menu" className="fixed bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg z-50 min-w-[140px]" style={{ left: mapMenuRect?.left ?? -9999, top: mapMenuRect?.top ?? -9999 }}>
+                <AnchoredMenu open={showMapMenu} rect={mapMenu.rect} anchorId="map" testId="map-menu" minWidth={140}>
                     {activeScene?.map_id && (
                       <button
                         onClick={async () => {
@@ -2495,9 +2429,9 @@ export default function DmDashboard() {
                         {activeScene?.map_id === m.id ? '✓ ' : ''}{m.name}
                       </button>
                     ))}
-                  </div>,
-                  document.body,
-                )}
+                </AnchoredMenu>
+
+
               </div>
             )}
             <Link
