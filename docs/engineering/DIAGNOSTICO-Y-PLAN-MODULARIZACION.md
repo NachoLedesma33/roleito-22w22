@@ -142,6 +142,14 @@ Adopta la **variante defensiva** (devuelve `null` en vez de `undefined`). Import
   - `data-testid="dm-command-palette"` para scopear los asserts: el dock tiene un botón "Iniciativa" igual que la paleta.
   - Gotcha al escribir el spec: `getByRole({name:'VTT', exact:true})` falla porque el nombre accesible del link es `◆ VTT` (glifo + texto). Match por substring.
   - Gotcha de timing: `goto` retorna antes de que React registre el listener de Ctrl+K → 3 tests colgados 30s. Anclar en `header select` (solo existe cuando el dashboard ya cargó).
+
+**Commit 4/5 — `DmDock` (HECHO):**
+- Nuevo `apps/dm/src/components/dm/DmDock.tsx`. 13 botones que eran 110 líneas de JSX casi idéntico → un array. Es el caso que la guía marca como extracción válida: estructura que se repite.
+- `groups: DockAction[][]` en vez de un flag `dividerBefore`: el dock ya separa visualmente "sesión" de "herramientas", y el array lo dice sin multiplicar combinaciones.
+- `activeClassName` opcional (default `bg-[var(--accent)]`) solo para el asistente, que usa violeta. Un override, no una bandera de estilo.
+- **`title="Acciones del DM"` es el atributo más cargado del repo:** 14 specs hacen `getByTitle('Acciones del DM').hover()` para abrir el dock (~30 call sites). Se preservó tal cual en el contenedor externo; si se hubiera perdido, rompían 14 specs de golpe.
+- Cambio de DOM: cada grupo se envuelve en un `<div class="flex items-center gap-0.5">`. El contenedor padre tenía las mismas clases, así que el layout es idéntico.
+- `MapIcon` (alias de `Map` de lucide) sigue importado en `DmDashboard`: los iconos viajan en el array de acciones, no en el componente.
 **Problema:** 3830 líneas renderizando toolbar, dock, menús, context menus, toasts y ~15 paneles.  
 **Diseño:** extraer componentes de presentación pura (reciben props, emiten callbacks). `DmDashboard` queda como orquestador de estado.
 - `DmToolbar` — escena + toolbar vertical + menús lighting/weather/build/mapa
