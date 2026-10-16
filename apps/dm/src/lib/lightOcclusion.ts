@@ -43,7 +43,12 @@ export function buildOccluders(
     } else if (item.metadata.type === 'door' && item.shape?.type === 'line' && item.shape.points.length >= 4) {
       if (item.metadata.state === 'open') continue
       const p = item.shape.points
-      out.push({ a: [p[0], p[1]], b: [p[2], p[3]] })
+      // Las doors guardan los puntos normalizados como los walls: sin esta
+      // conversión el oclusor caía en 0..1 y la puerta no tapaba nada.
+      out.push({
+        a: [(p[0] - 0.5) * mapWidth, (p[1] - 0.5) * mapHeight],
+        b: [(p[2] - 0.5) * mapWidth, (p[3] - 0.5) * mapHeight],
+      })
     } else if (item.metadata.type === 'zone') {
       if (item.shape?.type === 'rectangle') {
         const hw = item.width / 2

@@ -79,10 +79,26 @@ describe('buildOccluders', () => {
   })
 
   it('puerta abierta no bloquea; cerrada si', () => {
-    const closed = buildOccluders([doorItem([2, 0, 2, 1], 'closed')], mapW, mapH)
+    const closed = buildOccluders([doorItem([0.5, 0.2, 0.5, 0.8], 'closed')], mapW, mapH)
     expect(closed).toHaveLength(1)
-    const open = buildOccluders([doorItem([2, 0, 2, 1], 'open')], mapW, mapH)
+    const open = buildOccluders([doorItem([0.5, 0.2, 0.5, 0.8], 'open')], mapW, mapH)
     expect(open).toHaveLength(0)
+  })
+
+  it('puerta cerrada usa las mismas coordenadas world que un wall', () => {
+    const points = [0.5, 0.2, 0.5, 0.8]
+    const wall = buildOccluders([wallItem(points)], mapW, mapH)[0]
+    const door = buildOccluders([doorItem(points, 'closed')], mapW, mapH)[0]
+    expect(door).toEqual(wall)
+    expect(door.a[1]).toBeCloseTo(-3, 5)
+    expect(door.b[1]).toBeCloseTo(3, 5)
+  })
+
+  it('puerta escala por eje: mapa apaisado usa mapWidth en X y mapHeight en Y', () => {
+    const out = buildOccluders([doorItem([0.5, 0.5, 1, 0.5], 'closed')], 20, 10)
+    expect(out[0].a).toEqual([0, 0])
+    expect(out[0].b[0]).toBeCloseTo(10, 5)
+    expect(out[0].b[1]).toBeCloseTo(0, 5)
   })
 
   it('zona polygon genera edges cerrados (n puntos = n lados)', () => {
