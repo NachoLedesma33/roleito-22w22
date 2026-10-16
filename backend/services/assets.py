@@ -40,3 +40,16 @@ def remove_asset_file(path: str | None) -> None:
     real = os.path.realpath(path)
     if real.startswith(root + os.sep) and os.path.isfile(real):
         os.remove(real)
+
+
+def rewrite_campaign_prefix(rel: str, campaign_id: str) -> str:
+    """Cambia la campaña de un path relativo canónico `data/assets/...`.
+
+    Export e import viajan con la campaña de origen en el path. Al importar los
+    bytes se escriben en la carpeta de la campaña **destino**: si no, la campaña
+    importada queda apuntando a los archivos de la otra y borrar la de origen
+    rompería la copia.
+    """
+    parts = rel[len("data/assets/"):].split("/", 1)
+    tail = parts[1] if len(parts) > 1 else ""
+    return f"data/assets/{campaign_id}/{tail}"

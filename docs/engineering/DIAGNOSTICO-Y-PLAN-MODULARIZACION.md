@@ -331,6 +331,14 @@ Lección: mover código a mano no es "mover", es reescribir, y una línea mal ti
 1. `test_alta_de_personajes_y_npcs_respeta_el_contrato`: alta de personaje y de NPC, defaults de vida, `inventory_json`/`spells_json` vacíos, GET y listado idénticos al alta, y el upload de retrato (que devuelve la ficha). **Verificado que falla con el typo y pasa con el fix.**
 2. Verificación mecánica del movimiento: comparación línea por línea del `character_routes.py` viejo contra los 4 archivos nuevos, normalizando renombraciones. Las 38 diferencias tienen que ser las previstas (`ASSETS_DIR`, los dos `remove_*_file`, los 8 bloques de upload, la firma partida de `load_spells`): con eso no queda otro typo escondido. Vale repetirlo en cada movimiento de código de esta fase.
 
+**Segundo rojo del CI, y este era un bug viejo (commit aparte):** shard 1 también cayó en `campaign C11` (assets binarios viajan en export e import). Al normalizar `ASSETS_DIR` (commit `25a972a`) el path del retrato dejó de llevar el prefijo `backend/../`, y C11 —que asserta `dstPath !== srcPath`— pasó a fallar. Causa real: **el import nunca copió los assets a la campaña destino**: escribía los bytes con `_asset_abs(rel)` sobre el path que venía en el JSON, que es el de la campaña **origen**, y dejaba las columnas apuntando ahí. La aserción del test pasaba por el formato del path, no por el comportamiento.
+
+Fix: `services.assets.rewrite_campaign_prefix(rel, campaign_id)` + `asset_rewrites` en el import + `imported_path(value)` para las 9 columnas (retratos, modelos, fondos, audio, mapas, thumbnails, assets). Ahora borrar la campaña de origen no rompe la importada.
+
+Lección: un test verde por el motivo equivocado es peor que un test rojo. C11 llevaba tiempo probando el prefijo del path en vez de la reescritura de campaña; el fix del path (correcto por sí) lo sacó a la luz. Cuando un test falla después de un refactor, primero preguntarse qué estaba realmente midiendo.
+
+Gap que sigue (documentado, no tocado): un asset de más de 8 MB no viaja (queda `skipped` en el export) y al importar su columna queda apuntando al archivo de la campaña de origen. Es el mismo criterio de cap que ya está anotado en `IMPLEMENTATION-STATUS`.
+
 ---
 
 ### Fase 7 — Backend: helpers de `routes.py` (P6)

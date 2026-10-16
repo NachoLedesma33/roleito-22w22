@@ -47,6 +47,8 @@ import os
 import base64
 from datetime import datetime
 
+from services.assets import rewrite_campaign_prefix
+
 ASSETS_DIR = os.path.normpath(
     os.path.join(os.path.dirname(__file__), "..", "data", "assets")
 )
@@ -728,6 +730,11 @@ async def import_campaign(
     db.add(campaign)
     await db.flush()
 
+    # Los assets viajan con la campaña de ORIGEN en el path. Los bytes se
+    # escriben en la carpeta de la campaña destino y `asset_rewrites` deja el
+    # equivalencia para que las columnas (retratos, fondos, mapas) apunten a la
+    # copia y no a los archivos de la campaña de la que vinieron.
+    asset_rewrites: dict[str, str] = {}
     for asset in data.assets:
         rel = asset.get("path", "")
         if not rel.startswith("data/assets"):
@@ -736,10 +743,19 @@ async def import_campaign(
             content = base64.b64decode(asset.get("data_base64", ""))
         except ValueError:
             continue
-        target = _asset_abs(rel)
+        new_rel = rewrite_campaign_prefix(rel, campaign.id)
+        target = _asset_abs(new_rel)
         os.makedirs(os.path.dirname(target), exist_ok=True)
         with open(target, "wb") as f:
             f.write(content)
+        asset_rewrites[rel] = new_rel
+
+    def imported_path(value: str | None) -> str | None:
+        """Path de un asset importado: el de la campaña destino si se importó."""
+        rel = _asset_rel(value) if value else None
+        if rel and rel in asset_rewrites:
+            return _asset_abs(asset_rewrites[rel])
+        return _import_asset_path(value)
 
     id_map: dict[str, str] = {}
     scene_items_for_remap: list[tuple["Scene", str]] = []
@@ -781,8 +797,8 @@ async def import_campaign(
             defense=c.get("defense", 5),
             current_pv=c.get("current_pv"),
             current_pm=c.get("current_pm"),
-            portrait_path=_import_asset_path(c.get("portrait_path")),
-            model_path=_import_asset_path(c.get("model_path")),
+            portrait_path=imported_path(c.get("portrait_path")),
+            model_path=imported_path(c.get("model_path")),
         )
         db.add(new_char)
         await db.flush()
@@ -808,8 +824,8 @@ async def import_campaign(
             defense=n.get("defense", 5),
             current_pv=n.get("current_pv"),
             current_pm=n.get("current_pm"),
-            portrait_path=_import_asset_path(n.get("portrait_path")),
-            model_path=_import_asset_path(n.get("model_path")),
+            portrait_path=imported_path(n.get("portrait_path")),
+            model_path=imported_path(n.get("model_path")),
         )
         db.add(new_npc)
         await db.flush()
@@ -876,8 +892,8 @@ async def import_campaign(
             campaign_id=campaign.id,
             name=m.get("name", "Mapa importado"),
             description=m.get("description", ""),
-            file_path=_import_asset_path(m.get("file_path", "")),
-            thumbnail_path=_import_asset_path(m.get("thumbnail_path")),
+            file_path=imported_path(m.get("file_path", "")),
+            thumbnail_path=imported_path(m.get("thumbnail_path")),
             map_type=m.get("map_type", "world"),
         )
         db.add(new_map)
@@ -890,10 +906,10 @@ async def import_campaign(
             campaign_id=campaign.id,
             name=s.get("name", "Escena importada"),
             description=s.get("description", ""),
-            background_path=_import_asset_path(s.get("background_path")),
+            background_path=imported_path(s.get("background_path")),
             map_id=id_map.get(s.get("map_id", ""), s.get("map_id")),
             lighting=s.get("lighting", "neutral"),
-            audio_path=_import_asset_path(s.get("audio_path")),
+            audio_path=imported_path(s.get("audio_path")),
             weather=s.get("weather"),
             weather_intensity=s.get("weather_intensity", 1.0),
             status=s.get("status", "inactive"),
@@ -1073,7 +1089,7 @@ async def import_campaign(
         db.add(Asset(
             campaign_id=campaign.id,
             name=a.get("name", "Importado"),
-            file_path=_import_asset_path(a.get("file_path")),
+            file_path=imported_path(a.get("file_path")),
             asset_type=a.get("asset_type", "image"),
             entity_type=a.get("entity_type"),
             entity_id=id_map.get(a.get("entity_id", ""), a.get("entity_id")),
