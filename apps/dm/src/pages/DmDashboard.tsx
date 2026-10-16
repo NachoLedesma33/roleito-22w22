@@ -23,6 +23,7 @@ import AnchoredMenu from '@/components/ui/AnchoredMenu';
 import { useAnchoredMenu } from '@/lib/useAnchoredMenu';
 import { extractZonePolygons, checkWallCollision } from '@/lib/wall-collision';
 import { buildOccluders } from '@/lib/lightOcclusion';
+import { extractFogRegions } from '@/lib/fogMask';
 import { computeReachableCells } from '@/lib/movementRange';
 import { sceneWorldHeight, sceneWorldSize } from '@/lib/sceneWorld';
 import { DEFAULT_RENDER_MODE } from '@/lib/overlayY';
@@ -1396,22 +1397,30 @@ export default function DmDashboard() {
     }
   }, [campaignId, activeScene, graphRef, mapAspect, push]);
 
+  // Qué tapa la luz en la escena. Lo calcula la vista y lo pasa a SceneRenderer:
+  // el render no depende de buildOccluders, y el rango de movimiento usa la
+  // misma lista en vez de recalcularla.
+  const sceneOccluders = useMemo(() => {
+    if (!activeScene) return [];
+    const { mapH, mapW } = sceneWorldSize(activeScene.map_scale ?? 1, mapAspect);
+    return buildOccluders(sceneItems, mapW, mapH);
+  }, [activeScene, sceneItems, mapAspect]);
+  const sceneFogRegions = useMemo(() => extractFogRegions(sceneItems), [sceneItems]);
+
   // F7: movement range overlay for the selected token (A* reachable cells).
   const movementRange = useMemo(() => {
     if (!activeScene || !selectedTokenId) return null;
     const sc = sceneChars.find((s) => s.id === selectedTokenId);
     if (!sc) return null;
-    const mScale = activeScene.map_scale ?? 1;
-    const { mapH, mapW } = sceneWorldSize(mScale, mapAspect);
+    const { mapH, mapW } = sceneWorldSize(activeScene.map_scale ?? 1, mapAspect);
     const cellSize = activeScene.grid_size && activeScene.grid_size > 0 ? activeScene.grid_size : 0.5;
-    const occluders = buildOccluders(sceneItems, mapW, mapH);
     const { cells } = computeReachableCells(
       sc.x, sc.z,
       sc.move_speed ?? 5,
-      occluders, cellSize, mapW, mapH,
+      sceneOccluders, cellSize, mapW, mapH,
     );
     return { tokenId: sc.id, cellSize, cells };
-  }, [activeScene, selectedTokenId, sceneChars, sceneItems, mapAspect]);
+  }, [activeScene, selectedTokenId, sceneChars, sceneOccluders, mapAspect]);
 
   const handleTokenPlace = useCallback(async (entityType: string, entityId: string, x: number, z: number) => {
     if (!campaignId || !activeScene) return;
@@ -2820,6 +2829,8 @@ export default function DmDashboard() {
                   };
                 })}
                 items={sceneItems}
+                occluders={sceneOccluders}
+                fogRegions={sceneFogRegions}
                 lighting={activeScene.lighting}
                 weather={activeScene.weather ?? null}
                 weatherIntensity={activeScene.weather_intensity ?? 1}

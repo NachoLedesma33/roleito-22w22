@@ -275,10 +275,24 @@ Gates: lint 0 err/43 warn, typecheck limpio, vitest 142, e2e `quest`+`calendar`+
 
 ---
 
-### Fase 5 — SceneRenderer: recibir cálculos (P1/P3)
+### Fase 5 — SceneRenderer: recibir cálculos (P1/P3) — **EN CURSO**
 **Problema:** importa `buildOccluders`, `extractFogRegions`; 30+ props de interacción.  
 **Diseño:** el padre calcula `occluders`/`visionRegions` y los pasa por props. Corregir `lightOcclusion.ts:46` (puertas sin escalar, incoherente con walls `:40-41` y zonas `:64-65`).  
 **Pruebas:** vitest `light`, `lightOcclusion`, `fogMask`, `playerVision`, `wall-collision`; e2e `light`, `fog`, `player-view`, `zone`.
+
+**Commit 1 `732de02` — bug de puertas (HECHO):** `buildOccluders` empujaba la línea de la door con los puntos normalizados **sin convertir**, mientras wall `:40-41` y zone polygon `:64-65` sí lo hacen. El oclusor caía en 0..1 pegado al origen: una puerta cerrada no tapaba luz. La prueba de que los puntos de door son normalizados está en `buildLoSOccluders` (`losSystem.ts:41-43`), que sí convierte.
+- El test viejo no lo veía: usaba puntos tipo `[2,0,2,1]` y solo miraba `length`. Ahora compara door vs wall con los mismos puntos, y un caso de mapa apaisado (X con `mapWidth`, Y con `mapHeight`).
+- Verificado que **fallan sin el fix** (stash: 11 pass / 2 fail).
+- Gates: lint 0 err/43 warn, typecheck limpio, vitest 144, e2e `light`+`fog`+`transitions` 14/14.
+
+**Commit 2 — cálculos por props (este commit):** `SceneRenderer` deja de importar `buildOccluders`/`extractFogRegions`; recibe `occluders: Occluder[]` y `fogRegions: FogRegion[]`. El prop `playerFogRegions` desaparece: la mezcla (niebla de escena + visión del jugador) la hace ahora el padre, que es quien tiene las dos fuentes.
+- `DmDashboard`: `sceneOccluders`/`sceneFogRegions` con `useMemo`, y el rango de movimiento **reusa** `sceneOccluders` en vez de recalcular la misma lista (antes había dos `buildOccluders` vivos con el mismo input).
+- `PlayerView`: `sceneFogRegions = extractFogRegions(items) + visionRegions`; `sceneOccluders` con el `mapperW/mapperH` que ya tenía para la visión.
+- `SceneDetail` (preview read-only, sin items) pasa dos constantes de módulo `NO_OCCLUDERS`/`NO_FOG_REGIONS`: evita arrays nuevos en cada render y deja claro que ahí no hay nada que calcular.
+- El aspect sigue siendo del render: `onAspectChange` lo sube a la vista, y la vista calcula las dimensiones con `sceneWorldSize(mapScale, aspect)`. Mismo arranque que antes (aspect 1 hasta que carga la imagen).
+- Gates: lint 0 err/43 warn, typecheck limpio, vitest 144, e2e dirigido `scene`+`light`+`fog`+`status`+`portal`+`map`+`player-view`+`player-shell` = **43 passed / 1 flaky / 1 failed**, con `status` S1/S2 **verificados rojos en HEAD sin estos cambios** (2 failed / 1 passed): son pre-existentes, el helper `openTokenMenu` corta a los 700 ms con la vista todavía en "Cargando escena 3D...".
+
+**Bug pendiente del mismo tipo (NO tocado):** `losSystem.ts:64-65` usa `mapHeight` para la X de la última arista de cada zona polygon (debería ser `mapWidth`). Con mapa apaisado la visión del jugador se recorta mal contra zonas. No lo detectan los tests porque `losSystem.spec.ts` siempre usa mapas cuadrados `(10,10)`.
 
 ---
 

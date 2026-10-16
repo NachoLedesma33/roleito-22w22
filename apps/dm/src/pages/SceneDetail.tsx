@@ -5,6 +5,13 @@ import { staticUrl } from '@/lib/staticUrl';
 import SceneRenderer from '@/components/SceneRenderer';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import type { Occluder } from '@/lib/lightOcclusion';
+import type { FogRegion } from '@/lib/fogMask';
+
+// Esta vista es una vista previa read-only sin items ni niebla: listas vacías
+// constantes, para no crear un array nuevo en cada render del preview.
+const NO_OCCLUDERS: Occluder[] = [];
+const NO_FOG_REGIONS: FogRegion[] = [];
 
 function randomOffset(): number {
   return Math.random() * 4 - 2;
@@ -247,6 +254,8 @@ export default function SceneDetail() {
                   };
                 })}
                 lighting={scene.lighting}
+                occluders={NO_OCCLUDERS}
+                fogRegions={NO_FOG_REGIONS}
                 weather={scene.weather ?? null}
                 mapScale={scene.map_scale ?? 1}
                 modelYOffset={scene.model_y_offset ?? 0}

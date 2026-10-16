@@ -10,7 +10,7 @@ import TokenSprite from './TokenSprite';
 import TokenModel from './TokenModel';
 import ItemRenderer from './ItemRenderer';
 import WeatherFX, { WEATHER_META, clampWeatherIntensity } from './WeatherFX';
-import { buildOccluders } from '../lib/lightOcclusion';
+import type { Occluder } from '../lib/lightOcclusion';
 import { FIRE_RADIUS_DEFAULT } from '../lib/light';
 import WallDrawerCanvas from './WallDrawerCanvas';
 import ZoneDrawerCanvas from './ZoneDrawerCanvas';
@@ -20,7 +20,6 @@ import FogBrushCanvas from './FogBrushCanvas';
 import FogRectCanvas from './FogRectCanvas';
 import LightPlaceCanvas from './LightPlaceCanvas';
 import TokenPlaceCanvas from './TokenPlaceCanvas';
-import { extractFogRegions } from '../lib/fogMask';
 import type { FogRegion } from '../lib/fogMask';
 import type { MovementCell } from '../lib/movementRange';
 import type { ZoneDraft } from './ZoneDrawer';
@@ -52,6 +51,13 @@ interface SceneRendererProps {
   backgroundUrl: string;
   characters: SceneEntity[];
   items?: SceneItem[];
+  /**
+   * Muros, puertas y zonas que cortan la luz, en coordenadas world. Lo calcula
+   * el padre con `buildOccluders`: el render no decide qué tapa una luz.
+   */
+  occluders: Occluder[];
+  /** Niebla ya combinada (escena +, en el jugador, lo que ve su personaje). */
+  fogRegions: FogRegion[];
   lighting?: string;
   weather?: string | null;
   weatherIntensity?: number | null;
@@ -96,7 +102,6 @@ interface SceneRendererProps {
   fogRect?: { reveal: boolean } | null;
   onFogRect?: (points: number[]) => void;
   fogColor?: string;
-  playerFogRegions?: FogRegion[];
   zoneFogActive?: boolean;
   onZoneFogSelect?: (snap: import('./ZonePortal').EdgeSnap) => void;
   lightPlace?: { preset: string; fx?: 'flame' | 'embers'; fxRadius?: number } | null;
@@ -2025,6 +2030,8 @@ export default function SceneRenderer({
   backgroundUrl,
   characters,
   items = [],
+  occluders,
+  fogRegions,
   lighting = 'neutral',
   weather = null,
   weatherIntensity = null,
@@ -2064,7 +2071,6 @@ export default function SceneRenderer({
   fogRect = null,
   onFogRect,
   fogColor = 'rgba(15, 23, 42, 0.55)',
-  playerFogRegions = [],
   zoneFogActive = false,
   onZoneFogSelect,
   lightPlace = null,
@@ -2119,20 +2125,12 @@ export default function SceneRenderer({
     }
     return spots;
   }, [items, attachedLight]);
-  const fogRegions = useMemo(
-    () => [...extractFogRegions(items), ...(playerFogRegions ?? [])],
-    [items, playerFogRegions],
-  );
   const drawing = !!drawState || !!zoneDraft || !!portalDraft || !!fogBrush || !!fogRect || zoneFogActive || !!lightPlace || !!lightAttach || !!tokenPlace;
   const hasDrag = !drawing && (!readOnly || (movableEntityIds && movableEntityIds.length > 0));
   const justSelectedRef = useRef(false);
   const [imageAspect, setImageAspect] = useState(1);
   const mapHeight = 10 * mapScale;
   const mapWidth = mapHeight * imageAspect;
-  const occluders = useMemo(
-    () => buildOccluders(items ?? [], mapWidth, mapHeight),
-    [items, mapWidth, mapHeight],
-  );
   const maxDistance = Math.max(25, mapScale * 15);
 
   useEffect(() => {

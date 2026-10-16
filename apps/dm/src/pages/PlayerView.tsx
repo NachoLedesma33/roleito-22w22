@@ -24,6 +24,8 @@ import { checkWallCollision, extractZonePolygons, extractPortals, crossZoneBorde
 import { sceneWorldHeight, sceneWorldSize } from '@/lib/sceneWorld';
 import { usePlayerSync, type Choice } from '@/lib/usePlayerSync';
 import { computeVisionRegions, type CharPos } from '@/lib/playerVision';
+import { buildOccluders } from '@/lib/lightOcclusion';
+import { extractFogRegions } from '@/lib/fogMask';
 import type { VisionConfig } from '@core/domain/types';
 import type { FogRegion } from '@/lib/fogMask';
 import type { LosJob } from '@/lib/losWorker';
@@ -395,6 +397,17 @@ export default function PlayerView() {
     })
     return losRegion ? [...light, losRegion] : light
   }, [data, visionCharPos, mySceneCharId, mapperW, mapperH, shareLight, losRegion])
+
+  // SceneRenderer recibe los cálculos, no los hace: la niebla que ve el jugador
+  // es la de la escena más lo que ilumina su personaje.
+  const sceneFogRegions = useMemo(
+    () => (data ? [...extractFogRegions(data.items ?? []), ...visionRegions] : []),
+    [data, visionRegions],
+  )
+  const sceneOccluders = useMemo(
+    () => (data ? buildOccluders(data.items ?? [], mapperW, mapperH) : []),
+    [data, mapperW, mapperH],
+  )
 
   const requestLight = useCallback(async () => {
     const d = dataRef.current
@@ -1139,9 +1152,10 @@ export default function PlayerView() {
               onAspectChange={handleAspectChange}
               modelYOffset={data.model_y_offset ?? 0}
               items={data.items ?? []}
+              occluders={sceneOccluders}
+              fogRegions={sceneFogRegions}
               readOnly
               fogColor="rgba(5, 5, 20, 0.82)"
-              playerFogRegions={visionRegions}
               renderMode={DEFAULT_RENDER_MODE}
               gridSize={data.grid_size ?? 0}
               gridSnap={data.grid_snap ?? false}
