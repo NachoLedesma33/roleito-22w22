@@ -176,6 +176,6 @@ async def apply_npc_vida_response(
         "defense": npc.defense if npc.defense is not None else DEFAULT_DEFENSE,
         "current_pv": npc.current_pv,
         "current_pm": npc.current_pm,
-        "inventory_json": npc.inventory_json or {},
+        "inventory_json": npc.inventory_json or [],
         "spells_json": spells if spells is not None else await load_spells(db, "npc", npc.id),
     }

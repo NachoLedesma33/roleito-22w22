@@ -826,6 +826,45 @@ async def test_calendar_advance_and_clocks(client):
     assert res.status_code == 404
 
 
+@pytest.mark.asyncio
+async def test_alta_de_personajes_y_npcs_respeta_el_contrato(client):
+    """El POST devuelve la ficha completa y los default de vida.
+
+    Sin esto nadie miraba el alta de NPCs: el unico rojo de la division por
+    dominio (2026-10-16, CI) fue un `inventory_json` que volvia `{}` en vez de
+    `[]` y reventaba el `NPCResponse` con 500.
+    """
+    camp = (await client.post("/api/campaigns", json={"name": "Altas Camp"})).json()
+    cid = camp["id"]
+
+    char = (await client.post(f"/api/campaigns/{cid}/characters", json={"name": "Aria"})).json()
+    assert char["inventory_json"] == []
+    assert char["spells_json"] == []
+    assert (char["max_pv"], char["max_pm"], char["defense"]) == (10, 10, 5)
+    assert char["current_pv"] == char["max_pv"]
+    assert char["current_pm"] == char["max_pm"]
+
+    npc = await client.post(f"/api/campaigns/{cid}/npcs", json={"name": "Taberna"})
+    assert npc.status_code == 200, npc.text
+    npc = npc.json()
+    assert npc["inventory_json"] == []
+    assert npc["spells_json"] == []
+    assert (npc["max_pv"], npc["max_pm"], npc["defense"]) == (10, 10, 5)
+    assert npc["current_pv"] == npc["max_pv"]
+
+    # El GET y el listado devuelven lo mismo que el alta.
+    assert (await client.get(f"/api/campaigns/{cid}/npcs/{npc['id']}")).json() == npc
+    assert (await client.get(f"/api/campaigns/{cid}/npcs")).json() == [npc]
+
+    # Y subir un retrato (upload_routes) devuelve la ficha, no un dict pelado.
+    res = await client.post(
+        f"/api/campaigns/{cid}/npcs/{npc['id']}/portrait",
+        files={"file": ("p.png", b"\x89PNG\r\n\x1a\n", "image/png")},
+    )
+    assert res.status_code == 200, res.text
+    assert res.json()["inventory_json"] == []
+
+
 async def _correr_backfill_de_spells():
     from database import _spells_to_catalog
 

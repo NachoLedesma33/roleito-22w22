@@ -325,6 +325,12 @@ Gates: lint 0 err/43 warn, typecheck limpio, vitest 142, e2e `quest`+`calendar`+
 
 **Nota:** `ASSETS_DIR` sigue duplicado en `handout_routes.py`, `player_routes.py`, `scene_routes.py` y `main.py`. Fase 7 (`services/assets.py` + `_asset_rel`/`_asset_abs` de `routes.py`) es el momento de que apunten al del servicio.
 
+**Regresión que dejó el CI en rojo (`74e0478`; el fix va en commit aparte):** shards e2e 1 y 3 con `createNpc failed: 500` → `ResponseValidationError: inventory_json Input should be a valid list, input: {}`. Causa: al copiar `apply_npc_vida_response` a `services/vida.py` quedó `npc.inventory_json or {}` donde el original era `or []`. pytest (90) no lo vio porque **ningún test de `test_api.py` creaba un NPC por API**: el contrato de `NPCResponse` solo lo ejercitaba el e2e.
+
+Lección: mover código a mano no es "mover", es reescribir, y una línea mal tipeada es una bomba que solo explota si algo la ejecuta. Por eso el fix trae dos cosas:
+1. `test_alta_de_personajes_y_npcs_respeta_el_contrato`: alta de personaje y de NPC, defaults de vida, `inventory_json`/`spells_json` vacíos, GET y listado idénticos al alta, y el upload de retrato (que devuelve la ficha). **Verificado que falla con el typo y pasa con el fix.**
+2. Verificación mecánica del movimiento: comparación línea por línea del `character_routes.py` viejo contra los 4 archivos nuevos, normalizando renombraciones. Las 38 diferencias tienen que ser las previstas (`ASSETS_DIR`, los dos `remove_*_file`, los 8 bloques de upload, la firma partida de `load_spells`): con eso no queda otro typo escondido. Vale repetirlo en cada movimiento de código de esta fase.
+
 ---
 
 ### Fase 7 — Backend: helpers de `routes.py` (P6)
