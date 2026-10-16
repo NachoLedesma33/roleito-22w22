@@ -301,11 +301,29 @@ Gates: lint 0 err/43 warn, typecheck limpio, vitest 142, e2e `quest`+`calendar`+
 
 ---
 
-### Fase 6 — Backend: `character_routes.py` por dominio (P5)
+### Fase 6 — Backend: `character_routes.py` por dominio (P5) — **CIERRE**
 **Problema:** 29 funciones, 4 dominios.  
 **Diseño:** dividir en `character_routes.py` (characters+npcs), `ability_routes.py` (catálogo + icon/audio), `upload_routes.py` (portraits/models). Helpers privados a `backend/services/`. Sin repositorios ceremoniales.  
 **Pruebas:** `cd backend; ..\venv\Scripts\python.exe -m pytest` (debe seguir en 46+).  
 **Criterio de aceptación:** pytest verde; `main.py` registra los routers nuevos; contratos HTTP idénticos (verificado por pytest `test_api`).
+
+**Baseline real: 90 tests** (la cifra 46 del diagnóstico quedó vieja). Los tres commits quedan en 90.
+
+**`25a972a` — helpers a `backend/services/` (sin mover rutas todavía):**
+- `services/vida.py`: `DEFAULT_MAX_PV/PM/DEFENSE`, `spell_payload`, `load_spells_bulk`, `load_spells`, `replace_spells`, `apply_vida_response`, `apply_npc_vida_response`. Lo necesitan varios routers (los uploads devuelven la ficha actualizada), así que no puede ser privado de uno.
+- `services/assets.py`: `ASSETS_DIR` (estaba escrito en 5 módulos con dos variantes: una normalizada y otra no), `save_campaign_file`, `remove_asset_file`. El "borrar el viejo antes de guardar el nuevo" estaba repetido en los 8 endpoints de upload.
+- Los 8 uploads pasan por `save_campaign_file`: ~40 líneas de `makedirs` + `open/write` repetidas, ahora una llamada.
+- `services/__init__.py` explícito, para no depender de namespace packages.
+
+**`c3ee581` — `ability_routes.py`:** catálogo + icono/audio + `/use` (8 endpoints, tag `abilities` en vez de caer bajo `characters,npcs`). Se mueven tal cual; `character_routes.py` pierde los imports que solo el catálogo usaba.
+
+**`1f48d7e` — `upload_routes.py`:** retratos y modelos 3D (4 endpoints, tag `uploads`), con `_get_character`/`_get_npc` en vez del lookup copiado 4 veces.
+
+**Estructura final:** `character_routes.py` 821→**273** (CRUD fichas), `ability_routes.py` 252, `upload_routes.py` 128, `services/vida.py` 181, `services/assets.py` 42. `main.py` registra los 3 routers con prefix `/api` como los otros 24.
+
+**Verificación de contratos:** además de pytest, se listó `app.routes` y se compararon paths y métodos de las 12 rutas movidas (8 abilities + 4 uploads): idénticos. `test_api.py` cubre catálogo, icono preset/upload/delete, audio upload/delete, delete con purga de enlaces, `/use` con PM + evento + campaña ajena; el upload de retrato lo cubren C11 (e2e) y `test_api`. Frontend intacto → sin e2e local; CI corre la suite completa en el push.
+
+**Nota:** `ASSETS_DIR` sigue duplicado en `handout_routes.py`, `player_routes.py`, `scene_routes.py` y `main.py`. Fase 7 (`services/assets.py` + `_asset_rel`/`_asset_abs` de `routes.py`) es el momento de que apunten al del servicio.
 
 ---
 
