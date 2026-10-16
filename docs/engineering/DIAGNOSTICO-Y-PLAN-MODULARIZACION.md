@@ -215,6 +215,18 @@ Gates: lint 0 err/39 warn, typecheck limpio, vitest 137, e2e **49/49** (`zone`+`
 3. Los helpers de portal (`createPortalBetween`, `buildPortalLocalEdge`, `cyclePortalState`, `removePortal`) están en `@/components/ZonePortal`, no en `@core/scene/wall-collision`. Importarlos del módulo equivocado, además de fallar, tira errores `TS2367` en cascada sobre `wall-collision.ts` y confunde el diagnóstico.
 
 Gates: lint 0 err/**39 warn** (los 6 `cancelPortalMode` faltantes en dep arrays se declararon), typecheck limpio, vitest 137, e2e **41/41** (`portal`+`zone`+`fog`+`map` = 19; `dashboard`+`light`+`transitions`+`status` = 22). Un primer run dio 36 `ERR_CONNECTION_REFUSED` en 5173 — crash de vite local conocido, resuelto con re-run sin tocar specs.
+
+**Commit 4/4 — `useMovementRange`: DIFIERIDO, se extrajo lo que de verdad estaba duplicado**
+
+El plan pedía un hook `useMovementRange`. Al mirarlo, sería una capa ceremonial: las dos funciones que llama (`buildOccluders`, `computeReachableCells`) ya viven en `lib/` y ya tienen tests. El `useMemo` del componente es un adaptador de 15 líneas entre el estado y esas funciones puras: un hook que toma 5 parámetros y llama uno no elimina ninguna responsabilidad.
+
+Lo que sí estaba duplicado es **la derivación del tamaño del mundo**: `const mapH = 10 * mScale` aparecía **9 veces en 2 archivos** (`DmDashboard` ×8, `PlayerView` ×1), con nombres de variable distintos (`mapH`, `mapSize`, `mapHeight`, `mapperH`) y a veces sin la línea del `mapW`. El `10` es la media-ancho del mundo en unidades de grilla, escrito a mano y sin nombre.
+
+- Nuevo `apps/dm/src/lib/sceneWorld.ts`: `WORLD_HALF_SPAN = 10`, `sceneWorldHeight(mapScale)` y `sceneWorldSize(mapScale, aspect)`.
+- Los 9 call sites pasan a la función. Quedan **0** ocurrencias de `10 * mScale` en el repo.
+- Nuevo `sceneWorld.spec.ts` (5 tests). **El test destapó que yo tenía mal la convención:** afirmé que `x / mapW + 0.5` daba 1 en el borde, cuando `mapW` es semi-ancho y el rango normalizado va de `x = -mapW/2` a `x = +mapW/2`. El código estaba bien; el test estaba mal. La convención quedó escrita en el JSDoc del módulo, que es donde se la va a leer.
+
+Gates: lint 0 err/39 warn, typecheck limpio, vitest **142** (137+5), e2e **74/74** (`map`+`scene`+`zone`+`portal`+`player-view`+`dashboard`+`fog` = 43; `player-view`+`map`+`zone`+`transitions`+`status` = 31).
 **Problema:** 3830 líneas renderizando toolbar, dock, menús, context menus, toasts y ~15 paneles.  
 **Diseño:** extraer componentes de presentación pura (reciben props, emiten callbacks). `DmDashboard` queda como orquestador de estado.
 - `DmToolbar` — escena + toolbar vertical + menús lighting/weather/build/mapa

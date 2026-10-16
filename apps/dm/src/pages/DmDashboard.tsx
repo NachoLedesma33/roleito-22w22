@@ -24,6 +24,7 @@ import { useAnchoredMenu } from '@/lib/useAnchoredMenu';
 import { extractZonePolygons, checkWallCollision } from '@/lib/wall-collision';
 import { buildOccluders } from '@/lib/lightOcclusion';
 import { computeReachableCells } from '@/lib/movementRange';
+import { sceneWorldHeight, sceneWorldSize } from '@/lib/sceneWorld';
 import { DEFAULT_RENDER_MODE } from '@/lib/overlayY';
 import BackgroundSelector, { generateBackgroundCSS } from '@/components/BackgroundSelector';
 import SessionLogHud from '@/components/SessionLogHud';
@@ -306,8 +307,7 @@ export default function DmDashboard() {
     setDrawState((prev) => {
       if (!prev || !prev.startPoint || !prev.currentPoint) return null
       const mScale = activeScene?.map_scale ?? 1
-      const mapH = 10 * mScale
-      const mapW = mapH * mapAspect
+      const { mapH, mapW } = sceneWorldSize(mScale, mapAspect);
       const item = createWallItem(prev, campaignId ?? '', mapW, mapH)
       if (item) {
         graphRef.addItem(item)
@@ -337,7 +337,7 @@ export default function DmDashboard() {
         return null
       }
       const mScale = activeScene?.map_scale ?? 1
-      const mapSize = 10 * mScale
+      const mapSize = sceneWorldHeight(mScale)
       const item = createZoneItem(prev, zoneColor, mapSize * mapAspect, mapSize)
       if (item) {
         graphRef.addItem(item)
@@ -404,7 +404,7 @@ export default function DmDashboard() {
   const portalZones = useMemo(() => {
     if (!portalDraft && !zoneFogActive) return []
     const mScale = activeScene?.map_scale ?? 1
-    const mapSize = 10 * mScale
+    const mapSize = sceneWorldHeight(mScale)
     const zones = extractZonePolygons(graphRef.getItems(), mapSize * mapAspect, mapSize)
     return zonesToGeometry(zones)
   }, [portalDraft, zoneFogActive, activeScene, graphRef, mapAspect])
@@ -620,7 +620,7 @@ export default function DmDashboard() {
   const handleLightPlace = useCallback((point: { x: number; y: number }) => {
     if (!lightPlaceMode) return
     const mScale = activeScene?.map_scale ?? 1
-    const mapHeight = 10 * mScale
+    const mapHeight = sceneWorldHeight(mScale)
     const mapWidth = mapHeight * mapAspect
     const item = createLightItem(lightPlaceMode.preset, point, mapWidth, mapHeight)
     if (!item) return
@@ -686,7 +686,7 @@ export default function DmDashboard() {
     const sc = sceneCharsRef.current.find((s) => s.id === request.token_id)
     if (!sc || !campaignId) return
     const mScale = activeScene?.map_scale ?? 1
-    const mapHeight = 10 * mScale
+    const mapHeight = sceneWorldHeight(mScale)
     const mapWidth = mapHeight * mapAspect
     const item = createLightItem('torch', { x: sc.x / mapWidth + 0.5, y: sc.z / mapHeight + 0.5 }, mapWidth, mapHeight)
     if (!item) return
@@ -746,7 +746,7 @@ export default function DmDashboard() {
 
   const handleZoneFogSelect = useCallback((snap: { zoneId: string }) => {
     const mScale = activeScene?.map_scale ?? 1
-    const mapSize = 10 * mScale
+    const mapSize = sceneWorldHeight(mScale)
     const items = graphRef.getItems()
     const zone = items.find((i: SceneItem) => i.id === snap.zoneId && i.metadata?.type === 'zone')
     if (!zone) return
@@ -1256,7 +1256,7 @@ export default function DmDashboard() {
     const sc = sceneCharsRef.current.find((s) => s.id === sceneCharId)
     if (!sc || !activeScene) return
     const mScale = activeScene.map_scale ?? 1
-    const mapHeight = 10 * mScale
+    const mapHeight = sceneWorldHeight(mScale)
     const mapWidth = mapHeight * mapAspect
     const item = createLightItem('lantern', { x: sc.x / mapWidth + 0.5, y: sc.z / mapHeight + 0.5 }, mapWidth, mapHeight)
     if (!item) return
@@ -1339,8 +1339,7 @@ export default function DmDashboard() {
     lastLocalChangeRef.current = Date.now();
     draggingTokenIdRef.current = null;
     const mScale = activeScene.map_scale ?? 1;
-    const mapH = 10 * mScale;
-    const mapW = mapH * mapAspect;
+    const { mapH, mapW } = sceneWorldSize(mScale, mapAspect);
     const normX = (x / mapW) + 0.5;
     const normZ = (z / mapH) + 0.5;
 
@@ -1403,8 +1402,7 @@ export default function DmDashboard() {
     const sc = sceneChars.find((s) => s.id === selectedTokenId);
     if (!sc) return null;
     const mScale = activeScene.map_scale ?? 1;
-    const mapH = 10 * mScale;
-    const mapW = mapH * mapAspect;
+    const { mapH, mapW } = sceneWorldSize(mScale, mapAspect);
     const cellSize = activeScene.grid_size && activeScene.grid_size > 0 ? activeScene.grid_size : 0.5;
     const occluders = buildOccluders(sceneItems, mapW, mapH);
     const { cells } = computeReachableCells(

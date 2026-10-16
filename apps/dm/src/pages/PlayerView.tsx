@@ -23,6 +23,7 @@ import ToastContainer from '@/components/ToastContainer';
 import { rollToToast, useToastQueue } from '@/lib/toastQueue';
 import { api, type Character, type DiceRollResponse, type PlayerSceneToken, type Spell } from '@/lib/api';
 import { checkWallCollision, extractZonePolygons, extractPortals, crossZoneBorder } from '@/lib/wall-collision';
+import { sceneWorldHeight, sceneWorldSize } from '@/lib/sceneWorld';
 import { computeVisionRegions, type CharPos } from '@/lib/playerVision';
 import { normalizeSharedAudio, setSharedAudio } from '@/lib/audioSettings';
 import type { SceneItem, VisionConfig } from '@core/domain/types';
@@ -504,7 +505,7 @@ export default function PlayerView() {
   }, [data, mySceneCharId, wasdTarget])
 
   const mapScale = data?.map_scale ?? 1
-  const mapperH = 10 * mapScale
+  const mapperH = sceneWorldHeight(mapScale)
   const mapperW = mapperH * imageAspect
 
   // LoS (worker + throttle): mi personaje ve según vision_type/range, recortado por muros.
@@ -626,8 +627,7 @@ export default function PlayerView() {
     if (!currentData || !cur || cur.kind !== 'character') return;
 
     const mScale = currentData.map_scale ?? 1;
-    const mapH = 10 * mScale;
-    const mapW = mapH * imageAspect;
+    const { mapH, mapW } = sceneWorldSize(mScale, imageAspect);
 
     const sc = currentData.characters.find(
       (ch) => ch.type === 'character' && currentData.player_characters.some((p) => p.id === ch.entity_id && p.id === cur.id)
@@ -863,8 +863,7 @@ export default function PlayerView() {
         }
         lastMoveAtRef.current = Date.now();
         const mapScale = currentData.map_scale ?? 1;
-        const mapH = 10 * mapScale;
-        const mapW = mapH * imageAspect;
+        const { mapH, mapW } = sceneWorldSize(mapScale, imageAspect);
         const tokenRadius = 0.4;
         x = Math.max(-mapW / 2 + tokenRadius, Math.min(mapW / 2 - tokenRadius, x));
         z = Math.max(-mapH / 2 + tokenRadius, Math.min(mapH / 2 - tokenRadius, z));
