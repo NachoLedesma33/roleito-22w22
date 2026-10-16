@@ -3,6 +3,21 @@
 Persistent AI RPG World Engine. Local-first platform for tabletop RPG campaigns.
 DM authority + AI assistant. World State = source of truth.
 
+## ⚠️ DIRECTIVA DE INGENIERÍA OBLIGATORIA (leer ANTES de escribir código)
+
+Al agregar, modificar o refactorizar **cualquier** código de este repo (feature nueva o código existente), aplicá esta directiva transversal sin excepción:
+
+1. **`docs/ROLEITO_GUIA_MODULARIZACION_ARQUITECTURA.md`** — directiva completa (cohesión, acoplamiento, SOLID con criterio, DRY sin sobreabstracción, diseño de props, hooks, separación de efectos, backend por capa, contratos, patrones, verificación).
+2. **`docs/engineering/DIAGNOSTICO-Y-PLAN-MODULARIZACION.md`** — diagnóstico priorizado (P1-P9) + plan de fases. Las fases **siguen en curso**: no arranques una fase sin que la anterior esté commiteada y con CI verde.
+
+**Reglas que no se negocian (resumen; el detalle está en la guía):**
+- Nada de abstracciones prematuras, capas ceremoniales ni reescrituras masivas. Preferí duplicación pequeña y explícita antes que un helper genérico lleno de flags.
+- Un componente grande se dividí **cuando tenga responsabilidades que cambian por separado**, no por número de líneas. Extraé una responsabilidad por vez, en commits separados.
+- El código nuevo sigue los patrones que ya existen en el repo (tokens CSS, `components/ui/`, `api.ts`, `@core/domain/types`, `HudPanel`, i18n `t()`). No introduzcas un patrón paralelo.
+- **No declares pruebas exitosas si no las ejecutaste.** Reportá resultados reales, incluido "no pude ejecutar X".
+- Antes de cerrar un cambio: `npm run lint` → `npm run typecheck` → `npm run test --workspace=apps/dm` → pytest si tocaste backend → e2e de lo afectado. Cada fase = 1 commit + CI verde.
+- Actualizá `docs/IMPLEMENTATION-STATUS.md` y la doc de la feature cuando una decisión arquitectónica lo requiera.
+
 ## Stack & Structure
 - **Frontend real (único): `apps/dm`** — React 18 + TS strict + Vite + Tailwind. Three.js/R3F se usan DENTRO de apps/dm (SceneRenderer, PlayerView), no en apps separadas.
 - `apps/player` y `apps/renderer` son **placeholders vacíos (.gitkeep)**; no crear código ahí. La vista jugador vive en `apps/dm/src/pages/PlayerView.tsx`.
@@ -44,7 +59,14 @@ DM authority + AI assistant. World State = source of truth.
 8. `docs/EVENT-SYSTEM.md`
 Luego solo los relevantes a la tarea. `scripts/check-docs-consistency.py` valida docs vs código.
 
+**Docs de ingeniería (aplicar siempre, ver directiva arriba):**
+- `docs/ROLEITO_GUIA_MODULARIZACION_ARQUITECTURA.md`
+- `docs/engineering/DIAGNOSTICO-Y-PLAN-MODULARIZACION.md`
+- `docs/IMPLEMENTATION-STATUS.md` (estado maestro de features; sincronizar al cerrar fases)
+
 ## Gotchas (lecciones pagadas)
+- **Emoji/glifo → icono lucide rompe e2e en silencio**: un SVG **no aporta texto** al DOM. Todo `getByRole({name})` / `getByText` que incluía el glifo queda roto con timeout 30s, **indistinguible de flake de carga**. Reales: `🏆 100 gp`→`100 gp` (quest Q1), `← Volver a la lista`→`Volver a la lista` (notebook NB4). **Si tocás texto visible o nombre accesible de un control, grepeá los specs y actualizá locators en el mismo commit**, y corré el spec afectado. `getByRole({name})` matchea por **substring del nombre accesible**, no por texto crudo.
+- **No culpes al CI de "flake" sin verificar el código**: los 9 rojos de 2026-10-15 eran 3 bugs propios de un commit de iconos. Reproducí local el spec afectado antes de re-runear.
 - **Windows**: `.gitattributes` fuerza `eol=lf`; assets binarios (img/audio/video/3D) via Git LFS — verificar `git lfs` instalado antes de checkout
 - `npm run dev:renderer` falla (apps/renderer sin package.json) — esperado
 - WASD: grid-snap SOLO en drag/drop (`reportMove(snap)`); teclado es libre — no re-agregar snap al path de teclado
@@ -63,3 +85,6 @@ Luego solo los relevantes a la tarea. `scripts/check-docs-consistency.py` valida
 | `playwright-best-practices` | Escribir/arreglar e2e `tests/e2e`: selectors, fixtures, flaky (`S2`, `CS8`), canvas/WebGL, mobile/touch |
 | `typescript-advanced-types` | TS strict: genéricos, narrowing, tipos de `apps/dm/src/lib/api.ts`, utilidades reutilizables |
 | `diagnosing-bugs` | Bugs duros / regresiones de perf (canvas `zone Z1/Z2`, `status S1`): loop de feedback antes de tocar código |
+| `roleito-modularizacion` *(skill del repo, `.opencode/skills/`)* | **Obligatoria** al escribir/refactorizar código: checklist de la directiva, fases del plan, y gate de verificación antes de commitear |
+
+> Las skills del repo viven en `.opencode/skills/<nombre>/SKILL.md` y se cargan automáticamente al abrir el proyecto, aunque no se lean los `AGENTS.md`. Preferí una skill de repo a depender solo de `AGENTS.md`.

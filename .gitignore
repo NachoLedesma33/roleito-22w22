@@ -93,7 +93,10 @@ graphify-out/
 
 # Herramienta local de opencode (gates, git). Es del desarrollo, no del
 # producto: no va en un repo que se puede clonar o vender.
-.opencode/
+# Excepción: .opencode/skills/ SÍ se versiona — son directrices de ingeniería
+# que todo agente del proyecto debe recibir, no tooling de una máquina.
+.opencode/*
+!.opencode/skills/
 
 # Uploaded assets
 data/assets/
