@@ -30,6 +30,7 @@ import type { VisionConfig } from '@core/domain/types';
 import type { FogRegion } from '@/lib/fogMask';
 import type { LosJob } from '@/lib/losWorker';
 import { DEFAULT_RENDER_MODE } from '@/lib/overlayY';
+import { normalizeSharedAudio, setSharedAudio } from '@/lib/audioSettings';
 import { staticUrl } from '@/lib/staticUrl';
 
 const API_BASE = '/api';
@@ -209,6 +210,12 @@ export default function PlayerView() {
       void el.play().catch(() => {});
     }
   }, [data, choice, audioOn]);
+
+  // Volumen de audio publicado por el DM: si está sincronizado, todos los POV
+  // siguen estos valores y los sliders del jugador quedan bloqueados.
+  useEffect(() => {
+    setSharedAudio(normalizeSharedAudio(data?.audio));
+  }, [data?.audio]);
 
   // Prompt de iniciativa para este jugador (si el DM lo agregó al combate)
   useEffect(() => {
