@@ -175,6 +175,21 @@ Eso no es un componente de presentación con props: es un **panel de control ata
 4. `data-menu-root` desaparece (era el selector del mecanismo viejo); cada disparador declara `data-anchor="<id>"`.
 
 Gates: lint 0 err/39 warn, typecheck limpio, e2e **91/91** (`zone`+`map`+`weather`+`dashboard`+`light`+`transitions` = 37; `hud-resize`+`handout`+`notebook`+`quest`+`recap`+`calendar`+`ai`+`dice` = 54).
+
+### Fase 3 — DmDashboard: extraer lógica a hooks (P1b) — **EN CURSO (1/4)**
+
+**Nota de numeración:** la Fase 3 del plan es esta (hooks de `DmDashboard`), NO `PlayerView`. `PlayerView por capas` es la **Fase 4** (`usePlayerSync` + `PlayerHudPanels`); `SceneRenderer` es la Fase 5.
+
+**Commit 1/4 — `useSceneGraph` (HECHO):**
+- Nuevo `apps/dm/src/lib/useSceneGraph.ts`. App-level y no de dominio porque llama a `api.scenes`; el dominio puro ya tenía `useDoorInteraction` en `core/scene/`.
+- Reúne dos responsabilidades que cambian por motivos distintos: **el grafo** (qué hay en la escena) y **el historial** (qué se deshace y cuándo se persiste). `handleItemsChange` es el único punto de entrada para mutar —lo usan 23 call sites— y ahí se decide la entrada al historial y el guardado.
+- Los helpers `sameIds`/`snapshotOf`/`MAX_HISTORY` se van con el hook, y los números mágicos pasan a constantes con nombre (`MAX_HISTORY`, `COALESCE_MS`, `SAVE_DEBOUNCE_MS`).
+- `disabled={undoStackRef.current.length === 0}` era una **lectura de ref durante el render**. Ahora el hook devuelve `canUndo`/`canRedo`; el `setUndoBump` interno sigue existiendo, pero solo para forzar el re-render cuando cambian los stacks.
+- `handleUndo` limpia la selección vía un callback `onHistoryStep` en vez de recibir setters: el grafo no debe saber que hay un token seleccionado.
+
+**Dos cambios de comportamiento (documentados):**
+1. Cleanup del timer de guardado al desmontar. Antes un `saveItems` pendiente podía dispararse después de que la pantalla se fuera.
+2. `handleRedo` **no** llama `onHistoryStep`, igual que antes. El original solo limpia la selección al deshacer; parece una inconsistencia, pero arreglarla acá sería cambiar comportamiento sin que nadie lo pida. Queda anotada como deuda.
 **Problema:** 3830 líneas renderizando toolbar, dock, menús, context menus, toasts y ~15 paneles.  
 **Diseño:** extraer componentes de presentación pura (reciben props, emiten callbacks). `DmDashboard` queda como orquestador de estado.
 - `DmToolbar` — escena + toolbar vertical + menús lighting/weather/build/mapa

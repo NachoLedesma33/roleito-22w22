@@ -4,7 +4,7 @@ import i18n from '@/lib/i18n';
 import { useParams, Link } from 'react-router-dom';
 import { api, Campaign, Scene, SceneCharacter, Character, NPC, Map as GameMap, LightRequest, Asset } from '@/lib/api';
 import { SceneItem, ZoneMetadata, SceneLayer, PortalRef } from '@core/domain/types';
-import { SceneGraph } from '@core/scene/scene-graph';
+import { useSceneGraph } from '@/lib/useSceneGraph';
 import { useDoorInteraction } from '@core/scene/door-interaction';
 import SceneRenderer from '@/components/SceneRenderer';
 import { WEATHER_META, WEATHER_NONE_LABEL, WEATHER_KIND_LABEL, clampWeatherIntensity, WEATHER_INTENSITY_MIN, WEATHER_INTENSITY_MAX } from '@/components/WeatherFX';
@@ -58,18 +58,6 @@ import HudPanel from '@/components/HudPanel';
 import { staticUrl } from '@/lib/staticUrl';
 import { Dices, Swords, NotebookPen, ClipboardList, CalendarDays, ScrollText, FolderOpen, Map as MapIcon, Bot, MessageCircle, Zap, BookOpen, StickyNote } from 'lucide-react';
 
-const MAX_HISTORY = 30;
-
-function sameIds(a: SceneItem[], b: SceneItem[]): boolean {
-  if (a.length !== b.length) return false
-  const ids = new Set(a.map((i) => i.id))
-  return b.every((i) => ids.has(i.id))
-}
-
-function snapshotOf(items: SceneItem[]): SceneItem[] {
-  return JSON.parse(JSON.stringify(items)) as SceneItem[]
-}
-
 export default function DmDashboard() {
   const { t } = useTranslation();
   const { id: campaignId } = useParams<{ id: string }>();
@@ -113,8 +101,6 @@ export default function DmDashboard() {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
   const [lightRequests, setLightRequests] = useState<LightRequest[]>([]);
   const { toasts: toastQueue, push, pushMany, dismiss } = useToastQueue();
-  const [sceneItems, setSceneItems] = useState<SceneItem[]>([]);
-  const [graphRef] = useState(() => new SceneGraph());
   const [drawState, setDrawState] = useState<DrawState | null>(null);
   const [zoneDraft, setZoneDraft] = useState<ZoneDraft | null>(null);
   const [portalDraft, setPortalDraft] = useState<PortalDraft | null>(null);
@@ -132,6 +118,18 @@ export default function DmDashboard() {
   const [wallContextMenu, setWallContextMenu] = useState<{ x: number; y: number; itemId: string } | null>(null);
   const [zoneContextMenu, setZoneContextMenu] = useState<{ x: number; y: number; itemId: string } | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+
+  // Grafo de escena + historial (deshacer/rehacer) + guardado debounceado.
+  // Todo lo que muta el grafo entra por `handleItemsChange`.
+  const { graphRef, sceneItems, handleItemsChange, handleUndo, handleRedo, canUndo, canRedo } =
+    useSceneGraph({
+      campaignId,
+      sceneId: activeScene?.id,
+      onHistoryStep: () => {
+        setSelectedItemId(null);
+        setZoneContextMenu(null);
+      },
+    });
   const [buildMenuOpen, setBuildMenuOpen] = useState(false);
   // Los menús de clima y lighting abren con click, no con hover: en táctil el
   // hover no existe y el menú era inalcanzable.
@@ -160,12 +158,6 @@ export default function DmDashboard() {
 
   const [lightContextMenu, setLightContextMenu] = useState<{ x: number; y: number; itemId: string } | null>(null);
   const [fogContextMenu, setFogContextMenu] = useState<{ x: number; y: number; itemId: string } | null>(null);
-  const [, setUndoBump] = useState(0);
-  const undoStackRef = useRef<SceneItem[][]>([]);
-  const redoStackRef = useRef<SceneItem[][]>([]);
-  const sceneItemsRef = useRef<SceneItem[]>([]);
-  const applyingHistoryRef = useRef(false);
-  const lastUndoAtRef = useRef(0);
   const [detectingWalls, setDetectingWalls] = useState(false);
   // Propuesta de detección sin revisar: ids agregados al grafo que el DM aún
   // no aprobó ni descartó. Mientras viva, la barra de revisión sigue visible.
@@ -303,79 +295,6 @@ export default function DmDashboard() {
     timer = window.setTimeout(poll, 1500);
     return () => { cancelled = true; clearTimeout(timer); };
   }, [campaignId, activeScene]);
-
-  useEffect(() => {
-    if (!campaignId || !activeScene) return;
-    api.scenes.getItems(campaignId, activeScene.id)
-      .then(({ items }) => {
-        graphRef.clear()
-        items.forEach((item: SceneItem) => graphRef.addItem(item))
-        setSceneItems(graphRef.getItems())
-      })
-      .catch(() => setSceneItems([]));
-  }, [campaignId, activeScene, graphRef]);
-
-  const saveTimerRef = useRef<number>(0);
-
-  const pushUndo = useCallback((prev: SceneItem[]) => {
-    const now = Date.now()
-    const top = undoStackRef.current[undoStackRef.current.length - 1]
-    const coalesce = top && sameIds(top, prev) && now - lastUndoAtRef.current < 400
-    if (coalesce) {
-      undoStackRef.current[undoStackRef.current.length - 1] = prev
-    } else {
-      undoStackRef.current.push(prev)
-      if (undoStackRef.current.length > MAX_HISTORY) undoStackRef.current.shift()
-    }
-    lastUndoAtRef.current = now
-    redoStackRef.current = []
-    setUndoBump((c) => c + 1)
-  }, [])
-
-  const applyHistoryItems = useCallback((items: SceneItem[]) => {
-    applyingHistoryRef.current = true
-    graphRef.clear()
-    items.forEach((item) => graphRef.addItem(item))
-    sceneItemsRef.current = items
-    setSceneItems([...items])
-    if (campaignId && activeScene) {
-      api.scenes.saveItems(campaignId, activeScene.id, items).catch(() => {})
-    }
-    applyingHistoryRef.current = false
-  }, [campaignId, activeScene, graphRef])
-
-  const handleUndo = useCallback(() => {
-    const prev = undoStackRef.current.pop()
-    if (!prev) return
-    redoStackRef.current.push(snapshotOf(sceneItemsRef.current))
-    setSelectedItemId(null)
-    setZoneContextMenu(null)
-    applyHistoryItems(prev)
-    setUndoBump((c) => c + 1)
-  }, [applyHistoryItems])
-
-  const handleRedo = useCallback(() => {
-    const next = redoStackRef.current.pop()
-    if (!next) return
-    undoStackRef.current.push(snapshotOf(sceneItemsRef.current))
-    applyHistoryItems(next)
-    setUndoBump((c) => c + 1)
-  }, [applyHistoryItems])
-
-  const handleItemsChange = useCallback((items: SceneItem[]) => {
-    const prev = sceneItemsRef.current
-    if (!applyingHistoryRef.current && prev.length > 0 && JSON.stringify(prev) !== JSON.stringify(items)) {
-      pushUndo(snapshotOf(prev))
-    }
-    sceneItemsRef.current = [...items]
-    setSceneItems([...items])
-    if (campaignId && activeScene) {
-      clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = window.setTimeout(() => {
-        api.scenes.saveItems(campaignId!, activeScene!.id, items).catch(() => {})
-      }, 300)
-    }
-  }, [campaignId, activeScene, pushUndo])
 
   const { toggleDoor, lockDoor, unlockDoor } = useDoorInteraction(graphRef, handleItemsChange)
 
@@ -2096,7 +2015,7 @@ export default function DmDashboard() {
             <div className="flex items-center gap-1 shrink-0">
               <button
                 onClick={handleUndo}
-                disabled={undoStackRef.current.length === 0}
+                disabled={!canUndo}
                 className="text-xs px-1.5 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                 title={t('dm.undo', 'Deshacer (Ctrl+Z)')}
               >
@@ -2104,7 +2023,7 @@ export default function DmDashboard() {
               </button>
               <button
                 onClick={handleRedo}
-                disabled={redoStackRef.current.length === 0}
+                disabled={!canRedo}
                 className="text-xs px-1.5 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                 title={t('dm.redo', 'Rehacer (Ctrl+Shift+Z)')}
               >
