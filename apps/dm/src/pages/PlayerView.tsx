@@ -9,9 +9,7 @@ import { BookOpen, CalendarDays, Dices, Flame, Flashlight, FolderOpen, Target, V
 import * as THREE from 'three';
 import SceneRenderer from '@/components/SceneRenderer';
 import DiceRoller, { rollDice } from '@/components/DiceRoller';
-import PlayerQuestPanel from '@/components/PlayerQuestPanel';
-import PlayerCalendarPanel from '@/components/PlayerCalendarPanel';
-import PlayerHandoutPanel from '@/components/PlayerHandoutPanel';
+import { PlayerPanelToggles, PlayerPanels, type PlayerPanelId, type PlayerPanelToggle } from '@/components/player/PlayerPanels';
 import HudPanel from '@/components/HudPanel';
 import { STATUS_OPTIONS } from '@/lib/statusMarkers';
 import { abilityIconView, abilityFallbackGlyph } from '@/lib/abilityIcons';
@@ -116,9 +114,15 @@ export default function PlayerView() {
   const [notesSaving, setNotesSaving] = useState(false);
   const [usingSpellId, setUsingSpellId] = useState<string | null>(null);
   const [showDiceRoller, setShowDiceRoller] = useState(false);
-  const [showQuests, setShowQuests] = useState(false);
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [showHandouts, setShowHandouts] = useState(false);
+  // Paneles de información del jugador (misiones, calendario, documentos): un
+  // estado en vez de uno por panel, y los botones salen de la misma fuente.
+  const [openPanels, setOpenPanels] = useState<Partial<Record<PlayerPanelId, boolean>>>({});
+  const togglePanel = useCallback((id: PlayerPanelId) => {
+    setOpenPanels((prev) => ({ ...prev, [id]: !prev[id] }));
+  }, []);
+  const closePanel = useCallback((id: PlayerPanelId) => {
+    setOpenPanels((prev) => (prev[id] ? { ...prev, [id]: false } : prev));
+  }, []);
   const { toasts: toastQueue, push, pushMany, dismiss } = useToastQueue();
   const [pendingRoll, setPendingRoll] = useState<{
     combat_id: string;
@@ -904,6 +908,39 @@ export default function PlayerView() {
     URL.revokeObjectURL(url);
   }, [myChar]);
 
+  // Botones de los paneles de información. Solo el personaje tiene paneles: el
+  // espectador no, así que la lista sale vacía y no se dibuja nada.
+  const panelToggles = useMemo<PlayerPanelToggle[]>(
+    () =>
+      choice?.kind === 'character'
+        ? [
+            {
+              id: 'quests',
+              label: t('pv.quests', 'Misiones'),
+              icon: Target,
+              active: !!openPanels.quests,
+              onClick: () => togglePanel('quests'),
+            },
+            {
+              id: 'calendar',
+              label: t('pv.calendar', 'Calendario'),
+              icon: CalendarDays,
+              active: !!openPanels.calendar,
+              onClick: () => togglePanel('calendar'),
+            },
+            {
+              id: 'handouts',
+              label: t('pv.handouts', 'Documentos'),
+              icon: FolderOpen,
+              active: !!openPanels.handouts,
+              onClick: () => togglePanel('handouts'),
+              testId: 'player-handouts-toggle',
+            },
+          ]
+        : [],
+    [choice, t, openPanels, togglePanel],
+  );
+
   const missingCode = !code;
 
   if (loading && !missingCode) {
@@ -1017,49 +1054,7 @@ export default function PlayerView() {
             <Flame className="h-3.5 w-3.5" />
           </button>
         )}
-        {choice?.kind === 'character' && (
-          <button
-            type="button"
-            onClick={() => setShowQuests(!showQuests)}
-            className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${
-              showQuests
-                ? 'bg-[var(--accent)] text-white'
-                : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/70'
-            }`}
-            title={t('pv.quests', 'Misiones')}
-          >
-            <Target className="h-3.5 w-3.5" />
-          </button>
-        )}
-        {choice?.kind === 'character' && (
-          <button
-            type="button"
-            onClick={() => setShowCalendar(!showCalendar)}
-            className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${
-              showCalendar
-                ? 'bg-[var(--accent)] text-white'
-                : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/70'
-            }`}
-            title={t('pv.calendar', 'Calendario')}
-          >
-            <CalendarDays className="h-3.5 w-3.5" />
-          </button>
-        )}
-        {choice?.kind === 'character' && (
-          <button
-            type="button"
-            data-testid="player-handouts-toggle"
-            onClick={() => setShowHandouts(!showHandouts)}
-            className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${
-              showHandouts
-                ? 'bg-[var(--accent)] text-white'
-                : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/70'
-            }`}
-            title={t('pv.handouts', 'Documentos')}
-          >
-            <FolderOpen className="h-3.5 w-3.5" />
-          </button>
-        )}
+        <PlayerPanelToggles toggles={panelToggles} />
         <span
           className="flex items-center gap-1.5 text-[10px] shrink-0"
           title={live ? t('pv.synced', 'Sincronizado') : t('pv.reconnecting', 'Reconectando...')}
@@ -1549,26 +1544,12 @@ export default function PlayerView() {
         />
       )}
 
-      {showQuests && data && (
-        <PlayerQuestPanel
+      {data && (
+        <PlayerPanels
           campaignId={data.campaign_id}
           revision={panelRevision}
-          onClose={() => setShowQuests(false)}
-        />
-      )}
-
-      {showCalendar && data && (
-        <PlayerCalendarPanel
-          campaignId={data.campaign_id}
-          onClose={() => setShowCalendar(false)}
-        />
-      )}
-
-      {showHandouts && data && (
-        <PlayerHandoutPanel
-          campaignId={data.campaign_id}
-          revision={panelRevision}
-          onClose={() => setShowHandouts(false)}
+          open={openPanels}
+          onClose={closePanel}
         />
       )}
 

@@ -255,7 +255,23 @@ Gates: lint 0 err/39 warn, typecheck limpio, vitest **142** (137+5), e2e **74/74
 
 Gates: lint 0 err/39 warn, typecheck limpio, vitest 142, e2e `player-view`+`player-shell` **17/17** (re-run tras un primer intento con 36 `ERR_CONNECTION_REFUSED` = crash de vite local conocido).
 
-**Siguiente:** `PlayerHudPanels` (ensamblador de los 3 paneles jugador: quest, calendario, handouts) — seguir dividiendo `PlayerView` en commits pequeños.
+**Deuda saldada (commit `e41729b`):** el `useEffect` de `setSharedAudio(normalizeSharedAudio(data?.audio))` volvió a `PlayerView` (3 líneas + import). Confirma la lección de "borrar por rango": leer el bloque celda por celda antes de cortar.
+
+**PlayerPanels (HECHO, este commit):** nuevo `apps/dm/src/components/player/PlayerPanels.tsx` con dos exportaciones puras:
+- `PlayerPanelToggles`: los 3 botones (misiones / calendario / documentos) se pintan desde un array `PlayerPanelToggle[]` en vez de 3 bloques de JSX repetidos; mismo patrón de datos que `DmDock.groups`.
+- `PlayerPanels`: monta `PlayerQuestPanel` / `PlayerCalendarPanel` / `PlayerHandoutPanel` según `open: Partial<Record<PlayerPanelId, boolean>>`.
+
+El estado colapsó de 3 `useState` + 6 setters a 1 `openPanels` + `togglePanel`/`closePanel`, así que agregar un panel es una entrada en el `useMemo` de toggles, no un booleano nuevo. Los botones solo existen para `choice?.kind === 'character'` (el filtro vive en el memo, el fragmento vacío no genera nodo).
+
+Los tres botones se moved de la `TopBar` al componente pero **conservan `title` y `data-testid`** (`Misiones`, `Calendario`, `player-handouts-toggle`), que es lo que matchean `quest.spec.ts`, `calendar.spec.ts` y `handout.spec.ts`.
+
+`PlayerView.tsx`: ~1700 → ~1600 líneas. `DiceRoller` **no** se extrajo: es el único panel con estado propio (tirada pendiente, init) y `onRollCreated` actualiza `lastRollTsRef`, que el poll de toasts comparte.
+
+Gotcha: el `useMemo` de toggles quedó después del early return de `loading`/`error` y eslint lo marcó (`rules-of-hooks`). Va antes del `if (loading...)`.
+
+Gates: lint 0 err/43 warn, typecheck limpio, vitest 142, e2e `quest`+`calendar`+`handout` **11/11**, `player-view`+`player-shell` **17/17**.
+
+**Siguiente:** Fase 5 (`SceneRenderer` recibe `occluders`/`visionRegions` por props; `lightOcclusion.ts:46` puertas sin escalar). `PlayerView` ya no tiene un bloque grande pendiente: lo que queda (ficha, grimorio, selector de personaje) es cohesivo.
 
 ---
 
