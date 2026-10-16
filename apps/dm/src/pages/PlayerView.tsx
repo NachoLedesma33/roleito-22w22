@@ -19,7 +19,8 @@ import TopBar from '@/components/TopBar';
 import MinimizedBar from '@/components/MinimizedBar';
 import { Island, type IslandItem } from '@/components/ui/Island';
 import { AnimatePresence, motion } from 'motion/react';
-import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastContainer';
+import ToastContainer from '@/components/ToastContainer';
+import { rollToToast, useToastQueue } from '@/lib/toastQueue';
 import { api, type Character, type DiceRollResponse, type PlayerSceneToken, type Spell } from '@/lib/api';
 import { checkWallCollision, extractZonePolygons, extractPortals, crossZoneBorder } from '@/lib/wall-collision';
 import { computeVisionRegions, type CharPos } from '@/lib/playerVision';
@@ -158,7 +159,7 @@ export default function PlayerView() {
   const [showCalendar, setShowCalendar] = useState(false);
   const [showHandouts, setShowHandouts] = useState(false);
   const [panelRevision, setPanelRevision] = useState('');
-  const [toastQueue, setToastQueue] = useState<ToastRoll[]>([]);
+  const { toasts: toastQueue, push, pushMany, dismiss } = useToastQueue();
   const [pendingRoll, setPendingRoll] = useState<{
     combat_id: string;
     campaign_id: string;
@@ -374,10 +375,7 @@ export default function PlayerView() {
         if (cancelled) return;
         if (newRolls.length > 0) {
           lastRollTsRef.current = Date.now();
-          setToastQueue((prev) => {
-            const updated = [...prev, ...newRolls.map(rollToToast)];
-            return updated.slice(-5);
-          });
+          pushMany(newRolls.map(rollToToast));
         }
       } catch {
         // best-effort
@@ -390,7 +388,7 @@ export default function PlayerView() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [code, data]);
+  }, [code, data, pushMany]);
 
   // Ambiente: audio de la escena activa (loop). Arranca tras el gesto del jugador.
   useEffect(() => {
@@ -452,20 +450,17 @@ export default function PlayerView() {
         entity_id: choice.id,
         initiative: value,
       });
-      setToastQueue((prev) =>
-        [
-          ...prev,
-          rollToToast({
-            id: `init-${Date.now()}`,
-            roller_name: myChar?.name ?? i18n.t('pv.rollerYou', 'Tú'),
-            dice_type: 6,
-            count: 1,
-            results: [value],
-            total: value,
-            label: i18n.t('pv.initiativeRoll', 'Iniciativa'),
-            created_at: new Date().toISOString(),
-          } as DiceRollResponse),
-        ].slice(-5)
+      push(
+        rollToToast({
+          id: `init-${Date.now()}`,
+          roller_name: myChar?.name ?? i18n.t('pv.rollerYou', 'Tú'),
+          dice_type: 6,
+          count: 1,
+          results: [value],
+          total: value,
+          label: i18n.t('pv.initiativeRoll', 'Iniciativa'),
+          created_at: new Date().toISOString(),
+        } as DiceRollResponse)
       );
       setPendingRoll(null);
     } catch {
@@ -474,7 +469,7 @@ export default function PlayerView() {
     } finally {
       setRollingInit(false);
     }
-  }, [choice, pendingRoll, myChar]);
+  }, [choice, pendingRoll, myChar, push]);
 
   // Keep refs in sync
   useEffect(() => { myCharRef.current = myChar; }, [myChar]);
@@ -603,7 +598,7 @@ export default function PlayerView() {
         scene_id: d.scene_id,
         token_id: sc.id,
       })
-      setToastQueue((prev) => [...prev.slice(-4), {
+      push({
         id: `asklight-${Date.now()}`,
         rollerName: i18n.t('pv.lightRequestRoller', '🕯️ Petición de luz'),
         diceType: 1,
@@ -612,10 +607,10 @@ export default function PlayerView() {
         total: 1,
         label: i18n.t('pv.lightRequestSent', 'solicitud enviada al DM'),
         timestamp: Date.now(),
-      }])
+      })
     } catch {}
     window.setTimeout(() => setAskingLight(false), 5000)
-  }, [])
+  }, [push]);
 
   const toggleShareLight = useCallback(() => {
     setShareLight((v) => {
@@ -1743,7 +1738,7 @@ export default function PlayerView() {
           npcs={[]}
           onRollCreated={(response) => {
             lastRollTsRef.current = Date.now();
-            setToastQueue((prev) => [...prev, rollToToast(response)].slice(-5));
+            push(rollToToast(response));
           }}
         />
       )}
@@ -1855,7 +1850,7 @@ export default function PlayerView() {
 
       <ToastContainer
         toasts={toastQueue}
-        onDismiss={(id) => setToastQueue((prev) => prev.filter((t) => t.id !== id))}
+        onDismiss={dismiss}
       />
     </main>
   );

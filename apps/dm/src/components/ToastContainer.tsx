@@ -1,16 +1,5 @@
 import { useEffect, useCallback, useState, useRef } from 'react';
-import type { DiceRollResponse } from '@/lib/api';
-
-export interface ToastRoll {
-  id: string;
-  rollerName: string;
-  diceType: number;
-  count: number;
-  results: number[];
-  total: number;
-  label: string | null;
-  timestamp: number;
-}
+import type { ToastRoll } from '@/lib/toastQueue';
 
 interface ToastContainerProps {
   toasts: ToastRoll[];
@@ -21,21 +10,6 @@ function formatTime(ts: number): string {
   const d = new Date(ts);
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
-
-function rollToToast(roll: DiceRollResponse): ToastRoll {
-  return {
-    id: roll.id,
-    rollerName: roll.roller_name,
-    diceType: roll.dice_type,
-    count: roll.count,
-    results: roll.results,
-    total: roll.total,
-    label: roll.label,
-    timestamp: new Date(roll.created_at).getTime(),
-  };
-}
-
-export { rollToToast };
 
 function SingleToast({ toast, onDismiss }: { toast: ToastRoll; onDismiss: (id: string) => void }) {
   const [exiting, setExiting] = useState(false);

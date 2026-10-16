@@ -49,7 +49,8 @@ import {
 } from '@/lib/audioSettings';
 import SceneSettingsHud from '@/components/SceneSettingsHud';
 import ContextMenu, { ContextMenuItem } from '@/components/ContextMenu';
-import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastContainer';
+import ToastContainer from '@/components/ToastContainer';
+import { rollToToast, useToastQueue } from '@/lib/toastQueue';
 import TopBar from '@/components/TopBar';
 import MinimizedBar from '@/components/MinimizedBar';
 import HudPanel from '@/components/HudPanel';
@@ -110,7 +111,7 @@ export default function DmDashboard() {
   const [distanceTo, setDistanceTo] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
   const [lightRequests, setLightRequests] = useState<LightRequest[]>([]);
-  const [toastQueue, setToastQueue] = useState<ToastRoll[]>([]);
+  const { toasts: toastQueue, push, pushMany, dismiss } = useToastQueue();
   const [sceneItems, setSceneItems] = useState<SceneItem[]>([]);
   const [graphRef] = useState(() => new SceneGraph());
   const [drawState, setDrawState] = useState<DrawState | null>(null);
@@ -514,7 +515,7 @@ export default function DmDashboard() {
       graphRef.updateItem(aUp.id, { metadata: aUp.metadata })
       graphRef.updateItem(bUp.id, { metadata: bUp.metadata })
       handleItemsChange(graphRef.getItems())
-      setToastQueue((prevQ) => [...prevQ.slice(-4), {
+      push({
         id: `portal-${Date.now()}`,
         rollerName: i18n.t('dmToast.rollerPortal', 'Portal'),
         diceType: 20,
@@ -523,10 +524,10 @@ export default function DmDashboard() {
         total: 1,
         label: i18n.t('dmToast.portalCreated', 'portal creado'),
         timestamp: Date.now(),
-      }])
+      })
       return null
     })
-  }, [graphRef, handleItemsChange])
+  }, [graphRef, handleItemsChange, push]);
 
   const handlePortalMove = useCallback((point: { x: number; y: number }) => {
     setPortalDraft((prev) => prev ? { ...prev, currentPoint: point } : prev)
@@ -558,7 +559,7 @@ export default function DmDashboard() {
       graphRef.removeItem(item.id)
     }
     handleItemsChange(graphRef.getItems())
-    setToastQueue((prev) => [...prev.slice(-4), {
+    push({
       id: `clear-${Date.now()}`,
       rollerName: i18n.t('dmToast.rollerClear', 'Limpiar'),
       diceType: 20,
@@ -567,8 +568,8 @@ export default function DmDashboard() {
       total: toRemove.length,
       label: i18n.t('dmToast.wallsCleared', 'paredes y puertas eliminadas'),
       timestamp: Date.now(),
-    }])
-  }, [graphRef, handleItemsChange])
+    })
+  }, [graphRef, handleItemsChange, push]);
 
   const handleClearAllZones = useCallback(() => {
     const items = graphRef.getItems()
@@ -576,7 +577,7 @@ export default function DmDashboard() {
       (item: SceneItem) => item.metadata?.type === 'zone'
     )
     if (toRemove.length === 0) {
-      setToastQueue((prev) => [...prev.slice(-4), {
+      push({
         id: `clearz-${Date.now()}`,
         rollerName: i18n.t('dmToast.rollerClear', 'Limpiar'),
         diceType: 20,
@@ -585,14 +586,14 @@ export default function DmDashboard() {
         total: 0,
         label: i18n.t('dmToast.noZones', 'no hay zonas para eliminar'),
         timestamp: Date.now(),
-      }])
+      })
       return
     }
     for (const item of toRemove) {
       graphRef.removeItem(item.id)
     }
     handleItemsChange(graphRef.getItems())
-    setToastQueue((prev) => [...prev.slice(-4), {
+    push({
       id: `clearz-${Date.now()}`,
       rollerName: i18n.t('dmToast.rollerClear', 'Limpiar'),
       diceType: 20,
@@ -601,8 +602,8 @@ export default function DmDashboard() {
       total: toRemove.length,
       label: i18n.t('dmToast.zonesCleared', 'zonas eliminadas'),
       timestamp: Date.now(),
-    }])
-  }, [graphRef, handleItemsChange])
+    })
+  }, [graphRef, handleItemsChange, push]);
 
   const startFogMode = useCallback(() => {
     lastFogPointRef.current = null
@@ -696,7 +697,7 @@ export default function DmDashboard() {
       graphRef.removeItem(item.id)
     }
     handleItemsChange(graphRef.getItems())
-    setToastQueue((prev) => [...prev.slice(-4), {
+    push({
       id: `clearf-${Date.now()}`,
       rollerName: i18n.t('dmToast.rollerClear', 'Limpiar'),
       diceType: 20,
@@ -705,8 +706,8 @@ export default function DmDashboard() {
       total: toRemove.length,
       label: toRemove.length === 0 ? i18n.t('dmToast.noFog', 'no hay niebla para eliminar') : i18n.t('dmToast.fogCleared', 'regiones de niebla eliminadas'),
       timestamp: Date.now(),
-    }])
-  }, [graphRef, handleItemsChange])
+    })
+  }, [graphRef, handleItemsChange, push]);
 
   const handleClearAllLights = useCallback(() => {
     const items = graphRef.getItems()
@@ -714,7 +715,7 @@ export default function DmDashboard() {
       (item: SceneItem) => item.metadata?.type === 'light'
     )
     if (toRemove.length === 0) {
-      setToastQueue((prev) => [...prev.slice(-4), {
+      push({
         id: `clearl-${Date.now()}`,
         rollerName: i18n.t('dmToast.rollerClear', 'Limpiar'),
         diceType: 20,
@@ -723,14 +724,14 @@ export default function DmDashboard() {
         total: 0,
         label: i18n.t('dmToast.noLights', 'no hay luces para eliminar'),
         timestamp: Date.now(),
-      }])
+      })
       return
     }
     for (const item of toRemove) {
       graphRef.removeItem(item.id)
     }
     handleItemsChange(graphRef.getItems())
-  }, [graphRef, handleItemsChange])
+  }, [graphRef, handleItemsChange, push]);
 
   const startZoneFogMode = useCallback(() => {
     setDrawState(null)
@@ -790,7 +791,7 @@ export default function DmDashboard() {
     setAttachLightMode(null)
     setSelectedItemId(null)
     setSelectedTokenId(null)
-    setToastQueue((prev) => [...prev.slice(-4), {
+    push({
       id: `attach-${Date.now()}`,
       rollerName: i18n.t('dmToast.rollerLight', 'Luz'),
       diceType: 1,
@@ -799,8 +800,8 @@ export default function DmDashboard() {
       total: 1,
       label: i18n.t('dmToast.lightAttached', 'luz agregada al token'),
       timestamp: Date.now(),
-    }])
-  }, [attachLightMode, graphRef, handleItemsChange])
+    })
+  }, [attachLightMode, graphRef, handleItemsChange, push]);
 
   const handleLightDetach = useCallback((lightId: string) => {
     const light = graphRef.getItem(lightId)
@@ -809,7 +810,7 @@ export default function DmDashboard() {
     handleItemsChange(graphRef.getItems())
     setSelectedItemId(null)
     setAttachLightMode(null)
-    setToastQueue((prev) => [...prev.slice(-4), {
+    push({
       id: `detach-${Date.now()}`,
       rollerName: i18n.t('dmToast.rollerLight', 'Luz'),
       diceType: 1,
@@ -818,8 +819,8 @@ export default function DmDashboard() {
       total: 1,
       label: i18n.t('dmToast.lightDetached', 'luz quitada del token'),
       timestamp: Date.now(),
-    }])
-  }, [graphRef, handleItemsChange])
+    })
+  }, [graphRef, handleItemsChange, push]);
 
   const handleGrantLight = useCallback(async (request: LightRequest) => {
     const sc = sceneCharsRef.current.find((s) => s.id === request.token_id)
@@ -836,7 +837,7 @@ export default function DmDashboard() {
       await api.lightRequests.resolve(campaignId, request.id)
     } catch {}
     setLightRequests((prev) => prev.filter((r) => r.id !== request.id))
-    setToastQueue((prev) => [...prev.slice(-4), {
+    push({
       id: `grant-${Date.now()}`,
       rollerName: i18n.t('dmToast.rollerLight', 'Luz'),
       diceType: 1,
@@ -845,8 +846,8 @@ export default function DmDashboard() {
       total: 1,
       label: i18n.t('dmToast.torchGranted', 'antorcha entregada a {{name}}', { name: request.character_name }),
       timestamp: Date.now(),
-    }])
-  }, [campaignId, activeScene, graphRef, handleItemsChange, mapAspect])
+    })
+  }, [campaignId, activeScene, graphRef, handleItemsChange, mapAspect, push]);
 
   const handleDenyLight = useCallback(async (request: LightRequest) => {
     if (!campaignId) return
@@ -854,7 +855,7 @@ export default function DmDashboard() {
       await api.lightRequests.resolve(campaignId, request.id)
     } catch {}
     setLightRequests((prev) => prev.filter((r) => r.id !== request.id))
-    setToastQueue((prev) => [...prev.slice(-4), {
+    push({
       id: `deny-${Date.now()}`,
       rollerName: i18n.t('dmToast.rollerLight', 'Luz'),
       diceType: 1,
@@ -863,8 +864,8 @@ export default function DmDashboard() {
       total: 1,
       label: i18n.t('dmToast.lightDenied', 'luz denegada a {{name}}', { name: request.character_name }),
       timestamp: Date.now(),
-    }])
-  }, [campaignId])
+    })
+  }, [campaignId, push]);
 
   const selectedLight = useMemo(() => {
     if (!selectedItemId || attachLightMode || drawState || zoneDraft || portalDraft || fogMode || rectFogMode || zoneFogActive || lightPlaceMode) return null
@@ -901,7 +902,7 @@ export default function DmDashboard() {
       if (!existingIds.has(item.id)) graphRef.removeItem(item.id)
     }
     handleItemsChange(graphRef.getItems())
-    setToastQueue((prev) => [...prev.slice(-4), {
+    push({
       id: `zonefog-${Date.now()}`,
       rollerName: i18n.t('dmToast.rollerZoneFog', 'Niebla de zona'),
       diceType: 20,
@@ -910,8 +911,8 @@ export default function DmDashboard() {
       total: 1,
       label: res.applied === 'reveal' ? i18n.t('dmToast.zoneFogRevealed', 'niebla despejada de la zona') : i18n.t('dmToast.zoneFogHidden', 'niebla cubriendo la zona'),
       timestamp: Date.now(),
-    }])
-  }, [activeScene, graphRef, handleItemsChange, mapAspect])
+    })
+  }, [activeScene, graphRef, handleItemsChange, mapAspect, push]);
 
   const handleAutoDetect = useCallback(async () => {
     if (!campaignId || !activeScene) return
@@ -931,7 +932,7 @@ export default function DmDashboard() {
       handleItemsChange(graphRef.getItems())
       if (items.length > 0) {
         setDetectProposal({ ids: items.map((item) => item.id), walls: result.wall_count ?? items.length, doors: result.door_count ?? 0 })
-        setToastQueue((prev) => [...prev.slice(-4), {
+        push({
           id: `detect-${Date.now()}`,
           rollerName: i18n.t('dmToast.rollerDetect', 'Detección'),
           diceType: 20,
@@ -940,10 +941,10 @@ export default function DmDashboard() {
           total: items.length,
           label: i18n.t('dmToast.detectProposed', '{{walls}} paredes + {{doors}} puertas propuestas — revisar', { walls: result.wall_count ?? items.length, doors: result.door_count ?? 0 }),
           timestamp: Date.now(),
-        }])
+        })
       } else {
         setDetectProposal(null)
-        setToastQueue((prev) => [...prev.slice(-4), {
+        push({
           id: `detect-${Date.now()}`,
           rollerName: i18n.t('dmToast.rollerDetect', 'Detección'),
           diceType: 1,
@@ -952,10 +953,10 @@ export default function DmDashboard() {
           total: 1,
           label: i18n.t('dmToast.noWallsDetected', 'No se detectaron paredes — probá ajustar la imagen'),
           timestamp: Date.now(),
-        }])
+        })
       }
     } catch (_err) {
-      setToastQueue((prev) => [...prev.slice(-4), {
+      push({
         id: `detect-err-${Date.now()}`,
         rollerName: i18n.t('dmToast.rollerDetect', 'Detección'),
         diceType: 1,
@@ -964,17 +965,17 @@ export default function DmDashboard() {
         total: 1,
         label: i18n.t('dmToast.detectFailed', 'No se pudo detectar — revisá el backend'),
         timestamp: Date.now(),
-      }])
+      })
     } finally {
       setDetectingWalls(false)
     }
-  }, [campaignId, activeScene, graphRef, handleItemsChange, detectionMode, useAi, detectProposal])
+  }, [campaignId, activeScene, graphRef, handleItemsChange, detectionMode, useAi, detectProposal, push]);
 
   const handleDetectApprove = useCallback(() => {
     if (!detectProposal) return
     const n = detectProposal.ids.length
     setDetectProposal(null)
-    setToastQueue((prev) => [...prev.slice(-4), {
+    push({
       id: `detect-ok-${Date.now()}`,
       rollerName: i18n.t('dmToast.rollerDetect', 'Detección'),
       diceType: 1,
@@ -983,8 +984,8 @@ export default function DmDashboard() {
       total: n,
       label: i18n.t('dmToast.detectApproved', '{{n}} paredes confirmadas', { n }),
       timestamp: Date.now(),
-    }])
-  }, [detectProposal])
+    })
+  }, [detectProposal, push]);
 
   const handleDetectDiscard = useCallback(() => {
     if (!detectProposal) return
@@ -992,7 +993,7 @@ export default function DmDashboard() {
     for (const id of ids) graphRef.removeItem(id)
     handleItemsChange(graphRef.getItems())
     setDetectProposal(null)
-    setToastQueue((prev) => [...prev.slice(-4), {
+    push({
       id: `detect-no-${Date.now()}`,
       rollerName: i18n.t('dmToast.rollerDetect', 'Detección'),
       diceType: 1,
@@ -1001,8 +1002,8 @@ export default function DmDashboard() {
       total: 1,
       label: i18n.t('dmToast.detectDiscarded', 'detección descartada'),
       timestamp: Date.now(),
-    }])
-  }, [detectProposal, graphRef, handleItemsChange])
+    })
+  }, [detectProposal, graphRef, handleItemsChange, push]);
 
   const handleDeleteItem = useCallback((itemId: string) => {
     graphRef.removeItem(itemId)
@@ -1263,10 +1264,7 @@ export default function DmDashboard() {
         if (cancelled) return;
         if (newRolls.length > 0) {
           lastRollTsRef.current = Date.now();
-          setToastQueue((prev) => {
-            const updated = [...prev, ...newRolls.map(rollToToast)];
-            return updated.slice(-5);
-          });
+          pushMany(newRolls.map(rollToToast));
         }
       } catch {
         // best-effort
@@ -1285,7 +1283,7 @@ export default function DmDashboard() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [campaignId]);
+  }, [campaignId, pushMany]);
 
   const handleSceneSwitch = useCallback(async (sceneId: string) => {
     const scene = scenes.find((s) => s.id === sceneId);
@@ -1347,13 +1345,13 @@ export default function DmDashboard() {
       setActiveScene(updated);
       setScenes((prev) => prev.map((s) => s.id === updated.id ? updated : s));
     } catch {
-      setToastQueue((prev) => [...prev.slice(-4), {
+      push({
         id: `lighting-err-${Date.now()}`,
         rollerName: i18n.t('dmToast.rollerSystem', 'Sistema'),
         diceType: 1, count: 1, results: [1], total: 1,
         label: i18n.t('dmToast.lightingUpdateFailed', 'No se pudo actualizar la iluminación'),
         timestamp: Date.now(),
-      }]);
+      });
     }
   };
 
@@ -1364,13 +1362,13 @@ export default function DmDashboard() {
       setActiveScene(updated);
       setScenes((prev) => prev.map((s) => s.id === updated.id ? updated : s));
     } catch {
-      setToastQueue((prev) => [...prev.slice(-4), {
+      push({
         id: `weather-err-${Date.now()}`,
         rollerName: i18n.t('dmToast.rollerSystem', 'Sistema'),
         diceType: 1, count: 1, results: [1], total: 1,
         label: i18n.t('dmToast.weatherChangeFailed', 'No se pudo cambiar el clima'),
         timestamp: Date.now(),
-      }]);
+      });
     }
   };
 
@@ -1385,15 +1383,15 @@ export default function DmDashboard() {
       });
       setCampaign(updated);
     } catch {
-      setToastQueue((prev) => [...prev.slice(-4), {
+      push({
         id: `audio-err-${Date.now()}`,
         rollerName: i18n.t('dmToast.rollerSystem', 'Sistema'),
         diceType: 1, count: 1, results: [1], total: 1,
         label: i18n.t('dmToast.audioSyncFailed', 'No se pudo sincronizar el audio'),
         timestamp: Date.now(),
-      }]);
+      });
     }
-  }, [campaignId]);
+  }, [campaignId, push]);
 
   const handleToggleAudioSync = useCallback((on: boolean) => {
     const current = getSharedAudio();
@@ -1422,15 +1420,15 @@ export default function DmDashboard() {
       setActiveScene(updated);
       setScenes((prev) => prev.map((s) => s.id === updated.id ? updated : s));
     } catch {
-      setToastQueue((prev) => [...prev.slice(-4), {
+      push({
         id: `weather-int-err-${Date.now()}`,
         rollerName: i18n.t('dmToast.rollerSystem', 'Sistema'),
         diceType: 1, count: 1, results: [1], total: 1,
         label: i18n.t('dmToast.weatherIntensityFailed', 'No se pudo ajustar la intensidad del clima'),
         timestamp: Date.now(),
-      }]);
+      });
     }
-  }, [campaignId]);
+  }, [campaignId, push]);
 
   const handleChangeWeatherIntensity = (value: number) => {
     if (!activeScene) return;
@@ -1451,14 +1449,14 @@ export default function DmDashboard() {
     handleItemsChange(graphRef.getItems())
     setContextMenu(null)
     setSelectedItemId(lightId)
-    setToastQueue((prev) => [...prev.slice(-4), {
+    push({
       id: `attach-ctx-${Date.now()}`,
       rollerName: i18n.t('dmToast.rollerLight', 'Luz'),
       diceType: 1, count: 1, results: [1], total: 1,
       label: i18n.t('dmToast.lightAttachedEdit', 'luz agregada — editá en la barra de herramientas'),
       timestamp: Date.now(),
-    }])
-  }, [graphRef, handleItemsChange])
+    })
+  }, [graphRef, handleItemsChange, push]);
 
   const handleTokenLightDetach = useCallback((lightId: string) => {
     const light = graphRef.getItem(lightId)
@@ -1467,14 +1465,14 @@ export default function DmDashboard() {
     handleItemsChange(graphRef.getItems())
     setSelectedItemId(null)
     setContextMenu(null)
-    setToastQueue((prev) => [...prev.slice(-4), {
+    push({
       id: `detach-ctx-${Date.now()}`,
       rollerName: i18n.t('dmToast.rollerLight', 'Luz'),
       diceType: 1, count: 1, results: [1], total: 1,
       label: i18n.t('dmToast.lightDetached', 'luz quitada del token'),
       timestamp: Date.now(),
-    }])
-  }, [graphRef, handleItemsChange])
+    })
+  }, [graphRef, handleItemsChange, push]);
 
   const handleCreateAndAttachLight = useCallback((sceneCharId: string) => {
     const sc = sceneCharsRef.current.find((s) => s.id === sceneCharId)
@@ -1489,14 +1487,14 @@ export default function DmDashboard() {
     handleItemsChange(graphRef.getItems())
     setContextMenu(null)
     setSelectedItemId(attached.id)
-    setToastQueue((prev) => [...prev.slice(-4), {
+    push({
       id: `create-attach-${Date.now()}`,
       rollerName: i18n.t('dmToast.rollerLight', 'Luz'),
       diceType: 1, count: 1, results: [1], total: 1,
       label: i18n.t('dmToast.lightCreatedEdit', 'luz creada — editá en la barra de herramientas'),
       timestamp: Date.now(),
-    }])
-  }, [activeScene, graphRef, handleItemsChange, mapAspect])
+    })
+  }, [activeScene, graphRef, handleItemsChange, mapAspect, push]);
 
   const handleTokenClick = useCallback((tokenId: string) => {
     if (attachLightMode?.lightId) {
@@ -1576,7 +1574,7 @@ export default function DmDashboard() {
       });
 
     if (checkWallCollision(normX, normZ, walls, 0.03)) {
-      setToastQueue((prev) => [...prev.slice(-4), {
+      push({
         id: `wall-block-${Date.now()}`,
         rollerName: i18n.t('dmToast.rollerWall', 'Pared'),
         diceType: 1,
@@ -1585,7 +1583,7 @@ export default function DmDashboard() {
         total: 1,
         label: i18n.t('dmToast.blockedByWall', 'Bloqueado por pared'),
         timestamp: Date.now(),
-      }]);
+      });
       return;
     }
 
@@ -1619,7 +1617,7 @@ export default function DmDashboard() {
     } catch (err) {
       console.error('Failed to persist token position:', err);
     }
-  }, [campaignId, activeScene, graphRef, mapAspect]);
+  }, [campaignId, activeScene, graphRef, mapAspect, push]);
 
   // F7: movement range overlay for the selected token (A* reachable cells).
   const movementRange = useMemo(() => {
@@ -2046,7 +2044,7 @@ export default function DmDashboard() {
                   const updated = await api.scenes.sync(campaignId, activeScene.id);
                   setActiveScene(updated);
                   setScenes((prev) => prev.map((s) => s.id === updated.id ? updated : { ...s, status: 'inactive' }));
-                  setToastQueue((prev) => [...prev.slice(-4), {
+                  push({
                     id: `sync-${Date.now()}`,
                     rollerName: i18n.t('dmToast.rollerSync', 'Sincronización'),
                     diceType: 20,
@@ -2055,9 +2053,9 @@ export default function DmDashboard() {
                     total: 1,
                     label: i18n.t('dmToast.sceneSynced', 'Escena "{{name}}" sincronizada con los jugadores', { name: updated.name }),
                     timestamp: Date.now(),
-                  }]);
+                  });
                 } catch {
-                  setToastQueue((prev) => [...prev.slice(-4), {
+                  push({
                     id: `sync-err-${Date.now()}`,
                     rollerName: i18n.t('dmToast.rollerSync', 'Sincronización'),
                     diceType: 20,
@@ -2066,7 +2064,7 @@ export default function DmDashboard() {
                     total: 0,
                     label: i18n.t('dmToast.sceneSyncFailed', 'No se pudo sincronizar la escena'),
                     timestamp: Date.now(),
-                  }]);
+                  });
                 }
               }}
               className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${
@@ -3819,7 +3817,7 @@ export default function DmDashboard() {
 
       <ToastContainer
         toasts={toastQueue}
-        onDismiss={(id) => setToastQueue((prev) => prev.filter((t) => t.id !== id))}
+        onDismiss={dismiss}
       />
     </div>
   );

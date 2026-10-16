@@ -114,7 +114,17 @@ Adopta la **variante defensiva** (devuelve `null` en vez de `undefined`). Import
 
 ---
 
-### Fase 2 — DmDashboard: extraer presentación (P1a)
+### Fase 2 — DmDashboard: extraer presentación (P1a) — **EN CURSO (1/5)**
+
+**Decisión de ejecución:** el plan la daba por 1 commit con 4 componentes. Se parte en **5 commits, uno por responsabilidad**, como manda la directiva. Orden por valor/riesgo: (1) cola de toasts, (2) context menus, (3) paleta de comandos, (4) dock, (5) toolbar.
+
+**Corrección al plan — `DmToasts` no se extrae como componente.** `DmDashboard` ya renderizaba `<ToastContainer>` (4 líneas): envolverlo en otro componente es una capa ceremonial, prohibido por la guía. Lo que sí había era **duplicación real**: 27 call sites repetían literalmente `setToastQueue((prev) => [...prev.slice(-4), {...}])`, y el poll de dados usaba un cap distinto (`slice(-5)`) que significaba lo mismo. Eso se resolvió con un hook.
+
+**Commit 1/5 — `useToastQueue` (HECHO):**
+- Nuevo `apps/dm/src/lib/toastQueue.ts`: `MAX_TOASTS = 5`, el tipo `ToastRoll`, `rollToToast` y el hook `{ toasts, push, pushMany, dismiss }`. El tipo y el converter se mudan desde `components/ToastContainer.tsx` porque el hook vive en `lib` y **lib no importa de components**; `ToastContainer` queda como vista pura.
+- `DmDashboard`: 26 `setToastQueue(...)` → `push(...)`, el poll de dados → `pushMany(...)`, `onDismiss` → `dismiss`. `PlayerView`: los mismos 4 call sites.
+- **Efecto lateral esperado:** 22 warnings nuevos de `react-hooks/exhaustive-deps` por `push`/`pushMany` ausentes en los dep arrays. Antes el setter crudo de `useState` era estable por identidad y eslint no preguntaba; ahora las funciones son explícitas y hay que declararlas. Se agregaron a los 22 arrays (es la disciplina correcta, no un parche). Baseline de warnings: 40 → **39** (ToastContainer perdió su `only-export-components` al dejar de exportar el converter).
+- Deuda que NO se tocó: `ToastRoll` nació para tiradas de dados y los avisos se construyen con sus campos (`diceType: 20, count: 1, results: [1]`). Separar la forma de aviso de la de tirada cambia texto renderizado y locators de e2e: fase aparte.
 **Problema:** 3830 líneas renderizando toolbar, dock, menús, context menus, toasts y ~15 paneles.  
 **Diseño:** extraer componentes de presentación pura (reciben props, emiten callbacks). `DmDashboard` queda como orquestador de estado.
 - `DmToolbar` — escena + toolbar vertical + menús lighting/weather/build/mapa
