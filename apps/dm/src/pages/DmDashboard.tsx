@@ -5,6 +5,7 @@ import { useParams, Link } from 'react-router-dom';
 import { api, Campaign, Scene, SceneCharacter, Character, NPC, Map as GameMap, LightRequest, Asset } from '@/lib/api';
 import { SceneItem, ZoneMetadata, SceneLayer, PortalRef } from '@core/domain/types';
 import { useSceneGraph } from '@/lib/useSceneGraph';
+import { useWallDetection } from '@/lib/useWallDetection';
 import { useDoorInteraction } from '@core/scene/door-interaction';
 import SceneRenderer from '@/components/SceneRenderer';
 import { WEATHER_META, WEATHER_NONE_LABEL, WEATHER_KIND_LABEL, clampWeatherIntensity, WEATHER_INTENSITY_MIN, WEATHER_INTENSITY_MAX } from '@/components/WeatherFX';
@@ -158,12 +159,8 @@ export default function DmDashboard() {
 
   const [lightContextMenu, setLightContextMenu] = useState<{ x: number; y: number; itemId: string } | null>(null);
   const [fogContextMenu, setFogContextMenu] = useState<{ x: number; y: number; itemId: string } | null>(null);
-  const [detectingWalls, setDetectingWalls] = useState(false);
   // Propuesta de detección sin revisar: ids agregados al grafo que el DM aún
   // no aprobó ni descartó. Mientras viva, la barra de revisión sigue visible.
-  const [detectProposal, setDetectProposal] = useState<{ ids: string[]; walls: number; doors: number } | null>(null);
-  const [detectionMode, setDetectionMode] = useState<'blueprint' | 'textured'>('blueprint');
-  const [useAi, setUseAi] = useState(false);
   const [bgSelector, setBgSelector] = useState<{
     sceneType: string;
     suggestions: { id: string; name: string; style: string; colors: string[] }[];
@@ -817,108 +814,40 @@ export default function DmDashboard() {
     })
   }, [activeScene, graphRef, handleItemsChange, mapAspect, push]);
 
-  const handleAutoDetect = useCallback(async () => {
-    if (!campaignId || !activeScene) return
-    setBuildMenuOpen(false)
-    setDetectingWalls(true)
-    try {
-      const result = await api.scenes.detectWalls(campaignId, activeScene.id, useAi ? 'ai' : detectionMode)
-      // Una detección nueva reemplaza la propuesta anterior sin revisar.
-      const prevIds = new Set(detectProposal?.ids ?? [])
-      if (prevIds.size > 0) {
-        for (const id of prevIds) graphRef.removeItem(id)
-      }
-      const items = ((result.items ?? []) as SceneItem[]).filter((item) => item && item.id)
-      for (const item of items) {
-        graphRef.addItem(item)
-      }
-      handleItemsChange(graphRef.getItems())
-      if (items.length > 0) {
-        setDetectProposal({ ids: items.map((item) => item.id), walls: result.wall_count ?? items.length, doors: result.door_count ?? 0 })
-        push({
-          id: `detect-${Date.now()}`,
-          rollerName: i18n.t('dmToast.rollerDetect', 'Detección'),
-          diceType: 20,
-          count: 1,
-          results: [items.length],
-          total: items.length,
-          label: i18n.t('dmToast.detectProposed', '{{walls}} paredes + {{doors}} puertas propuestas — revisar', { walls: result.wall_count ?? items.length, doors: result.door_count ?? 0 }),
-          timestamp: Date.now(),
-        })
-      } else {
-        setDetectProposal(null)
-        push({
-          id: `detect-${Date.now()}`,
-          rollerName: i18n.t('dmToast.rollerDetect', 'Detección'),
-          diceType: 1,
-          count: 1,
-          results: [1],
-          total: 1,
-          label: i18n.t('dmToast.noWallsDetected', 'No se detectaron paredes — probá ajustar la imagen'),
-          timestamp: Date.now(),
-        })
-      }
-    } catch (_err) {
-      push({
-        id: `detect-err-${Date.now()}`,
-        rollerName: i18n.t('dmToast.rollerDetect', 'Detección'),
-        diceType: 1,
-        count: 1,
-        results: [1],
-        total: 1,
-        label: i18n.t('dmToast.detectFailed', 'No se pudo detectar — revisá el backend'),
-        timestamp: Date.now(),
-      })
-    } finally {
-      setDetectingWalls(false)
-    }
-  }, [campaignId, activeScene, graphRef, handleItemsChange, detectionMode, useAi, detectProposal, push]);
+  // Detección de paredes contra el fondo. Los items llegan al grafo pero
+  // quedan como propuesta hasta que el DM apruebe o descarte.
+  const {
+    detectionMode,
+    setDetectionMode,
+    useAi,
+    toggleAi,
+    detectingWalls,
+    detectProposal,
+    handleAutoDetect,
+    handleDetectApprove,
+    handleDetectDiscard,
+    pruneProposal,
+  } = useWallDetection({
+    campaignId,
+    sceneId: activeScene?.id,
+    graphRef,
+    handleItemsChange,
+    push,
+  });
 
-  const handleDetectApprove = useCallback(() => {
-    if (!detectProposal) return
-    const n = detectProposal.ids.length
-    setDetectProposal(null)
-    push({
-      id: `detect-ok-${Date.now()}`,
-      rollerName: i18n.t('dmToast.rollerDetect', 'Detección'),
-      diceType: 1,
-      count: 1,
-      results: [n],
-      total: n,
-      label: i18n.t('dmToast.detectApproved', '{{n}} paredes confirmadas', { n }),
-      timestamp: Date.now(),
-    })
-  }, [detectProposal, push]);
-
-  const handleDetectDiscard = useCallback(() => {
-    if (!detectProposal) return
-    const ids = new Set(detectProposal.ids)
-    for (const id of ids) graphRef.removeItem(id)
-    handleItemsChange(graphRef.getItems())
-    setDetectProposal(null)
-    push({
-      id: `detect-no-${Date.now()}`,
-      rollerName: i18n.t('dmToast.rollerDetect', 'Detección'),
-      diceType: 1,
-      count: 1,
-      results: [1],
-      total: 1,
-      label: i18n.t('dmToast.detectDiscarded', 'detección descartada'),
-      timestamp: Date.now(),
-    })
-  }, [detectProposal, graphRef, handleItemsChange, push]);
+  // El hook no sabe de menús: cerrar el de Construir es del dashboard.
+  const handleDetectClick = useCallback(() => {
+    setBuildMenuOpen(false);
+    void handleAutoDetect();
+  }, [handleAutoDetect]);
 
   const handleDeleteItem = useCallback((itemId: string) => {
     graphRef.removeItem(itemId)
     handleItemsChange(graphRef.getItems())
     // Borrado individual durante revisión: la propuesta pierde ese id (si se
     // vacía, la revisión termina sola).
-    setDetectProposal((prev) => {
-      if (!prev || !prev.ids.includes(itemId)) return prev
-      const ids = prev.ids.filter((id) => id !== itemId)
-      return ids.length > 0 ? { ...prev, ids } : null
-    })
-  }, [graphRef, handleItemsChange])
+    pruneProposal(itemId)
+  }, [graphRef, handleItemsChange, pruneProposal])
 
   const handleDoorItemClick = useCallback((itemId: string) => {
     setSelectedItemId(itemId)
@@ -2106,14 +2035,14 @@ export default function DmDashboard() {
                       {t('dm.detectionTextured', 'Texturizado')}
                     </button>
                     <button
-                      onClick={() => setUseAi((v) => !v)}
+                      onClick={toggleAi}
                       className={`flex-1 text-[10px] px-2 py-1 rounded transition-colors ${useAi ? 'bg-purple-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'}`}
                     >
                       {t('dm.detectionAi', 'IA')}
                     </button>
                   </div>
                   <button
-                    onClick={handleAutoDetect}
+                    onClick={handleDetectClick}
                     disabled={detectingWalls}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${detectingWalls ? 'text-amber-400 animate-pulse' : 'text-[var(--text-secondary)]'}`}
                   >

@@ -190,6 +190,18 @@ Gates: lint 0 err/39 warn, typecheck limpio, e2e **91/91** (`zone`+`map`+`weathe
 **Dos cambios de comportamiento (documentados):**
 1. Cleanup del timer de guardado al desmontar. Antes un `saveItems` pendiente podía dispararse después de que la pantalla se fuera.
 2. `handleRedo` **no** llama `onHistoryStep`, igual que antes. El original solo limpia la selección al deshacer; parece una inconsistencia, pero arreglarla acá sería cambiar comportamiento sin que nadie lo pida. Queda anotada como deuda.
+
+**Commit 2/4 — `useWallDetection` (HECHO):**
+- Nuevo `apps/dm/src/lib/useWallDetection.ts`: `detectionMode`, `useAi`, `detectingWalls`, `detectProposal`, `handleAutoDetect`, `handleDetectApprove`, `handleDetectDiscard`, `pruneProposal`.
+- El hook expone `setDetectionMode(mode)` y `toggleAi()` en vez de los setters crudos: la superficie no deja cambiar el modo a algo que el backend no acepta.
+- **`handleDeleteItem` (que vive en el dashboard) poda la propuesta** vía `pruneProposal(itemId)`. El hook no recibe setters de otro dominio.
+- **`setBuildMenuOpen(false)` salió del hook** y quedó en un `handleDetectClick` del dashboard: cerrar un menú no es responsabilidad de la detección. Reengancharlo fue un paso aparte — sin él, "Detectar paredes" dejaba el menú de Construir abierto.
+- El `catch (_err)` sin usar se volvió `catch`: la variable no se usaba.
+- i18n por la instancia `i18n.t` y no `useTranslation`, que es lo que evita agregar `t` a los dep arrays de los callbacks: la convención que ya usan las páginas.
+
+Gates: lint 0 err/39 warn, typecheck limpio, vitest 137, e2e **49/49** (`zone`+`portal`+`dashboard`+`map`+`fog`+`scene` = 31; `light`+`status`+`transitions`+`hud-resize` = 18).
+
+**Fuera de esta fase pero candidato real:** los cuatro `handleClearAll{Walls,Zones,Fog,Lights}` son bloques casi idénticos (filtrar por `metadata.type`, remover, guardar, toastear). Es una repetición más chica que la de `useWallDetection` y merece su propio hook.
 **Problema:** 3830 líneas renderizando toolbar, dock, menús, context menus, toasts y ~15 paneles.  
 **Diseño:** extraer componentes de presentación pura (reciben props, emiten callbacks). `DmDashboard` queda como orquestador de estado.
 - `DmToolbar` — escena + toolbar vertical + menús lighting/weather/build/mapa
