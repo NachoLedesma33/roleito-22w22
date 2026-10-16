@@ -294,6 +294,11 @@ Gates: lint 0 err/43 warn, typecheck limpio, vitest 142, e2e `quest`+`calendar`+
 
 **Bug pendiente del mismo tipo (NO tocado):** `losSystem.ts:64-65` usa `mapHeight` para la X de la última arista de cada zona polygon (debería ser `mapWidth`). Con mapa apaisado la visión del jugador se recorta mal contra zonas. No lo detectan los tests porque `losSystem.spec.ts` siempre usa mapas cuadrados `(10,10)`.
 
+**Commit 3 — `losSystem.ts:64` (HECHO):** la X de la arista de cierre de cada zona polygon ahora escala con `mapWidth`, como walls y doors. Con mapa apaisado la zona salía comprimida en X y la visión del jugador se recortaba antes de tiempo (la zona tapaba como si estuviera más cerca).
+- 2 tests nuevos: zona 0.3..0.7 en mapa 20×10 → rectángulo −4..4 en X y −2..2 en Y; muro 0..1 → `[−10, 0] → [10, 0]`. El de la zona **verificado que falla sin el fix** (stash: 9 pass / 1 fail).
+- El assert va con `toBeCloseTo`, no `toEqual`: `(0.7 − 0.5) × 20 = 3.999999999999999` y el exacto falla por ruido de float, no por el bug.
+- Gates: lint 0 err/43 warn, typecheck limpio, vitest 146, e2e `fog`+`player-view`+`player-shell`+`zone` **24/24** (el primer intento dio 6 passed / 18 failed por el crash conocido de `vite dev` — `npm error code 3221226505` = 0xC0000409 — a mitad del run, con 35× `ERR_CONNECTION_REFUSED` después; reintento con boot limpio 24/24).
+
 ---
 
 ### Fase 6 — Backend: `character_routes.py` por dominio (P5)

@@ -61,7 +61,7 @@ export function buildLoSOccluders(
           const j = (i + 2) % p.length
           occluders.push({
             a: [(p[i] - 0.5) * mapWidth, (p[i + 1] - 0.5) * mapHeight],
-            b: [(p[j] - 0.5) * mapHeight, (p[j + 1] - 0.5) * mapHeight],
+            b: [(p[j] - 0.5) * mapWidth, (p[j + 1] - 0.5) * mapHeight],
           })
         }
       }

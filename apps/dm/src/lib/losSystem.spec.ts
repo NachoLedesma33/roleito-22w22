@@ -50,6 +50,35 @@ describe('losSystem/buildLoSOccluders', () => {
     expect(occ.length).toBe(4)
   })
 
+  it('zone edges use mapWidth in X and mapHeight in Y (mapa apaisado)', () => {
+    // 0.3..0.7 normalizado en ambos ejes: en un mapa 20x10 el rectangulo va de
+    // -4..4 en X y -2..2 en Y. Si la X se escalara con el alto, el rectangulo
+    // saldaria chato en -2..2 y la vision se recortaria antes de tiempo.
+    const items = [makeZoneItem([0.3, 0.3, 0.7, 0.3, 0.7, 0.7, 0.3, 0.7])]
+    const occ = buildLoSOccluders(items, 20, 10)
+    const corners = [
+      [-4, -2],
+      [4, -2],
+      [4, 2],
+      [-4, 2],
+    ]
+    expect(occ).toHaveLength(4)
+    occ.forEach((edge, i) => {
+      expect(edge.a[0]).toBeCloseTo(corners[i][0], 5)
+      expect(edge.a[1]).toBeCloseTo(corners[i][1], 5)
+    })
+    // La ultima arista cierra con el primer punto: es la que multiplicaba la X
+    // por mapHeight.
+    expect(occ[3].b[0]).toBeCloseTo(-4, 5)
+    expect(occ[3].b[1]).toBeCloseTo(-2, 5)
+  })
+
+  it('wall line also spans the full width on a wide map', () => {
+    // Mismo criterio para un muro: 0..1 normalizado = todo el ancho del mundo.
+    const occ = buildLoSOccluders([makeWallItem(0, 0.5, 1, 0.5)], 20, 10)
+    expect(occ[0]).toEqual({ a: [-10, 0], b: [10, 0] })
+  })
+
   it('skips invisible items', () => {
     const item = makeWallItem(0, 0, 1, 0)
     item.visible = false
