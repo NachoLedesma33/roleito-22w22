@@ -6,13 +6,13 @@ import { api, Campaign, Scene, SceneCharacter, Character, NPC, Map as GameMap, L
 import { SceneItem, ZoneMetadata, SceneLayer, PortalRef } from '@core/domain/types';
 import { useSceneGraph } from '@/lib/useSceneGraph';
 import { useWallDetection } from '@/lib/useWallDetection';
+import { usePortals } from '@/lib/usePortals';
 import { useDoorInteraction } from '@core/scene/door-interaction';
 import SceneRenderer from '@/components/SceneRenderer';
 import { WEATHER_META, WEATHER_NONE_LABEL, WEATHER_KIND_LABEL, clampWeatherIntensity, WEATHER_INTENSITY_MIN, WEATHER_INTENSITY_MAX } from '@/components/WeatherFX';
 import { createEmptyDrawState, createWallItem, type DrawState } from '@/components/WallDrawer';
 import { createEmptyZoneDraft, createZoneItem, ZONE_COLORS, ZONE_DEFAULT_COLOR, type ZoneDraft } from '@/components/ZoneDrawer';
-import { createEmptyPortalDraft, type PortalDraft } from '@/components/PortalDrawerCanvas';
-import { createPortalBetween, buildPortalLocalEdge, cyclePortalState, removePortal, zonesToGeometry } from '@/components/ZonePortal';
+import { zonesToGeometry } from '@/components/ZonePortal';
 import { circlePoints, toggleZoneFog } from '@/lib/fogMask';
 import { createLightItem, LIGHT_PRESETS, attachLightToToken, detachLight, normalizeLightConfig, updateLightSource, FIRE_RADIUS_MIN, FIRE_RADIUS_MAX, FIRE_RADIUS_STEP, FIRE_RADIUS_DEFAULT } from '@/lib/light';
 import { LightMetadata } from '@core/domain/types';
@@ -104,7 +104,6 @@ export default function DmDashboard() {
   const { toasts: toastQueue, push, pushMany, dismiss } = useToastQueue();
   const [drawState, setDrawState] = useState<DrawState | null>(null);
   const [zoneDraft, setZoneDraft] = useState<ZoneDraft | null>(null);
-  const [portalDraft, setPortalDraft] = useState<PortalDraft | null>(null);
   const [fogMode, setFogMode] = useState<{ reveal: boolean; radius: number } | null>(null);
   const [rectFogMode, setRectFogMode] = useState<{ reveal: boolean } | null>(null);
   const lastFogPointRef = useRef<{ x: number; y: number } | null>(null);
@@ -369,27 +368,38 @@ export default function DmDashboard() {
     finalizeZoneDraft()
   }, [finalizeZoneDraft])
 
+  // Portales entre zonas. El draft es efímero: al elegir el segundo borde se
+  // escribe la geometría y desaparece.
+  const {
+    portalDraft,
+    startPortalMode,
+    cancelPortalMode,
+    handlePortalSelect,
+    handlePortalMove,
+    handlePortalToggle,
+    handlePortalDelete,
+  } = usePortals({ graphRef, handleItemsChange, push });
   const startZoneMode = useCallback((mode: 'rect' | 'polygon') => {
     setRectFogMode(null)
     setDrawState(null)
-    setPortalDraft(null)
+    cancelPortalMode()
     setZoneDraft((prev) => {
       if (prev?.mode === mode) return null
       return createEmptyZoneDraft(mode)
     })
     setBuildMenuOpen(false)
-  }, [])
+  }, [cancelPortalMode]);
 
-  const startPortalMode = useCallback(() => {
-    setRectFogMode(null)
-    setDrawState(null)
-    setZoneDraft(null)
-    setPortalDraft((prev) => {
-      if (prev) return null
-      return createEmptyPortalDraft()
-    })
-    setBuildMenuOpen(false)
-  }, [])
+
+
+  // Salir de los demás modos es del dashboard, no del portal.
+  const handleStartPortal = useCallback(() => {
+    setRectFogMode(null);
+    setDrawState(null);
+    setZoneDraft(null);
+    setBuildMenuOpen(false);
+    startPortalMode();
+  }, [startPortalMode]);
 
   const portalZones = useMemo(() => {
     if (!portalDraft && !zoneFogActive) return []
@@ -398,56 +408,6 @@ export default function DmDashboard() {
     const zones = extractZonePolygons(graphRef.getItems(), mapSize * mapAspect, mapSize)
     return zonesToGeometry(zones)
   }, [portalDraft, zoneFogActive, activeScene, graphRef, mapAspect])
-
-  const handlePortalSelect = useCallback((snap: { zoneId: string; point: { x: number; y: number }; a: { x: number; y: number }; b: { x: number; y: number } }) => {
-    setPortalDraft((prev) => {
-      if (!prev) return prev
-      if (!prev.zoneAId) {
-        return { ...prev, zoneAId: snap.zoneId, pointA: snap.point, a: snap.a, b: snap.b }
-      }
-      if (snap.zoneId === prev.zoneAId) return prev
-      const items = graphRef.getItems()
-      const zoneA = items.find((i) => i.id === prev.zoneAId)
-      const zoneB = items.find((i) => i.id === snap.zoneId)
-      if (!zoneA || !zoneB) return prev
-      const localEdge = buildPortalLocalEdge({ point: prev.pointA!, a: prev.a!, b: prev.b! })
-      const { zoneA: aUp, zoneB: bUp } = createPortalBetween(zoneA, zoneB, localEdge)
-      graphRef.updateItem(aUp.id, { metadata: aUp.metadata })
-      graphRef.updateItem(bUp.id, { metadata: bUp.metadata })
-      handleItemsChange(graphRef.getItems())
-      push({
-        id: `portal-${Date.now()}`,
-        rollerName: i18n.t('dmToast.rollerPortal', 'Portal'),
-        diceType: 20,
-        count: 1,
-        results: [1],
-        total: 1,
-        label: i18n.t('dmToast.portalCreated', 'portal creado'),
-        timestamp: Date.now(),
-      })
-      return null
-    })
-  }, [graphRef, handleItemsChange, push]);
-
-  const handlePortalMove = useCallback((point: { x: number; y: number }) => {
-    setPortalDraft((prev) => prev ? { ...prev, currentPoint: point } : prev)
-  }, [])
-
-  const handlePortalToggle = useCallback((portalId: string) => {
-    const next = cyclePortalState(graphRef.getItems(), portalId)
-    for (const item of next) {
-      graphRef.updateItem(item.id, { metadata: item.metadata })
-    }
-    handleItemsChange(graphRef.getItems())
-  }, [graphRef, handleItemsChange])
-
-  const handlePortalDelete = useCallback((portalId: string) => {
-    const next = removePortal(graphRef.getItems(), portalId)
-    for (const item of next) {
-      graphRef.updateItem(item.id, { metadata: item.metadata })
-    }
-    handleItemsChange(graphRef.getItems())
-  }, [graphRef, handleItemsChange])
 
   const handleClearAllWalls = useCallback(() => {
     if (!confirm(i18n.t('dmConfirm.clearWalls', '¿Eliminar TODAS las paredes y puertas?'))) return
@@ -509,7 +469,7 @@ export default function DmDashboard() {
     lastFogPointRef.current = null
     setDrawState(null)
     setZoneDraft(null)
-    setPortalDraft(null)
+    cancelPortalMode()
     setZoneFogActive(false)
     setRectFogMode(null)
     setFogMode((prev) => {
@@ -517,13 +477,13 @@ export default function DmDashboard() {
       return { reveal: true, radius: 0.08 }
     })
     setBuildMenuOpen(false)
-  }, [])
+  }, [cancelPortalMode]);
 
   const startRectFogMode = useCallback(() => {
     lastFogPointRef.current = null
     setDrawState(null)
     setZoneDraft(null)
-    setPortalDraft(null)
+    cancelPortalMode()
     setFogMode(null)
     setZoneFogActive(false)
     setRectFogMode((prev) => {
@@ -531,7 +491,7 @@ export default function DmDashboard() {
       return { reveal: true }
     })
     setBuildMenuOpen(false)
-  }, [])
+  }, [cancelPortalMode]);
 
   const handleFogPaint = useCallback((point: { x: number; y: number }) => {
     if (!fogMode) return
@@ -636,17 +596,17 @@ export default function DmDashboard() {
   const startZoneFogMode = useCallback(() => {
     setDrawState(null)
     setZoneDraft(null)
-    setPortalDraft(null)
+    cancelPortalMode()
     setFogMode(null)
     setRectFogMode(null)
     setZoneFogActive((prev) => !prev)
     setBuildMenuOpen(false)
-  }, [])
+  }, [cancelPortalMode]);
 
   const startLightPlaceMode = useCallback(() => {
     setDrawState(null)
     setZoneDraft(null)
-    setPortalDraft(null)
+    cancelPortalMode()
     setFogMode(null)
     setRectFogMode(null)
     setZoneFogActive(false)
@@ -655,7 +615,7 @@ export default function DmDashboard() {
       return { preset: 'torch' }
     })
     setBuildMenuOpen(false)
-  }, [])
+  }, [cancelPortalMode]);
 
   const handleLightPlace = useCallback((point: { x: number; y: number }) => {
     if (!lightPlaceMode) return
@@ -932,7 +892,7 @@ export default function DmDashboard() {
       if (e.key === 'Escape') {
         if (drawState) setDrawState(null)
         else if (zoneDraft) setZoneDraft(null)
-        else if (portalDraft) setPortalDraft(null)
+        else if (portalDraft) cancelPortalMode()
         else if (fogMode) setFogMode(null)
         else if (rectFogMode) setRectFogMode(null)
         else if (zoneFogActive) setZoneFogActive(false)
@@ -955,7 +915,7 @@ export default function DmDashboard() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [drawState, zoneDraft, portalDraft, fogMode, rectFogMode, zoneFogActive, lightPlaceMode, placingToken, attachLightMode, selectedItemId, handleDeleteItem, handleUndo, handleRedo])
+  }, [drawState, zoneDraft, portalDraft, fogMode, rectFogMode, zoneFogActive, lightPlaceMode, placingToken, attachLightMode, selectedItemId, handleDeleteItem, handleUndo, handleRedo, cancelPortalMode]);
 
   useEffect(() => {
     const now = performance.now();
@@ -1995,7 +1955,7 @@ export default function DmDashboard() {
                     {t('dm.zonePolygon', '⬠ Zona (polígono)')}
                   </button>
                   <button
-                    onClick={startPortalMode}
+                    onClick={handleStartPortal}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${portalDraft ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
                   >
                     {t('dm.portalZone', '🚪 Portal (zona↔zona)')}

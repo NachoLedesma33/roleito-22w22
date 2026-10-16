@@ -202,6 +202,19 @@ Gates: lint 0 err/39 warn, typecheck limpio, e2e **91/91** (`zone`+`map`+`weathe
 Gates: lint 0 err/39 warn, typecheck limpio, vitest 137, e2e **49/49** (`zone`+`portal`+`dashboard`+`map`+`fog`+`scene` = 31; `light`+`status`+`transitions`+`hud-resize` = 18).
 
 **Fuera de esta fase pero candidato real:** los cuatro `handleClearAll{Walls,Zones,Fog,Lights}` son bloques casi idénticos (filtrar por `metadata.type`, remover, guardar, toastear). Es una repetición más chica que la de `useWallDetection` y merece su propio hook.
+
+**Commit 3/4 — `usePortals` (HECHO):**
+- Nuevo `apps/dm/src/lib/usePortals.ts`. Se llama así y no `usePortalDraft` porque además de la máquina del draft expone las operaciones sobre portales ya existentes (`handlePortalToggle`/`handlePortalDelete`), que no tocaban el draft.
+- **Criterio de capa, medido contra el código:** `core/scene/*` importa solo `react` y `@core/*`, nunca `@/lib`. `useDoorInteraction` vive ahí porque es dominio puro. `usePortals` **no** puede ir ahí porque notifica (`push` + `i18n`). Regla que queda: si el hook llama a la API o emite una notificación, es de aplicación (`lib/`).
+- `startPortalMode` del hook solo crea el draft. Los cuatro `setRectFogMode`/`setDrawState`/`setZoneDraft`/`setBuildMenuOpen` que el original apagaba quedaron en `handleStartPortal` del dashboard, porque "salir de los demás modos" no es cosa del portal.
+- Las 5 llamadas externas `setPortalDraft(null)` (zonas, tres de niebla y la tecla Escape) pasaron a `cancelPortalMode()`.
+
+**Gotchas de esta extracción (repetibles):**
+1. El bloque original tenía `portalZones` (un `useMemo` compartido con la niebla de zona) intercalado entre los callbacks. Borrar "el rango del hook" a ciegas se lo lleva: había que borrar **dos** tramos.
+2. `handleItemsChange` y `push` viven en hooks declarados más arriba, así que el nuevo hook tiene que declararse **antes** del primer consumidor; si no, los dep arrays de los callbacks de arriba lo referencian antes de declararse (`TS2448` / `TS2454`).
+3. Los helpers de portal (`createPortalBetween`, `buildPortalLocalEdge`, `cyclePortalState`, `removePortal`) están en `@/components/ZonePortal`, no en `@core/scene/wall-collision`. Importarlos del módulo equivocado, además de fallar, tira errores `TS2367` en cascada sobre `wall-collision.ts` y confunde el diagnóstico.
+
+Gates: lint 0 err/**39 warn** (los 6 `cancelPortalMode` faltantes en dep arrays se declararon), typecheck limpio, vitest 137, e2e **41/41** (`portal`+`zone`+`fog`+`map` = 19; `dashboard`+`light`+`transitions`+`status` = 22). Un primer run dio 36 `ERR_CONNECTION_REFUSED` en 5173 — crash de vite local conocido, resuelto con re-run sin tocar specs.
 **Problema:** 3830 líneas renderizando toolbar, dock, menús, context menus, toasts y ~15 paneles.  
 **Diseño:** extraer componentes de presentación pura (reciben props, emiten callbacks). `DmDashboard` queda como orquestador de estado.
 - `DmToolbar` — escena + toolbar vertical + menús lighting/weather/build/mapa
