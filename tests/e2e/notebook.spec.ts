@@ -140,7 +140,9 @@ test.describe('DM Notebook', () => {
     await panel.getByTitle('Fijar').click();
     await expect(panel.getByTitle('Desfijar')).toBeVisible();
 
-    await panel.getByRole('button', { name: '← Volver a la lista' }).click();
+    // El nombre accesible es "Volver a la lista": la flecha pasó a ser icono
+    // lucide (7f49758), ya no es texto. Anclamos por texto, no por glifo.
+    await panel.getByRole('button', { name: 'Volver a la lista' }).click();
 
     const vieja = await panel.getByText('Anotación vieja').boundingBox();
     const nueva = await panel.getByText('Anotación nueva').boundingBox();
