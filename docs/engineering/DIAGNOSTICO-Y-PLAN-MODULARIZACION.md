@@ -132,6 +132,16 @@ Adopta la **variante defensiva** (devuelve `null` en vez de `undefined`). Import
 - `BackgroundSelector` **no** se extrajo: no es un menú contextual (es un modal) y quedaba partido en medio del bloque.
 - Cambio de orden en el DOM: `BackgroundSelector` pasa de estar entre el menú de puerta y el de muro a estar después de los 6. Sin efecto: todos son `fixed z-50` y son mutuamente excluyentes (el click fuera cierra los menús antes de poder abrir el modal).
 - `DmDashboard`: −4 imports (los 3 menus + el default de `ContextMenu`), `ContextMenuItem` queda como type-only. Lint sin warnings nuevos (39).
+
+**Commit 3/5 — `DmCommandPalette` (HECHO):**
+- Nuevo `apps/dm/src/components/dm/DmCommandPalette.tsx` (Ctrl+K): 13 links de navegación + 15 acciones de panel. El IIFE de 3 niveles con `links`/`actions`/`filtered` se fue con el bloque; ahora son dos arrays y un filtro.
+- 15 props de acción, uno por panel. Suena ancho, pero son 15 acciones independientes: agruparlas en un objeto o un store solo camufla el acoplamiento.
+- **Duplicación que salió en el camino:** "abrir mapa de la escena activa" estaba escrito dos veces (dock y paleta). Ahora es `openActiveSceneMap`, un `useCallback` con deps `[maps, activeScene]`.
+- `campaignId` se tipa `string | undefined` (lo que devuelve `useParams`), no `string`: el JSX viejo lo interpolaba en un template y eso acepta `undefined`. Mentir con `?? ''` habría armado links `/campaigns//manage`.
+- **Cobertura nueva:** `tests/e2e/command-palette.spec.ts` (K1-K5). La paleta no tenía **ningún** test antes de moverse, así que el refactor no era verificable sin esto.
+  - `data-testid="dm-command-palette"` para scopear los asserts: el dock tiene un botón "Iniciativa" igual que la paleta.
+  - Gotcha al escribir el spec: `getByRole({name:'VTT', exact:true})` falla porque el nombre accesible del link es `◆ VTT` (glifo + texto). Match por substring.
+  - Gotcha de timing: `goto` retorna antes de que React registre el listener de Ctrl+K → 3 tests colgados 30s. Anclar en `header select` (solo existe cuando el dashboard ya cargó).
 **Problema:** 3830 líneas renderizando toolbar, dock, menús, context menus, toasts y ~15 paneles.  
 **Diseño:** extraer componentes de presentación pura (reciben props, emiten callbacks). `DmDashboard` queda como orquestador de estado.
 - `DmToolbar` — escena + toolbar vertical + menús lighting/weather/build/mapa

@@ -17,6 +17,7 @@ import { circlePoints, toggleZoneFog } from '@/lib/fogMask';
 import { createLightItem, LIGHT_PRESETS, attachLightToToken, detachLight, normalizeLightConfig, updateLightSource, FIRE_RADIUS_MIN, FIRE_RADIUS_MAX, FIRE_RADIUS_STEP, FIRE_RADIUS_DEFAULT } from '@/lib/light';
 import { LightMetadata } from '@core/domain/types';
 import DmContextMenus from '@/components/dm/DmContextMenus';
+import DmCommandPalette from '@/components/dm/DmCommandPalette';
 import { extractZonePolygons, checkWallCollision } from '@/lib/wall-collision';
 import { buildOccluders } from '@/lib/lightOcclusion';
 import { computeReachableCells } from '@/lib/movementRange';
@@ -1039,6 +1040,13 @@ export default function DmDashboard() {
       setDoorContextMenu({ x: clientX, y: clientY, itemId, state: item.metadata.state })
     }
   }, [graphRef])
+
+  // El dock y la paleta de comandos ofrecen la misma acción: abrir el mapa
+  // vinculado a la escena activa.
+  const openActiveSceneMap = useCallback(() => {
+    const m = maps.find((mm) => mm.id === activeScene?.map_id);
+    if (m) setViewingMap(m);
+  }, [maps, activeScene]);
 
   // El menú de zona necesita los portales de esa zona. Se resuelve acá (que es
   // quien tiene el grafo) y se le pasa la función al menú, no el ref.
@@ -2963,10 +2971,7 @@ export default function DmDashboard() {
                 </button>
                 {activeScene?.map_id && (
                   <button
-                    onClick={() => {
-                      const m = maps.find((m) => m.id === activeScene.map_id);
-                      if (m) setViewingMap(m);
-                    }}
+                    onClick={openActiveSceneMap}
                     className="w-10 h-10 flex items-center justify-center rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
                     title={t('dm.openMapTitle', 'Abrir mapa')}
                   >
@@ -3688,87 +3693,27 @@ export default function DmDashboard() {
       )}
 
       {cmdOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-start justify-center pt-[18vh] bg-black/60"
-          onMouseDown={(e) => { if (e.target === e.currentTarget) setCmdOpen(false); }}
-        >
-          <div className="w-full max-w-md bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded-xl shadow-2xl overflow-hidden">
-            <input
-              autoFocus
-              value={cmdQuery}
-              onChange={(e) => setCmdQuery(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Escape') setCmdOpen(false); }}
-              placeholder={t('dm.cmdPlaceholder', 'Buscar acción… (Ctrl+K)')}
-              className="w-full bg-transparent px-4 py-3 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-secondary)]/60"
-            />
-            <div className="max-h-72 overflow-y-auto border-t border-[var(--bg-tertiary)]">
-              {(() => {
-                const q = cmdQuery.trim().toLowerCase();
-                const links = [
-                  { label: t('dm.cmdVtt', 'VTT'), icon: '◆', to: `/campaigns/${campaignId}` },
-                  { label: t('dm.cmdCampaignSummary', 'Resumen de la campaña'), icon: '◇', to: `/campaigns/${campaignId}/manage` },
-                  { label: t('dm.sideCharacters', 'Personajes'), icon: '♦', to: `/campaigns/${campaignId}/characters` },
-                  { label: t('dm.sideSessions', 'Sesiones'), icon: '♠', to: `/campaigns/${campaignId}/sessions` },
-                  { label: t('dm.sideScenes', 'Escenas'), icon: '▣', to: `/campaigns/${campaignId}/scenes` },
-                  { label: t('dm.cmdNarrative', 'Narrativa'), icon: '✒', to: `/campaigns/${campaignId}/narrative` },
-                  { label: t('dm.sidePlayers', 'Jugadores'), icon: '○', to: `/campaigns/${campaignId}/players` },
-                  { label: t('dm.sideMaps', 'Imágenes'), icon: '◇', to: `/campaigns/${campaignId}/maps` },
-                  { label: t('dm.sideAssets', 'Recursos'), icon: '□', to: `/campaigns/${campaignId}/assets` },
-                  { label: t('dm.cmdTts', 'Voz (TTS)'), icon: '♪', to: `/campaigns/${campaignId}/tts` },
-                  { label: t('dm.cmdAgents', 'Agentes'), icon: '🤖', to: `/campaigns/${campaignId}/agents` },
-                  { label: t('dm.cmdWorldState', 'Estado del mundo'), icon: '🌍', to: `/campaigns/${campaignId}/world-state` },
-                  { label: t('dm.cmdMemory', 'Memoria'), icon: '🧠', to: `/campaigns/${campaignId}/memory` },
-                ];
-                const actions = [
-                  { label: t('dm.dice', 'Tirar dados'), icon: '🎲', run: () => setShowDiceRoller((v) => !v) },
-                  { label: t('dm.initiativeTitle', 'Iniciativa'), icon: '⚔', run: () => setShowInitiative((v) => !v) },
-                  { label: t('dm.notebook', 'Cuaderno del DM'), icon: '📓', run: () => setShowNotebook((v) => !v) },
-                  { label: t('dm.recap', 'Resumen de sesión'), icon: '📋', run: () => setShowRecap((v) => !v) },
-                  { label: t('dm.calendarTitle', 'Calendario y relojes'), icon: '📅', run: () => setShowCalendar((v) => !v) },
-                  { label: t('dm.questsTitle', 'Tablón de misiones'), icon: '📜', run: () => setShowQuests((v) => !v) },
-                  { label: t('dm.handoutsTitle', 'Documentos para jugadores'), icon: '🗂', run: () => setShowHandouts((v) => !v) },
-                  { label: t('dm.openMapTitle', 'Abrir mapa'), icon: '🗺', run: () => {
-                    const m = maps.find((mm) => mm.id === activeScene?.map_id);
-                    if (m) setViewingMap(m);
-                  } },
-                  { label: t('dm.aiPanelTitle', 'Configuración de IA'), icon: '🤖', run: () => setShowAIPanel((v) => !v) },
-                  { label: t('dm.assistantTitle', 'Asistente del DM'), icon: '💬', run: () => setShowAssistant((v) => !v) },
-                  { label: t('dm.quickActionsTitle', 'Acciones rápidas'), icon: '⚡', run: () => setShowQuickActions((v) => !v) },
-                  { label: t('dm.sessionLogTitle', 'Bitácora de sesión'), icon: '📋', run: () => setShowSessionLog((v) => !v) },
-                  { label: t('dm.sceneNotesTitle', 'Notas de la escena'), icon: '📝', run: () => setShowSceneNotes((v) => !v) },
-                  { label: t('dm.sceneSettingsTitle', 'Ajustes de escena'), icon: '⚙', run: () => setShowSceneSettings((v) => !v) },
-                  { label: t('dm.buildPlain', 'Construir'), icon: '🧱', run: () => setBuildMenuOpen(true) },
-                ];
-                const filtered = [
-                  ...links.filter((l) => !q || l.label.toLowerCase().includes(q)).map((l) => (
-                    <Link
-                      key={l.label}
-                      to={l.to}
-                      onClick={() => setCmdOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
-                    >
-                      <span className="text-xs opacity-60">{l.icon}</span>
-                      {l.label}
-                    </Link>
-                  )),
-                  ...actions.filter((a) => !q || a.label.toLowerCase().includes(q)).map((a) => (
-                    <button
-                      key={a.label}
-                      onClick={() => { a.run(); setCmdOpen(false); }}
-                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-left text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
-                    >
-                      <span className="text-xs opacity-60">{a.icon}</span>
-                      {a.label}
-                    </button>
-                  )),
-                ];
-                return filtered.length > 0 ? filtered : (
-                  <p className="px-4 py-3 text-xs text-[var(--text-secondary)]">{t('dm.noResults', 'Sin resultados')}</p>
-                );
-              })()}
-            </div>
-          </div>
-        </div>
+        <DmCommandPalette
+          query={cmdQuery}
+          onQueryChange={setCmdQuery}
+          onClose={() => setCmdOpen(false)}
+          campaignId={campaignId}
+          onToggleDice={() => setShowDiceRoller((v) => !v)}
+          onToggleInitiative={() => setShowInitiative((v) => !v)}
+          onToggleNotebook={() => setShowNotebook((v) => !v)}
+          onToggleRecap={() => setShowRecap((v) => !v)}
+          onToggleCalendar={() => setShowCalendar((v) => !v)}
+          onToggleQuests={() => setShowQuests((v) => !v)}
+          onToggleHandouts={() => setShowHandouts((v) => !v)}
+          onOpenActiveSceneMap={openActiveSceneMap}
+          onToggleAiPanel={() => setShowAIPanel((v) => !v)}
+          onToggleAssistant={() => setShowAssistant((v) => !v)}
+          onToggleQuickActions={() => setShowQuickActions((v) => !v)}
+          onToggleSessionLog={() => setShowSessionLog((v) => !v)}
+          onToggleSceneNotes={() => setShowSceneNotes((v) => !v)}
+          onToggleSceneSettings={() => setShowSceneSettings((v) => !v)}
+          onOpenBuildMenu={() => setBuildMenuOpen(true)}
+        />
       )}
 
       <MinimizedBar />
