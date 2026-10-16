@@ -21,19 +21,18 @@ import { Island, type IslandItem } from '@/components/ui/Island';
 import { AnimatePresence, motion } from 'motion/react';
 import ToastContainer from '@/components/ToastContainer';
 import { rollToToast, useToastQueue } from '@/lib/toastQueue';
-import { api, type Character, type DiceRollResponse, type PlayerSceneToken, type Spell } from '@/lib/api';
+import { api, type Character, type DiceRollResponse, type Spell } from '@/lib/api';
 import { checkWallCollision, extractZonePolygons, extractPortals, crossZoneBorder } from '@/lib/wall-collision';
 import { sceneWorldHeight, sceneWorldSize } from '@/lib/sceneWorld';
+import { usePlayerSync, type Choice } from '@/lib/usePlayerSync';
 import { computeVisionRegions, type CharPos } from '@/lib/playerVision';
-import { normalizeSharedAudio, setSharedAudio } from '@/lib/audioSettings';
-import type { SceneItem, VisionConfig } from '@core/domain/types';
+import type { VisionConfig } from '@core/domain/types';
 import type { FogRegion } from '@/lib/fogMask';
 import type { LosJob } from '@/lib/losWorker';
 import { DEFAULT_RENDER_MODE } from '@/lib/overlayY';
 import { staticUrl } from '@/lib/staticUrl';
 
 const API_BASE = '/api';
-const POLL_MS = 16;
 const VIDA_LABELS: Record<string, string> = {
   vigor: 'V',
   intelligence: 'I',
@@ -47,37 +46,6 @@ function abilityIconChip(icon: string | null, name: string) {
   if (view.kind === 'glyph') return <span>{view.glyph}</span>;
   return <img src={view.url} alt="" className="w-full h-full object-cover" />;
 }
-
-interface PlayerCharOption {
-  id: string;
-  name: string;
-  race: string;
-  class_name: string;
-  portrait_path: string | null;
-  model_path: string | null;
-}
-
-interface JoinData {
-  campaign_id: string;
-  campaign_name: string;
-  scene_id: string | null;
-  scene_name: string;
-  background_path: string | null;
-  audio_path: string | null;
-  weather: string | null;
-  weather_intensity?: number | null;
-  audio?: unknown;
-  lighting: string;
-  map_scale: number;
-  model_y_offset: number;
-  grid_size: number;
-  grid_snap: boolean;
-  characters: PlayerSceneToken[];
-  player_characters: PlayerCharOption[];
-  items: SceneItem[];
-}
-
-type Choice = { kind: 'character'; id: string } | { kind: 'spectator' } | null;
 
 function MiniModelPreview({ url }: { url: string }) {
   const groupRef = useRef<THREE.Group>(null);
@@ -138,28 +106,18 @@ function StatBar({
 export default function PlayerView() {
   const { t } = useTranslation();
   const { code } = useParams<{ code: string }>();
-  const [data, setData] = useState<JoinData | null>(null);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [choice, setChoice] = useState<Choice>(null);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [myChar, setMyChar] = useState<Character | null>(null);
-  const [live, setLive] = useState(false);
   const [audioOn, setAudioOn] = useState(true);
   const audioRef = useRef<HTMLAudioElement>(null);
   const audioStartedRef = useRef(false);
-  const [fading, setFading] = useState<'in' | 'out' | null>(null);
   const [sheetTab, setSheetTab] = useState<'stats' | 'inventory' | 'spells' | 'notes'>('stats');
   const [grimorioOpen, setGrimorioOpen] = useState(false);
   const [grimorioDetail, setGrimorioDetail] = useState<Spell | null>(null);
-  const [notesDraft, setNotesDraft] = useState('');
   const [notesSaving, setNotesSaving] = useState(false);
   const [usingSpellId, setUsingSpellId] = useState<string | null>(null);
   const [showDiceRoller, setShowDiceRoller] = useState(false);
   const [showQuests, setShowQuests] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [showHandouts, setShowHandouts] = useState(false);
-  const [panelRevision, setPanelRevision] = useState('');
   const { toasts: toastQueue, push, pushMany, dismiss } = useToastQueue();
   const [pendingRoll, setPendingRoll] = useState<{
     combat_id: string;
@@ -182,14 +140,20 @@ export default function PlayerView() {
   // Teclas activas (teclado + D-pad táctil). Compartido por el loop de movimiento.
   const keysPressedRef = useRef(new Set<string>());
 
-  const lastRevRef = useRef<string>('');
   const choiceRef = useRef<Choice>(null);
   const sceneIdRef = useRef<string | null>(null);
-  const lastRollTsRef = useRef<number>(0);
-  const dataRef = useRef<typeof data>(null);
   const wasdTargetRef = useRef<{ x: number; z: number; rotation: number } | null>(null);
-  const lastMoveDirRef = useRef<number | null>(null);
+  const lastRollTsRef = useRef<number>(0);
+  // Sync con el DM: join inicial, WebSocket y poll de revisions. Los refs se
+  // crean acá porque el loop de movimiento también los usa.
+  const {
+    data, myChar, choice, pickerOpen, loading, error, live, panelRevision,
+    notesDraft, fading, setNotesDraft, setChoice, setPickerOpen, setMyChar,
+    syncNotesDraft, fetchMyChar,
+  } = usePlayerSync(code, { sceneIdRef, choiceRef, wasdTargetRef });
+  const dataRef = useRef<typeof data>(null);
   const lastMoveAtRef = useRef(0);
+  const lastMoveDirRef = useRef(0);
   const serverPosRef = useRef<Map<string, { x: number; z: number; rotation: number }>>(new Map());
   const serverPosAtRef = useRef<Map<string, number>>(new Map());
   const serverLmatRef = useRef<Map<string, number>>(new Map());
@@ -200,170 +164,6 @@ export default function PlayerView() {
   const lastFrameAtRef = useRef(0);
   const renderedPosRef = useRef<Map<string, { x: number; z: number; rotation: number }>>(new Map());
   const rafRef = useRef<number>(0);
-
-  const fetchSnapshot = useCallback(async (): Promise<JoinData> => {
-    const res = await fetch(`${API_BASE}/campaigns/invite/${code}`);
-    if (!res.ok) throw new Error(i18n.t('pv.invalidCode', 'Código de invitación inválido'));
-    return res.json();
-  }, [code]);
-
-  const fetchMyChar = useCallback(async (campaignId: string, charId: string) => {
-    const res = await fetch(`${API_BASE}/campaigns/${campaignId}/characters/${charId}`);
-    if (!res.ok) return null;
-    return res.json() as Promise<Character>;
-  }, []);
-
-  const syncNotesDraft = useCallback((char: Character | null) => {
-    setNotesDraft(char?.player_notes ?? '');
-  }, []);
-
-  const applySnapshot = useCallback(
-    (snap: JoinData) => {
-      if (sceneIdRef.current !== null && snap.scene_id !== sceneIdRef.current) {
-        setFading('in');
-        window.setTimeout(() => {
-          sceneIdRef.current = snap.scene_id;
-          setData(snap);
-          wasdTargetRef.current = null;
-          setWasdTarget(null);
-          setFading('out');
-          window.setTimeout(() => setFading(null), 320);
-        }, 380);
-      } else {
-        sceneIdRef.current = snap.scene_id;
-        setData(snap);
-      }
-    },
-    [],
-  );
-
-  // Volumen de audio publicado por el DM: si está sincronizado, todos los POV
-  // siguen estos valores y los sliders del jugador quedan bloqueados.
-  useEffect(() => {
-    setSharedAudio(normalizeSharedAudio(data?.audio));
-  }, [data?.audio]);
-
-  useEffect(() => {
-    if (!code) return;
-
-    fetchSnapshot()
-      .then((snap) => {
-        sceneIdRef.current = snap.scene_id;
-        setData(snap);
-        setLoading(false);
-
-        const stored = localStorage.getItem(`roleito:pv:${code}`);
-        if (stored === 'spectator') {
-          const c: Choice = { kind: 'spectator' };
-          choiceRef.current = c;
-          setChoice(c);
-        } else if (stored && snap.player_characters.some((p) => p.id === stored)) {
-          const c: Choice = { kind: 'character', id: stored };
-          choiceRef.current = c;
-          setChoice(c);
-          fetchMyChar(snap.campaign_id, stored).then((ch) => {
-            if (ch) {
-              setMyChar(ch);
-              syncNotesDraft(ch);
-            }
-          });
-        } else if (snap.player_characters.length > 0) {
-          setPickerOpen(true);
-        }
-      })
-      .catch((err) => {
-        setError(err.message || i18n.t('pv.joinFailed', 'No se pudo unir a la campaña'));
-        setLoading(false);
-      });
-  }, [code, fetchSnapshot, fetchMyChar]);
-
-  useEffect(() => {
-    if (!code || !data) return;
-    let cancelled = false;
-    let timer: number;
-    let ws: WebSocket | null = null;
-
-    const applyRevision = async (revision: string) => {
-      if (cancelled) return;
-      if (revision !== lastRevRef.current) {
-        lastRevRef.current = revision;
-        setPanelRevision(revision);
-        const snap = await fetchSnapshot();
-        if (cancelled) return;
-        applySnapshot(snap);
-
-        const c = choiceRef.current;
-        if (c?.kind === 'character') {
-          fetchMyChar(snap.campaign_id, c.id).then((ch) => {
-            if (ch) {
-              setMyChar(ch);
-              syncNotesDraft(ch);
-            }
-          });
-        }
-      }
-    };
-
-    const pollRevision = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/campaigns/invite/${code}/revision`);
-        if (!res.ok) throw new Error('revision failed');
-        const { revision } = (await res.json()) as { revision: string };
-        if (cancelled) return;
-        setLive(true);
-        await applyRevision(revision);
-      } catch {
-        if (!cancelled) setLive(false);
-      }
-    };
-
-    const tick = async () => {
-      if (ws && ws.readyState === WebSocket.OPEN) return; // WS cubre el sync
-      if (!ws || ws.readyState === WebSocket.CLOSED) connectWs();
-      await pollRevision();
-      if (!cancelled && !(ws && ws.readyState === WebSocket.OPEN)) {
-        timer = window.setTimeout(tick, POLL_MS);
-      }
-    };
-
-    const connectWs = () => {
-      if (cancelled) return;
-      if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
-      const sock = new WebSocket(`${API_BASE.replace(/^http/, 'ws')}/ws/invite/${code}`);
-      ws = sock;
-      sock.onopen = () => {
-        if (cancelled) return;
-        setLive(true);
-        void pollRevision();
-      };
-      sock.onmessage = (ev) => {
-        if (cancelled) return;
-        try {
-          const msg = JSON.parse(ev.data as string) as { type?: string; revision?: string };
-          if (msg.type === 'revision' && msg.revision) {
-            setLive(true);
-            void applyRevision(msg.revision);
-          }
-        } catch {
-          // mensaje no JSON: ignorar
-        }
-      };
-      sock.onclose = () => {
-        if (cancelled) return;
-        if (ws === sock) ws = null;
-        setLive(false);
-        if (!cancelled) timer = window.setTimeout(tick, POLL_MS);
-      };
-    };
-
-    connectWs();
-    timer = window.setTimeout(tick, POLL_MS);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-      if (ws) ws.close();
-    };
-  }, [code, data, fetchSnapshot, applySnapshot, fetchMyChar, syncNotesDraft]);
 
   useEffect(() => {
     if (!code || !data) return;

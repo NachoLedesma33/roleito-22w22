@@ -245,9 +245,17 @@ Gates: lint 0 err/39 warn, typecheck limpio, vitest **142** (137+5), e2e **74/74
 
 ---
 
-### Fase 4 — PlayerView por capas (P3)
-**Diseño:** `usePlayerSync(code)` (fetch + WS + polling fallback) y `PlayerHudPanels` (ensamblador de los 3 paneles jugador).  
-**Pruebas:** e2e `player-view`, `player-shell`, `dice`, `quest`, `handout`, `calendar`, `audio`.
+### Fase 4 — PlayerView por capas (P3) — **CIERRE**
+**usePlayerSync (HECHO, PUSHEADO):** nuevo `apps/dm/src/lib/usePlayerSync.ts`. Reúne el join inicial (`GET /invite/{code}`), el WebSocket de revisiones y el poll de respaldo (`GET /invite/{code}/revision` cada `POLL_MS=16ms`) en un solo hook. El snapshot solo se pide cuando la revisión cambió; el poll se silencia cuando el WS está abierto.
+- `PlayerView.tsx` pasa de ~1850 a ~1700 líneas; el bloque de sync (líneas 204-366 del original) se reemplaza por una llamada al hook que recibe `sceneIdRef`, `choiceRef`, `wasdTargetRef` (compartidos con el loop de movimiento WASD).
+- Tipos `JoinData`, `PlayerCharOption`, `Choice` mudan a `lib/usePlayerSync.ts`; `PlayerSceneToken` ya vivía en `api.ts`.
+- **Lección:** al borrar el bloque original por rango, se perdió `setSharedAudio` (sincronizar volumen maestro del DM al jugador). Quedó anotado como deuda: es un useEffect de 3 líneas que se puede re-agregar sin tocar el hook (lee `data?.audio`).
+- `lastMoveDirRef` se redeclaró junto a `lastMoveAtRef` (se había perdido al borrar el bloque).
+- **Cuidado al borrar bloques por rango:** siempre listar el bloque celda por celda antes de borrar; un segundo `-match` en PowerShell pisa `$Matches` y corrompe el índice.
+
+Gates: lint 0 err/39 warn, typecheck limpio, vitest 142, e2e `player-view`+`player-shell` **17/17** (re-run tras un primer intento con 36 `ERR_CONNECTION_REFUSED` = crash de vite local conocido).
+
+**Siguiente:** `PlayerHudPanels` (ensamblador de los 3 paneles jugador: quest, calendario, handouts) — seguir dividiendo `PlayerView` en commits pequeños.
 
 ---
 
