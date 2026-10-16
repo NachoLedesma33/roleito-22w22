@@ -341,9 +341,19 @@ Gap que sigue (documentado, no tocado): un asset de más de 8 MB no viaja (queda
 
 ---
 
-### Fase 7 — Backend: helpers de `routes.py` (P6)
+### Fase 7 — Backend: helpers de `routes.py` (P6) — **CIERRE**
 **Diseño:** mover `_asset_rel`, `_asset_abs`, `_parse_dt`, `_embed_asset`, `_collect_assets` a `backend/services/assets.py`.  
 **Pruebas:** pytest.
+
+**HECHO (un commit).** A `backend/services/assets.py`: `MAX_ASSET_BYTES`, `asset_rel`, `asset_abs`, `import_asset_path`, `embed_asset`, `collect_assets`. Pasan a ser públicos porque ahora son de un servicio, no privados de un router.
+
+**`_parse_dt` NO se movió (desviación deliberada del plan).** El plan lo metía en `services/assets.py`, pero no es un helper de assets (es parseo de datetime) y se usa 2 veces, ambas dentro de `routes.py`. Sigue privado ahí. Si algún día lo usa otro módulo, la casa correcta es un `services/dates.py`, no `assets.py`.
+
+**Con esto `ASSETS_DIR` quedó definido una sola vez**, en `services/assets.py`. `handout_routes.py`, `player_routes.py`, `scene_routes.py` y `main.py` dejaron de redefinirlo (había 5 copias con 2 variantes: una normalizada y otra no). `routes.py`: 1243 → ~1140 líneas.
+
+Gates: pytest 91, ruff limpio, e2e `campaign`+`handout`+`map`+`scene` **30/30**.
+
+**Gotcha de tooling:** escribir con `[System.IO.File]::WriteAllLines` desde PowerShell deja CRLF y `.gitattributes` fuerza LF. Normalizar a LF antes de commitear, o el próximo `git status` ensucia el diff.
 
 ---
 

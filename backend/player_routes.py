@@ -9,9 +9,9 @@ import os
 import uuid
 import json as _json
 
-router = APIRouter(tags=["players", "maps", "assets", "light-requests"])
+from services.assets import ASSETS_DIR
 
-ASSETS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "assets")
+router = APIRouter(tags=["players", "maps", "assets", "light-requests"])
 
 
 # ── Player CRUD ─────────────────────────────────────────────

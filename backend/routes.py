@@ -47,35 +47,13 @@ import os
 import base64
 from datetime import datetime
 
-from services.assets import rewrite_campaign_prefix
-
-ASSETS_DIR = os.path.normpath(
-    os.path.join(os.path.dirname(__file__), "..", "data", "assets")
+from services.assets import (
+    asset_abs,
+    asset_rel,
+    collect_assets,
+    import_asset_path,
+    rewrite_campaign_prefix,
 )
-MAX_ASSET_BYTES = 8 * 1024 * 1024
-
-
-def _asset_rel(path):
-    """Reduce an asset path to a portable 'data/assets/...' relative form."""
-    if not path:
-        return None
-    norm = path.replace("\\", "/")
-    idx = norm.find("data/assets")
-    if idx == -1:
-        return None
-    return norm[idx:]
-
-
-def _asset_abs(rel):
-    suffix = rel[len("data/assets"):].lstrip("/").replace("/", os.sep)
-    return os.path.join(ASSETS_DIR, suffix)
-
-
-def _import_asset_path(value):
-    rel = _asset_rel(value)
-    if not rel:
-        return value
-    return _asset_abs(rel)
 
 
 def _parse_dt(value):
@@ -89,63 +67,6 @@ def _parse_dt(value):
         parsed = parsed.replace(tzinfo=None)
     return parsed
 
-
-def _embed_asset(path):
-    rel = _asset_rel(path)
-    if not rel:
-        return None
-    try:
-        size = os.path.getsize(path)
-    except OSError:
-        return None
-    if size > MAX_ASSET_BYTES:
-        return None
-    try:
-        with open(path, "rb") as f:
-            data = base64.b64encode(f.read()).decode("ascii")
-    except OSError:
-        return None
-    return {"path": rel, "data_base64": data}
-
-
-async def _collect_assets(db: AsyncSession, campaign_id: str) -> list[dict]:
-    refs: dict[str, str] = {}
-
-    maps_r = await db.execute(select(Map).where(Map.campaign_id == campaign_id))
-    for m in maps_r.scalars().all():
-        refs[m.file_path] = m.file_path
-        if m.thumbnail_path:
-            refs[m.thumbnail_path] = m.thumbnail_path
-
-    scenes_r = await db.execute(select(Scene).where(Scene.campaign_id == campaign_id))
-    for s in scenes_r.scalars().all():
-        if s.background_path:
-            refs[s.background_path] = s.background_path
-        if s.audio_path:
-            refs[s.audio_path] = s.audio_path
-
-    chars_r = await db.execute(select(Character).where(Character.campaign_id == campaign_id))
-    for c in chars_r.scalars().all():
-        for p in (c.portrait_path, c.model_path):
-            if p:
-                refs[p] = p
-
-    npcs_r = await db.execute(select(NPC).where(NPC.campaign_id == campaign_id))
-    for n in npcs_r.scalars().all():
-        for p in (n.portrait_path, n.model_path):
-            if p:
-                refs[p] = p
-
-    assets_r = await db.execute(select(Asset).where(Asset.campaign_id == campaign_id))
-    for a in assets_r.scalars().all():
-        refs[a.file_path] = a.file_path
-
-    out = []
-    for p in refs.values():
-        emb = _embed_asset(p)
-        if emb:
-            out.append(emb)
-    return out
 
 campaigns_router = APIRouter(tags=["campaigns"])
 
@@ -602,7 +523,7 @@ async def bulk_export_campaigns(
             "map_markers": [dict(r._mapping) for r in markers_r.all()],
             "notebooks": [dict(r._mapping) for r in notebook_rows],
             "notebook_versions": [dict(r._mapping) for r in versions_r.all()],
-            "assets": await _collect_assets(db, cid),
+            "assets": await collect_assets(db, cid),
         })
 
     return {"campaigns": exports}
@@ -664,7 +585,7 @@ async def export_campaign(
         )
     )
 
-    assets = await _collect_assets(db, campaign_id)
+    assets = await collect_assets(db, campaign_id)
 
     dice_rolls_r = await db.execute(
         select(DiceRoll).where(DiceRoll.campaign_id == campaign_id)
@@ -744,7 +665,7 @@ async def import_campaign(
         except ValueError:
             continue
         new_rel = rewrite_campaign_prefix(rel, campaign.id)
-        target = _asset_abs(new_rel)
+        target = asset_abs(new_rel)
         os.makedirs(os.path.dirname(target), exist_ok=True)
         with open(target, "wb") as f:
             f.write(content)
@@ -752,10 +673,10 @@ async def import_campaign(
 
     def imported_path(value: str | None) -> str | None:
         """Path de un asset importado: el de la campaña destino si se importó."""
-        rel = _asset_rel(value) if value else None
+        rel = asset_rel(value) if value else None
         if rel and rel in asset_rewrites:
-            return _asset_abs(asset_rewrites[rel])
-        return _import_asset_path(value)
+            return asset_abs(asset_rewrites[rel])
+        return import_asset_path(value)
 
     id_map: dict[str, str] = {}
     scene_items_for_remap: list[tuple["Scene", str]] = []

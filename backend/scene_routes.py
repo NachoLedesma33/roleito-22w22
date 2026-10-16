@@ -8,6 +8,7 @@ from schemas import (
     SceneCreate, SceneUpdate, SceneResponse,
     SceneCharacterPosition, SceneCharacterResponse,
 )
+from services.assets import ASSETS_DIR
 import math
 import os
 import time
@@ -59,8 +60,6 @@ def _load_ai_settings() -> dict:
         return json.loads(config_path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
         return {"provider": "mock", "remote_base_url": "", "model": ""}
-
-ASSETS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "assets")
 
 
 @router.post("/campaigns/{campaign_id}/scenes", response_model=SceneResponse)

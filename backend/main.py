@@ -39,6 +39,7 @@ from combat_routes import router as combat_router
 from quest_routes import router as quest_router
 from handout_routes import router as handout_router
 from calendar_routes import router as calendar_router
+from services.assets import ASSETS_DIR
 
 logging.basicConfig(
     level=logging.INFO,
@@ -129,7 +130,6 @@ app.include_router(quest_router, prefix="/api")
 app.include_router(handout_router, prefix="/api")
 app.include_router(calendar_router, prefix="/api")
 
-ASSETS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "assets")
 os.makedirs(ASSETS_DIR, exist_ok=True)
 app.mount("/api/static", StaticFiles(directory=ASSETS_DIR), name="static")
 

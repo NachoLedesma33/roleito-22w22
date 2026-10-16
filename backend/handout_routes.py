@@ -8,10 +8,9 @@ from database import get_session
 from models import Campaign, Handout
 from routes import broadcast_revision
 from schemas import HandoutIn, HandoutOut
+from services.assets import ASSETS_DIR
 
 router = APIRouter(tags=["handouts"])
-
-ASSETS_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "assets")
 
 
 def _to_out(h: Handout) -> HandoutOut:
