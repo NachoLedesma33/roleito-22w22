@@ -15,6 +15,7 @@ from core.events.bus import get_event_bus
 from core.events.handlers import register_default_handlers
 from routes import campaigns_router
 from character_routes import router as character_router
+from ability_routes import router as ability_router
 from session_routes import router as session_router
 from event_routes import router as event_router
 from player_routes import router as player_router
@@ -102,6 +103,7 @@ async def not_found_handler(request: Request, exc):
 
 app.include_router(campaigns_router, prefix="/api")
 app.include_router(character_router, prefix="/api")
+app.include_router(ability_router, prefix="/api")
 app.include_router(session_router, prefix="/api")
 app.include_router(event_router, prefix="/api")
 app.include_router(player_router, prefix="/api")
