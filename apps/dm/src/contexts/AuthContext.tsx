@@ -15,7 +15,12 @@ interface DMProfile {
 }
 
 
-interface Session {
+/**
+ * Sesión de AUTENTICACIÓN (token + DM), no la sesión de juego de `api.Session`
+ * (número, fecha, notas). Se llama `AuthSession` para que el nombre no choque
+ * con el dominio de partidas.
+ */
+interface AuthSession {
   token: string;
   role: string;
   created_at: number;
@@ -26,7 +31,7 @@ interface Session {
 }
 
 interface AuthContextType {
-  session: Session | null;
+  session: AuthSession | null;
   loading: boolean;
   profiles: DMProfile[];
   login: (name: string, pin: string) => Promise<void>;
@@ -70,7 +75,7 @@ function storeProfile(profile: DMProfile): DMProfile[] {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<AuthSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [profiles, setProfiles] = useState<DMProfile[]>([]);
 
@@ -89,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (res.ok) return res.json();
           throw new Error('expired');
         })
-        .then((data: Session) => {
+        .then((data: AuthSession) => {
           setSession({ ...data, token: stored });
         })
         .catch(() => {

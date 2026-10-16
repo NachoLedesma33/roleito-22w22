@@ -20,7 +20,7 @@ import MinimizedBar from '@/components/MinimizedBar';
 import { Island, type IslandItem } from '@/components/ui/Island';
 import { AnimatePresence, motion } from 'motion/react';
 import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastContainer';
-import { api, type DiceRollResponse } from '@/lib/api';
+import { api, type Character, type DiceRollResponse, type PlayerSceneToken, type Spell } from '@/lib/api';
 import { checkWallCollision, extractZonePolygons, extractPortals, crossZoneBorder } from '@/lib/wall-collision';
 import { computeVisionRegions, type CharPos } from '@/lib/playerVision';
 import { normalizeSharedAudio, setSharedAudio } from '@/lib/audioSettings';
@@ -44,30 +44,6 @@ function abilityIconChip(icon: string | null, name: string) {
   if (!view) return <span className="text-[var(--text-secondary)]">{abilityFallbackGlyph(name)}</span>;
   if (view.kind === 'glyph') return <span>{view.glyph}</span>;
   return <img src={view.url} alt="" className="w-full h-full object-cover" />;
-}
-
-interface PlayerToken {
-  id: string;
-  entity_id: string;
-  name: string;
-  type: string;
-  x: number;
-  y: number;
-  z: number;
-  rotation: number;
-  portrait_path: string | null;
-  model_path: string | null;
-  move_speed: number;
-  token_scale: number;
-  brightness: number;
-  facing_offset: number;
-  vision_type?: string;
-  vision_range?: number;
-  statuses: string[];
-  vx?: number;
-  vz?: number;
-  vrot?: number;
-  last_move_at?: number;
 }
 
 interface PlayerCharOption {
@@ -94,49 +70,9 @@ interface JoinData {
   model_y_offset: number;
   grid_size: number;
   grid_snap: boolean;
-  characters: PlayerToken[];
+  characters: PlayerSceneToken[];
   player_characters: PlayerCharOption[];
   items: SceneItem[];
-}
-
-interface InventoryItem {
-  name?: string;
-  equipped?: boolean;
-  [key: string]: unknown;
-}
-
-interface Spell {
-  id: string;
-  name: string;
-  description: string;
-  level: number;
-  cost_pm: number;
-  icon: string | null;
-  audio_path: string | null;
-}
-
-interface MyChar {
-  id: string;
-  name: string;
-  race: string;
-  class_: string;
-  portrait_path: string | null;
-  vigor: string;
-  intelligence: string;
-  dexterity: string;
-  cunning: string;
-  max_pv: number;
-  max_pm: number;
-  defense: number;
-  current_pv: number | null;
-  current_pm: number | null;
-  inventory_json: InventoryItem[];
-  spells_json: Spell[];
-  player_notes: string;
-  knowledge_scope: string;
-  current_location_id: string | null;
-  status: string;
-  description: string;
 }
 
 type Choice = { kind: 'character'; id: string } | { kind: 'spectator' } | null;
@@ -205,7 +141,7 @@ export default function PlayerView() {
   const [loading, setLoading] = useState(true);
   const [choice, setChoice] = useState<Choice>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [myChar, setMyChar] = useState<MyChar | null>(null);
+  const [myChar, setMyChar] = useState<Character | null>(null);
   const [live, setLive] = useState(false);
   const [audioOn, setAudioOn] = useState(true);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -240,7 +176,7 @@ export default function PlayerView() {
   const handleAspectChange = useCallback((a: number) => {
     if (Number.isFinite(a) && a > 0) setImageAspect(a);
   }, []);
-  const myCharRef = useRef<MyChar | null>(null);
+  const myCharRef = useRef<Character | null>(null);
   // Teclas activas (teclado + D-pad táctil). Compartido por el loop de movimiento.
   const keysPressedRef = useRef(new Set<string>());
 
@@ -272,10 +208,10 @@ export default function PlayerView() {
   const fetchMyChar = useCallback(async (campaignId: string, charId: string) => {
     const res = await fetch(`${API_BASE}/campaigns/${campaignId}/characters/${charId}`);
     if (!res.ok) return null;
-    return res.json() as Promise<MyChar>;
+    return res.json() as Promise<Character>;
   }, []);
 
-  const syncNotesDraft = useCallback((char: MyChar | null) => {
+  const syncNotesDraft = useCallback((char: Character | null) => {
     setNotesDraft(char?.player_notes ?? '');
   }, []);
 
@@ -1052,7 +988,7 @@ export default function PlayerView() {
         body: JSON.stringify({ player_notes: notesDraft }),
       });
       if (res.ok) {
-        const updated = await res.json() as MyChar;
+        const updated = await res.json() as Character;
         setMyChar(updated);
         syncNotesDraft(updated);
       }
@@ -1081,7 +1017,7 @@ export default function PlayerView() {
       setUsingSpellId(spell.id);
       try {
         const used = await api.abilities.use(data.campaign_id, spell.id, myChar.id);
-        setMyChar(used.character as unknown as MyChar);
+        setMyChar(used.character);
       } catch {
         // sin respuesta no hay nada que descontar: la ficha queda como estaba
       } finally {
@@ -1555,7 +1491,7 @@ export default function PlayerView() {
                       title={attrLabel}
                       className="w-5 h-5 rounded bg-black/50 border border-[var(--bg-tertiary)] flex items-center justify-center text-[11px] text-[var(--text-primary)]"
                     >
-                      {attrSymbol(myChar[key as keyof MyChar] as string)}
+                      {attrSymbol(myChar[key as keyof Character] as string)}
                     </span>
                   ))}
                 </div>

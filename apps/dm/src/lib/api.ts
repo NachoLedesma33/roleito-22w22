@@ -473,6 +473,35 @@ export interface SceneCharacter {
   statuses: string[];
 }
 
+/**
+ * Token de escena tal como lo publica el snapshot del jugador
+ * (`GET /campaigns/invite/{code}`): la colocación de `SceneCharacter` más los
+ * campos de la entidad que el join resuelve en el backend. No trae
+ * `scene_id`/`entity_type`/`visible`/`order` porque el endpoint no los
+ * serializa, y por eso no es un `SceneCharacter`.
+ */
+export type PlayerSceneToken = Pick<
+  SceneCharacter,
+  | 'id'
+  | 'entity_id'
+  | 'x'
+  | 'y'
+  | 'z'
+  | 'rotation'
+  | 'move_speed'
+  | 'token_scale'
+  | 'brightness'
+  | 'facing_offset'
+  | 'statuses'
+  | 'vx'
+  | 'vz'
+  | 'vrot'
+  | 'last_move_at'
+  | 'vision_type'
+  | 'vision_range'
+> &
+  Pick<Character, 'name' | 'type' | 'portrait_path' | 'model_path'>;
+
 type EventCreateFields = {
   session_id: string;
   type: string;

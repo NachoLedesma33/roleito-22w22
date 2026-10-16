@@ -97,12 +97,20 @@ Adopta la **variante defensiva** (devuelve `null` en vez de `undefined`). Import
 
 ---
 
-### Fase 1 — Tipos duplicados del frontend (P4) — BAJO RIESGO
+### Fase 1 — Tipos duplicados del frontend (P4) — BAJO RIESGO — **HECHA**
 **Problema:** `MyChar`, `PlayerToken`, `InventoryItem`, `Spell` re-declarados en `PlayerView.tsx`; `Session` en `AuthContext.tsx`.  
 **Diseño:** borrar las declaraciones locales y usar `api.Character`, `api.SceneCharacter`, `api.InventoryItem`, `api.Spell`. Donde el shape difiere (`PlayerToken` vs `SceneCharacter`), agregar en `api.ts` un tipo de vista explícito (`PlayerSceneToken`) en vez de castear. **No tocar `core/domain/types.ts`.**  
 **Módulos:** `apps/dm/src/pages/PlayerView.tsx`, `apps/dm/src/contexts/AuthContext.tsx`, `apps/dm/src/lib/api.ts`.  
 **Pruebas:** lint, typecheck, vitest, e2e `player-view`, `player-shell`, `login`, `character-sheet`.  
 **Criterio de aceptación:** typecheck limpio sin `as unknown as`; grep `interface (MyChar|PlayerToken)` → 0.
+
+**Resultado:** Hecho, con dos correcciones al plan original:
+- `MyChar` NO era un tipo nuevo: `GET`/`PUT /characters/{id}` responden `CharacterResponse`, o sea `api.Character` exacto. Se borró el tipo local y `used.character as unknown as MyChar` desapareció (el cast sobra porque `api.abilities.use` ya devuelve `Character`).
+- `AuthContext.Session` NO es duplicado de `api.Session`: es la sesión de autenticación (token, `dm_id`, `dm_name`) contra la sesión de juego (número, fecha, notas). No unificar — se renombró a `AuthSession` para sacar la colisión de nombre.
+- `Spell` e `InventoryItem` de `PlayerView` eran copias exactas de `api.ts` → borrados. La versión laxa de `InventoryItem` (`[key: string]: unknown`) además era la que mentía: el contrato real ya es `api.InventoryItem`.
+- `PlayerToken` sí tenía shape propio (el join del snapshot del jugador): ahora `PlayerSceneToken` en `api.ts`, derivado con `Pick<SceneCharacter, …> & Pick<Character, …>` para no duplicar listas de campos.
+
+**Bug detectado, NO arreglado (decisión de producto):** `PlayerView.tsx:610-611` lee `sc.vision_type ?? 'normal'` y `sc.vision_range ?? 6`, pero el join de `routes.py:1180-1200` **no serializa esos dos campos**. El DM puede configurar visión por token (`DmDashboard.tsx:3460-3510`) y el jugador nunca la recibe: siempre ve con los defaults. Arreglarlo cambia comportamiento de juego, así que queda fuera de la fase de tipos.
 
 ---
 
@@ -196,4 +204,6 @@ Adopta la **variante defensiva** (devuelve `null` en vez de `undefined`). Import
 
 ## 6. Siguiente acción
 
-**Fase 0 cerrada.** Siguiente: **Fase 1** (tipos duplicados del frontend: `MyChar`, `PlayerToken`, `InventoryItem`, `Spell` en `PlayerView.tsx`, `Session` en `AuthContext.tsx`) — unificar contra `api.ts`, sin tocar `core/domain/types.ts`.
+**Fases 0 y 1 cerradas.** Siguiente: **Fase 9** (limpieza de `.gitkeep` huérfanos: 6 en `core/` + `core/scenes/` vacío) — barata y sin riesgo, sirve para destrabar antes de las fases 2-5. Detrás: Fase 2 (extraer presentación de `DmDashboard`) → 3 `PlayerView` → 4 `SceneRenderer` → 5 listas masivas → 6-7 backend. Fase 8 (`wall_detection.py` vs `wall_detection/`) solo con aprobación explícita.
+
+Pendiente de decisión de producto (no es refactor): la visión por token que el DM configura nunca llega al jugador — el join del snapshot no serializa `vision_type`/`vision_range`.
