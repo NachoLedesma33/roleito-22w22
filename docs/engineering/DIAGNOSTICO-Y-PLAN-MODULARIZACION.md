@@ -150,6 +150,17 @@ Adopta la **variante defensiva** (devuelve `null` en vez de `undefined`). Import
 - **`title="Acciones del DM"` es el atributo más cargado del repo:** 14 specs hacen `getByTitle('Acciones del DM').hover()` para abrir el dock (~30 call sites). Se preservó tal cual en el contenedor externo; si se hubiera perdido, rompían 14 specs de golpe.
 - Cambio de DOM: cada grupo se envuelve en un `<div class="flex items-center gap-0.5">`. El contenedor padre tenía las mismas clases, así que el layout es idéntico.
 - `MapIcon` (alias de `Map` de lucide) sigue importado en `DmDashboard`: los iconos viajan en el array de acciones, no en el componente.
+
+**Commit 5/5 — `DmToolbar`: DIFERIDO CON MOTIVO (no es presentación)**
+Medí el bloque antes de extraerlo (líneas 2160-2501: 342 líneas) y está atado a **36 valores de estado y handlers distintos**: `drawState`, `zoneDraft`, `portalDraft`, `fogMode`, `rectFogMode`, `zoneFogActive`, `lightPlaceMode`, `attachLightMode`, `zoneColor`, `detectionMode`, `useAi`, `detectingWalls`, `wallMaterial`, `doorMaterial`, `startDrawMode`, `startZoneMode`, `startPortalMode`, `startLightPlaceMode`, `handleAutoDetect`, 4× `handleClearAll*`, `openMenu`, 4× rects, 2× refs, `handleToggleLighting`, `handleChangeWeather`, `undoStackRef`/`redoStackRef`/`handleUndo`/`handleRedo`, `showMapMenu`, `maps`/`scenes`/`activeScene`.
+
+Eso no es un componente de presentación con props: es un **panel de control atado a la máquina de estados de herramientas**. Extraerlo sería una firma de 36 props, que es exactamente `prop drilling innecesario`, anti-patrón listado en la guía. También rompe la contigüidad: `AudioSettingsMenu` vive entre el selector de luz y el de clima, así que sacar "el toolbar" exige mover ese componente y reordenar el DOM.
+
+**Ruta alternativa propuesta (2 pasos, en este orden):**
+1. `useBuildTools` — agrupar el estado de herramientas (draw/zone/portal/fog/luz/detección/materiales) en un hook. Ahí el acoplamiento baja en el origen, no en la firma.
+2. `DmToolbar` como componente que consume ese hook, con una prop de herramientas en vez de 36.
+
+**Lo que sí quedó pendiente de este bloque, y es duplicación real:** el shell de menú anclado se repite 4 veces con 3 mecanismos distintos de click-afuera — `getBoundingClientRect` → rect state → `createPortal` con `left/top ?? -9999`. Un `useAnchoredMenu` + `<AnchoredMenu>` lo eliminaría sin mover el contenido. No se hizo acá porque unificar los 3 mecanismos de dismissal cambia comportamiento de un control muy usado; conviene su propio commit con sus e2e (`zone`, `map`, `weather`, `dashboard`).
 **Problema:** 3830 líneas renderizando toolbar, dock, menús, context menus, toasts y ~15 paneles.  
 **Diseño:** extraer componentes de presentación pura (reciben props, emiten callbacks). `DmDashboard` queda como orquestador de estado.
 - `DmToolbar` — escena + toolbar vertical + menús lighting/weather/build/mapa
