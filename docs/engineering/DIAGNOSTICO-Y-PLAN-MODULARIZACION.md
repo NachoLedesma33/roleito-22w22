@@ -77,7 +77,7 @@ El plan prioriza por impacto/riesgo real. Cada fase es un commit verificable.
 
 ## 3. Plan por fases
 
-### Fase 0 — `staticUrl` unificada (P2) — CERO RIESGO, ALTO VALOR
+### Fase 0 — `staticUrl` unificada (P2) — CERO RIESGO, ALTO VALOR — **HECHA**
 **Problema:** 8 copias, 2 variantes con semántica distinta (una puede devolver `/api/static/undefined`).  
 **Diseño:** una función en `apps/dm/src/lib/staticUrl.ts`:
 ```ts
@@ -92,6 +92,8 @@ Adopta la **variante defensiva** (devuelve `null` en vez de `undefined`). Import
 **Pruebas:** `npm run lint`, `npm run typecheck`, `npm run test --workspace=apps/dm`, e2e `map`, `handout`, `player-view`, `scene`, `dashboard`.  
 **Criterio de aceptación:** `grep "function staticUrl"` → 1 match; lint 0 errores; vitest 133; e2e verde.  
 **Nota de riesgo:** el cambio de comportamiento solo afecta paths sin `/assets/`, que antes producían una URL rota. Es una corrección, pero verificar e2e de assets.
+
+**Resultado:**Hecho. `lib/staticUrl.ts` (contrato defensivo: `null` en vez de URL rota) + `lib/staticUrl.spec.ts` (4 tests: Unix, Windows, sin `/assets/`, vacío). Importada en los 8 archivos; 0 locales. Gates: lint 0 errores (40 warnings baseline), typecheck limpio, vitest 137, e2e `map`+`handout`+`scene`+`dashboard` 26/26 y `player-view` 12/12.
 
 ---
 
@@ -194,4 +196,4 @@ Adopta la **variante defensiva** (devuelve `null` en vez de `undefined`). Import
 
 ## 6. Siguiente acción
 
-**Esperando tu OK para arrancar la Fase 0** (unificar `staticUrl` en 8 archivos). Si quieres ajustar prioridades o el alcance de alguna fase, dime antes de tocar código.
+**Fase 0 cerrada.** Siguiente: **Fase 1** (tipos duplicados del frontend: `MyChar`, `PlayerToken`, `InventoryItem`, `Spell` en `PlayerView.tsx`, `Session` en `AuthContext.tsx`) — unificar contra `api.ts`, sin tocar `core/domain/types.ts`.

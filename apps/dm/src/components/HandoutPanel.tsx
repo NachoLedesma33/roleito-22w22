@@ -2,12 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Eye, EyeOff, Image as ImageIcon, Pencil, Trash2 } from 'lucide-react';
 import HudPanel from './HudPanel';
 import { api, type HandoutInput, type HandoutResponse } from '@/lib/api';
-
-function staticUrl(path: string | null): string | null {
-  if (!path) return null;
-  const parts = path.replace(/\\/g, '/').split('/assets/');
-  return parts.length > 1 ? `/api/static/${parts[1]}` : null;
-}
+import { staticUrl } from '@/lib/staticUrl';
 
 interface HandoutPanelProps {
   campaignId: string;

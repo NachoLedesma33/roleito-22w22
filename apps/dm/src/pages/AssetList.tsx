@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api, Asset } from '@/lib/api';
+import { staticUrl } from '@/lib/staticUrl';
 import { Button } from '@/components/ui/Button';
 import {
   Dialog,
@@ -10,12 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/Dialog';
-
-function staticUrl(path: string): string | null {
-  if (!path) return null;
-  const parts = path.replace(/\\/g, '/').split('/assets/');
-  return parts.length > 1 ? `/api/static/${parts[1]}` : null;
-}
 
 export default function AssetList() {
   const { id: campaignId } = useParams<{ id: string }>();

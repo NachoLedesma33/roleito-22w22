@@ -2,12 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import HudPanel from './HudPanel';
 import { api, type HandoutResponse } from '@/lib/api';
-
-function staticUrl(path: string | null): string | null {
-  if (!path) return null;
-  const parts = path.replace(/\\/g, '/').split('/assets/');
-  return parts.length > 1 ? `/api/static/${parts[1]}` : null;
-}
+import { staticUrl } from '@/lib/staticUrl';
 
 interface PlayerHandoutPanelProps {
   campaignId: string;

@@ -53,6 +53,7 @@ import ToastContainer, { type ToastRoll, rollToToast } from '@/components/ToastC
 import TopBar from '@/components/TopBar';
 import MinimizedBar from '@/components/MinimizedBar';
 import HudPanel from '@/components/HudPanel';
+import { staticUrl } from '@/lib/staticUrl';
 import { Dices, Swords, NotebookPen, ClipboardList, CalendarDays, ScrollText, FolderOpen, Map as MapIcon, Bot, MessageCircle, Zap, BookOpen, StickyNote } from 'lucide-react';
 
 const MAX_HISTORY = 30;
@@ -65,11 +66,6 @@ function sameIds(a: SceneItem[], b: SceneItem[]): boolean {
 
 function snapshotOf(items: SceneItem[]): SceneItem[] {
   return JSON.parse(JSON.stringify(items)) as SceneItem[]
-}
-
-function staticUrl(path: string | null): string | null {
-  if (!path) return null;
-  return `/api/static/${path.replace(/\\/g, '/').split('/assets/')[1]}`;
 }
 
 export default function DmDashboard() {

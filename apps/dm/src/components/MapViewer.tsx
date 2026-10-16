@@ -1,10 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { api, Map, MapMarker, Scene } from '@/lib/api';
-
-function staticUrl(path: string | null): string | null {
-  if (!path) return null;
-  return `/api/static/${path.replace(/\\/g, '/').split('/assets/')[1]}`;
-}
+import { staticUrl } from '@/lib/staticUrl';
 
 const MARKER_COLORS = [
   '#60a5fa', '#4ade80', '#facc15', '#ef4444', '#a78bfa',

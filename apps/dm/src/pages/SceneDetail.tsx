@@ -1,14 +1,10 @@
 import { useEffect, useRef, useState, Suspense } from 'react';
 import { useParams } from 'react-router-dom';
 import { api, Scene, SceneCharacter, Character, NPC, Map } from '@/lib/api';
+import { staticUrl } from '@/lib/staticUrl';
 import SceneRenderer from '@/components/SceneRenderer';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-
-function staticUrl(path: string | null): string | null {
-  if (!path) return null;
-  return `/api/static/${path.replace(/\\/g, '/').split('/assets/')[1]}`;
-}
 
 function randomOffset(): number {
   return Math.random() * 4 - 2;

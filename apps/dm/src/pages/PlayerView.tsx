@@ -28,6 +28,7 @@ import type { SceneItem, VisionConfig } from '@core/domain/types';
 import type { FogRegion } from '@/lib/fogMask';
 import type { LosJob } from '@/lib/losWorker';
 import { DEFAULT_RENDER_MODE } from '@/lib/overlayY';
+import { staticUrl } from '@/lib/staticUrl';
 
 const API_BASE = '/api';
 const POLL_MS = 16;
@@ -37,11 +38,6 @@ const VIDA_LABELS: Record<string, string> = {
   dexterity: 'D',
   cunning: 'A',
 };
-
-function staticUrl(path: string | null): string | null {
-  if (!path) return null;
-  return `/api/static/${path.replace(/\\/g, '/').split('/assets/')[1]}`;
-}
 
 function abilityIconChip(icon: string | null, name: string) {
   const view = abilityIconView(icon);
