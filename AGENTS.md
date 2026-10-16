@@ -22,7 +22,7 @@ Al agregar, modificar o refactorizar **cualquier** código de este repo (feature
 - **Frontend real (único): `apps/dm`** — React 18 + TS strict + Vite + Tailwind. Three.js/R3F se usan DENTRO de apps/dm (SceneRenderer, PlayerView), no en apps separadas.
 - `apps/player` y `apps/renderer` son **placeholders vacíos (.gitkeep)**; no crear código ahí. La vista jugador vive en `apps/dm/src/pages/PlayerView.tsx`.
 - **Backend**: FastAPI + SQLAlchemy + SQLite. Todos los routers bajo `/api/`; health en `/health`; assets en `/api/static` (data/assets). App en `backend/main.py`.
-- **`core/` es bilingüe**: Python (events, world, canon, memory, narrative, agents) importado por el backend; TypeScript (`core/domain/types.ts`, `core/scene/*`) consumido por apps/dm vía alias `@core -> ../../core` (vite + vitest + tsconfig). Respetar cada lado; `core/scenes` (plural) no se usa.
+- **`core/` es bilingüe**: Python (events, world, canon, memory, narrative, agents) importado por el backend; TypeScript (`core/domain/types.ts`, `core/scene/*`) consumido por apps/dm vía alias `@core -> ../../core` (vite + vitest + tsconfig). Respetar cada lado; el TS de escena vive en `core/scene/` (singular) — no crear `core/scenes/`.
 - **`docs/AGENTS.md` NO es este archivo** — es la spec del sistema de agentes AI del producto. No confundir.
 
 ## Commands

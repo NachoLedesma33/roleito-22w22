@@ -168,9 +168,16 @@ Adopta la **variante defensiva** (devuelve `null` en vez de `undefined`). Import
 
 ---
 
-### Fase 9 — Limpieza de estructura (P8)
+### Fase 9 — Limpieza de estructura (P8) — **HECHA**
 **Diseño:** borrar `.gitkeep` de `core/canon/`, `core/events/`, `core/memory/`, `core/narrative/`, `core/world/` (ya tienen código). Eliminar `core/scenes/` (plural, vacío, no usado — AGENTS.md lo confirma).  
 **Pruebas:** `npm run lint`, typecheck, pytest, gate `docs`.
+
+**Resultado:** Hecho, con dos correcciones al plan:
+- El plan se olvidó de `infrastructure/ai/` y `infrastructure/tts/`: también tienen código real (`base.py`/`factory.py`/`mock.py`/…) con su `.gitkeep` huérfano. Borrados.
+- **NO** se borran los `.gitkeep` de `apps/player/`, `apps/renderer/` (placeholders documentados a propósito), `assets/*`, `data/*` e `infrastructure/{database,search,storage}`: esos directorios están genuinamente vacíos y existen para que el runtime los encuentre o para marcar intención.
+- `core/scenes/` no tenía una sola referencia en código (solo menciones en docs, las dos de esta fase). `AGENTS.md` actualizado para que la regla pase de "no se usa" a "`core/scene/` singular, no crear el plural".
+
+**Inconsistencia detectada, NO arreglada (fuera del diseño de la fase):** `core/canon/`, `core/events/`, `core/memory/` y `core/world/` no tienen `__init__.py`; `core/narrative/` y `core/agents/` sí. Funciona igual por namespace packages (PEP 420), pero es asimétrico y confunde. Agregar los `__init__.py` es una fase aparte: son archivos NUEVOS, no limpieza de huérfanos.
 
 ---
 
@@ -204,6 +211,6 @@ Adopta la **variante defensiva** (devuelve `null` en vez de `undefined`). Import
 
 ## 6. Siguiente acción
 
-**Fases 0 y 1 cerradas.** Siguiente: **Fase 9** (limpieza de `.gitkeep` huérfanos: 6 en `core/` + `core/scenes/` vacío) — barata y sin riesgo, sirve para destrabar antes de las fases 2-5. Detrás: Fase 2 (extraer presentación de `DmDashboard`) → 3 `PlayerView` → 4 `SceneRenderer` → 5 listas masivas → 6-7 backend. Fase 8 (`wall_detection.py` vs `wall_detection/`) solo con aprobación explícita.
+**Fases 0, 1 y 9 cerradas.** Siguiente: **Fase 2** (extraer presentación de `DmDashboard`: `DmToolbar`, `DmDock`, `DmContextMenus`, `DmToasts` → `DmDashboard` queda como orquestador de estado) → 3 `PlayerView` → 4 `SceneRenderer` → 5 listas masivas → 6-7 backend. Fase 8 (`wall_detection.py` vs `wall_detection/`) solo con aprobación explícita.
 
 Pendiente de decisión de producto (no es refactor): la visión por token que el DM configura nunca llega al jugador — el join del snapshot no serializa `vision_type`/`vision_range`.
