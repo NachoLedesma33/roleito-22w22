@@ -125,6 +125,13 @@ Adopta la **variante defensiva** (devuelve `null` en vez de `undefined`). Import
 - `DmDashboard`: 26 `setToastQueue(...)` → `push(...)`, el poll de dados → `pushMany(...)`, `onDismiss` → `dismiss`. `PlayerView`: los mismos 4 call sites.
 - **Efecto lateral esperado:** 22 warnings nuevos de `react-hooks/exhaustive-deps` por `push`/`pushMany` ausentes en los dep arrays. Antes el setter crudo de `useState` era estable por identidad y eslint no preguntaba; ahora las funciones son explícitas y hay que declararlas. Se agregaron a los 22 arrays (es la disciplina correcta, no un parche). Baseline de warnings: 40 → **39** (ToastContainer perdió su `only-export-components` al dejar de exportar el converter).
 - Deuda que NO se tocó: `ToastRoll` nació para tiradas de dados y los avisos se construyen con sus campos (`diceType: 20, count: 1, results: [1]`). Separar la forma de aviso de la de tirada cambia texto renderizado y locators de e2e: fase aparte.
+
+**Commit 2/5 — `DmContextMenus` (HECHO):**
+- Nuevo `apps/dm/src/components/dm/DmContextMenus.tsx`: los 6 menús contextuales del canvas (token, puerta, muro, zona, luz, niebla). Solo presentación.
+- **El `graphRef` no se filtra al componente.** El menú de zona leía `graphRef.getItem(itemId).metadata.portals` en el JSX; ahora `DmDashboard` expone `getZonePortals(itemId)` y el componente recibe la función. Un ref de implementación no viaja a una vista.
+- `BackgroundSelector` **no** se extrajo: no es un menú contextual (es un modal) y quedaba partido en medio del bloque.
+- Cambio de orden en el DOM: `BackgroundSelector` pasa de estar entre el menú de puerta y el de muro a estar después de los 6. Sin efecto: todos son `fixed z-50` y son mutuamente excluyentes (el click fuera cierra los menús antes de poder abrir el modal).
+- `DmDashboard`: −4 imports (los 3 menus + el default de `ContextMenu`), `ContextMenuItem` queda como type-only. Lint sin warnings nuevos (39).
 **Problema:** 3830 líneas renderizando toolbar, dock, menús, context menus, toasts y ~15 paneles.  
 **Diseño:** extraer componentes de presentación pura (reciben props, emiten callbacks). `DmDashboard` queda como orquestador de estado.
 - `DmToolbar` — escena + toolbar vertical + menús lighting/weather/build/mapa

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import i18n from '@/lib/i18n';
 import { useParams, Link } from 'react-router-dom';
 import { api, Campaign, Scene, SceneCharacter, Character, NPC, Map as GameMap, LightRequest, Asset } from '@/lib/api';
-import { SceneItem, ZoneMetadata, SceneLayer } from '@core/domain/types';
+import { SceneItem, ZoneMetadata, SceneLayer, PortalRef } from '@core/domain/types';
 import { SceneGraph } from '@core/scene/scene-graph';
 import { useDoorInteraction } from '@core/scene/door-interaction';
 import SceneRenderer from '@/components/SceneRenderer';
@@ -16,9 +16,7 @@ import { createPortalBetween, buildPortalLocalEdge, cyclePortalState, removePort
 import { circlePoints, toggleZoneFog } from '@/lib/fogMask';
 import { createLightItem, LIGHT_PRESETS, attachLightToToken, detachLight, normalizeLightConfig, updateLightSource, FIRE_RADIUS_MIN, FIRE_RADIUS_MAX, FIRE_RADIUS_STEP, FIRE_RADIUS_DEFAULT } from '@/lib/light';
 import { LightMetadata } from '@core/domain/types';
-import DoorContextMenu from '@/components/DoorContextMenu';
-import WallContextMenu from '@/components/WallContextMenu';
-import ZoneContextMenu from '@/components/ZoneContextMenu';
+import DmContextMenus from '@/components/dm/DmContextMenus';
 import { extractZonePolygons, checkWallCollision } from '@/lib/wall-collision';
 import { buildOccluders } from '@/lib/lightOcclusion';
 import { computeReachableCells } from '@/lib/movementRange';
@@ -48,7 +46,7 @@ import {
   type AudioSettingKey,
 } from '@/lib/audioSettings';
 import SceneSettingsHud from '@/components/SceneSettingsHud';
-import ContextMenu, { ContextMenuItem } from '@/components/ContextMenu';
+import type { ContextMenuItem } from '@/components/ContextMenu';
 import ToastContainer from '@/components/ToastContainer';
 import { rollToToast, useToastQueue } from '@/lib/toastQueue';
 import TopBar from '@/components/TopBar';
@@ -1040,6 +1038,15 @@ export default function DmDashboard() {
     if (item?.metadata.type === 'door') {
       setDoorContextMenu({ x: clientX, y: clientY, itemId, state: item.metadata.state })
     }
+  }, [graphRef])
+
+  // El menú de zona necesita los portales de esa zona. Se resuelve acá (que es
+  // quien tiene el grafo) y se le pasa la función al menú, no el ref.
+  const getZonePortals = useCallback((itemId: string): PortalRef[] => {
+    const item = graphRef.getItem(itemId)
+    return item?.metadata.type === 'zone'
+      ? (item.metadata as ZoneMetadata).portals ?? []
+      : []
   }, [graphRef])
 
   const handleWallContextMenu = useCallback((itemId: string, clientX: number, clientY: number) => {
@@ -3641,27 +3648,27 @@ export default function DmDashboard() {
       </div>
 
       {/* Context Menu */}
-      {contextMenu && (
-        <ContextMenu
-          x={contextMenu.x}
-          y={contextMenu.y}
-          items={contextMenu.items}
-          onClose={() => setContextMenu(null)}
-        />
-      )}
-
-      {doorContextMenu && (
-        <DoorContextMenu
-          x={doorContextMenu.x}
-          y={doorContextMenu.y}
-          doorState={doorContextMenu.state as 'open' | 'closed' | 'locked'}
-          onToggle={() => toggleDoor(doorContextMenu.itemId)}
-          onLock={() => lockDoor(doorContextMenu.itemId)}
-          onUnlock={() => unlockDoor(doorContextMenu.itemId)}
-          onDelete={() => handleDeleteItem(doorContextMenu.itemId)}
-          onClose={() => setDoorContextMenu(null)}
-        />
-      )}
+      <DmContextMenus
+        contextMenu={contextMenu}
+        onCloseContextMenu={() => setContextMenu(null)}
+        doorMenu={doorContextMenu}
+        onCloseDoorMenu={() => setDoorContextMenu(null)}
+        wallMenu={wallContextMenu}
+        onCloseWallMenu={() => setWallContextMenu(null)}
+        zoneMenu={zoneContextMenu}
+        onCloseZoneMenu={() => setZoneContextMenu(null)}
+        lightMenu={lightContextMenu}
+        onCloseLightMenu={() => setLightContextMenu(null)}
+        fogMenu={fogContextMenu}
+        onCloseFogMenu={() => setFogContextMenu(null)}
+        getZonePortals={getZonePortals}
+        onDeleteItem={handleDeleteItem}
+        onToggleDoor={toggleDoor}
+        onLockDoor={lockDoor}
+        onUnlockDoor={unlockDoor}
+        onTogglePortal={handlePortalToggle}
+        onDeletePortal={handlePortalDelete}
+      />
 
       {bgSelector && (
         <BackgroundSelector
@@ -3677,55 +3684,6 @@ export default function DmDashboard() {
           }}
           onUseDefault={() => setBgSelector(null)}
           onClose={() => setBgSelector(null)}
-        />
-      )}
-
-      {wallContextMenu && (
-        <WallContextMenu
-          x={wallContextMenu.x}
-          y={wallContextMenu.y}
-          onDelete={() => handleDeleteItem(wallContextMenu.itemId)}
-          onClose={() => setWallContextMenu(null)}
-        />
-      )}
-
-      {zoneContextMenu && (() => {
-        const item = graphRef.getItem(zoneContextMenu.itemId)
-        const portals = item?.metadata.type === 'zone'
-          ? (item.metadata as ZoneMetadata).portals ?? []
-          : []
-        return (
-          <ZoneContextMenu
-            x={zoneContextMenu.x}
-            y={zoneContextMenu.y}
-            portals={portals}
-            onTogglePortal={handlePortalToggle}
-            onDeletePortal={handlePortalDelete}
-            onDelete={() => handleDeleteItem(zoneContextMenu.itemId)}
-            onClose={() => setZoneContextMenu(null)}
-          />
-        )
-      })()}
-
-      {lightContextMenu && (
-        <ContextMenu
-          x={lightContextMenu.x}
-          y={lightContextMenu.y}
-          items={[
-            { label: t('dm.deleteLight', 'Eliminar luz'), icon: '🗑️', danger: true, onClick: () => handleDeleteItem(lightContextMenu.itemId) },
-          ]}
-          onClose={() => setLightContextMenu(null)}
-        />
-      )}
-
-      {fogContextMenu && (
-        <ContextMenu
-          x={fogContextMenu.x}
-          y={fogContextMenu.y}
-          items={[
-            { label: t('dm.deleteFogRegion', 'Eliminar región de niebla'), icon: '🗑️', danger: true, onClick: () => handleDeleteItem(fogContextMenu.itemId) },
-          ]}
-          onClose={() => setFogContextMenu(null)}
         />
       )}
 
