@@ -79,6 +79,7 @@ async def compute_player_revision(db: AsyncSession, campaign_id: str) -> str:
             Scene.weather,
             Scene.weather_intensity,
             Scene.lighting, Scene.updated_at,
+            Scene.items_json,
         ).where(Scene.campaign_id == campaign_id).order_by(Scene.id)
     )
     parts = [repr(tuple(r)) for r in scenes_r.all()]
