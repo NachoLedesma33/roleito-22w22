@@ -316,6 +316,36 @@ async def test_player_snapshot_includes_token_vision(client):
 
 
 @pytest.mark.asyncio
+async def test_player_snapshot_includes_remember_explored(client):
+    """La política de mesa "recordar lo explorado" viaja en el snapshot.
+
+    Paso 6 de docs/engineering/PLAN-VISION-PERCEPCION.md: el DM la enciende por
+    escena y el jugador la recibe para decidir si acumula la máscara en
+    localStorage.
+    """
+    camp = (await client.post("/api/campaigns", json={"name": "Memory Camp"})).json()
+    scen = (await client.post(f"/api/campaigns/{camp['id']}/scenes", json={"name": "Sala"})).json()
+    cid, sid = camp["id"], scen["id"]
+
+    # Default: sin recordar.
+    await client.put(f"/api/campaigns/{cid}/scenes/{sid}", json={"status": "active"})
+    code = (await client.post(f"/api/campaigns/{cid}/invite-code")).json()["invite_code"]
+    snap = (await client.get(f"/api/campaigns/invite/{code}")).json()
+    assert snap["remember_explored"] is False
+
+    # El DM la enciende.
+    res = await client.put(
+        f"/api/campaigns/{cid}/scenes/{sid}", json={"remember_explored": True}
+    )
+    assert res.status_code == 200, res.text
+    assert res.json()["remember_explored"] is True
+
+    # Y viaja en el snapshot del jugador.
+    snap = (await client.get(f"/api/campaigns/invite/{code}")).json()
+    assert snap["remember_explored"] is True
+
+
+@pytest.mark.asyncio
 async def test_player_move_normalizes_rotation_and_clamps(client):
     camp = (await client.post("/api/campaigns", json={"name": "Move Camp"})).json()
     scen = (await client.post(f"/api/campaigns/{camp['id']}/scenes", json={"name": "Arena"})).json()

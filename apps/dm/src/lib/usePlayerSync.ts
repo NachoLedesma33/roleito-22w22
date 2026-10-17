@@ -42,6 +42,12 @@ export interface JoinData {
   model_y_offset: number;
   grid_size: number;
   grid_snap: boolean;
+  /**
+   * El DM encendió "recordar lo explorado" en esta escena. Con esto, el
+   * jugador conserva la máscara de lo que ya vio entre sesiones
+   * (`engineering/PLAN-VISION-PERCEPCION.md`, paso 6).
+   */
+  remember_explored?: boolean;
   characters: PlayerSceneToken[];
   player_characters: PlayerCharOption[];
   items: SceneItem[];
