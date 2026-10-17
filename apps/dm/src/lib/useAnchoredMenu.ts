@@ -63,7 +63,7 @@ export function useAnchoredMenu({
 
   useEffect(() => {
     if (!open) return;
-    const inside = `closest('[data-anchor="${anchorId}"],[data-anchored-menu="${anchorId}"]')`;
+    const inside = `[data-anchor="${anchorId}"],[data-anchored-menu="${anchorId}"]`;
     const onMouseDown = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
       if (target?.closest?.(inside)) return;
