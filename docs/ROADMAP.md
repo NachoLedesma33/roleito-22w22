@@ -2366,14 +2366,16 @@ ShadowZone edges and closed portals (same geometry as collision)
 ### Tasks
 
 ```text
-F1. VisionConfig type (normal, darkvision, blindsight) — IMPLEMENTED (core/domain/types.ts)
+F1. VisionConfig type (normal, darkvision, blindsight) — TIPO IMPLEMENTADO, CABLEADO PENDIENTE. Ver `engineering/PLAN-VISION-PERCEPCION.md` (plan aprobado; reemplaza la lectura de esta fase). El tipo existe (`core/domain/types.ts`) y el DM lo configura por token, pero el join no lo serializa y `vision_type` no lo lee ningún cálculo: hoy el jugador ve siempre con los defaults. Lo cablea el paso 1 del plan.
 F2. Raycasting engine: Bresenham/DDA — IMPLEMENTED (losRaycast.ts)
 F3. Edge intersection detection (ShadowZone edges + portals) — IMPLEMENTED (losSystem.ts buildLoSOccluders)
-F4. Visibility mask generation per character — IMPLEMENTED (losRaycast.ts computeVisibilityMask + losSystem.ts computeCharacterLoS)
+F4. Visibility mask generation per character — IMPLEMENTED (losRaycast.ts computeVisibilityMask + losSystem.ts computeCharacterLoS). OJO: hoy el disco de LoS se revela siempre, sin mirar la luz; el plan lo pasa a `sin_obstruccion AND (luz OR ve_en_oscuridad)`
 F5. Combined visibility (union of party) — IMPLEMENTED (losSystem.ts computePartyLoS)
 F6. Dynamic fog: updates on movement — IMPLEMENTED (PlayerView visionRegions computes LoS on poll)
 F7. Movement range visualization — IMPLEMENTED (DmDashboard computeReachableCells + SceneRenderer MovementRangeOverlay; shows reachable cells for selected token)
 F8. A* pathfinding for movement — IMPLEMENTED (movementRange.ts findPath + computeReachableCells)
+F9. Niebla de guerra que el DM controla de verdad — PLANEADO. Hoy la niebla del DM (`zIndex: 0`) la perfora siempre la visión del jugador (`zIndex: 1000`): no le oculta nada a nadie. El plan la mete en el cálculo con tres modos por trazo (cubrir / secreto / revelar).
+F10. Luz que condiciona la visión + atenuación (`dimRange`) — PLANEADO (pasos 2-3 del plan). `dimRange` está definido en `LIGHTING-SYSTEM.md` y no lo lee ningún cálculo.
 ```
 
 ### Done when
