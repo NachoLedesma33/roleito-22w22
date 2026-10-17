@@ -300,4 +300,45 @@ test.describe('Fog (Phase D)', () => {
     expect(fogItems(items)).toHaveLength(0);
     expect(items.some((i: import('../helpers/api-helpers').SceneItem) => i.id === 'zone-e2e-f4')).toBe(true);
   });
+
+  test('F6: recuerda lo explorado al volver a entrar', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    // Paso 6 de docs/engineering/PLAN-VISION-PERCEPCION.md: con remember_explored
+    // encendido, el jugador conserva entre sesiones lo que ya vio.
+    const scene = await createScene(request, campaign.id, 'Fog Memoria');
+    const char = await createCharacter(request, campaign.id, { name: 'Vane' });
+    await seedTokens(request, campaign.id, scene.id, [
+      { entityType: 'character', entityId: char.id, x: 0, z: 0 },
+    ]);
+    await updateScene(request, campaign.id, scene.id, {
+      status: 'active',
+      remember_explored: true,
+    });
+    const code = await generateInviteCode(request, campaign.id);
+
+    // 1) Sin luz, solo el círculo ambiente.
+    await page.goto(`/campaigns/join/${code}`);
+    await page.getByRole('button', { name: /Vane/ }).click();
+    const mask = page.getByTestId('perception-mask');
+    await expect.poll(async () => Number(await mask.getAttribute('data-cols')), { timeout: 20_000 }).toBeGreaterThan(0);
+    const ambient = Number(await mask.getAttribute('data-visible-cells'));
+    expect(ambient).toBeGreaterThan(0);
+
+    // 2) El DM enciende una antorcha brillante: se ve mucho más y se acumula.
+    await putSceneItems(request, campaign.id, scene.id, [centerTorch()]);
+    await expect
+      .poll(async () => Number(await mask.getAttribute('data-visible-cells')), { timeout: 20_000 })
+      .toBeGreaterThan(ambient * 2);
+
+    // 3) El DM apaga la antorcha y el jugador recarga. Sin memoria vería solo
+    //    el ambiente; con remember_explored sigue viendo lo que exploró.
+    await putSceneItems(request, campaign.id, scene.id, []);
+    await page.reload();
+    await expect
+      .poll(async () => Number(await mask.getAttribute('data-visible-cells')), { timeout: 20_000 })
+      .toBeGreaterThan(ambient * 2);
+  });
 });

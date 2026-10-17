@@ -117,6 +117,32 @@ describe('playerPerception/perceptionAlpha', () => {
     expect(perceptionAlpha({ ...base, lightAt: light(1), dmFog: fog }, lit.col + 1, lit.row)).toBeGreaterThan(0)
   })
 
+  it('lo explorado se ve aunque ahora esté oscuro o fuera de rango', () => {
+    // Paso 6: `visible = actual ∪ recordada`. Es la diferencia con "el jugador
+    // está a oscuras": lo que ya descubrió no se le vuelve a tapar.
+    const los = openMask()
+    const remembered = cell(4, 4) // lejos, y sin nada de luz
+    const explored = new Uint8Array(GRID.rows * GRID.cols)
+    explored[remembered.row * GRID.cols + remembered.col] = 1
+    const args = { grid: GRID, los, lightAt: light(0), charX: 0, charZ: 0, vision: darkvision, explored }
+    expect(perceptionAlpha(args, remembered.col, remembered.row)).toBe(1)
+    // una celda vecina que nunca se exploró sigue sin verse
+    expect(perceptionAlpha(args, remembered.col + 2, remembered.row)).toBe(0)
+  })
+
+  it('"secreto" le gana a la memoria: no se filtra por haber pasado una vez', () => {
+    // La única precedencia que el §4bis no negocia.
+    const los = openMask()
+    const secret = cell(3, 3)
+    const explored = new Uint8Array(GRID.rows * GRID.cols)
+    explored[secret.row * GRID.cols + secret.col] = 1
+    const fog: (DmFogMode | null)[][] = Array.from({ length: GRID.rows }, () => Array<DmFogMode | null>(GRID.cols).fill(null))
+    fog[secret.row][secret.col] = 'secret'
+    const args = { grid: GRID, los, lightAt: light(1), charX: 0, charZ: 0, vision: darkvision, explored, dmFog: fog }
+    expect(perceptionAlpha(args, secret.col, secret.row)).toBe(0)
+    expect(perceptionAlpha(args, secret.col + 3, secret.row)).toBe(1)
+  })
+
   it('"cubrir" no cambia lo que el personaje percibe', () => {
     const los = openMask()
     const target = cell(3, 0)

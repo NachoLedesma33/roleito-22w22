@@ -274,6 +274,10 @@ class Scene(Base):
     grid_size = Column(Float, default=0.0)
     grid_snap = Column(Integer, default=0)
     items_json = Column(Text, default="[]")
+    # Política de mesa, la enciende el DM por escena: si está, el jugador
+    # recuerda lo que ya exploró (PLAN-VISION-PERCEPCION.md, paso 6). Default 0
+    # = recalcular desde cero, que es lo que se hacía siempre.
+    remember_explored = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

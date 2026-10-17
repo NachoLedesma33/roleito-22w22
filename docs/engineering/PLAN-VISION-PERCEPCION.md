@@ -145,7 +145,7 @@ Cada paso es un commit con CI verde. Los tests van **antes** de la implementaci�
 | 3 | **Composición** (test primero) — HECHO | `lib/playerPerception.ts`: `perceptionAlpha(celda)` + `composePerceptionMask(grid)`, con los roles de niebla del DM | vitest: normal en oscuro ve solo ambiente, darkvision ve su rango, secreto tapa lo iluminado, revelar muestra lo oscuro (14 tests) |
 | 4 | **Worker + render** — HECHO | El worker devuelve el alpha y `FogOverlay` lo pinta; la niebla del DM entra como rol por celda (`buildDmFogGrid`) | vitest de los grids + e2e `PV14` (de noche solo el ambiente) y `PV15` (la luz no da visión) |
 | 5 | **UI + docs** — HECHO | Pincel/rect con 3 modos (`SegmentedControl`, recuerda el último); dropdown de visión solo `normal`/`darkvision`; E10 y PHASE F reescritos | e2e `F5` (secreto oculta + dato persistido), F2 actualizado al default nuevo; lint/typecheck |
-| 6 | **Memoria de lo explorado** (opt-in) | `Scene.remember_explored` (migración + snapshot), toggle del DM por escena, acumulación RLE en `localStorage`, `visible = actual ∪ recordada` con **secreto ganando siempre** | vitest de la acumulación y de la precedencia secreto>memoria; e2e del toggle del DM y de que volver a entrar conserva lo explorado |
+| 6 | **Memoria de lo explorado** (opt-in) — HECHO | `Scene.remember_explored` (migración + snapshot), toggle del DM por escena, acumulación RLE en `localStorage`, `visible = actual ∪ recordada` con **secreto ganando siempre** | vitest de la acumulación y de la precedencia secreto>memoria (10 + 2 nuevos); e2e `F6` (recuerda al volver a entrar) + pytest `test_player_snapshot_includes_remember_explored` |
 
 ### Registro
 
@@ -174,6 +174,10 @@ Cada paso es un commit con CI verde. Los tests van **antes** de la implementaci�
   4. **El dropdown de visión perdió 3 opciones.** `blindsight`/`tremorsense`/`truesight` se comportan como `normal` y no se ofrecen; un token que ya tenga uno guardado sigue leyéndose como `normal`.
 - **Se rompió el caso viejo del e2e** y se actualizó en el mismo commit, no después: `F2` assertaba `revealed === true` para todo lo que pintaba el pincel.
 - **Lo que falta (paso 6)**: la memoria de lo explorado. No está empezado y no bloquea nada de lo anterior.
+- **Paso 6 (HECHO)**: memoria de lo explorado, opt-in por escena. `Scene.remember_explored` (migración + `SceneResponse` + snapshot del jugador), toggle del DM por escena, y `exploredMemory.ts` con RLE + `localStorage` por `(campaign, scene)`. `visible = actual ∪ recordada`, con **secreto ganando siempre**. Lo acumulado no se borra al apagar la política (§4bis). Tres decisiones:
+  1. **El worker acumula y el main thread guarda.** El worker no toca `localStorage` (no existe ahí): recibe `explored` (lo previamente guardado) y `accumulate`, y devuelve `explored` (la unión) en el mismo postMessage. El main thread llama a `saveExplored` y actualiza el ref. Así el guardado no bloquea el render.
+  2. **`encodeRle` siempre empieza con un run de ceros**, aunque la máscara arranque vista: si no, el decoder no sabe si arrancó en 0 o en 1 y una máscara toda vista se guardaría como toda oculta. Costó un test rojo.
+  3. **El cálculo de cols/rows de la memoria se hace en el main thread**, no en el worker, porque `loadExplored` tiene que correr antes del primer job (si el worker lo calculara, la memoria llegaría tarde y la primera máscara saldría sin recordar).
 
 ### Riesgos y caminos de aborto
 

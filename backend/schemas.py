@@ -425,6 +425,7 @@ class SceneUpdate(BaseModel):
     grid_size: Optional[float] = None
     grid_snap: Optional[bool] = None
     items_json: Optional[str] = None
+    remember_explored: Optional[bool] = None
 
 
 class SceneCharacterPosition(BaseModel):
@@ -466,6 +467,7 @@ class SceneResponse(BaseModel):
     grid_size: float = 0.0
     grid_snap: bool = False
     items_json: str = "[]"
+    remember_explored: bool = False
     created_at: datetime
     updated_at: datetime
 

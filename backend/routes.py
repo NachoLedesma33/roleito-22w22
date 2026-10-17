@@ -842,6 +842,7 @@ async def import_campaign(
             grid_size=s.get("grid_size", 0.0),
             grid_snap=s.get("grid_snap", 0),
             items_json=s.get("items_json", "[]"),
+            remember_explored=s.get("remember_explored", 0),
         )
         db.add(new_scene)
         await db.flush()
@@ -1153,6 +1154,9 @@ async def join_by_invite_code(
         "model_y_offset": getattr(active_scene, 'model_y_offset', 0.0) if active_scene else 0.0,
         "grid_size": getattr(active_scene, 'grid_size', 0.0) if active_scene else 0.0,
         "grid_snap": bool(getattr(active_scene, 'grid_snap', 0)) if active_scene else False,
+        # Política de mesa del DM: con esto el jugador recuerda lo explorado
+        # (PLAN-VISION-PERCEPCION.md, paso 6).
+        "remember_explored": bool(getattr(active_scene, 'remember_explored', 0)) if active_scene else False,
         "characters": scene_chars,
         "player_characters": player_characters,
         "items": json.loads(active_scene.items_json) if active_scene and active_scene.items_json else [],

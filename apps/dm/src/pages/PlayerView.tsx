@@ -26,6 +26,7 @@ import { usePlayerSync, type Choice } from '@/lib/usePlayerSync';
 import { type CharPos } from '@/lib/playerVision';
 import { buildOccluders } from '@/lib/lightOcclusion';
 import { countVisibleCells, type PerceptionMask } from '@/lib/playerPerception';
+import { loadExplored, saveExplored } from '@/lib/exploredMemory';
 import type { VisionConfig } from '@core/domain/types';
 import type { FogRegion } from '@/lib/fogMask';
 import type { LosJob } from '@/lib/losWorker';
@@ -322,9 +323,27 @@ export default function PlayerView() {
   const visionCharPosRef = useRef(visionCharPos)
   useEffect(() => { visionCharPosRef.current = visionCharPos }, [visionCharPos])
 
+  // Memoria de lo explorado (paso 6): se lee al entrar a la escena y se pasa al
+  // worker. Solo se acumula si el DM encendió `remember_explored` en esta escena.
   const mapScale = data?.map_scale ?? 1
   const mapperH = sceneWorldHeight(mapScale)
   const mapperW = mapperH * imageAspect
+
+  useEffect(() => {
+    const d = dataRef.current
+    if (!d?.campaign_id || !d?.scene_id || !d.remember_explored) {
+      exploredRef.current = null
+      return
+    }
+    const { w: mapW, h: mapH } = mapperRef.current
+    if (mapW <= 0 || mapH <= 0) return
+    const sc = d.characters.find((c) => c.id === mySceneCharId)
+    const visionRange = sc?.vision_range ?? 6
+    const res = visionRange <= 8 ? 0.08 : visionRange <= 16 ? 0.12 : 0.18
+    const cols = Math.ceil(mapW / res)
+    const rows = Math.ceil(mapH / res)
+    exploredRef.current = loadExplored(d.campaign_id, d.scene_id, cols, rows)
+  }, [data?.campaign_id, data?.scene_id, data?.remember_explored, mySceneCharId, mapperW, mapperH])
 
   // Percepción (worker + throttle): una sola máscara de alpha con LoS, luz y la
   // niebla del DM ya resueltas (PLAN-VISION-PERCEPCION.md §4.1). Antes esto eran
@@ -338,14 +357,25 @@ export default function PlayerView() {
   const lastLosRef = useRef<{ x: number; z: number; sig: string; jobId: number } | null>(null)
   const workerRef = useRef<Worker | null>(null)
   const lastItemsKeyRef = useRef<string | null>(null)
+  const exploredRef = useRef<Uint8Array | null>(null)
 
   useEffect(() => {
     const worker = new Worker(new URL('../lib/losWorker.ts', import.meta.url), { type: 'module' })
     worker.onmessage = (e: MessageEvent) => {
-      const msg = e.data as { kind: string; jobId: number; mask: PerceptionMask | null }
+      const msg = e.data as { kind: string; jobId: number; mask: PerceptionMask | null; explored: Uint8Array | null }
       if (msg?.kind !== 'los') return
       if (!lastLosRef.current || msg.jobId !== lastLosRef.current.jobId) return
       setPerception(msg.mask)
+      // Guardar lo acumulado para la próxima sesión (solo si el DM la pidió).
+      const d = dataRef.current
+      if (msg.explored && d?.scene_id) {
+        const cols = msg.mask?.cols ?? 0
+        const rows = msg.mask?.rows ?? 0
+        if (cols > 0 && rows > 0) {
+          saveExplored(d.campaign_id, d.scene_id, msg.explored, cols, rows)
+          exploredRef.current = msg.explored
+        }
+      }
     }
     workerRef.current = worker
     return () => { worker.terminate(); workerRef.current = null }
@@ -394,6 +424,9 @@ export default function PlayerView() {
         // salen de acá, y sin esto el cono propio no seguiría el facing.
         charPos: Object.fromEntries(visionCharPosRef.current),
         shareCarriedLights: shareLight,
+        // Memoria de lo explorado (paso 6): solo con la política del DM.
+        explored: exploredRef.current,
+        accumulate: Boolean(data?.remember_explored),
       }
       lastItemsKeyRef.current = itemsKey
       workerRef.current.postMessage(job)

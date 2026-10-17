@@ -44,6 +44,12 @@ export interface PerceptionInput {
   charZ: number
   vision: VisionConfig
   dmFog?: DmFogGrid | null
+  /**
+   * Lo que el jugador ya exploró en esta escena (paso 6). `visible = actual ∪
+   * recordada`, pero **secret gana siempre**: si no, el secreto se filtra en
+   * cuanto el jugador pasa una vez por la zona.
+   */
+  explored?: Uint8Array | null
 }
 
 /**
@@ -100,6 +106,9 @@ export function perceptionAlpha(input: PerceptionInput, col: number, row: number
   const mode = input.dmFog?.[row]?.[col] ?? null
   if (mode === 'secret') return 0
   if (mode === 'reveal') return 1
+
+  // Lo explorado no se recalcula: si esta celda ya se vio alguna vez, se ve.
+  if (input.explored && input.explored[row * input.grid.cols + col] === 1) return 1
 
   if (!input.los[row]?.[col]) return 0
 

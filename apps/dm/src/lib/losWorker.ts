@@ -2,6 +2,7 @@ import { buildLoSOccluders, computeCharacterLoS } from './losSystem'
 import { buildDmFogGrid } from './fogMask'
 import { lightLevelAt } from './lightMask'
 import { buildPerceptionMask, PerceptionMask } from './playerPerception'
+import { accumulateExplored } from './exploredMemory'
 import { collectWorldLights, type CharPos } from './playerVision'
 import type { SceneItem, VisionConfig } from '@core/domain/types'
 
@@ -23,12 +24,21 @@ export interface LosJob {
   charPos?: Record<string, CharPos>
   /** Las luces de otros tokens no se comparten si el jugador no lo pidió. */
   shareCarriedLights?: boolean
+  /** Lo que el jugador ya exploró en esta escena (RLE plano, mismo orden). */
+  explored?: Uint8Array | null
+  /** Acumular lo nuevo a lo ya visto (solo con la política del DM encendida). */
+  accumulate?: boolean
 }
 
 interface LosResult {
   kind: 'los'
   jobId: number
   mask: PerceptionMask | null
+  /**
+   * Lo visto ahora, unido a lo ya recordado, en Uint8Array plano. El main thread
+   * lo guarda; el worker no toca localStorage.
+   */
+  explored?: Uint8Array | null
 }
 
 let occluderKey: string | null = null
@@ -63,10 +73,11 @@ self.onmessage = (e: MessageEvent) => {
   )
 
   let mask: PerceptionMask | null = null
+  let explored: Uint8Array | null = null
   const vision = job.visions[0]
+  const cols = los?.[0]?.length ?? 0
+  const rows = los?.length ?? 0
   if (los && vision) {
-    const cols = los[0]?.length ?? 0
-    const rows = los.length
     const charPos = new Map(Object.entries(job.charPos ?? {}))
     const lights = collectWorldLights(cachedItems, charPos, job.sceneCharId, {
       shareCarriedLights: job.shareCarriedLights,
@@ -82,10 +93,20 @@ self.onmessage = (e: MessageEvent) => {
       // la regla de "qué ve en la oscuridad" es la de su tipo de vision.
       vision,
       dmFog,
+      explored: job.explored ?? null,
     })
+
+    if (job.accumulate) {
+      // Lo acumulado se arma aparte de la máscara que se pinta: el `dimRange`
+      // atenúa una celda que se ve, pero para "la descubrí" alcanza con un bit.
+      const prior = job.explored ?? new Uint8Array(cols * rows)
+      const flat = new Uint8Array(cols * rows)
+      for (let i = 0; i < flat.length; i++) flat[i] = mask.data[i] > 0 ? 1 : 0
+      explored = accumulateExplored(prior, flat)
+    }
   }
 
-  const result: LosResult = { kind: 'los', jobId: job.jobId, mask }
+  const result: LosResult = { kind: 'los', jobId: job.jobId, mask, explored }
   // Sin lista de transferencia: el buffer de un Float32Array es ArrayBufferLike y
 // `self` tipa como Window en este proyecto. Copiar ~60KB cada 250ms (y solo
 // cuando el personaje se movió) no es el cuello de botella.
