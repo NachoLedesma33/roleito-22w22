@@ -19,6 +19,12 @@ from .types import Point, DetectedWall
 from .clustering import cluster_segments
 from .geometry import smooth_wall_curve
 
+# `probabilistic_hough_line` sortea pixeles al azar y con `rng=None` skimage usa
+# entropia nueva en cada llamada: sin una semilla explicita la MISMA imagen da
+# muros distintos en cada corrida (verificado: 1027 vs 850 lineas sobre la misma
+# binaria). Con una semilla fija la deteccion es reproducible.
+DEFAULT_SEED = 0
+
 
 def detect_walls(
     binary: np.ndarray,
@@ -29,6 +35,7 @@ def detect_walls(
     validate_support: bool = True,
     use_spline: bool = False,
     hough_threshold: int = 20,
+    seed: int = DEFAULT_SEED,
 ) -> List[DetectedWall]:
     """Detect walls from binary image.
 
@@ -38,13 +45,16 @@ def detect_walls(
     `use_spline` enables scipy B-spline curve smoothing (imports scipy on
     first curved wall). Off by default — Hough polyline sampling already
     captures curved walls as dense polylines.
+
+    `seed` fija el azar del Hough probabilistico: misma imagen + mismo seed =
+    mismos muros. Cambiarlo da otra propuesta sobre la misma imagen.
     """
     base_args = dict(min_wall_length=min_wall_length, merge_distance=merge_distance)
     if mode == DetectionMode.BLUEPRINT:
-        return _detect_from_hough(binary, validate_support=validate_support, use_spline=use_spline, hough_threshold=15, **base_args)
+        return _detect_from_hough(binary, validate_support=validate_support, use_spline=use_spline, hough_threshold=15, seed=seed, **base_args)
 
     contour_walls = _detect_from_contours(binary, max(min_area, 800), min_wall_length, merge_distance, use_spline)
-    hough_walls = _detect_from_hough(binary, validate_support=validate_support, use_spline=use_spline, hough_threshold=40, max_segments=200, **base_args)
+    hough_walls = _detect_from_hough(binary, validate_support=validate_support, use_spline=use_spline, hough_threshold=40, max_segments=200, seed=seed, **base_args)
 
     raw = []
     seen = set()
@@ -122,6 +132,7 @@ def _detect_from_hough(
     max_segments: int = 600,
     use_spline: bool = False,
     hough_threshold: int = 20,
+    seed: int = DEFAULT_SEED,
 ) -> List[DetectedWall]:
     """Detect wall segments using scikit-image probabilistic Hough transform."""
     try:
@@ -134,6 +145,7 @@ def _detect_from_hough(
         threshold=hough_threshold,
         line_length=max(12, int(min_wall_length)),
         line_gap=max(6, int(merge_distance / 2)),
+        rng=np.random.default_rng(seed),
     )
 
     candidates = []

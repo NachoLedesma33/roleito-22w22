@@ -253,6 +253,7 @@ async def detect_walls(
     campaign_id: str,
     scene_id: str,
     mode: str = "blueprint",
+    seed: int = 0,
     db: AsyncSession = Depends(get_session),
 ):
     result = await db.execute(
@@ -301,6 +302,7 @@ async def detect_walls(
             ai_base_url=ai_base_url,
             ai_api_key=ai_api_key,
             ai_model=ai_model,
+            seed=seed,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Detection failed: {str(e)}")

@@ -6,7 +6,7 @@ from typing import List, Optional
 
 from .types import DetectedMap, DetectedWall, DetectedDoor
 from .preprocessing import DetectionMode, preprocess_image, remove_grid, remove_grid_auto
-from .wall_detector import detect_walls
+from .wall_detector import DEFAULT_SEED, detect_walls
 from .door_detector import detect_doors
 
 
@@ -37,6 +37,7 @@ def detect_map(
     ai_base_url: str = "",
     ai_api_key: str = "",
     ai_model: str = "gpt-4o",
+    seed: int = DEFAULT_SEED,
 ) -> DetectedMap:
     """Run full detection pipeline on an image.
 
@@ -49,6 +50,10 @@ def detect_map(
 
     When use_ai=True and credentials are provided, textured maps are
     sent to a VLM for wall proposal (much better accuracy).
+
+    `seed` fija el azar del camino CV (ver `wall_detector.DEFAULT_SEED`): misma
+    imagen + mismo seed = misma deteccion. No aplica al camino AI, que depende
+    del modelo.
     """
     img = cv2.imread(image_path)
     if img is None:
@@ -80,7 +85,7 @@ def detect_map(
 
     if not ai_used:
         detection = _detect_map_cv(
-            img, h, w, mode, grid_size, auto_grid, min_wall_length, max_dim
+            img, h, w, mode, grid_size, auto_grid, min_wall_length, max_dim, seed
         )
 
     from .geometry import detect_rooms as _detect_rooms, compute_walkable_areas as _compute_wa
@@ -106,6 +111,7 @@ def _detect_map_cv(
     auto_grid: bool,
     min_wall_length: float,
     max_dim: int,
+    seed: int = DEFAULT_SEED,
 ) -> DetectedMap:
     """CV-only detection path (blueprint or textured fallback)."""
     scale = min(1.0, max_dim / max(h, w)) if max_dim > 0 else 1.0
@@ -124,7 +130,7 @@ def _detect_map_cv(
         binary = remove_grid_auto(binary, gray=gray)
 
     length_floor = max(15.0, 0.025 * max(h, w)) if mode == DetectionMode.BLUEPRINT else 25.0
-    walls = detect_walls(binary, mode=mode, min_area=500, min_wall_length=length_floor)
+    walls = detect_walls(binary, mode=mode, min_area=500, min_wall_length=length_floor, seed=seed)
     doors = detect_doors(walls, binary)
 
     overall_confidence = _compute_overall_confidence(walls, doors)

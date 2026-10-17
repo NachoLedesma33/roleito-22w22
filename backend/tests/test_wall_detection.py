@@ -107,6 +107,53 @@ def test_blank_map_no_walls():
     assert result.confidence == 0.0
 
 
+def test_deteccion_es_reproducible():
+    """La misma imagen debe dar los mismos muros, siempre.
+
+    `probabilistic_hough_line` sorteaba pixeles sin semilla (skimage usa
+    entropia nueva por llamada), asi que detectar dos veces la misma imagen daba
+    propuestas distintas y el DM acumulaba muros al repetir la deteccion.
+    """
+    img = np.full((300, 400, 3), 255, np.uint8)
+    for x in (60, 150, 240):
+        cv2.line(img, (x, 40), (x, 260), 0, thickness=3)
+    for y in (90, 180):
+        cv2.line(img, (40, y), (360, y), 0, thickness=3)
+
+    path = _save(img)
+
+    def puntos():
+        r = detect_map(path, mode=DetectionMode.BLUEPRINT)
+        return r.wall_count, [
+            (round(p.x, 6), round(p.y, 6)) for w in r.walls for p in w.points
+        ]
+
+    primero = puntos()
+    segundo = puntos()
+
+    assert primero[0] >= 1, "la imagen de prueba deberia tener muros"
+    assert primero[0] == segundo[0], f"mismo seed, distinta cantidad: {primero[0]} vs {segundo[0]}"
+    assert primero[1] == segundo[1], "mismo seed, distinta geometria"
+
+
+def test_seed_es_el_escape_hatch():
+    """Mismo mapa con otro seed: sigue detectando, pero es otra propuesta."""
+    img = np.full((300, 400, 3), 255, np.uint8)
+    for x in (60, 150, 240):
+        cv2.line(img, (x, 40), (x, 260), 0, thickness=3)
+    for y in (90, 180):
+        cv2.line(img, (40, y), (360, y), 0, thickness=3)
+
+    path = _save(img)
+
+    def puntos(seed):
+        r = detect_map(path, mode=DetectionMode.BLUEPRINT, seed=seed)
+        return [(round(p.x, 6), round(p.y, 6)) for w in r.walls for p in w.points]
+
+    assert puntos(0) == puntos(0), "seed fijo tiene que ser estable"
+    assert puntos(7), "otro seed tambien tiene que detectar muros"
+
+
 def test_to_dict_includes_walkable():
     """to_dict should expose rooms/walkable fields."""
     img = np.full((200, 200, 3), 255, np.uint8)
