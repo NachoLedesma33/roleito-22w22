@@ -1684,28 +1684,23 @@ This ensures walls scale correctly when `mapScale` changes.
 
 ## Detection Algorithm
 
-Based on [Auto-Wall](https://github.com/ThreeHats/auto-wall):
+`backend/wall_detection/` (paquete). `detect_map(image, mode, ...)` corre:
 
-1. **Preprocessing**: Load image → grayscale → Gaussian blur (reduces noise)
-2. **Edge Detection**: Canny algorithm (configurable thresholds)
-3. **Morphological Close**: Close gaps in edge map
-4. **Contour Finding**: `findContours` with `RETR_EXTERNAL`
-5. **Filtering**: Remove contours below `min_area` threshold
-6. **Simplification**: `approxPolyDP` reduces vertex count
-7. **Segment Extraction**: Convert polygon edges to wall line segments
-8. **Merging**: Combine nearby/collinear segments
-9. **Door Detection**: Find gaps between wall endpoints within door-width range
+1. **Preprocessing** (`preprocessing.py`): `BLUEPRINT` = threshold + morphology para mapas 2D limpios; `TEXTURED` = CLAHE + Canny para mapas renderizados/isométricos. `classify_image()` elige el modo si no se pasa explícito.
+2. **Grid removal** (`remove_grid` / `remove_grid_auto`): quita la retícula de los mapas deFight, por projection de filas y columnas.
+3. **Walls** (`wall_detector.py`): `BLUEPRINT` usa `skimage.transform.probabilistic_hough_line` (umbral, `line_length`, `line_gap`); `TEXTURED` fusiona contornos + Hough y descarta segmentos con poco soporte en la binaria (`_segment_support`).
+4. **Clustering** (`clustering.py`): segments cercanos/colineales se unen en un muro; Douglas-Peucker (`simplify_wall`) quita vértices de más.
+5. **Doors** (`door_detector.py`): huecos entre extremos de muros dentro del rango de ancho de puerta, con confianza por colinealidad y gap libre.
+6. **Rooms / walkable** (`geometry.py`, shapely): `linemerge` + `unary_union` para regiones transitables y `detect_rooms` por polígonos.
+7. **AI opcional** (`use_ai`): el mapa se manda a un VLM y la propuesta pasa por `refine.py` (snap de ángulos a 0/45/90,巭rejects por desviación mínima). Si el VLM falla, cae al camino CV con un warning.
+
+El resize a `max_dim` (1200 px) es interno y las coordenadas detectadas se reescalan a la imagen original antes de volver.
+
+**Bug conocido:** `probabilistic_hough_line` se llama sin `rng`, y skimage 0.26 usa entropía nueva por llamada → **la misma imagen detectada dos veces da muros distintos** (verificado: 1027 vs 850 líneas de Hough; con `rng` fijo, idéntico). Ver la Fase 8 del plan de modularización.
 
 ## Configuration
 
-`WallDetectionConfig` parameters:
-- `canny_low / canny_high`: Edge detection thresholds
-- `blur_size`: Gaussian kernel size
-- `min_area`: Minimum contour area to consider
-- `approx_epsilon`: Polygon simplification tolerance
-- `min_wall_length`: Minimum wall segment length
-- `min_door_width / max_door_width`: Door gap size range
-- `merge_distance`: Distance threshold for merging segments
+`detect_map` recibe `mode`, `grid_size`, `auto_grid`, `min_wall_length` y `max_dim`; `detect_walls` además `min_area`, `merge_distance`, `validate_support` y `hough_threshold`. No hay una clase de configuración: la versión vieja (`WallDetectionConfig`, `canny_low`, `approx_epsilon`, `merge_distance`) era del módulo `backend/wall_detection.py` que se borró por ser inalcanzable.
 
 ## Wall Visibility
 

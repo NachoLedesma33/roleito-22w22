@@ -42,7 +42,7 @@ Archivos o módulos mencionados anteriormente —verificar que sigan existiendo 
 - `SceneRenderer.tsx`.
 - `DmDashboard.tsx`.
 - `PlayerView.tsx`.
-- `backend/wall_detection.py`.
+- `backend/wall_detection/` (el paquete; el `.py` homónimo se borró en la Fase 8 del plan).
 - `backend/routes.py`.
 - `backend/scene_routes.py`.
 - `wall-collision.ts`.

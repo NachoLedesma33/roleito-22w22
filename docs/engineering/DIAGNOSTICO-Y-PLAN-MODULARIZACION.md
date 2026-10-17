@@ -63,7 +63,7 @@ El plan prioriza por impacto/riesgo real. Cada fase es un commit verificable.
 | **P4** | **Tipos duplicados**: `MyChar` (PlayerView:122) y `PlayerToken` (PlayerView:53) re-declaran lo que `api.ts` ya exporta. `InventoryItem`/`Spell` duplicadas en PlayerView:106,112. `AuthContext.tsx:18` declara su propia `Session`. | grep `interface (Character|NPC|...)` → 10 matches en 3 archivos | Medio | **Bajo** | **Bajo** |
 | **P5** | **`character_routes.py`: 29 funciones, 4 dominios** (characters, npcs, abilities catálogo, uploads de archivo) en 821 líneas. | grep `^async def \|^def ` | Medio | Medio | Medio |
 | **P6** | **`routes.py:56-109` mezcla helpers de persistencia** (`_asset_rel`, `_asset_abs`, `_parse_dt`, `_embed_asset`, `_collect_assets`) con endpoints HTTP. | lectura directa | Medio | Bajo | Bajo |
-| **P7** | **Conflicto de nombre Python**: `backend/wall_detection.py` (377) y `backend/wall_detection/` (paquete) existen a la vez. El paquete gana por precedencia; `__init__.py:10` re-exporta `detect_map` del módulo. Funciona pero es frágil y confuso. | grep `from wall_detection` en 5 archivos | Medio | **Alto** | Medio |
+| **P7** | **Conflicto de nombre Python**: `backend/wall_detection.py` (377) y `backend/wall_detection/` (paquete) existían a la vez. El paquete gana por precedencia. **Resuelto en la Fase 8: el módulo estaba muerto (cero importadores, sin CLI, API incompatible) y se borró.** Nota: la premisa original de esta fila —"`__init__.py:10` re-exporta `detect_map` del módulo"— era falsa. | `git show 2a36004` | Bajo (resuelto) | **Cumplido** | Bajo |
 | **P8** | **`.gitkeep` huérfanos**: `core/canon/`, `core/events/`, `core/memory/`, `core/narrative/`, `core/world/`, `core/scenes/` tienen código real Y `.gitkeep`. `core/scenes/` (plural) está **vacío** y no se usa (AGENTS.md lo confirma). | listado de directorios | Bajo | Bajo | Bajo |
 | **P9** | **Tests solo en `lib/` y 2 en `components/`**: 12 specs vitest, todos de lógica pura. Ninguno de `pages/`, ninguno de `HudPanel`, ninguno de `contexts/`. | listado de `*.spec.ts` | Medio | Bajo | Medio |
 
@@ -357,11 +357,29 @@ Gates: pytest 91, ruff limpio, e2e `campaign`+`handout`+`map`+`scene` **30/30**.
 
 ---
 
-### Fase 8 — Resolver el conflicto `wall_detection` (P7) ⚠️ ALTO RIESGO
+### Fase 8 — Resolver el conflicto `wall_detection` (P7) ⚠️ ALTO RIESGO — **HECHA (opción A: borrar)**
 **Problema:** módulo y paquete con el mismo nombre.  
-**Diseño:** renombrar el módulo de 377 líneas a `backend/services/wall_detector_legacy.py` y actualizar `__init__.py` para re-exportar desde ahí. Verificar que `scene_routes.py:271` y `tests/test_wall_detection.py:13` siguen importando igual.  
+**Diseño original (descartado):** renombrar el módulo de 377 líneas a `backend/services/wall_detector_legacy.py` y actualizar `__init__.py` para re-exportar desde ahí.  
 **Pruebas:** pytest (incluye `test_wall_detection`, `test_ai_detector`, `test_refine`) + e2e `map` (detección de muros).  
 **Criterio de aceptación:** pytest verde; sin cambio de comportamiento. **No renombrar sin antes confirmar qué implementa el endpoint `detect-walls` en producción.**
+
+**`2a36004` — el módulo estaba muerto, no duplicado.** Antes de tocar nada se verificó en runtime que `import wall_detection` resuelve a `backend/wall_detection/__init__.py` (el paquete gana por precedencia), que `detect_map` viene de `wall_detection.pipeline` y `scene_items_from_detection` del propio paquete.
+
+**Corrección a P7 (la premisa era falsa):** P7 decía que `__init__.py:10` re-exportaba `detect_map` del módulo. No: la línea 10 está dentro del docstring y la 26 es `from .pipeline import detect_map`. El paquete nunca dependió del módulo.
+
+Evidencia de que no se pierde nada:
+- Importadores del módulo: **cero**. `scene_routes.py:270` y los tres tests van al paquete.
+- Sin `__main__`, sin CLI, sin `argparse`: nada puede ejecutarlo como script.
+- No es intercambiable: su API es `WallDetectionConfig` / `detect_walls_from_image` / `scene_items_from_detection(dict, campaign_id)`; **no tiene `detect_map` ni `DetectionMode`**.
+- Git: el paquete nació en `eea8575` como reescritura; el módulo solo se tocó desde `a964bcf` y su último commit fue el passage del linter (`d60986c`).
+
+Por eso se eligió **borrar** y no la opción del plan: renombrarlo habría conservado 377 líneas muertas y, sobre todo, habría creado una dependencia del paquete hacia ellas. También se borró `backend/detection-result.json` (85 KB de basura local, ya gitignoreado); `backend/test-dungeon.png` se conserva como muestra para probar `detect-walls` a mano.
+
+Gates: pytest 91, ruff limpio, e2e `scene`+`zone`+`map` **15/15**.
+
+**Método de verificación que NO sirvió (anotado para no repetirlo):** la primera intención fue comparar una huella de `detect_map` antes/después sobre `test-dungeon.png`. Dio digest distinto y casi se reporta como regresión. La causa fue que **`detect_map` no es determinista** (ver abajo), no el borrado. Para movimientos de código con funciones puras sirve; para detección por CV, no.
+
+**Bug encontrado de paso (NO arreglado, requiere decisión):** la detección de muros no es reproducible. `wall_detector.py:132` llama a `skimage.transform.probabilistic_hough_line` **sin `rng`**, y skimage 0.26 usa entropía nueva en cada llamada. Medido: dos llamadas sobre la misma binaria devuelven 1027 y 850 líneas; con `rng=np.random.default_rng(0)` devuelven idénticas. Se acota a `detect_walls` (misma imagen binaria, dos corridas en el mismo proceso: 14 y 15 muros); `preprocess_image` y `remove_grid_auto` son estables. Consecuencias: el mismo mapa re-detectado da muros distintos y, como `scene_items_from_detection` genera ids con timestamp + random, cada corrida agrega muros nuevos sin quitar los viejos. Fix = una línea (rng con seed) + test; cambia el comportamiento observable, por eso no se hizo sin aprobación.
 
 ---
 
