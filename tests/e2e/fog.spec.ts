@@ -147,9 +147,9 @@ test.describe('Fog (Phase D)', () => {
         expect(p).toBeGreaterThanOrEqual(0);
         expect(p).toBeLessThanOrEqual(1);
       }
-      // El pincel entra en modo `cover` (el default de §3), o sea "penumbra":
-      // ya no es el botón que decía "Revelar".
-      expect((f.metadata as { mode?: string }).mode).toBe('cover');
+      // El pincel entra en modo `secret` (oculta por defecto: es lo que el DM espera
+      // que haga la niebla). El tooltip explica el matiz de cada modo.
+      expect((f.metadata as { mode?: string }).mode).toBe('secret');
       expect((f.metadata as { revealed: boolean }).revealed).toBe(false);
     }
     expect((fogs[0].shape as { points: number[] }).points.length % 2).toBe(0);

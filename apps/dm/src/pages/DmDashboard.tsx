@@ -117,9 +117,9 @@ export default function DmDashboard() {
   const [lastFogMode, setLastFogMode] = useState<DmFogMode>(() => {
     try {
       const saved = localStorage.getItem('roleito:dm:fogMode');
-      return saved === 'cover' || saved === 'secret' || saved === 'reveal' ? saved : 'cover';
+      return saved === 'cover' || saved === 'secret' || saved === 'reveal' ? saved : 'secret';
     } catch {
-      return 'cover';
+      return 'secret';
     }
   });
   const lastFogPointRef = useRef<{ x: number; y: number } | null>(null);

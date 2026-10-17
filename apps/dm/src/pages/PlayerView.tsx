@@ -1191,6 +1191,7 @@ export default function PlayerView() {
               occluders={sceneOccluders}
               fogRegions={sceneFogRegions}
               fogPerception={perception}
+              showZones
               readOnly
               fogColor="rgba(5, 5, 20, 0.82)"
               renderMode={DEFAULT_RENDER_MODE}
