@@ -142,7 +142,7 @@ Cada paso es un commit con CI verde. Los tests van **antes** de la implementaci�
 | 0 | **Este plan** | Semántica decidida y documentada | `docs.sync check` |
 | 1 | **Transporte** — HECHO | `vision_type`/`vision_range` en el join (`routes.py`) + `JoinData`/`PlayerSceneToken` (los tipos ya los tenían: faltaba el backend) | pytest `test_player_snapshot_includes_token_vision` + e2e `PV13` |
 | 2 | **Mask de luz** (test primero) — HECHO | `lib/lightMask.ts`: `lightLevelAt(x, z, lights, occluders, mapHeight)` con la curva de `LIGHTING-SYSTEM.md` (reusa `lightIntensityAt`, no una curva nueva) | vitest: caída con la distancia, `dimRange`/plateau, recorte por muro, cono, suma de dos luces |
-| 3 | **Composición** (test primero) | `lib/playerPerception.ts`: `visible = sin_obstruccion AND (luz OR ve_en_oscuridad)`, + roles de niebla del DM | vitest: normal en oscuro ve solo ambiente, darkvision ve su rango, secreto tapa lo iluminado, revelar muestra lo oscuro |
+| 3 | **Composición** (test primero) — HECHO | `lib/playerPerception.ts`: `perceptionAlpha(celda)` + `composePerceptionMask(grid)`, con los roles de niebla del DM | vitest: normal en oscuro ve solo ambiente, darkvision ve su rango, secreto tapa lo iluminado, revelar muestra lo oscuro (14 tests) |
 | 4 | **Worker + render** | El worker devuelve el alpha; `FogOverlay` lo pinta | vitest del roundtrip del grid + e2e de que la niebla del DM **sí** oculta (el caso que hoy no pasa) |
 | 5 | **UI + docs** | Pincel/rect con 3 modos; dropdown de visión solo con `normal`/`darkvision`; E10 y PHASE F reescritos | e2e del flujo DM + lint/typecheck |
 | 6 | **Memoria de lo explorado** (opt-in) | `Scene.remember_explored` (migración + snapshot), toggle del DM por escena, acumulación RLE en `localStorage`, `visible = actual ∪ recordada` con **secreto ganando siempre** | vitest de la acumulación y de la precedencia secreto>memoria; e2e del toggle del DM y de que volver a entrar conserva lo explorado |
@@ -155,6 +155,11 @@ Cada paso es un commit con CI verde. Los tests van **antes** de la implementaci�
   2. **`WorldLight` en vez de `SceneItem`**: quien arma la lista resuelve `attachedTo` (una antorcha pegada a un token ilumina desde el token, y su cono desde la rotación del token). Eso ya lo sabe hacer `lightVisionOrigin` + `rotationToConeDirDeg`; el mask no debería re-resolverlo.
 - **Benchmark del paso 2** (`lightMask.spec.ts`): **61 ms** para una máscara de 256×171 con 10 luces y 40 muros. Entra de sobra en el worker, así que **no hace falta bajar la resolución** ni tomar el camino de aborto. La cifra se imprime en cada corrida del spec para poder compararla.
 - **Lo que el mask todavía no hace**: no satura (dos antorchas al 20% dan 0.4, que es justo lo que el umbral del §4bis necesita distinguir) y no sabe de `flicker`/`pulse` ni de la luz que lleva el personaje en la mano. Eso lo decide el paso 3/4.
+- **Paso 3 (HECHO)**: `lib/playerPerception.ts`. Tres cosas que el texto del §4.1 dejaba abiertas y que quedan decididas acá:
+  1. **La atenuación es del `dimRange` de la visión, no de la luz.** El §4.1 decía "celdas con luz entre 0 y el umbral se ven atenuadas, no negras", pero eso contradice el umbral duro que decide el §4bis.1: si una `normal` ve con 25%, la luz entre 0 y 25% es oscuridad. Lo que sí se atenúa es el borde del rango del personaje (`dimRange`, que `PlayerView.tsx:367` ya mandaba pero `computeVisibilityMask` ignoraba). Resultado: el `dimRange` deja de ser dato muerto.
+  2. **El círculo ambiente es `ve_en_oscuridad` de una `normal`**, no un parche aparte: `dist <= AMBIENT_RADIUS`. Es la forma de que §4bis.2 siga siendo cierto sin una bandera especial.
+  3. **`blindsight`/`tremorsense`/`truesight` caen en la rama de `normal`**, explícito y no por default silencioso (el §6 los deja fuera; el paso 5 saca sus opciones del dropdown del DM).
+- **Pendiente de los pasos siguientes**: `composePerceptionMask` todavía no sabe leer la niebla que el DM pintó — recibe un `DmFogGrid` de roles por celda, pero construirlo desde los `SceneItem` es trabajo del paso 4/5 (hoy la niebla del DM es polígono con `revealed: boolean`).
 
 ### Riesgos y caminos de aborto
 
