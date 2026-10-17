@@ -408,9 +408,23 @@ Nota: `POST /scenes/{id}/detect-walls` también hace append en `scene.items_json
 
 ---
 
-### Fase 10 — Tests de componentes (P9)
+### Fase 10 — Tests de componentes (P9) — **HECHA (con una desviación documentada)**
 **Diseño:** vitest para `HudPanel`, `DiceTray`, y hooks extraídos en Fases 3-4. React Testing Library.  
 **Pruebas:** vitest 133 → 133+N.
+
+**Tooling (`10f5509`):** `@testing-library/react` + `@testing-library/dom` + `jsdom` como devDependencies de `apps/dm`. `vitest.config.ts` ahora incluye `src/**/*.spec.tsx`; el entorno sigue siendo **node por default** y los specs que necesitan DOM declaran `// @vitest-environment jsdom` arriba del archivo — explícito en el spec en vez de escondido en la config.
+
+**Bug real encontrado por los tests (`13e1b87`):** `useAnchoredMenu` armaba la cadena del selector **con `closest('...')` adentro** y después la pasaba a `target.closest(selector)`: selector inválido → `SyntaxError` en cada click → `onClose` nunca corría → **el menú (Construir, clima, luz, mapa) no cerraba al click afuera**. Escape sí cerraba, por eso el hook parecía sano. **El bug venía desde la Fase 2-bis** y ningún e2e lo cubría porque no existía el caso "click afuera cierra". Fix: la cadena es solo el selector. Spec de 6 casos: alineación start/end, gap negativo, margen contra el viewport, click en el ancla o dentro del menú NO cierra, click afuera sí, Escape, y que con el menú cerrado los listeners se desregistren.
+
+**Tests de hooks (`6584c2c`):**
+- `useWallDetection` (7 casos, jsdom + `renderHook`): propuesta abierta, **regeneración del set automático** (verificada que falla con el código previo a `a7d104a`), descartar, aprobar, `pruneProposal`, detección vacía, y error de API que no rompe el grafo.
+- `useToastQueue` (5 casos): orden, tope `MAX_TOASTS`, `pushMany`, `dismiss` de id inexistente, `rollToToast`.
+
+**e2e que faltaba (`e62aab2`):** `dashboard.spec.ts` D0 — el menú Construir cierra con click afuera y con Escape. **Verificado en navegador real que falla sin el fix** (`Expected: hidden, Received: visible`).
+
+**Desviación: `DiceTray` NO tiene test de vitest.** Es un componente 3D completo (`@react-three/fiber` Canvas + `@react-three/rapier` + WASM de `lib/dice3d`) y jsdom no tiene WebGL: probarlo exigiría mockear el stack entero con valor casi nulo. La lógica pura de dados ya está cubierta por `dice3d.spec.ts` y el flujo por e2e. `HudPanel` sigue sin test unitario (drag/resize con jsdom): la Fase 10 se cerró con los hooks, que es donde estaba el bug real.
+
+**Gates:** vitest 148 → **166** (+18), lint 0 err/43 warn, typecheck limpio, e2e de menús (weather, light, fog, zone, portal, dashboard, detect-walls) **37/37**.
 
 ---
 
@@ -438,6 +452,12 @@ Nota: `POST /scenes/{id}/detect-walls` también hace append en `scene.items_json
 
 ## 6. Siguiente acción
 
-**Fases 0, 1 y 9 cerradas.** Siguiente: **Fase 2** (extraer presentación de `DmDashboard`: `DmToolbar`, `DmDock`, `DmContextMenus`, `DmToasts` → `DmDashboard` queda como orquestador de estado) → 3 `PlayerView` → 4 `SceneRenderer` → 5 listas masivas → 6-7 backend. Fase 8 (`wall_detection.py` vs `wall_detection/`) solo con aprobación explícita.
+**PLAN COMPLETO: fases 0 a 10 cerradas** (2026-10-17). Las 11 fases del plan quedaron commiteadas con CI verde.
 
-Pendiente de decisión de producto (no es refactor): la visión por token que el DM configura nunca llega al jugador — el join del snapshot no serializa `vision_type`/`vision_range`.
+Lo que queda no es refactor sino producto y deuda documentada:
+1. **Visión por token que nunca llega al jugador** (PENDIENTE DE DECISIÓN): el DM configura `vision_type`/`vision_range` por token, pero el join del snapshot no los serializa. El jugador ve siempre la visión por defecto.
+2. `HudPanel` sin test unitario (drag/resize en jsdom).
+3. Asset de más de 8 MB en export/import: no viaja y al importar su columna queda apuntando al archivo de la campaña de origen.
+4. `__init__.py` faltantes en `core/canon/`, `core/events/`, `core/memory/`, `core/world/` (funciona por namespace packages, pero es asimétrico).
+5. `POST /scenes/{id}/detect-walls` hace append en `items_json` y el frontend lo pisa con `saveItems`: redundancia del endpoint, no bug observable.
+6. `_parse_dt` sigue privado en `routes.py`: si otro módulo lo necesita, la casa es `services/dates.py`.
