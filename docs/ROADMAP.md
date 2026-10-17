@@ -2380,7 +2380,7 @@ F7. Movement range visualization — IMPLEMENTED (DmDashboard computeReachableCe
 F8. A* pathfinding for movement — IMPLEMENTED (movementRange.ts findPath + computeReachableCells)
 F9. Niebla de guerra que el DM controla de verdad — IMPLEMENTADO (paso 5 del plan). Tres modos por trazo (`cubrir` / `secreto` / `revelar`), el mismo control segmentado para pincel y rect, recuerda el último modo. `secreto` le gana a la luz y a la visión; `revelar` gana sobre la obstrucción; `cubrir` es el default y no le gana a nada. `secreto` no se pinta en el mapa del DM: si se lo dibujara, se dejaría a ciegas.
 F10. Luz que condiciona la visión + atenuación (`dimRange`) — IMPLEMENTADO (pasos 2-3 del plan). `lightLevelAt` suma el falloff de cada fuente que alcanza la celda (recortado por oclusores y cono) y la atenuación es el `dimRange` de la visión del personaje, que antes no leía nadie.
-F11. Memoria de lo explorado (opt-in por escena) — PLANEADO (paso 6 del plan, no bloquea nada de lo anterior). Vive en el cliente (`localStorage` por escena), en RLE, y `secreto` le gana siempre.
+F11. Memoria de lo explorado (opt-in por escena) — IMPLEMENTADO (paso 6 del plan). `Scene.remember_explored` (migración + snapshot), toggle del DM por escena, RLE en `localStorage` por `(campaign, scene)`, `visible = actual ∪ recordada` con secreto ganando siempre. Lo acumulado no se borra al apagar la política.
 ```
 
 ### Done when
