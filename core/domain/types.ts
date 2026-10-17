@@ -294,10 +294,24 @@ export interface LabelMetadata {
   color: string
 }
 
+/**
+ * Intención del DM al pintar niebla. Define qué le gana a la percepción del
+ * jugador (`apps/dm/src/lib/fogMask.ts` → `buildDmFogGrid`).
+ *
+ * - `cover`: "esta zona está en penumbra". No le gana a nada: el jugador ve lo
+ *   que su personaje percibe. Es el default.
+ * - `secret`: "el jugador no ve esto, aunque lo tenga iluminado".
+ * - `reveal`: "el jugador ve esto, esté o no iluminado".
+ */
+export type DmFogMode = 'cover' | 'secret' | 'reveal'
+
 export interface FogMetadata {
   type: 'fog'
   fogType: 'static' | 'dynamic'
+  /** @deprecated usar `mode`. Se sigue escribiendo para no romper Campaigns viejas. */
   revealed: boolean
+  /** Ausente en items viejos: se lee como `revealed ? 'reveal' : 'cover'`. */
+  mode?: DmFogMode
   cutMask?: string
 }
 

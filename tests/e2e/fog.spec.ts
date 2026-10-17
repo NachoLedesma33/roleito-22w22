@@ -1,10 +1,32 @@
 import { expect, test } from '../fixtures/campaign-fixture';
 import {
+  createCharacter,
   createScene,
+  generateInviteCode,
   getSceneItems,
   putSceneItems,
+  seedTokens,
+  updateScene,
   PNG_1PX,
 } from '../helpers/api-helpers';
+
+/** Antorcha en el centro del mapa: ilumina toda la sala. */
+function centerTorch() {
+  return {
+    id: 'light-f5',
+    name: 'Torch',
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+    layer: 5,
+    visible: true,
+    metadata: {
+      type: 'light',
+      source: { mode: 'soft', color: '#ff9d45', intensity: 0.9, radius: 0.4, falloff: 0.6 },
+    },
+  };
+}
 
 async function openScene(page: import('@playwright/test').Page, campaignId: string, sceneId: string) {
   await page.goto(`/campaigns/${campaignId}`);
@@ -28,7 +50,7 @@ async function openScene(page: import('@playwright/test').Page, campaignId: stri
   return canvas;
 }
 
-function fogPolygon(id: string, revealed: boolean, cx: number, cy: number, r: number) {
+function fogPolygon(id: string, revealed: boolean, cx: number, cy: number, r: number, mode?: string) {
   const pts: number[] = [];
   for (let i = 0; i < 16; i++) {
     const a = (i / 16) * Math.PI * 2;
@@ -53,7 +75,7 @@ function fogPolygon(id: string, revealed: boolean, cx: number, cy: number, r: nu
     disableAttachmentBehavior: [],
     layer: 6,
     shape: { type: 'polygon', points: pts, fill: '#000000' },
-    metadata: { type: 'fog', fogType: 'static', revealed },
+    metadata: { type: 'fog', fogType: 'static', revealed, ...(mode ? { mode } : {}) },
   };
 }
 
@@ -125,9 +147,53 @@ test.describe('Fog (Phase D)', () => {
         expect(p).toBeGreaterThanOrEqual(0);
         expect(p).toBeLessThanOrEqual(1);
       }
-      expect((f.metadata as { revealed: boolean }).revealed).toBe(true);
+      // El pincel entra en modo `cover` (el default de §3), o sea "penumbra":
+      // ya no es el botón que decía "Revelar".
+      expect((f.metadata as { mode?: string }).mode).toBe('cover');
+      expect((f.metadata as { revealed: boolean }).revealed).toBe(false);
     }
     expect((fogs[0].shape as { points: number[] }).points.length % 2).toBe(0);
+  });
+
+  test('F5: el modo Secreto guarda el mode y el jugador no ve esa zona', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    // El caso que el plan de percepción dice que hoy no pasa: la niebla del DM no
+    // le oculta nada al jugador (su visión ganaba por zIndex). Con `secret` la
+    // zona queda negra aunque el personaje la ilumine.
+    const scene = await createScene(request, campaign.id, 'Fog Secreto');
+    const char = await createCharacter(request, campaign.id, { name: 'Vane' });
+    await seedTokens(request, campaign.id, scene.id, [
+      { entityType: 'character', entityId: char.id, x: 0, z: 0 },
+    ]);
+    await putSceneItems(request, campaign.id, scene.id, [centerTorch()]);
+    await updateScene(request, campaign.id, scene.id, { status: 'active' });
+    const code = await generateInviteCode(request, campaign.id);
+
+    // 1) Luz en el centro y nada de niebla: el jugador ve celdas.
+    await page.goto(`/campaigns/join/${code}`);
+    await page.getByRole('button', { name: /Vane/ }).click();
+    const mask = page.getByTestId('perception-mask');
+    await expect.poll(async () => Number(await mask.getAttribute('data-cols')), { timeout: 20_000 }).toBeGreaterThan(0);
+    expect(Number(await mask.getAttribute('data-visible-cells'))).toBeGreaterThan(0);
+
+    // 2) El DM pinta secreto encima, sin tocar la luz → 0 celdas vistas. El radio
+    // cubre el mapa entero (la esquina del cuadrado normalizado está a 0.707).
+    await putSceneItems(request, campaign.id, scene.id, [
+      centerTorch(),
+      fogPolygon('fog-secret-f5', false, 0.5, 0.5, 0.75, 'secret'),
+    ]);
+
+    await page.reload();
+    // No hay que volver a elegir: la elección persiste (ver PV5).
+    await expect.poll(async () => Number(await mask.getAttribute('data-cols')), { timeout: 20_000 }).toBeGreaterThan(0);
+    await expect.poll(async () => Number(await mask.getAttribute('data-visible-cells')), { timeout: 20_000 }).toBe(0);
+
+    // 3) El dato persistió con el modo nuevo.
+    const { items } = await getSceneItems(request, campaign.id, scene.id);
+    expect((fogItems(items)[0].metadata as { mode?: string }).mode).toBe('secret');
   });
 
   test('F3: Clear all fog elimina todas las regiones', async ({

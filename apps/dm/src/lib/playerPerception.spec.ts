@@ -103,6 +103,20 @@ describe('playerPerception/perceptionAlpha', () => {
     expect(perceptionAlpha({ ...base, lightAt: light(0), dmFog: fog('reveal') }, darkCell.col, darkCell.row)).toBe(1)
   })
 
+  it('"secreto" le gana a la luz Y a la visión en la oscuridad', () => {
+    // Es la diferencia con "cubrir": la zona queda negra para el jugador sea cual
+    // sea su percepción. Es el único modo que "oculta de verdad".
+    const los = openMask()
+    const lit = cell(3, 0)
+    const fog: (DmFogMode | null)[][] = Array.from({ length: GRID.rows }, () => Array<DmFogMode | null>(GRID.cols).fill(null))
+    fog[lit.row][lit.col] = 'secret'
+    const base = { grid: GRID, los, charX: 0, charZ: 0, vision: darkvision }
+    expect(perceptionAlpha({ ...base, lightAt: light(1), dmFog: fog }, lit.col, lit.row)).toBe(0)
+    expect(perceptionAlpha({ ...base, lightAt: light(0), dmFog: fog }, lit.col, lit.row)).toBe(0)
+    // y una celda vecina sin pintar se sigue viendo igual
+    expect(perceptionAlpha({ ...base, lightAt: light(1), dmFog: fog }, lit.col + 1, lit.row)).toBeGreaterThan(0)
+  })
+
   it('"cubrir" no cambia lo que el personaje percibe', () => {
     const los = openMask()
     const target = cell(3, 0)

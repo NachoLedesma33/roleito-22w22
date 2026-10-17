@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { SceneItem, SceneLayer, ShapePolygon } from '@core/domain/types'
-import { buildDmFogGrid, circlePoints, extractFogRegions, isFogItem, pointInPolygon, toggleZoneFog } from './fogMask'
+import { buildDmFogGrid, circlePoints, extractFogRegions, fogItemMode, isFogItem, pointInPolygon, toggleZoneFog } from './fogMask'
 
 function fogItem(id: string, revealed: boolean, points: number[], zIndex = 0): SceneItem {
   return {
@@ -30,20 +30,30 @@ describe('fogMask/buildDmFogGrid', () => {
   const COLS = 20
   const ROWS = 20
 
-  it('una región de niebla marcada como secret queda covert(cover) en la rejilla', () => {
-    // Hoy solo hay `revealed: boolean`: false = "penumbra" = cover, true = reveal.
-    // `secret` lo pinta el paso 5 del plan, cuando el pincel tenga 3 modos.
-    // `secret` lo pinta el paso 5 del plan, cuando el pincel tenga 3 modos.
-    const items = [fogItem('f1', false, [0.25, 0.25, 0.75, 0.25, 0.75, 0.75, 0.25, 0.75])]
+  it('sin `mode`, el item viejo se lee por `revealed` (false=cover, true=reveal)', () => {
+    // Los items de antes de los 3 modos no tienen `mode`, y `revealed: true`
+    // significaba "esto está descubierto" (un agujero en la niebla).
+    const items = [
+      fogItem('f1', false, [0.25, 0.25, 0.75, 0.25, 0.75, 0.75, 0.25, 0.75]),
+      fogItem('f2', true, [0.0, 0.0, 0.25, 0.0, 0.25, 0.25, 0.0, 0.25]),
+    ]
     const grid = buildDmFogGrid(items, COLS, ROWS)
     expect(grid[10][10]).toBe('cover')
+    expect(grid[2][2]).toBe('reveal')
     expect(grid[10][19]).toBeNull()
     expect(grid.length).toBe(ROWS)
     expect(grid[0].length).toBe(COLS)
   })
 
+  it('`mode` manda sobre `revealed` cuando está', () => {
+    const item = fogItem('f3', false, [0.0, 0.0, 0.5, 0.0, 0.5, 0.5, 0.0, 0.5])
+    item.metadata = { ...(item.metadata as object), mode: 'secret' } as typeof item.metadata
+    const grid = buildDmFogGrid([item], COLS, ROWS)
+    expect(grid[5][5]).toBe('secret')
+  })
+
   it('una región revelada queda reveal solo en su polígono', () => {
-    const items = [fogItem('f2', true, [0.0, 0.0, 0.5, 0.0, 0.5, 0.5, 0.0, 0.5])]
+    const items = [fogItem('f4', true, [0.0, 0.0, 0.5, 0.0, 0.5, 0.5, 0.0, 0.5])]
     const grid = buildDmFogGrid(items, COLS, ROWS)
     expect(grid[5][5]).toBe('reveal')
     expect(grid[15][15]).toBeNull()
@@ -58,6 +68,26 @@ describe('fogMask/buildDmFogGrid', () => {
     const notFog: SceneItem = { ...fogItem('w', true, [0, 0, 1, 0, 1, 1]), metadata: { type: 'wall' } as unknown as SceneItem['metadata'] }
     const grid = buildDmFogGrid([notFog], COLS, ROWS)
     expect(grid.every((row) => row.every((c) => c === null))).toBe(true)
+  })
+})
+
+describe('fogMask/extractFogRegions', () => {
+  it('un secreto no se pinta en el mapa del DM (si no, se ciega en su propia zona)', () => {
+    const secret = fogItem('f-secret', false, [0.1, 0.1, 0.4, 0.1, 0.4, 0.4, 0.1, 0.4])
+    secret.metadata = { ...(secret.metadata as object), mode: 'secret' } as typeof secret.metadata
+    const cover = fogItem('f-cover', false, [0.5, 0.5, 0.8, 0.5, 0.8, 0.8, 0.5, 0.8])
+    const regions = extractFogRegions([secret, cover])
+    expect(regions.map((r) => r.id)).toEqual(['f-cover'])
+  })
+
+  it('fogItemMode: mode manda, y sin mode se lee revealed', () => {
+    const old = fogItem('a', true, [0, 0, 0.1, 0, 0.1, 0.1])
+    expect(fogItemMode(old)).toBe('reveal')
+    const oldHidden = fogItem('b', false, [0, 0, 0.1, 0, 0.1, 0.1])
+    expect(fogItemMode(oldHidden)).toBe('cover')
+    const withMode = fogItem('c', true, [0, 0, 0.1, 0, 0.1, 0.1])
+    withMode.metadata = { ...(withMode.metadata as object), mode: 'secret' } as typeof withMode.metadata
+    expect(fogItemMode(withMode)).toBe('secret')
   })
 })
 

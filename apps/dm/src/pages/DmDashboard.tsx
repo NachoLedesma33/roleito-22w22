@@ -13,7 +13,8 @@ import { WEATHER_META, WEATHER_NONE_LABEL, WEATHER_KIND_LABEL, clampWeatherInten
 import { createEmptyDrawState, createWallItem, type DrawState } from '@/components/WallDrawer';
 import { createEmptyZoneDraft, createZoneItem, ZONE_COLORS, ZONE_DEFAULT_COLOR, type ZoneDraft } from '@/components/ZoneDrawer';
 import { zonesToGeometry } from '@/components/ZonePortal';
-import { circlePoints, toggleZoneFog } from '@/lib/fogMask';
+import { circlePoints, toggleZoneFog, type DmFogMode } from '@/lib/fogMask';
+import SegmentedControl, { type SegmentedOption } from '@/components/ui/SegmentedControl';
 import { createLightItem, LIGHT_PRESETS, attachLightToToken, detachLight, normalizeLightConfig, updateLightSource, FIRE_RADIUS_MIN, FIRE_RADIUS_MAX, FIRE_RADIUS_STEP, FIRE_RADIUS_DEFAULT } from '@/lib/light';
 import { LightMetadata } from '@core/domain/types';
 import DmContextMenus from '@/components/dm/DmContextMenus';
@@ -106,8 +107,21 @@ export default function DmDashboard() {
   const { toasts: toastQueue, push, pushMany, dismiss } = useToastQueue();
   const [drawState, setDrawState] = useState<DrawState | null>(null);
   const [zoneDraft, setZoneDraft] = useState<ZoneDraft | null>(null);
-  const [fogMode, setFogMode] = useState<{ reveal: boolean; radius: number } | null>(null);
-  const [rectFogMode, setRectFogMode] = useState<{ reveal: boolean } | null>(null);
+  const [fogMode, setFogMode] = useState<{ mode: DmFogMode; radius: number } | null>(null);
+  const [rectFogMode, setRectFogMode] = useState<{ mode: DmFogMode } | null>(null);
+  /**
+   * Último modo de niebla usado: el pincel y el rect arrancan donde los dejó el
+   * DM, no en un default fijo (§3 del plan de percepción). El default de una
+   * sesión nueva es `cover`, que es lo que se pintaba antes ("penumbra").
+   */
+  const [lastFogMode, setLastFogMode] = useState<DmFogMode>(() => {
+    try {
+      const saved = localStorage.getItem('roleito:dm:fogMode');
+      return saved === 'cover' || saved === 'secret' || saved === 'reveal' ? saved : 'cover';
+    } catch {
+      return 'cover';
+    }
+  });
   const lastFogPointRef = useRef<{ x: number; y: number } | null>(null);
   const [zoneFogActive, setZoneFogActive] = useState(false);
   const [lightPlaceMode, setLightPlaceMode] = useState<{ preset: string; fx?: 'flame' | 'embers'; fxRadius?: number } | null>(null);
@@ -466,7 +480,53 @@ export default function DmDashboard() {
     })
   }, [graphRef, handleItemsChange, push]);
 
-  const startFogMode = useCallback(() => {
+  /**
+ * Los tres modos de niebla del DM (`engineering/PLAN-VISION-PERCEPCION.md` §3).
+ *
+ * El matiz de cada uno va en el tooltip, porque las etiquetas son cortas y las
+ * consecuencias no: "Cubrir" no le gana a nada, "Secreto" oculta aunque haya
+ * luz y "Revelar" muestra aunque esté a oscuras.
+ */
+const fogModeOptions = useMemo<SegmentedOption<DmFogMode>[]>(
+  () => [
+    {
+      value: 'cover',
+      label: t('dm.fogCover', 'Cubrir'),
+      title: t('dm.fogCoverHint', 'Penumbra: el jugador ve lo que su personaje percibe'),
+      activeClassName: 'bg-slate-600 text-white',
+    },
+    {
+      value: 'secret',
+      label: t('dm.fogSecret', 'Secreto'),
+      title: t('dm.fogSecretHint', 'El jugador NO ve esta zona, aunque la ilumine'),
+      activeClassName: 'bg-red-600 text-white',
+    },
+    {
+      value: 'reveal',
+      label: t('dm.fogReveal', 'Revelar'),
+      title: t('dm.fogRevealHint', 'El jugador ve esta zona, esté o no iluminada'),
+      activeClassName: 'bg-green-600 text-white',
+    },
+  ],
+  [t],
+);
+
+/** Cambia el modo de la herramienta activa y lo recuerda para la próxima. */
+const applyFogMode = useCallback(
+  (mode: DmFogMode) => {
+    setLastFogMode(mode);
+    try {
+      localStorage.setItem('roleito:dm:fogMode', mode);
+    } catch {
+      /* localStorage puede estar bloqueado: el modo dura lo que la sesión */
+    }
+    setFogMode((prev) => (prev ? { ...prev, mode } : prev));
+    setRectFogMode((prev) => (prev ? { ...prev, mode } : prev));
+  },
+  [],
+);
+
+const startFogMode = useCallback(() => {
     lastFogPointRef.current = null
     setDrawState(null)
     setZoneDraft(null)
@@ -475,10 +535,10 @@ export default function DmDashboard() {
     setRectFogMode(null)
     setFogMode((prev) => {
       if (prev) return null
-      return { reveal: true, radius: 0.08 }
+      return { mode: lastFogMode, radius: 0.08 }
     })
     setBuildMenuOpen(false)
-  }, [cancelPortalMode]);
+  }, [cancelPortalMode, lastFogMode]);
 
   const startRectFogMode = useCallback(() => {
     lastFogPointRef.current = null
@@ -489,10 +549,10 @@ export default function DmDashboard() {
     setZoneFogActive(false)
     setRectFogMode((prev) => {
       if (prev) return null
-      return { reveal: true }
+      return { mode: lastFogMode }
     })
     setBuildMenuOpen(false)
-  }, [cancelPortalMode]);
+  }, [cancelPortalMode, lastFogMode]);
 
   const handleFogPaint = useCallback((point: { x: number; y: number }) => {
     if (!fogMode) return
@@ -518,7 +578,7 @@ export default function DmDashboard() {
       disableAttachmentBehavior: [],
       layer: SceneLayer.FOG,
       shape: { type: 'polygon', points: circlePoints(point.x, point.y, fogMode.radius), fill: '#000000' },
-      metadata: { type: 'fog', fogType: 'static', revealed: fogMode.reveal },
+      metadata: { type: 'fog', fogType: 'static', mode: fogMode.mode, revealed: fogMode.mode === 'reveal' },
     }
     graphRef.addItem(item)
     handleItemsChange(graphRef.getItems())
@@ -545,7 +605,7 @@ export default function DmDashboard() {
       disableAttachmentBehavior: [],
       layer: SceneLayer.FOG,
       shape: { type: 'polygon', points, fill: '#000000' },
-      metadata: { type: 'fog', fogType: 'static', revealed: rectFogMode.reveal },
+      metadata: { type: 'fog', fogType: 'static', mode: rectFogMode.mode, revealed: rectFogMode.mode === 'reveal' },
     }
     graphRef.addItem(item)
     handleItemsChange(graphRef.getItems())
@@ -2282,18 +2342,12 @@ export default function DmDashboard() {
           )}
           {fogMode && (
             <div className="pointer-events-auto flex items-center gap-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-1.5 py-0.5 shrink-0">
-              <button
-                onClick={() => setFogMode((prev) => prev ? { ...prev, reveal: true } : prev)}
-                className={`text-[10px] px-2 py-0.5 rounded transition-colors ${fogMode.reveal ? 'bg-green-600 text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
-              >
-                {t('dm.reveal', 'Revelar')}
-              </button>
-              <button
-                onClick={() => setFogMode((prev) => prev ? { ...prev, reveal: false } : prev)}
-                className={`text-[10px] px-2 py-0.5 rounded transition-colors ${!fogMode.reveal ? 'bg-red-600 text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
-              >
-                {t('dm.hide', 'Ocultar')}
-              </button>
+              <SegmentedControl
+                value={fogMode.mode}
+                onChange={(mode) => applyFogMode(mode)}
+                options={fogModeOptions}
+                testId="fog-mode-select"
+              />
               <input
                 type="range"
                 min={0.03}
@@ -2316,18 +2370,12 @@ export default function DmDashboard() {
           )}
           {rectFogMode && (
             <div className="pointer-events-auto flex items-center gap-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-1.5 py-0.5 shrink-0">
-              <button
-                onClick={() => setRectFogMode((prev) => prev ? { ...prev, reveal: true } : prev)}
-                className={`text-[10px] px-2 py-0.5 rounded transition-colors ${rectFogMode.reveal ? 'bg-green-600 text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
-              >
-                {t('dm.reveal', 'Revelar')}
-              </button>
-              <button
-                onClick={() => setRectFogMode((prev) => prev ? { ...prev, reveal: false } : prev)}
-                className={`text-[10px] px-2 py-0.5 rounded transition-colors ${!rectFogMode.reveal ? 'bg-red-600 text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
-              >
-                {t('dm.hide', 'Ocultar')}
-              </button>
+              <SegmentedControl
+                value={rectFogMode.mode}
+                onChange={(mode) => applyFogMode(mode)}
+                options={fogModeOptions}
+                testId="fog-mode-select"
+              />
             </div>
           )}
           {rectFogMode && (
@@ -3149,9 +3197,10 @@ export default function DmDashboard() {
                   >
                     <option value="normal">{t('dm.visionNormal', 'Normal')}</option>
                     <option value="darkvision">{t('dm.visionDarkvision', 'Visión en la oscuridad')}</option>
-                    <option value="blindsight">{t('dm.visionBlindsight', 'Sentido ciego')}</option>
-                    <option value="tremorsense">{t('dm.visionTremorsense', 'Sentido de vibración')}</option>
-                    <option value="truesight">{t('dm.visionTruesight', 'Visión verdadera')}</option>
+                    {/* blindsight / tremorsense / truesight filtran por tipo de entidad y la
+                        máscara de percepción no modela eso: no se ofrecen hasta que
+                        existan (engineering/PLAN-VISION-PERCEPCION.md §6). Un token que
+                        ya los tenga guardado se sigue leyendo como `normal`. */}
                   </select>
                 </div>
                 <div className="mb-3">

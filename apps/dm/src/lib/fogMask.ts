@@ -1,4 +1,6 @@
-import { SceneItem, FogMetadata, SceneLayer, ShapePolygon } from '@core/domain/types'
+import { SceneItem, FogMetadata, SceneLayer, ShapePolygon, DmFogMode } from '@core/domain/types'
+
+export type { DmFogMode }
 
 export interface FogRegion {
   id: string
@@ -8,33 +10,31 @@ export interface FogRegion {
 }
 
 /**
- * Intención del DM al pintar niebla, por celda.
+ * Rol de niebla por celda; `null` donde el DM no pintó.
  *
  * Antes esto se peleaba con la visión del jugador por `zIndex` y perdía siempre:
  * `FogOverlay` pintaba las regiones en orden y la visión del jugador iba a 1000
  * contra el 0 de la niebla, así que perforaba siempre. Ahora la niebla entra como
  * **dato** de la percepción del jugador (`playerPerception.ts`) y no compite con
  * nada. Ver `engineering/PLAN-VISION-PERCEPCION.md` §3.
- *
- * - `cover`: "esta zona está en penumbra". No le gana a la luz ni a la
- *   percepción: el jugador ve lo que su personaje percibe. Es el default y lo
- *   que ya se pintaba, así que no cambia nada todavía.
- * - `secret`: "el jugador no ve esto, aunque lo tenga iluminado".
- * - `reveal`: "el jugador ve esto, esté o no iluminado" (p. ej. proyección).
  */
-export type DmFogMode = 'cover' | 'secret' | 'reveal'
-
-/** Modo de niebla por celda; `null` donde el DM no pintó. */
 export type DmFogGrid = (DmFogMode | null)[][]
+
+/**
+ * El modo de un item de niebla, tolero a los items viejos.
+ *
+ * Antes el único dato era `revealed: boolean` y significaba "esto está
+ * descubierto" (un agujero en la niebla): `false` era penumbra y `true` era
+ * revelar. Los items de antes de los 3 modos se leen con esa regla.
+ */
+export function fogItemMode(item: SceneItem): DmFogMode {
+  const meta = item.metadata as FogMetadata
+  return meta.mode ?? ((meta.revealed ?? false) ? 'reveal' : 'cover')
+}
 
 /**
  * La niebla del DM como rejilla de roles, en la misma convención que la máscara
  * del LoS (`[row][col]` con el mapa centrado en el origen).
- *
- * Los `FogMetadata` de hoy solo tienen `revealed: boolean`, así que el mapeo es
- * `revealed: false` → `cover` (lo que ya significaba: no tapaba) y
- * `revealed: true` → `reveal`. El modo `secret` lo pinta el paso 5 del plan,
- * cuando el pincel tenga los tres modos.
  */
 export function buildDmFogGrid(items: SceneItem[], cols: number, rows: number): DmFogGrid {
   const grid: DmFogGrid = Array.from({ length: rows }, () => Array<DmFogMode | null>(cols).fill(null))
@@ -43,7 +43,7 @@ export function buildDmFogGrid(items: SceneItem[], cols: number, rows: number): 
     const shape = item.shape
     if (!shape || shape.type !== 'polygon' || shape.points.length < 6) continue
     const pts = shape.points
-    const mode: DmFogMode = (item.metadata as FogMetadata).revealed ?? false ? 'reveal' : 'cover'
+    const mode = fogItemMode(item)
     // Bounding box normalizado: sin esto cada polígono se prueba contra toda la
     // rejilla, y son miles de celdas por celda.
     let minX = Infinity
@@ -76,6 +76,9 @@ export function extractFogRegions(items: SceneItem[]): FogRegion[] {
   const regions: FogRegion[] = []
   for (const item of items) {
     if (item.metadata.type !== 'fog') continue
+    // Un secreto es para el jugador: si el DM se lo dibujara en su propio mapa
+    // quedaría a ciegas en la zona que acaba de tapar (§4.3: el DM ve todo).
+    if (fogItemMode(item) === 'secret') continue
     const shape = item.shape
     if (!shape || shape.type !== 'polygon') continue
     if (shape.points.length < 6) continue

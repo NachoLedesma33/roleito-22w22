@@ -22,6 +22,7 @@ import LightPlaceCanvas from './LightPlaceCanvas';
 import TokenPlaceCanvas from './TokenPlaceCanvas';
 import type { FogRegion } from '../lib/fogMask';
 import type { PerceptionMask } from '../lib/playerPerception';
+import type { DmFogMode } from '@core/domain/types';
 import type { MovementCell } from '../lib/movementRange';
 import type { ZoneDraft } from './ZoneDrawer';
 import type { ZoneGeometry } from './ZonePortal';
@@ -104,9 +105,9 @@ interface SceneRendererProps {
   onDrawStart?: (point: { x: number; y: number }) => void;
   onDrawMove?: (point: { x: number; y: number }) => void;
   onDrawEnd?: () => void;
-  fogBrush?: { reveal: boolean; radius: number } | null;
+  fogBrush?: { mode: DmFogMode; radius: number } | null;
   onFogPaint?: (point: { x: number; y: number }) => void;
-  fogRect?: { reveal: boolean } | null;
+  fogRect?: { mode: DmFogMode } | null;
   onFogRect?: (points: number[]) => void;
   fogColor?: string;
   zoneFogActive?: boolean;
@@ -2312,7 +2313,7 @@ export default function SceneRenderer({
       )}
       {fogBrush && onFogPaint && (
         <FogBrushCanvas
-          reveal={fogBrush.reveal}
+          reveal={fogBrush.mode === 'reveal'}
           radius={fogBrush.radius}
           mapWidth={mapWidth}
           mapHeight={mapHeight}
@@ -2322,7 +2323,7 @@ export default function SceneRenderer({
       )}
       {fogRect && onFogRect && (
         <FogRectCanvas
-          reveal={fogRect.reveal}
+          reveal={fogRect.mode === 'reveal'}
           mapWidth={mapWidth}
           mapHeight={mapHeight}
           onRect={onFogRect}

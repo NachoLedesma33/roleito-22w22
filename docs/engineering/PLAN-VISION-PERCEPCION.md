@@ -144,7 +144,7 @@ Cada paso es un commit con CI verde. Los tests van **antes** de la implementaci�
 | 2 | **Mask de luz** (test primero) — HECHO | `lib/lightMask.ts`: `lightLevelAt(x, z, lights, occluders, mapHeight)` con la curva de `LIGHTING-SYSTEM.md` (reusa `lightIntensityAt`, no una curva nueva) | vitest: caída con la distancia, `dimRange`/plateau, recorte por muro, cono, suma de dos luces |
 | 3 | **Composición** (test primero) — HECHO | `lib/playerPerception.ts`: `perceptionAlpha(celda)` + `composePerceptionMask(grid)`, con los roles de niebla del DM | vitest: normal en oscuro ve solo ambiente, darkvision ve su rango, secreto tapa lo iluminado, revelar muestra lo oscuro (14 tests) |
 | 4 | **Worker + render** — HECHO | El worker devuelve el alpha y `FogOverlay` lo pinta; la niebla del DM entra como rol por celda (`buildDmFogGrid`) | vitest de los grids + e2e `PV14` (de noche solo el ambiente) y `PV15` (la luz no da visión) |
-| 5 | **UI + docs** | Pincel/rect con 3 modos; dropdown de visión solo con `normal`/`darkvision`; E10 y PHASE F reescritos | e2e del flujo DM + lint/typecheck |
+| 5 | **UI + docs** — HECHO | Pincel/rect con 3 modos (`SegmentedControl`, recuerda el último); dropdown de visión solo `normal`/`darkvision`; E10 y PHASE F reescritos | e2e `F5` (secreto oculta + dato persistido), F2 actualizado al default nuevo; lint/typecheck |
 | 6 | **Memoria de lo explorado** (opt-in) | `Scene.remember_explored` (migración + snapshot), toggle del DM por escena, acumulación RLE en `localStorage`, `visible = actual ∪ recordada` con **secreto ganando siempre** | vitest de la acumulación y de la precedencia secreto>memoria; e2e del toggle del DM y de que volver a entrar conserva lo explorado |
 
 ### Registro
@@ -166,6 +166,14 @@ Cada paso es un commit con CI verde. Los tests van **antes** de la implementaci�
   3. **El círculo ambiente ya no desaparece si el personaje lleva luz**: antes `computeVisionRegions` lo quitaba cuando había luz adjunta. Ahora es `ve_en_oscuridad` y no depende de eso (el §4bis.2 pide que se conserve).
   4. **Los oclusores de luz son los mismos que los del LoS** (`buildLoSOccluders`), no los de `lightOcclusion.buildOccluders`: una pared invisible para el jugador tampoco le tapa la luz. Antes eran dos listas y podían discrepar.
   - **Seam de test**: la niebla del jugador se pinta en una textura de WebGL, así que no hay nada legible en el DOM. `PlayerView` expone un `div` oculto con `data-visible-cells` / `data-cols` / `data-rows` para el e2e y para debug. Ojo con un detalle que costó un rojo: `toHaveAttribute(name, /\d+/)` matchea `"0"`, o sea "todavía no llegó la máscara". Hay que pollear el número, no la forma.
+
+- **Paso 5 (HECHO)**: los tres modos viven en `FogMetadata.mode` (`core/domain/types.ts`). **No hubo migración**: los items son `items_json` (JSON libre, sin esquema por item), así que es un campo más. `revealed` queda escrito en paralelo (`mode === 'reveal'`) y `fogItemMode` lo lee cuando `mode` no está, para que una campaña vieja siga significando lo mismo. Cuatro decisiones:
+  1. **El default de la herramienta pasó de `reveal` a `cover`** (lo dice el §3). Es un cambio visible para el DM: el pincel ahora pinta penumbra, no revela. El e2e `F2` se actualizó en el mismo commit (antes assertaba `revealed === true`).
+  2. **`cover` no hace nada por sí solo** y por eso el matiz de cada modo está en el `title` del botón, no en la etiqueta: una etiqueta corta ("Cubrir") con una consecuencia fuerte ("no le gana a nada") es una trampa. Los tooltips dicen qué gana a qué.
+  3. **Un `secret` no se pinta en el mapa del DM** (`extractFogRegions` lo saltea): el §4.3 dice que el DM ve todo, y si el DM dibujara su propio secreto sobre el mapa se quedaría a ciegas en la zona que acaba de tapar.
+  4. **El dropdown de visión perdió 3 opciones.** `blindsight`/`tremorsense`/`truesight` se comportan como `normal` y no se ofrecen; un token que ya tenga uno guardado sigue leyéndose como `normal`.
+- **Se rompió el caso viejo del e2e** y se actualizó en el mismo commit, no después: `F2` assertaba `revealed === true` para todo lo que pintaba el pincel.
+- **Lo que falta (paso 6)**: la memoria de lo explorado. No está empezado y no bloquea nada de lo anterior.
 
 ### Riesgos y caminos de aborto
 
