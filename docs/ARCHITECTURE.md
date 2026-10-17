@@ -1696,7 +1696,7 @@ This ensures walls scale correctly when `mapScale` changes.
 
 El resize a `max_dim` (1200 px) es interno y las coordenadas detectadas se reescalan a la imagen original antes de volver.
 
-**Bug conocido:** `probabilistic_hough_line` se llama sin `rng`, y skimage 0.26 usa entropía nueva por llamada → **la misma imagen detectada dos veces da muros distintos** (verificado: 1027 vs 850 líneas de Hough; con `rng` fijo, idéntico). Ver la Fase 8 del plan de modularización.
+**Determinismo:** `probabilistic_hough_line` se llama con `rng=np.random.default_rng(seed)` (`wall_detector.DEFAULT_SEED = 0`). Sin eso skimage sortea píxeles con entropía nueva en cada llamada y la misma imagen daba muros distintos (1027 vs 850 líneas sobre la misma binaria). El endpoint acepta `?seed=` como escape hatch: mismo mapa, otra propuesta.
 
 ## Configuration
 
