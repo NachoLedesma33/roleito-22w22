@@ -108,8 +108,28 @@ FogOverlay: pinta la niebla con ese alpha como textura
 ### 4.3 Qué no se toca
 
 - El DM sigue viendo todo (no hay niebla para el DM).
-- La vista del jugador no persiste lo explorado: salir de una sala oscura vuelve a negro (decisión de E10, se mantiene).
 - La colisión, el LoS de aliados para el DM, `computePartyLoS`.
+- **La memoria de lo explorado es opt-in** (paso 6): el default sigue siendo recalcular desde cero, como hoy (decisión de E10).
+
+---
+
+## 4bis. Decisiones tomadas (cierran las preguntas abiertas de §7)
+
+**1. Umbral de "hay luz": 25% fijo, sin slider.** Un personaje `normal` necesita ≥ 25% de intensidad; `darkvision` 0%. Sale de la curva de `LIGHTING-SYSTEM.md:336-348`. No se expone control: si al probar se siente mal, se agrega — un slider que nadie pidió es una bandera que después nadie usa.
+
+**2. El círculo ambiente se queda en 0.15.** Bajo la regla nueva es redundante (es "luz a distancia 0"), pero **no se toca** a propósito: deja el paso 3 comprobable con una frase —"un personaje `normal` a oscuras ve exactamente lo mismo que antes (el 0.15) y el resto negro"— sin meter un segundo cambio de comportamiento en el mismo commit.
+
+**3. La memoria de lo explorado es una opción del DM, por escena.** Se implementa en el paso 6 y no bloquea nada del 1 al 5.
+
+| Aspecto | Decisión | Por qué |
+|---|---|---|
+| Dónde se decide | **El DM, por escena** (`Scene.remember_explored`, default `0`) | Es política de mesa: el DM la enciende cuando quiere, como cuando quiere |
+| Dónde viven los datos | **En el cliente**, `localStorage` por `(campaign_id, scene_id)` | Es estado del *espectador*, no del mundo. Si fuera al backend, haría falta una tabla + decidir de quién es la memoria (¿del personaje? ¿del jugador? ¿de la party?) y cómo viaja por WS. Local-first es la identidad del producto |
+| Formato | RLE de la máscara acumulada | La niebla es mayormente ceros con manchas: RLE pesa cientos de bytes, un PNG base64Kb |
+| Semántica | `visible = actual ∪ recordada`, mientras la política esté activa | Al apagar la política, se deja de acumular (lo ya acumulado no se borra) |
+| Interacción con **secreto** | **Secreto gana siempre** | Si no, "secreto" se filtra en cuanto el jugador pasa una vez. Es la única precedencia que no se negocia |
+| Interacción con **revelar** | Revelar es memoria por definición | No necesita accumulates |
+| Multi-dispositivo | **No se sincroniza** (queda local del navegador) | Un jugador que cambia de dispositivo pierde lo explorado. Aceptado en v1; el día que el DM quiera ver "qué descubrió la party" hace falta llevarlo al backend, y eso es un paso aparte (§6) |
 
 ---
 
@@ -125,6 +145,7 @@ Cada paso es un commit con CI verde. Los tests van **antes** de la implementaci�
 | 3 | **Composición** (test primero) | `lib/playerPerception.ts`: `visible = sin_obstruccion AND (luz OR ve_en_oscuridad)`, + roles de niebla del DM | vitest: normal en oscuro ve solo ambiente, darkvision ve su rango, secreto tapa lo iluminado, revelar muestra lo oscuro |
 | 4 | **Worker + render** | El worker devuelve el alpha; `FogOverlay` lo pinta | vitest del roundtrip del grid + e2e de que la niebla del DM **sí** oculta (el caso que hoy no pasa) |
 | 5 | **UI + docs** | Pincel/rect con 3 modos; dropdown de visión solo con `normal`/`darkvision`; E10 y PHASE F reescritos | e2e del flujo DM + lint/typecheck |
+| 6 | **Memoria de lo explorado** (opt-in) | `Scene.remember_explored` (migración + snapshot), toggle del DM por escena, acumulación RLE en `localStorage`, `visible = actual ∪ recordada` con **secreto ganando siempre** | vitest de la acumulación y de la precedencia secreto>memoria; e2e del toggle del DM y de que volver a entrar conserva lo explorado |
 
 ### Riesgos y caminos de aborto
 
@@ -140,11 +161,18 @@ Cada paso es un commit con CI verde. Los tests van **antes** de la implementaci�
 - **Exploración recordada** (lo que Roll20 llama " explored"): el modelo actual recalcula desde cero y no persiste. Es una feature aparte con su propio storage.
 - **Luz que revela para el DM**: el DM ve todo, no aplica.
 
-## 7. Preguntas abiertas para el DM/usuario
+## 7. Preguntas abiertas → RESUELTAS
 
-1. **Umbral de "oscuro"**: ¿qué tanta luz cuenta como "hay luz"? Hoy no hay ninguno. Propuesta: `normal` necesita ≥ 25% de intensidad; `darkvision` 0%. Ajustable con un slider si molesta.
-2. **El círculo ambiente**: hoy es 0.15 de radio fijo. Bajo la regla nueva es "luz a distancia 0". ¿Se deja el valor actual (para que el cambio sea chico) o se ajusta?
-3. **Niebla "Cubrir" y memoria**: si el jugador caminó por una zona con niebla cubierta y después salía, ¿la recuerda? Hoy no (se recalcula). Se mantiene, pero conviene confirmarlo.
+Las tres quedaron decididas y documentadas en §4bis:
+
+1. **Umbral de "hay luz"** → 25% fijo para `normal`, 0% para `darkvision`, sin slider.
+2. **Círculo ambiente** → se queda en **0.15**, sin tocar, para que el paso 3 sea comprobable contra el comportamiento actual.
+3. **Memoria de lo explorado** → **opt-in por escena,decided por el DM** (`Scene.remember_explored`), con los datos en el cliente. Se implementa en el **paso 6** y no bloquea los pasos 1-5.
+
+Lo que sigue abierto no bloquea la implementación:
+
+- **Qué pasa si el DM cambia la política con memoria ya acumulada**: la accumulated no se borra al apagar la política (§4bis dice que se deja de acumular). Si preferís que se limpie, es una línea.
+- **Umbral 25%**: si al probar se siente mal, se ajusta. Es un número en un solo lugar.
 
 ---
 
