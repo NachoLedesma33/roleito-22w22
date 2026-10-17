@@ -140,12 +140,16 @@ Cada paso es un commit con CI verde. Los tests van **antes** de la implementaci�
 | # | Paso | Entrega | Verificación |
 |---|---|---|---|
 | 0 | **Este plan** | Semántica decidida y documentada | `docs.sync check` |
-| 1 | **Transporte** | `vision_type`/`vision_range` en el join (`routes.py:1117`) + `JoinData` (`usePlayerSync.ts`) | pytest del endpoint + e2e de que el rango llega |
+| 1 | **Transporte** — HECHO | `vision_type`/`vision_range` en el join (`routes.py`) + `JoinData`/`PlayerSceneToken` (los tipos ya los tenían: faltaba el backend) | pytest `test_player_snapshot_includes_token_vision` + e2e `PV13` |
 | 2 | **Mask de luz** (test primero) | `lib/lightMask.ts`: `lightLevelAt(x, z, lights, occluders)` con la curva de `LIGHTING-SYSTEM.md` | vitest: caída con la distancia, `dimRange`, recorte por muro, suma de dos luces |
 | 3 | **Composición** (test primero) | `lib/playerPerception.ts`: `visible = sin_obstruccion AND (luz OR ve_en_oscuridad)`, + roles de niebla del DM | vitest: normal en oscuro ve solo ambiente, darkvision ve su rango, secreto tapa lo iluminado, revelar muestra lo oscuro |
 | 4 | **Worker + render** | El worker devuelve el alpha; `FogOverlay` lo pinta | vitest del roundtrip del grid + e2e de que la niebla del DM **sí** oculta (el caso que hoy no pasa) |
 | 5 | **UI + docs** | Pincel/rect con 3 modos; dropdown de visión solo con `normal`/`darkvision`; E10 y PHASE F reescritos | e2e del flujo DM + lint/typecheck |
 | 6 | **Memoria de lo explorado** (opt-in) | `Scene.remember_explored` (migración + snapshot), toggle del DM por escena, acumulación RLE en `localStorage`, `visible = actual ∪ recordada` con **secreto ganando siempre** | vitest de la acumulación y de la precedencia secreto>memoria; e2e del toggle del DM y de que volver a entrar conserva lo explorado |
+
+### Registro
+
+- **Paso 1 (HECHO)**: el join ya serializa `vision_type`/`vision_range` y hay pytest + e2e que lo cubren. Efecto colateral **visible desde este commit**: `PlayerView` ya leía `sc.vision_type ?? 'normal'` / `sc.vision_range ?? 6`, así que el disco de LoS del jugador pasa a respetar el rango que configuró el DM (antes siempre 6). El tipo todavía no cambia ninguna regla de percepción — eso es el paso 3.
 
 ### Riesgos y caminos de aborto
 

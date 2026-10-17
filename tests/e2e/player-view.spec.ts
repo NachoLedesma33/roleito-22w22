@@ -392,4 +392,38 @@ test.describe('Player View', () => {
     expect(used[0].target_id).toBe('spell-luz');
     expect(used[0].session_id).toBe(sessionId);
   });
+
+  test('PV13: la visión configurada por el DM viaja en el snapshot del jugador', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    // Paso 1 de docs/engineering/PLAN-VISION-PERCEPCION.md: el DM configura
+    // visión por token y el jugador la recibía siempre como los defaults.
+    const scene = await createScene(request, campaign.id, 'Cripta PV13');
+    const char = await createCharacter(request, campaign.id, { name: 'Vane' });
+    await seedTokens(request, campaign.id, scene.id, [
+      { entityType: 'character', entityId: char.id, x: 0, z: 0, visionType: 'darkvision', visionRange: 14 },
+    ]);
+    await updateScene(request, campaign.id, scene.id, { status: 'active' });
+    const code = await generateInviteCode(request, campaign.id);
+
+    const snapshot = page.waitForResponse(
+      (r) =>
+        r.url().includes(`/campaigns/invite/${code}`) &&
+        !r.url().includes('revision') &&
+        r.request().method() === 'GET',
+    );
+    await page.goto(`/campaigns/join/${code}`);
+    await expect(page.getByTestId('on-scene-list')).toContainText('En escena (1)', {
+      timeout: 15_000,
+    });
+
+    const snap = (await (await snapshot).json()) as {
+      characters: { entity_id: string; vision_type: string; vision_range: number }[];
+    };
+    const mine = snap.characters.find((c) => c.entity_id === char.id);
+    expect(mine?.vision_type).toBe('darkvision');
+    expect(mine?.vision_range).toBeCloseTo(14, 5);
+  });
 });

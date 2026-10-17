@@ -2366,7 +2366,7 @@ ShadowZone edges and closed portals (same geometry as collision)
 ### Tasks
 
 ```text
-F1. VisionConfig type (normal, darkvision, blindsight) — TIPO IMPLEMENTADO, CABLEADO PENDIENTE. Ver `engineering/PLAN-VISION-PERCEPCION.md` (plan aprobado; reemplaza la lectura de esta fase). El tipo existe (`core/domain/types.ts`) y el DM lo configura por token, pero el join no lo serializa y `vision_type` no lo lee ningún cálculo: hoy el jugador ve siempre con los defaults. Lo cablea el paso 1 del plan.
+F1. VisionConfig type (normal, darkvision, blindsight) — TIPO IMPLEMENTADO, TRANSPORTE HECHO, SEMÁNTICA PENDIENTE. Ver `engineering/PLAN-VISION-PERCEPCION.md` (plan aprobado; reemplaza la lectura de esta fase). El tipo existe (`core/domain/types.ts`), el DM lo configura por token y el join ya lo serializa (paso 1 del plan: `PlayerView` lee `vision_type`/`vision_range`), pero `vision_type` no cambia ninguna regla de percepción todavía: el jugador ve su disco de LoS y listo. Lo decide el paso 3.
 F2. Raycasting engine: Bresenham/DDA — IMPLEMENTED (losRaycast.ts)
 F3. Edge intersection detection (ShadowZone edges + portals) — IMPLEMENTED (losSystem.ts buildLoSOccluders)
 F4. Visibility mask generation per character — IMPLEMENTED (losRaycast.ts computeVisibilityMask + losSystem.ts computeCharacterLoS). OJO: hoy el disco de LoS se revela siempre, sin mirar la luz; el plan lo pasa a `sin_obstruccion AND (luz OR ve_en_oscuridad)`

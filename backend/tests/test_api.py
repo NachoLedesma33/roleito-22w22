@@ -265,6 +265,57 @@ async def test_scene_characters_statuses_roundtrip(client):
 
 
 @pytest.mark.asyncio
+async def test_player_snapshot_includes_token_vision(client):
+    """La visión que el DM configura por token tiene que viajar al jugador.
+
+    Paso 1 de docs/engineering/PLAN-VISION-PERCEPCION.md: el snapshot del
+    jugador serializaba la colocación del token pero no `vision_type`/
+    `vision_range`, así que el cliente caía siempre a sus defaults.
+    """
+    camp = (await client.post("/api/campaigns", json={"name": "Vision Camp"})).json()
+    scen = (await client.post(f"/api/campaigns/{camp['id']}/scenes", json={"name": "Cripta"})).json()
+    cid, sid = camp["id"], scen["id"]
+    vane = (await client.post(f"/api/campaigns/{cid}/characters", json={"name": "Vane"})).json()
+    bardo = (await client.post(f"/api/campaigns/{cid}/characters", json={"name": "Bardo"})).json()
+
+    res = await client.put(
+        f"/api/campaigns/{cid}/scenes/{sid}/characters",
+        json=[
+            {
+                "entity_type": "character",
+                "entity_id": vane["id"],
+                "x": 0.0,
+                "z": 0.0,
+                "visible": True,
+                "order": 0,
+                "vision_type": "darkvision",
+                "vision_range": 14.0,
+            },
+            {
+                # Sin configurar: el snapshot trae los defaults, no null.
+                "entity_type": "character",
+                "entity_id": bardo["id"],
+                "x": 2.0,
+                "z": 2.0,
+                "visible": True,
+                "order": 1,
+            },
+        ],
+    )
+    assert res.status_code == 200, res.text
+
+    await client.put(f"/api/campaigns/{cid}/scenes/{sid}", json={"status": "active"})
+    code = (await client.post(f"/api/campaigns/{cid}/invite-code")).json()["invite_code"]
+
+    snap = (await client.get(f"/api/campaigns/invite/{code}")).json()
+    got = {c["entity_id"]: c for c in snap["characters"]}
+    assert got[vane["id"]]["vision_type"] == "darkvision"
+    assert got[vane["id"]]["vision_range"] == pytest.approx(14.0)
+    assert got[bardo["id"]]["vision_type"] == "normal"
+    assert got[bardo["id"]]["vision_range"] == pytest.approx(6.0)
+
+
+@pytest.mark.asyncio
 async def test_player_move_normalizes_rotation_and_clamps(client):
     camp = (await client.post("/api/campaigns", json={"name": "Move Camp"})).json()
     scen = (await client.post(f"/api/campaigns/{camp['id']}/scenes", json={"name": "Arena"})).json()

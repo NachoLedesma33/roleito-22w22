@@ -214,6 +214,9 @@ export interface SeedTokenInput {
   x?: number;
   z?: number;
   visible?: boolean;
+  /** Visión configurada por el DM (PLAN-VISION-PERCEPCION.md, paso 1). */
+  visionType?: string;
+  visionRange?: number;
 }
 
 export async function seedTokens(
@@ -233,6 +236,8 @@ export async function seedTokens(
         z: t.z ?? 0,
         visible: t.visible ?? true,
         order: i,
+        vision_type: t.visionType ?? 'normal',
+        vision_range: t.visionRange ?? 6.0,
       })),
     },
   );
