@@ -11,7 +11,10 @@ export default defineConfig({
     },
   },
   test: {
+    // node por default: lo que se testea son funciones puras. Los specs que
+    // necesitan DOM (renderHook, componentes) declaran arriba
+    // `// @vitest-environment jsdom`, y por eso el include acepta .tsx.
     environment: 'node',
-    include: ['src/**/*.spec.ts'],
+    include: ['src/**/*.spec.ts', 'src/**/*.spec.tsx'],
   },
 })
