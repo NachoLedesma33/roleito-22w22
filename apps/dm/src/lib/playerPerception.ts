@@ -1,4 +1,5 @@
 import { VisionConfig, VisionType } from '@core/domain/types'
+import type { DmFogGrid } from './fogMask'
 import { AMBIENT_RADIUS } from './playerVision'
 
 /**
@@ -22,13 +23,7 @@ import { AMBIENT_RADIUS } from './playerVision'
 /** Umbral de "hay luz" para una visión normal (§4bis.1, fijo y sin slider). */
 export const LIGHT_THRESHOLD = 0.25
 
-/** Intención del DM al pintar una celda de niebla. */
-export type DmFogMode = 'cover' | 'secret' | 'reveal'
-
-/**
- * Rejilla de celdas, en la misma convención que `computeVisibilityMask`:
- * `mask[row][col]`, con el mapa centrado en el origen y `[row][col] = [z][x]`.
- */
+/** Rejilla de celdas, en la misma convención que `computeVisibilityMask`. */
 export interface PerceptionGrid {
   cols: number
   rows: number
@@ -40,9 +35,6 @@ export interface PerceptionGrid {
 /** Muestreo de luz por celda. Lo resuelve `lightMask.ts`; acá solo se consulta. */
 export type LightSampler = (worldX: number, worldZ: number) => number
 
-/** Modo de niebla del DM por celda; `null` donde no pintó. */
-export type DmFogGrid = (DmFogMode | null)[][]
-
 export interface PerceptionInput {
   grid: PerceptionGrid
   /** `sin_obstruccion`: la máscara del LoS del worker. */
@@ -52,6 +44,16 @@ export interface PerceptionInput {
   charZ: number
   vision: VisionConfig
   dmFog?: DmFogGrid | null
+}
+
+/**
+ * Alpha de visión por celda, listo para pintar: 0 = niebla total, 1 = se ve de
+ * plano. Es lo que viaja del worker a la textura de niebla.
+ */
+export interface PerceptionMask {
+  cols: number
+  rows: number
+  data: Float32Array
 }
 
 export function cellCenterX(grid: PerceptionGrid, col: number): number {
@@ -125,4 +127,20 @@ export function composePerceptionMask(input: PerceptionInput): Float32Array {
     }
   }
   return alpha
+}
+
+/** `composePerceptionMask` con las dimensiones de la rejilla, para el worker. */
+export function buildPerceptionMask(input: PerceptionInput): PerceptionMask {
+  return {
+    cols: input.grid.cols,
+    rows: input.grid.rows,
+    data: composePerceptionMask(input),
+  }
+}
+
+/** Cuántas celdas ve el personaje a plano (alpha >= medio). Para el HUD y los tests. */
+export function countVisibleCells(mask: PerceptionMask): number {
+  let n = 0
+  for (let i = 0; i < mask.data.length; i++) if (mask.data[i] >= 0.5) n++
+  return n
 }

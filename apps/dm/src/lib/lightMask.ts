@@ -63,7 +63,10 @@ function isOutsideCone(l: WorldLight, dx: number, dz: number, dist: number): boo
   if (l.directionDeg == null) return false
   const half = ((l.source.angle ?? 90) / 2) * (Math.PI / 180)
   if (half >= Math.PI) return false
-  const toCell = Math.atan2(dz, dx)
+  // `direction` se escribe en el criterio de `lightShapePoints`, donde el Y local
+  // va al revés del Z del mundo: por eso el -dz, y por eso
+  // `rotationToConeDirDeg` es atan2(-cos r, sin r) y no al revés.
+  const toCell = Math.atan2(-dz, dx)
   const toLight = l.directionDeg * (Math.PI / 180)
   let delta = toCell - toLight
   while (delta > Math.PI) delta -= 2 * Math.PI

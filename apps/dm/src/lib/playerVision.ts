@@ -1,7 +1,15 @@
 import { SceneItem, LightMetadata } from '@core/domain/types'
-import { FogRegion, circlePoints } from './fogMask'
 import { normalizeLightConfig } from './light'
-import { buildOccluders, lightShapePoints } from './lightOcclusion'
+import { WorldLight } from './lightMask'
+
+/**
+ * De dónde sale la luz que percibe un jugador.
+ *
+ * Antes esto armaba polígonos que competían con la niebla por `zIndex`; ahora
+ * devuelve las fuentes en coordenadas de mundo y el mask de luz las suma
+ * (`lightMask.ts`, paso 2 del plan de percepción). El círculo ambiente no está
+ * acá: es `ve_en_oscuridad` de una visión normal (`playerPerception.ts`).
+ */
 
 export const AMBIENT_RADIUS = 0.15
 
@@ -10,6 +18,10 @@ export interface CharPos {
   z: number
   rotation?: number
   facingOffset?: number
+}
+
+export interface VisionOptions {
+  shareCarriedLights?: boolean
 }
 
 export function rotationToConeDirDeg(rotationRad: number): number {
@@ -25,63 +37,34 @@ export function lightVisionOrigin(item: SceneItem, charPos: Map<string, CharPos>
   return { x: item.x, z: item.y }
 }
 
-export function lightToVisionRegion(
-  item: SceneItem,
-  origin: CharPos,
-  occluders: ReturnType<typeof buildOccluders>,
-  mapWidth: number,
-  mapHeight: number,
-  directionOverrideDeg?: number,
-): FogRegion | null {
-  const source = normalizeLightConfig((item.metadata as LightMetadata).source)
-  const radiusWorld = source.radius * mapHeight
-  const direction = source.mode === 'directional' ? (directionOverrideDeg ?? source.direction ?? 0) : null
-  const pts = lightShapePoints(origin.x, origin.z, radiusWorld, direction, source.angle ?? 90, occluders)
-  if (pts.length < 3) return null
-  const points: number[] = []
-  points.push(mapWidth > 0 ? origin.x / mapWidth + 0.5 : 0.5, mapHeight > 0 ? origin.z / mapHeight + 0.5 : 0.5)
-  for (const [px, py] of pts) {
-    const wx = origin.x + px
-    const wz = origin.z - py
-    points.push(mapWidth > 0 ? wx / mapWidth + 0.5 : 0.5, mapHeight > 0 ? wz / mapHeight + 0.5 : 0.5)
-  }
-  return { id: `vision-${item.id}`, points, revealed: true, zIndex: 1000 }
-}
-
-export interface VisionOptions {
-  shareCarriedLights?: boolean
-}
-
-export function computeVisionRegions(
+/**
+ * Las fuentes de luz que le iluminan la escena a este jugador.
+ *
+ * `attachedTo` se resuelve acá y no en el mask: una antorcha colgada de un token
+ * ilumina desde el token, y si es direccional, hacia donde mira ese token.
+ */
+export function collectWorldLights(
   items: SceneItem[],
   charPos: Map<string, CharPos>,
   ownSceneCharId: string | null,
-  mapWidth: number,
-  mapHeight: number,
   opts: VisionOptions = {},
-): FogRegion[] {
-  const regions: FogRegion[] = []
-  const own = ownSceneCharId ? charPos.get(ownSceneCharId) : null
-  const hasAttachedLight = ownSceneCharId && items.some((it) => it.metadata.type === 'light' && (it.metadata as LightMetadata).attachedTo === ownSceneCharId && it.visible)
-  if (own && !hasAttachedLight) {
-    regions.push({
-      id: 'vision-ambient',
-      points: circlePoints(own.x / mapWidth + 0.5, own.z / mapHeight + 0.5, AMBIENT_RADIUS),
-      revealed: true,
-      zIndex: 1000,
-    })
-  }
-  const occluders = buildOccluders(items, mapWidth, mapHeight)
+): WorldLight[] {
+  const lights: WorldLight[] = []
   for (const item of items) {
     if (!item.visible || item.metadata.type !== 'light') continue
     const meta = item.metadata as LightMetadata
     if (meta.attachedTo && meta.attachedTo !== ownSceneCharId && opts.shareCarriedLights === false) continue
     const origin = lightVisionOrigin(item, charPos)
     if (!origin) continue
-    const isOwnCone = meta.attachedTo === ownSceneCharId && (meta.source.mode ?? 'hard') === 'directional'
-    const dirOverride = isOwnCone && origin.rotation !== undefined ? rotationToConeDirDeg(origin.rotation) : undefined
-    const region = lightToVisionRegion(item, origin, occluders, mapWidth, mapHeight, dirOverride)
-    if (region) regions.push(region)
+    const source = normalizeLightConfig(meta.source)
+    const ownCone = meta.attachedTo === ownSceneCharId && source.mode === 'directional'
+    const directionDeg =
+      source.mode !== 'directional'
+        ? null
+        : ownCone && origin.rotation !== undefined
+          ? rotationToConeDirDeg(origin.rotation)
+          : (source.direction ?? 0)
+    lights.push({ x: origin.x, z: origin.z, source, directionDeg })
   }
-  return regions
+  return lights
 }

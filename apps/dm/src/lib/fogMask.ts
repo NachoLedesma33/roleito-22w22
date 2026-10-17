@@ -7,6 +7,71 @@ export interface FogRegion {
   zIndex: number
 }
 
+/**
+ * Intención del DM al pintar niebla, por celda.
+ *
+ * Antes esto se peleaba con la visión del jugador por `zIndex` y perdía siempre:
+ * `FogOverlay` pintaba las regiones en orden y la visión del jugador iba a 1000
+ * contra el 0 de la niebla, así que perforaba siempre. Ahora la niebla entra como
+ * **dato** de la percepción del jugador (`playerPerception.ts`) y no compite con
+ * nada. Ver `engineering/PLAN-VISION-PERCEPCION.md` §3.
+ *
+ * - `cover`: "esta zona está en penumbra". No le gana a la luz ni a la
+ *   percepción: el jugador ve lo que su personaje percibe. Es el default y lo
+ *   que ya se pintaba, así que no cambia nada todavía.
+ * - `secret`: "el jugador no ve esto, aunque lo tenga iluminado".
+ * - `reveal`: "el jugador ve esto, esté o no iluminado" (p. ej. proyección).
+ */
+export type DmFogMode = 'cover' | 'secret' | 'reveal'
+
+/** Modo de niebla por celda; `null` donde el DM no pintó. */
+export type DmFogGrid = (DmFogMode | null)[][]
+
+/**
+ * La niebla del DM como rejilla de roles, en la misma convención que la máscara
+ * del LoS (`[row][col]` con el mapa centrado en el origen).
+ *
+ * Los `FogMetadata` de hoy solo tienen `revealed: boolean`, así que el mapeo es
+ * `revealed: false` → `cover` (lo que ya significaba: no tapaba) y
+ * `revealed: true` → `reveal`. El modo `secret` lo pinta el paso 5 del plan,
+ * cuando el pincel tenga los tres modos.
+ */
+export function buildDmFogGrid(items: SceneItem[], cols: number, rows: number): DmFogGrid {
+  const grid: DmFogGrid = Array.from({ length: rows }, () => Array<DmFogMode | null>(cols).fill(null))
+  for (const item of items) {
+    if (item.metadata.type !== 'fog') continue
+    const shape = item.shape
+    if (!shape || shape.type !== 'polygon' || shape.points.length < 6) continue
+    const pts = shape.points
+    const mode: DmFogMode = (item.metadata as FogMetadata).revealed ?? false ? 'reveal' : 'cover'
+    // Bounding box normalizado: sin esto cada polígono se prueba contra toda la
+    // rejilla, y son miles de celdas por celda.
+    let minX = Infinity
+    let maxX = -Infinity
+    let minY = Infinity
+    let maxY = -Infinity
+    for (let i = 0; i < pts.length; i += 2) {
+      minX = Math.min(minX, pts[i])
+      maxX = Math.max(maxX, pts[i])
+      minY = Math.min(minY, pts[i + 1])
+      maxY = Math.max(maxY, pts[i + 1])
+    }
+    const c0 = Math.max(0, Math.floor(minX * cols))
+    const c1 = Math.min(cols - 1, Math.ceil(maxX * cols))
+    const r0 = Math.max(0, Math.floor(minY * rows))
+    const r1 = Math.min(rows - 1, Math.ceil(maxY * rows))
+    for (let r = r0; r <= r1; r++) {
+      const ny = (r + 0.5) / rows
+      const row = grid[r]
+      for (let c = c0; c <= c1; c++) {
+        if (row[c] === 'secret' || row[c] === 'reveal') continue
+        if (pointInPolygon((c + 0.5) / cols, ny, pts)) row[c] = mode
+      }
+    }
+  }
+  return grid
+}
+
 export function extractFogRegions(items: SceneItem[]): FogRegion[] {
   const regions: FogRegion[] = []
   for (const item of items) {

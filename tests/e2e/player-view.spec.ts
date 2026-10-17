@@ -5,6 +5,7 @@ import {
   createNpc,
   createScene,
   generateInviteCode,
+  putSceneItems,
   seedTokens,
   updateCharacter,
   updateScene,
@@ -425,5 +426,97 @@ test.describe('Player View', () => {
     const mine = snap.characters.find((c) => c.entity_id === char.id);
     expect(mine?.vision_type).toBe('darkvision');
     expect(mine?.vision_range).toBeCloseTo(14, 5);
+  });
+
+  test('PV14: de noche el jugador solo ve el círculo ambiente, no todo su disco de visión', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    // Paso 4 de docs/engineering/PLAN-VISION-PERCEPCION.md: `visible = sin
+    // obstruccion AND (luz OR ve_en_oscuridad)`. Una visión normal sin luz a
+    // oscuras solo ve AMBIENT_RADIUS; antes el disco entero salía perforado.
+    const scene = await createScene(request, campaign.id, 'Cripta PV14');
+    const char = await createCharacter(request, campaign.id, { name: 'Vane' });
+    await seedTokens(request, campaign.id, scene.id, [
+      { entityType: 'character', entityId: char.id, x: 0, z: 0 },
+    ]);
+    await updateScene(request, campaign.id, scene.id, { status: 'active' });
+    const code = await generateInviteCode(request, campaign.id);
+
+    await page.goto(`/campaigns/join/${code}`);
+    await page.getByRole('button', { name: /Vane/ }).click();
+
+    const mask = page.getByTestId('perception-mask');
+    const stats = async () => {
+      const raw = await mask.evaluate((el) => ({
+        visible: el.getAttribute('data-visible-cells'),
+        cols: el.getAttribute('data-cols'),
+        rows: el.getAttribute('data-rows'),
+      }));
+      return {
+        visible: Number(raw.visible),
+        cols: Number(raw.cols),
+        rows: Number(raw.rows),
+      };
+    };
+
+    // La máscara llega del worker con un poco de delay: se espera a que exista,
+    // no a que el atributo "sea un número" (0 también lo es).
+    await expect
+      .poll(async () => (await stats()).cols, { timeout: 20_000 })
+      .toBeGreaterThan(0);
+
+    const s = await stats();
+    const total = s.cols * s.rows;
+    // El círculo ambiente es 0.15 sobre un mapa de ~10 unidades: un puñado de
+    // celdas. Antes el disco entero salía perforado (decenas de miles).
+    expect(s.visible).toBeGreaterThan(0);
+    expect(s.visible / total).toBeLessThan(0.02);
+  });
+
+  test('PV15: una antorcha lejana ilumina el mapa pero no le da visión', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    // La luz describe el mundo, la visión describe al personaje: una antorcha
+    // lejana no habilita ver lo que está fuera de vision_range.
+    const scene = await createScene(request, campaign.id, 'Sala PV15');
+    const char = await createCharacter(request, campaign.id, { name: 'Vane' });
+    await seedTokens(request, campaign.id, scene.id, [
+      { entityType: 'character', entityId: char.id, x: 0, z: 0 },
+    ]);
+    // Antorcha pegada al mapa (normalizada ~0.5,0.5 = centro) con radio amplio:
+    // ilumina el centro, que es justo donde está el personaje.
+    await putSceneItems(request, campaign.id, scene.id, [
+      {
+        id: 'torch-pv15',
+        name: 'Torch',
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 0,
+        layer: 5,
+        visible: true,
+        metadata: {
+          type: 'light',
+          source: { mode: 'soft', color: '#ff9d45', intensity: 0.9, radius: 0.35, falloff: 0.6 },
+        },
+      },
+    ]);
+    await updateScene(request, campaign.id, scene.id, { status: 'active' });
+    const code = await generateInviteCode(request, campaign.id);
+
+    await page.goto(`/campaigns/join/${code}`);
+    await page.getByRole('button', { name: /Vane/ }).click();
+
+    const mask = page.getByTestId('perception-mask');
+    await expect
+      .poll(async () => Number(await mask.getAttribute('data-cols')), { timeout: 20_000 })
+      .toBeGreaterThan(0);
+    await expect
+      .poll(async () => Number(await mask.getAttribute('data-visible-cells')), { timeout: 20_000 })
+      .toBeGreaterThan(0);
   });
 });

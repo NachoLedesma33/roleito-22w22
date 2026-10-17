@@ -21,6 +21,7 @@ import FogRectCanvas from './FogRectCanvas';
 import LightPlaceCanvas from './LightPlaceCanvas';
 import TokenPlaceCanvas from './TokenPlaceCanvas';
 import type { FogRegion } from '../lib/fogMask';
+import type { PerceptionMask } from '../lib/playerPerception';
 import type { MovementCell } from '../lib/movementRange';
 import type { ZoneDraft } from './ZoneDrawer';
 import type { ZoneGeometry } from './ZonePortal';
@@ -58,6 +59,12 @@ interface SceneRendererProps {
   occluders: Occluder[];
   /** Niebla ya combinada (escena +, en el jugador, lo que ve su personaje). */
   fogRegions: FogRegion[];
+  /**
+   * Alpha de percepción del jugador, celda por celda. Lo calcula el worker
+   * (`losWorker.ts` + `playerPerception.ts`) y, cuando viene, reemplaza a
+   * `fogRegions`: es una sola rejilla en vez de polígonos compiten por zIndex.
+   */
+  fogPerception?: PerceptionMask | null;
   lighting?: string;
   weather?: string | null;
   weatherIntensity?: number | null;
@@ -2032,6 +2039,7 @@ export default function SceneRenderer({
   items = [],
   occluders,
   fogRegions,
+  fogPerception = null,
   lighting = 'neutral',
   weather = null,
   weatherIntensity = null,
@@ -2299,8 +2307,8 @@ export default function SceneRenderer({
           renderMode={renderMode}
         />
       )}
-      {fogRegions.length > 0 && (
-        <FogOverlay regions={fogRegions} color={fogColor} mapWidth={mapWidth} mapHeight={mapHeight} renderMode={renderMode} />
+      {(fogRegions.length > 0 || fogPerception) && (
+        <FogOverlay regions={fogRegions} perception={fogPerception} color={fogColor} mapWidth={mapWidth} mapHeight={mapHeight} renderMode={renderMode} />
       )}
       {fogBrush && onFogPaint && (
         <FogBrushCanvas

@@ -5,8 +5,7 @@
 
 import { SceneItem, VisionConfig } from '@core/domain/types'
 import { Occluder } from './lightOcclusion'
-import { computeVisibilityMask, masksUnion, maskToPoints } from './losRaycast'
-import { FogRegion } from './fogMask'
+import { computeVisibilityMask, masksUnion } from './losRaycast'
 
 export interface CharVisionState {
   sceneCharId: string
@@ -124,24 +123,6 @@ export function computePartyLoS(
   }
 
   return combined
-}
-
-export function losMaskToVisionRegion(
-  mask: boolean[][],
-  resolution: number,
-  mapWidth: number,
-  mapHeight: number,
-  id: string,
-): FogRegion | null {
-  const points = maskToPoints(mask, resolution, mapWidth, mapHeight)
-  if (points.length < 6) return null
-
-  return {
-    id,
-    points,
-    revealed: true,
-    zIndex: 1000,
-  }
 }
 
 export function isInLoS(

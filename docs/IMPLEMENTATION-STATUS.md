@@ -64,7 +64,7 @@ Reference: `WALLS-AND-LINE-OF-SIGHT.md` (21,246 bytes)
 | Door System | Implemented | `WallContextMenu.tsx` (open/close/locked) |
 | LoS Raycasting | Implemented | `core/scene/wall-collision.ts` + rays |
 | Visibility Mask | Implemented | Hybrid shadow geometry (HYBRID-SHADOW-GEOMETRY.md, canon) |
-| Visión por token → jugador | In progress | El join ya serializa `vision_type`/`vision_range` (paso 1 del plan de percepción, con pytest + e2e). Falta la regla de composición `sin_obstruccion AND (luz OR ve_en_oscuridad)`: `engineering/PLAN-VISION-PERCEPCION.md` |
+| Visión por token → jugador | In progress | La percepción del jugador es **una máscara de alpha** calculada en el worker (LoS + luz + niebla del DM), no polígonos que compiten por zIndex: pasos 1-4 del plan hechos con pytest + vitest + e2e. Falta la UI de los 3 modos de pincel y la memoria de lo explorado (pasos 5-6): `engineering/PLAN-VISION-PERCEPCION.md` |
 | Movement Pathfinding | Planned | A* on walkable grid |
 
 ## Lighting System

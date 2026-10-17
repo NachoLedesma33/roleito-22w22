@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { SceneItem, SceneLayer, ShapePolygon } from '@core/domain/types'
-import { circlePoints, extractFogRegions, isFogItem, pointInPolygon, toggleZoneFog } from './fogMask'
+import { buildDmFogGrid, circlePoints, extractFogRegions, isFogItem, pointInPolygon, toggleZoneFog } from './fogMask'
 
 function fogItem(id: string, revealed: boolean, points: number[], zIndex = 0): SceneItem {
   return {
@@ -25,6 +25,41 @@ function fogItem(id: string, revealed: boolean, points: number[], zIndex = 0): S
     metadata: { type: 'fog', fogType: 'static', revealed },
   }
 }
+
+describe('fogMask/buildDmFogGrid', () => {
+  const COLS = 20
+  const ROWS = 20
+
+  it('una región de niebla marcada como secret queda covert(cover) en la rejilla', () => {
+    // Hoy solo hay `revealed: boolean`: false = "penumbra" = cover, true = reveal.
+    // `secret` lo pinta el paso 5 del plan, cuando el pincel tenga 3 modos.
+    // `secret` lo pinta el paso 5 del plan, cuando el pincel tenga 3 modos.
+    const items = [fogItem('f1', false, [0.25, 0.25, 0.75, 0.25, 0.75, 0.75, 0.25, 0.75])]
+    const grid = buildDmFogGrid(items, COLS, ROWS)
+    expect(grid[10][10]).toBe('cover')
+    expect(grid[10][19]).toBeNull()
+    expect(grid.length).toBe(ROWS)
+    expect(grid[0].length).toBe(COLS)
+  })
+
+  it('una región revelada queda reveal solo en su polígono', () => {
+    const items = [fogItem('f2', true, [0.0, 0.0, 0.5, 0.0, 0.5, 0.5, 0.0, 0.5])]
+    const grid = buildDmFogGrid(items, COLS, ROWS)
+    expect(grid[5][5]).toBe('reveal')
+    expect(grid[15][15]).toBeNull()
+  })
+
+  it('sin items de niebla la rejilla es toda null', () => {
+    const grid = buildDmFogGrid([], COLS, ROWS)
+    expect(grid.every((row) => row.every((c) => c === null))).toBe(true)
+  })
+
+  it('un item que no es fog no pinta nada', () => {
+    const notFog: SceneItem = { ...fogItem('w', true, [0, 0, 1, 0, 1, 1]), metadata: { type: 'wall' } as unknown as SceneItem['metadata'] }
+    const grid = buildDmFogGrid([notFog], COLS, ROWS)
+    expect(grid.every((row) => row.every((c) => c === null))).toBe(true)
+  })
+})
 
 describe('fogMask/roundtrip', () => {
   it('extractFogRegions filtra y mapea los items de niebla', () => {

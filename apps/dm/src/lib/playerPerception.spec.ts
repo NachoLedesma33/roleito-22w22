@@ -7,7 +7,7 @@ import {
   perceptionAlpha,
 } from './playerPerception'
 import { AMBIENT_RADIUS } from './playerVision'
-import type { DmFogMode } from './playerPerception'
+import type { DmFogMode } from './fogMask'
 
 /** Mapa de 10x10 centrado en el origen, celda de 0.5 (como la máscara del LoS). */
 const GRID: PerceptionGrid = { cols: 20, rows: 20, resolution: 0.5, mapWidth: 10, mapHeight: 10 }

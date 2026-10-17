@@ -2371,7 +2371,7 @@ F2. Raycasting engine: Bresenham/DDA — IMPLEMENTED (losRaycast.ts)
 F3. Edge intersection detection (ShadowZone edges + portals) — IMPLEMENTED (losSystem.ts buildLoSOccluders)
 F4. Visibility mask generation per character — IMPLEMENTED (losRaycast.ts computeVisibilityMask + losSystem.ts computeCharacterLoS). OJO: hoy el disco de LoS se revela siempre, sin mirar la luz; el plan lo pasa a `sin_obstruccion AND (luz OR ve_en_oscuridad)`
 F5. Combined visibility (union of party) — IMPLEMENTED (losSystem.ts computePartyLoS)
-F6. Dynamic fog: updates on movement — IMPLEMENTED (PlayerView visionRegions computes LoS on poll)
+F6. Dynamic fog: updates on movement — IMPLEMENTADO (el worker recalcula la máscara de percepción cada 250ms mientras el personaje se mueve). OJO: desde el paso 4 del plan la niebla del jugador es una máscara de alpha, no polígonos con zIndex
 F7. Movement range visualization — IMPLEMENTED (DmDashboard computeReachableCells + SceneRenderer MovementRangeOverlay; shows reachable cells for selected token)
 F8. A* pathfinding for movement — IMPLEMENTED (movementRange.ts findPath + computeReachableCells)
 F9. Niebla de guerra que el DM controla de verdad — PLANEADO. Hoy la niebla del DM (`zIndex: 0`) la perfora siempre la visión del jugador (`zIndex: 1000`): no le oculta nada a nadie. El plan la mete en el cálculo con tres modos por trazo (cubrir / secreto / revelar).

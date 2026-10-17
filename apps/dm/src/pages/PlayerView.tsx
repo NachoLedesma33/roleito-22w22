@@ -23,9 +23,9 @@ import { api, type Character, type DiceRollResponse, type Spell } from '@/lib/ap
 import { checkWallCollision, extractZonePolygons, extractPortals, crossZoneBorder } from '@/lib/wall-collision';
 import { sceneWorldHeight, sceneWorldSize } from '@/lib/sceneWorld';
 import { usePlayerSync, type Choice } from '@/lib/usePlayerSync';
-import { computeVisionRegions, type CharPos } from '@/lib/playerVision';
+import { type CharPos } from '@/lib/playerVision';
 import { buildOccluders } from '@/lib/lightOcclusion';
-import { extractFogRegions } from '@/lib/fogMask';
+import { countVisibleCells, type PerceptionMask } from '@/lib/playerPerception';
 import type { VisionConfig } from '@core/domain/types';
 import type { FogRegion } from '@/lib/fogMask';
 import type { LosJob } from '@/lib/losWorker';
@@ -317,13 +317,20 @@ export default function PlayerView() {
     return m
   }, [data, mySceneCharId, wasdTarget])
 
+  // Por ref y no por dependencia del efecto: el intervalo de 250ms no se puede
+  // reiniciar en cada snapshot o la percepción se queda sin recalcular.
+  const visionCharPosRef = useRef(visionCharPos)
+  useEffect(() => { visionCharPosRef.current = visionCharPos }, [visionCharPos])
+
   const mapScale = data?.map_scale ?? 1
   const mapperH = sceneWorldHeight(mapScale)
   const mapperW = mapperH * imageAspect
 
-  // LoS (worker + throttle): mi personaje ve según vision_type/range, recortado por muros.
+  // Percepción (worker + throttle): una sola máscara de alpha con LoS, luz y la
+  // niebla del DM ya resueltas (PLAN-VISION-PERCEPCION.md §4.1). Antes esto eran
+  // polígonos que competían por zIndex y la visión ganaba contra la niebla siempre.
   // El mask (10K+ DDA rays) corre en un Web Worker para no bloquear el render thread.
-  const [losRegion, setLosRegion] = useState<FogRegion | null>(null)
+  const [perception, setPerception] = useState<PerceptionMask | null>(null)
   const mySceneCharIdRef = useRef<string | null>(null)
   useEffect(() => { mySceneCharIdRef.current = mySceneCharId }, [mySceneCharId])
   const mapperRef = useRef({ w: mapperW, h: mapperH })
@@ -335,10 +342,10 @@ export default function PlayerView() {
   useEffect(() => {
     const worker = new Worker(new URL('../lib/losWorker.ts', import.meta.url), { type: 'module' })
     worker.onmessage = (e: MessageEvent) => {
-      const msg = e.data as { kind: string; jobId: number; region: { points: number[]; revealed: boolean; zIndex: number } | null }
+      const msg = e.data as { kind: string; jobId: number; mask: PerceptionMask | null }
       if (msg?.kind !== 'los') return
       if (!lastLosRef.current || msg.jobId !== lastLosRef.current.jobId) return
-      setLosRegion(msg.region ? { id: 'los-mine', points: msg.region.points, revealed: msg.region.revealed, zIndex: msg.region.zIndex } : null)
+      setPerception(msg.mask)
     }
     workerRef.current = worker
     return () => { worker.terminate(); workerRef.current = null }
@@ -356,7 +363,7 @@ export default function PlayerView() {
       const visionRange = sc.vision_range ?? 6
       const items = d.items ?? []
       const itemsKey = `${d.scene_id ?? ''}|${items.length}|${items.map((i) => i.id).join(',')}`
-      const sigLine = `${visionType}|${visionRange}|${itemsKey}`
+      const sigLine = `${visionType}|${visionRange}|${itemsKey}|${shareLight}`
       const last = lastLosRef.current
       if (last && Math.hypot(pos.x - last.x, pos.z - last.z) < 0.25 && last.sig === sigLine) return
       const { w: mapW, h: mapH } = mapperRef.current
@@ -383,27 +390,23 @@ export default function PlayerView() {
         mapW,
         mapH,
         res,
+        // El worker no ve a los tokens: las antorchas pegadas a uno/from otro
+        // salen de acá, y sin esto el cono propio no seguiría el facing.
+        charPos: Object.fromEntries(visionCharPosRef.current),
+        shareCarriedLights: shareLight,
       }
       lastItemsKeyRef.current = itemsKey
       workerRef.current.postMessage(job)
     }, 250)
     return () => clearInterval(timer)
-  }, [mySceneCharId])
+  }, [mySceneCharId, shareLight])
 
-  const visionRegions = useMemo(() => {
-    if (!data) return []
-    const light = computeVisionRegions(data.items ?? [], visionCharPos, mySceneCharId, mapperW, mapperH, {
-      shareCarriedLights: shareLight,
-    })
-    return losRegion ? [...light, losRegion] : light
-  }, [data, visionCharPos, mySceneCharId, mapperW, mapperH, shareLight, losRegion])
-
-  // SceneRenderer recibe los cálculos, no los hace: la niebla que ve el jugador
-  // es la de la escena más lo que ilumina su personaje.
-  const sceneFogRegions = useMemo(
-    () => (data ? [...extractFogRegions(data.items ?? []), ...visionRegions] : []),
-    [data, visionRegions],
-  )
+  // SceneRenderer recibe los cálculos, no los hace: la niebla que ve el jugador es
+  // su máscara de percepción. Ya no se le pasan los polígonos de niebla de la
+  // escena ni los de las luces: la luz entra al mask como dato y la niebla del DM
+  // como rol por celda, así que antes competían entre sí por zIndex y el jugador
+  // ganaba siempre.
+  const sceneFogRegions = useMemo<FogRegion[]>(() => [], [])
   const sceneOccluders = useMemo(
     () => (data ? buildOccluders(data.items ?? [], mapperW, mapperH) : []),
     [data, mapperW, mapperH],
@@ -1154,6 +1157,7 @@ export default function PlayerView() {
               items={data.items ?? []}
               occluders={sceneOccluders}
               fogRegions={sceneFogRegions}
+              fogPerception={perception}
               readOnly
               fogColor="rgba(5, 5, 20, 0.82)"
               renderMode={DEFAULT_RENDER_MODE}
@@ -1203,6 +1207,21 @@ export default function PlayerView() {
             {t('pv.noSceneYet', 'El DM aún no abrió una escena')}
           </div>
         )}
+
+        {/*
+          La niebla del jugador se pinta en una textura de WebGL, así que no hay
+          nada legible en el DOM. Esto es el seam para el e2e de percepción (y un
+          dato útil si hay que debuggear por qué alguien ve de más): cuántas
+          celdas ve el personaje, y cuántas de la rejilla.
+        */}
+        <div
+          className="hidden"
+          aria-hidden="true"
+          data-testid="perception-mask"
+          data-visible-cells={perception ? countVisibleCells(perception) : 0}
+          data-cols={perception?.cols ?? 0}
+          data-rows={perception?.rows ?? 0}
+        />
 
         {data.characters.length > 0 && (
           <div className="absolute bottom-4 right-4 z-10 bg-[var(--surface)]/80 backdrop-blur border border-[var(--bg-tertiary)]/50 rounded-lg p-2 max-sm:bottom-auto max-sm:top-16 max-sm:right-2 max-sm:max-w-[140px]" data-testid="on-scene-list">

@@ -83,9 +83,23 @@ describe('lightMask/lightLevelAt', () => {
       directionDeg: 0, // hacia +x
     }
     expect(lightLevelAt(2, 0, [cone], [], MAP_H)).toBeCloseTo(1, 5)
-    expect(lightLevelAt(1.5, 2, [cone], [], MAP_H)).toBe(0) // 53 grados: fuera del cono de 90
+    expect(lightLevelAt(1.5, 2, [cone], [], MAP_H)).toBe(0) // fuera del cono de 90
     // sin directionDeg resuelto ilumina en todas direcciones (la llamada decide)
     expect(lightLevelAt(1.5, 2, [{ ...cone, directionDeg: null }], [], MAP_H)).toBeGreaterThan(0)
+  })
+
+  it('el cono usa el mismo criterio de ejes que el editor de luces', () => {
+    // `direction` se mide como en lightShapePoints, donde el Y local va al revés
+    // del Z del mundo. Con direction 0 el cono va hacia +X; con 90 va hacia -Z.
+    const mk = (directionDeg: number) => ({
+      x: 0,
+      z: 0,
+      source: torch({ mode: 'directional' as const, intensity: 1, radius: 0.4, angle: 60 }),
+      directionDeg,
+    })
+    expect(lightLevelAt(2, 0, [mk(0)], [], MAP_H)).toBeCloseTo(1, 5)
+    expect(lightLevelAt(0, -2, [mk(90)], [], MAP_H)).toBeCloseTo(1, 5)
+    expect(lightLevelAt(0, 2, [mk(90)], [], MAP_H)).toBe(0)
   })
 
   it('mede el costo de una máscara grande: 10 luces en un mapa de 1200x800', () => {
