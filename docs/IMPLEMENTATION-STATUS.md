@@ -363,6 +363,35 @@ Reference: `ROADMAP.md` (22,082 bytes)
 
 # 7. Key Observations
 
+## Plan de modularización: EJECUTADO POR COMPLETO (2026-10-16/17)
+
+La directiva de ingeniería obligatoria (`ROLEITO_GUIA_MODULARIZACION_ARQUITECTURA.md`) se ejecutó con su plan de fases (`engineering/DIAGNOSTICO-Y-PLAN-MODULARIZACION.md`): **las 11 fases (0 a 10) cerradas**, cada una como un commit con CI verde. Antes de arrancar la siguiente fase había que tener la anterior commiteada y verde; se respetó.
+
+| Fase | Qué hizo | Resultado medido |
+|---|---|---|
+| 0 | `staticUrl` unificada | 8 copias → 1 (`lib/staticUrl.ts`) |
+| 1 | Tipos duplicados contra `api.ts` | `MyChar`/`PlayerToken`/`Spell`/`InventoryItem`/`Session` eliminado |
+| 9 | Limpieza de `.gitkeep` huérfanos | `core/scenes/` (plural) y 6 `.gitkeep` fuera |
+| 2 | `DmDashboard` por dominios de presentación | `DmDock`, `DmCommandPalette`, `DmContextMenus`, `useToastQueue`; **3830 → ~3100 líneas** |
+| 2-bis | `useAnchoredMenu` unifica el shell de los 4 menús | un solo mecanismo de posicionamiento y cierre |
+| 3 | `DmDashboard` → hooks | `useSceneGraph`, `useWallDetection`, `usePortals`, `sceneWorld` |
+| 4 | `PlayerView` → hooks + componentes | `usePlayerSync` + `PlayerPanels`; **1930 → ~1600 líneas** |
+| 5 | `SceneRenderer` recibe cálculos + fix de oclusores | ya no importa `buildOccluders`/`extractFogRegions` |
+| 6 | `character_routes.py` por dominio | **821 → 273 líneas**; + `ability_routes.py`, `upload_routes.py`, `services/` |
+| 7 | Helpers de assets a `services/assets.py` | `ASSETS_DIR` con **una sola definición** (5 copias → 1) |
+| 8 | Conflicto `wall_detection` | módulo muerto **borrado** (era inalcanzable, no duplicado) |
+| 10 | Tests de hooks y componentes | vitest 133 → **166** |
+
+**Bugs reales que el plan destapó** (los tres estaban en producción, ninguno era hipotético):
+
+1. **Las puertas no bloqueaban luz** (`lightOcclusion.ts:46`): el oclusor de una puerta se empujaba con los puntos normalizados sin convertir a coordenadas de mundo, así que caía en 0..1 pegado al origen. Fix `732de02`.
+2. **El import de campaña nunca copiaba los assets al destino**: los bytes se escribían en la carpeta de la campaña **origen** y las columnas apuntaban ahí, así que borrar el origen rompía la campaña importada. Lo tapaba un test verde por el motivo equivocado (comparaba el prefijo del path, no la reescritura de campaña). Fix `9c15682`.
+3. **Los menús anclados no cerraban al click afuera** (`useAnchoredMenu`): el selector se armaba con `closest('...')` embebido y después se pasaba a `target.closest(selector)` → `SyntaxError` en cada click. Escape sí cerraba, por eso nadie lo notaba. Fix `13e1b87`.
+
+**Deuda que el plan dejó abierta** (todo anotado en la sección 6 del plan): visión por token que no llega al jugador, `HudPanel` sin test unitario, cap de 8 MB en export/import, `__init__.py` faltantes en `core/{canon,events,memory,world}`, y el append redundante de `detect-walls`.
+
+**Verificación**: lint 0 errores · typecheck limpio · vitest 166 · pytest 93 · e2e verde en todos los specs tocados. 22 commits, todos con CI verde.
+
 ## Strengths
 - Extensive documentation covering all major systems
 - Backend has solid CRUD for all core entities
@@ -435,7 +464,7 @@ Based on dependency analysis and documentation completeness:
 
 # 9. Last Updated
 
-- **Date**: 2026-10-01
-- **Updated By**: Real-time DM (WS `/api/ws/campaigns/{id}` + fix de clipping en dropdowns de clima/lighting), intensidad de clima por escena, y `data-testid` en `ContextMenu`
-- **Trigger**: Commits `2cdbcb2`, `4fff17a`, `a9286f1` — las tres fases quedaron fuera del doc
-- **Nota de verificación**: las fases anteriores de esta sesión (import/export gaps, weather, audio) ya estaban anotadas
+- **Date**: 2026-10-17
+- **Updated By**: cierre del plan de modularización (11 fases completas) — ver sección 7
+- **Trigger**: 22 commits, de `e41729b` a `ee83e07`, todos con CI verde
+- **Nota de verificación**: las cifras de la tabla de la sección 7 salen de conteos reales (líneas por archivo, vitest/pytest ejecutados, e2e por spec). Las tres regresiones se verificaron **fallando sin el fix**, no por inspección.

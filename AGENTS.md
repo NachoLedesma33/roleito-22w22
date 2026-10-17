@@ -8,7 +8,7 @@ DM authority + AI assistant. World State = source of truth.
 Al agregar, modificar o refactorizar **cualquier** código de este repo (feature nueva o código existente), aplicá esta directiva transversal sin excepción:
 
 1. **`docs/ROLEITO_GUIA_MODULARIZACION_ARQUITECTURA.md`** — directiva completa (cohesión, acoplamiento, SOLID con criterio, DRY sin sobreabstracción, diseño de props, hooks, separación de efectos, backend por capa, contratos, patrones, verificación).
-2. **`docs/engineering/DIAGNOSTICO-Y-PLAN-MODULARIZACION.md`** — diagnóstico priorizado (P1-P9) + plan de fases. Las fases **siguen en curso**: no arranques una fase sin que la anterior esté commiteada y con CI verde.
+2. **`docs/engineering/DIAGNOSTICO-Y-PLAN-MODULARIZACION.md`** — diagnóstico priorizado (P1-P9) + plan de fases. **Las 11 fases (0-10) están CERRADAS (2026-10-17), cada una con commit y CI verde**: leelo como registro de lo ya hecho y fuente de lecciones, **no para re-planear**. Lo que quedó abierto está en su sección 6.
 
 **Reglas que no se negocian (resumen; el detalle está en la guía):**
 - Nada de abstracciones prematuras, capas ceremoniales ni reescrituras masivas. Preferí duplicación pequeña y explícita antes que un helper genérico lleno de flags.
