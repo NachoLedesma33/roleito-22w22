@@ -46,6 +46,34 @@ async function openSceneWithBackground(
 }
 
 test.describe('Dashboard VTT Core', () => {
+  test('D0: el menú Construir cierra con click afuera y con Escape', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    await createScene(request, campaign.id, 'Escena Menús');
+
+    await page.goto(`/campaigns/${campaign.id}`);
+    const buildMenu = page.getByTestId('build-menu');
+    const trigger = page.getByRole('button', { name: /Construir/i });
+
+    await trigger.click();
+    await expect(buildMenu).toBeVisible();
+
+    // Click en un lugar neutral: el menú tiene que irse. Este caso no existía y
+    // por eso un selector inválido en useAnchoredMenu pasó desapercibido: el
+    // hook lanzaba SyntaxError, onClose nunca corría y el menú quedaba abierto.
+    // Click por coordenada (margen izquierdo) y no por locator: el heading del
+    // tablero es sr-only y el canvas dispara la selección de tokens.
+    await page.mouse.click(20, 320);
+    await expect(buildMenu).toBeHidden();
+
+    await trigger.click();
+    await expect(buildMenu).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(buildMenu).toBeHidden();
+  });
+
   test('D1: carga campaña con escenas listadas', async ({ page, campaign, request }) => {
     await createScene(request, campaign.id, 'Escena Uno');
 
