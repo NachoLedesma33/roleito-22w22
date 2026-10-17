@@ -58,6 +58,22 @@ function detect(
   );
 }
 
+function sceneItems(
+  request: import('@playwright/test').APIRequestContext,
+  authHeaders: { Authorization: string },
+  campaignId: string,
+  sceneId: string,
+): Promise<Array<{ id: string }>> {
+  return request
+    .get(`${API}/campaigns/${campaignId}/scenes/${sceneId}/items`, {
+      headers: authHeaders,
+    })
+    .then((res) => res.json())
+    .then((body) => body.items ?? []);
+}
+
+const AUTO_PREFIXES = ['wall-auto-', 'door-auto-'];
+
 test.describe('Auto wall detection', () => {
   test('D1: detecta paredes y la propuesta es reproducible', async ({
     page,
@@ -73,7 +89,7 @@ test.describe('Auto wall detection', () => {
     expect(first.status()).toBe(200);
     const firstBody = (await first.json()) as DetectWallsResponse;
 
-    // El plano dibujado tiene 5 líneas: tiene que encontrar Walls de verdad.
+    // El plano dibujado tiene 5 líneas: tiene que encontrar muros de verdad.
     expect(firstBody.wall_count).toBeGreaterThanOrEqual(3);
 
     const second = await detect(request, authHeaders, campaign.id, sceneId);
@@ -143,5 +159,114 @@ test.describe('Auto wall detection', () => {
     await page.getByTestId('detect-approve').click();
     await expect(review).toBeHidden();
     await expect(page.getByText(/paredes confirmadas/)).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('D5: detectar dos veces regenera el set automático, no lo apila', async ({
+    page,
+    request,
+    campaign,
+    authHeaders,
+  }) => {
+    await page.goto('/');
+    const png = await blueprintMapPng(page);
+    const sceneId = await createSceneWithMap(request, authHeaders, campaign.id, png);
+
+    const autoCount = async () => {
+      const items = await sceneItems(request, authHeaders, campaign.id, sceneId);
+      return items.filter((i) => AUTO_PREFIXES.some((p) => i.id.startsWith(p))).length;
+    };
+
+    const detectarYAprobar = async () => {
+      await page.goto(`/campaigns/${campaign.id}`);
+      await page.locator('header select').selectOption(sceneId);
+      await expect(page.locator('canvas').first()).toBeVisible({ timeout: 15_000 });
+      await page.getByRole('button', { name: 'Construir' }).click();
+      await page.getByRole('button', { name: 'Detectar paredes' }).click();
+      const review = page.getByTestId('detect-review');
+      await expect(review).toBeVisible({ timeout: 30_000 });
+      await page.getByTestId('detect-approve').click();
+      await expect(review).toBeHidden();
+      // El guardado del grafo va con debounce: se espera a que llegue.
+      await expect
+        .poll(async () => (await autoCount()) > 0, { timeout: 10_000 })
+        .toBe(true);
+    };
+
+    await detectarYAprobar();
+    const primera = await autoCount();
+    expect(primera).toBeGreaterThanOrEqual(3);
+
+    await detectarYAprobar();
+    // La clave: los muros del set viejo se fueron, no quedaron debajo.
+    expect(await autoCount()).toBe(primera);
+  });
+
+  test('D6: la detección no borra lo que el DM dibujó a mano', async ({
+    page,
+    request,
+    campaign,
+    authHeaders,
+  }) => {
+    await page.goto('/');
+    const png = await blueprintMapPng(page);
+    const sceneId = await createSceneWithMap(request, authHeaders, campaign.id, png);
+
+    const saveRes = await request.put(
+      `${API}/campaigns/${campaign.id}/scenes/${sceneId}/items`,
+      {
+        headers: authHeaders,
+        data: {
+          items: [
+            {
+              id: 'wall-mano-1',
+              type: 'shape',
+              shape: {
+                type: 'line',
+                points: [0.1, 0.1, 0.2, 0.2],
+                stroke: '#fff',
+                strokeWidth: 2,
+              },
+              position: { x: 0, y: 0, z: 0 },
+              rotation: 0,
+              scale: 1,
+              layer: 1,
+              zIndex: 0,
+              locked: false,
+              visible: true,
+              metadata: {
+                type: 'wall',
+                wallType: 'solid',
+                material: 'stone',
+                height: 8,
+                thickness: 1,
+                opacity: 0.12,
+                lineOfSight: true,
+                movement: true,
+                soundOcclusion: 0.8,
+              },
+            },
+          ],
+        },
+      },
+    );
+    expect(saveRes.status()).toBe(200);
+
+    await page.goto(`/campaigns/${campaign.id}`);
+    await page.locator('header select').selectOption(sceneId);
+    await expect(page.locator('canvas').first()).toBeVisible({ timeout: 15_000 });
+    await page.getByRole('button', { name: 'Construir' }).click();
+    await page.getByRole('button', { name: 'Detectar paredes' }).click();
+    await expect(page.getByTestId('detect-review')).toBeVisible({ timeout: 30_000 });
+    await page.getByTestId('detect-approve').click();
+
+    await expect
+      .poll(
+        async () => {
+          const items = await sceneItems(request, authHeaders, campaign.id, sceneId);
+          return items.some((i) => i.id === 'wall-mano-1');
+        },
+        { timeout: 10_000 },
+      )
+      .toBe(true);
   });
 });

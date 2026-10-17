@@ -383,7 +383,15 @@ Gates: pytest 91, ruff limpio, e2e `scene`+`zone`+`map` **15/15**.
 
 **Gap de e2e cerrado (`detect-walls.spec.ts`, 4 casos):** no había ningún spec que tocara el endpoint. El mapa de prueba se genera con canvas en el navegador (`tests/helpers/image-helpers.ts`) porque `tests/assets/` no se versiona y un fixture binario no podía ir commiteado. D1 = reproducibilidad por API comparando geometría (los ids llevan timestamp + random por diseño), D2 = `?seed=`, D3 = 400 sin fondo, D4 = flujo UI Construir → Detectar paredes → Aprobar.
 
-**Deuda que sigue (NO tocar sin decisión):** una detección nueva solo **reemplaza la propuesta sin aprobar**; si el DM ya aprobó muros y vuelve a detectar, los nuevos se suman encima de los aprobados. Con detección determinista eso es visible (muro duplicado exacto). Las dos salidas son borrar los `wall-auto-*`/`door-auto-*` antes de proponer, o versionar la propuesta.
+**Deuda resuelta:** una detección nueva ahora **regenera** el set automático. `useWallDetection.handleAutoDetect` borra los items `wall-auto-*` / `door-auto-*` antes de proponer los nuevos, en vez de borrar solo la propuesta sin aprobar. Antes, detectar sobre muros ya aprobados apilaba una segunda copia encima; con la detección determinista esa copia era exacta.
+
+- `lib/autoDetected.ts` (`isAutoDetectedItem`) centraliza el marcador. Es el prefijo de id y no un flag de metadata a propósito: los muros detectados en campañas viejas no tienen flag, y con la detección determinista el prefijo es lo único que separa "generado" de "dibujado a mano" sin adivinar por geometría.
+- Lo dibujado a mano nunca se toca: eso lo cubre D6.
+- De paso el `useCallback` pierde la dependencia `detectProposal` (ya no la leía).
+
+**D5** es el test de esta regla: detecta → aprueba → vuelve a detectar → el conteo de automáticos tiene que ser el mismo. **Verificado que falla sin el fix por la razón correcta: 10 automáticos donde debía haber 5.**
+
+Nota: `POST /scenes/{id}/detect-walls` también hace append en `scene.items_json`, pero el frontend persiste el grafo entero con debounce (`useSceneGraph.handleItemsChange` → `saveItems`), así que ese append se pisa. Queda como redundancia del endpoint, no como bug observable; se documentó y no se tocó.
 
 ---
 

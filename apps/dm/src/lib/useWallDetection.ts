@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { api } from '@/lib/api';
 import i18n from '@/lib/i18n';
+import { isAutoDetectedItem } from '@/lib/autoDetected';
 import type { SceneItem } from '@core/domain/types';
 import type { SceneGraph } from '@core/scene/scene-graph';
 import type { ToastRoll } from '@/lib/toastQueue';
@@ -45,6 +46,11 @@ export interface UseWallDetectionResult {
  * grafo y deja una propuesta abierta. Hasta que el DM apruebe o descarte, los
  * items son proposal, no geometría aceptada. Por eso `detectProposal` es
  * estado de primera clase y no un detalle del toast.
+ *
+ * Regla de re-detección: cada detección **regenera** el set automático (los
+ * items que خروج de una detección anterior se borran antes de proponer los
+ * nuevos). Detectar dos veces no apila dos juegos de muros; lo dibujado a mano
+ * nunca se toca.
  */
 export function useWallDetection({
   campaignId,
@@ -66,10 +72,13 @@ export function useWallDetection({
     setDetectingWalls(true);
     try {
       const result = await api.scenes.detectWalls(campaignId, sceneId, useAi ? 'ai' : detectionMode);
-      // Una detección nueva reemplaza la propuesta anterior sin revisar.
-      const prevIds = new Set(detectProposal?.ids ?? []);
-      if (prevIds.size > 0) {
-        for (const id of prevIds) graphRef.removeItem(id);
+      // Una deteccion REGENERA el set automatico: se va lo que salio de una
+      // deteccion anterior y se propone de nuevo. Antes solo se reemplazaba la
+      // propuesta sin aprobar, asi que detectar sobre muros ya aprobados
+      // acumulaba una segunda copia encima, y como la deteccion ahora es
+      // determinista esa copia era exacta. Lo dibujado a mano no se toca.
+      for (const item of graphRef.getItems()) {
+        if (isAutoDetectedItem(item)) graphRef.removeItem(item.id);
       }
       const items = ((result.items ?? []) as SceneItem[]).filter((item) => item && item.id);
       for (const item of items) {
@@ -122,7 +131,7 @@ export function useWallDetection({
     } finally {
       setDetectingWalls(false);
     }
-  }, [campaignId, sceneId, graphRef, handleItemsChange, detectionMode, useAi, detectProposal, push]);
+  }, [campaignId, sceneId, graphRef, handleItemsChange, detectionMode, useAi, push]);
 
   const handleDetectApprove = useCallback(() => {
     if (!detectProposal) return;
