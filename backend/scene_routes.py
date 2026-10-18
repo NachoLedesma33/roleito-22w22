@@ -16,7 +16,7 @@ import json
 from pathlib import Path
 
 from vault import get_api_key
-from routes import broadcast_revision
+from routes import broadcast_positions, broadcast_revision
 
 router = APIRouter(tags=["scenes"])
 
@@ -624,6 +624,12 @@ async def player_move_character(
     sc.last_move_at = now
 
     await db.commit()
-    await db.refresh(sc)
-    await broadcast_revision(db, campaign_id)
+    # Sin `db.refresh()`: el engine usa `expire_on_commit=False`, asi que los
+    # atributos que acabamos de escribir siguen cargados y son los que devuelve la
+    # respuesta. El refresh era un SELECT de mas por movimiento (medido: 14 ms).
+    #
+    # Y NO es `broadcast_revision`: mover un token no es un cambio de estado de
+    # campana, es una posicion. Con revision, cada observador respondia bajando el
+    # snapshot entero (~47 KB) por cada tick de teclado.
+    await broadcast_positions(campaign_id, scene_id, [_sc_response(sc).model_dump()])
     return _sc_response(sc)
