@@ -45,6 +45,7 @@ import hashlib
 import json
 import os
 import base64
+import time
 from datetime import datetime
 
 from services.assets import (
@@ -71,7 +72,58 @@ def _parse_dt(value):
 campaigns_router = APIRouter(tags=["campaigns"])
 
 
+_content_cache: dict[str, tuple[float, str]] = {}
+_revision_epoch: dict[str, int] = {}
+
+# La revision es un "cambio algo?" y no un "que hay?". Nadie la lee como dato,
+# solo se compara con la anterior. El costo de calcularla es 6 SELECTs + un sha1
+# de TODO el estado de la campana (medido: 25 ms), y se pide en cada mutacion y en
+# cada sondeo de respaldo.
+#
+# Se parte en DOS caches con roles distintos porque responden a preguntas distintas:
+#
+# - `_content_cache`: el hash del contenido. Solo depende de las filas, asi que se
+#   cachea un poco mas tiempo. Un sondeo con el WS caido (16 ms antes) lo reutiliza
+#   en vez de volver a hashear la campana entera.
+# - `_revision_epoch`: un contador que incrementa CADA mutacion. Es lo que hace que
+#   la revision cambie al instante sin recalcular nada: `mutacion -> epoch+1`, y
+#   el siguiente sondeo pega ese numero al hash cacheado. Si solo se cacheara el
+#   contenido, una mutacion nueva tardaria hasta el TTL en verse (y asi rompio
+#   `test_quest_mutations_change_revision`).
+_CONTENT_TTL_S = 1.0
+
+
+def _cached_content(campaign_id: str) -> str | None:
+    hit = _content_cache.get(campaign_id)
+    if hit is None:
+        return None
+    at, h = hit
+    if time.monotonic() - at > _CONTENT_TTL_S:
+        return None
+    return h
+
+
 async def compute_player_revision(db: AsyncSession, campaign_id: str) -> str:
+    cached = _cached_content(campaign_id)
+    if cached is None:
+        cached = await _compute_content_hash(db, campaign_id)
+        _content_cache[campaign_id] = (time.monotonic(), cached)
+    epoch = _revision_epoch.get(campaign_id, 0)
+    return hashlib.sha1(f"{cached}:{epoch}".encode()).hexdigest()[:16]
+
+
+def invalidate_player_revision(campaign_id: str) -> None:
+    """Marca que la campana cambio: el proximo puente se ve distinto al instante.
+
+    Se llama en `broadcast_revision`, o sea desde TODAS las mutaciones. El
+    contenido hash puede quedar cacheado (el epoch ya lo distingue), pero si la
+    fila cambio de forma que el hash no alcance, `_compute_content_hash` se
+    refresca solo cuando el TTL vence.
+    """
+    _revision_epoch[campaign_id] = _revision_epoch.get(campaign_id, 0) + 1
+
+
+async def _compute_content_hash(db: AsyncSession, campaign_id: str) -> str:
     scenes_r = await db.execute(
         select(
             Scene.id, Scene.name, Scene.status, Scene.background_path,
@@ -182,8 +234,33 @@ ws_manager = CampaignWSManager()
 
 async def broadcast_revision(db: AsyncSession, campaign_id: str) -> None:
     """Empuja la revisión actual a los players conectados (wake de snapshot)."""
+    # Invalida PRIMERO: esta funcion la llama toda mutacion, y es la que garantiza
+    # que la revision que sale por el WS sea la del estado nuevo.
+    invalidate_player_revision(campaign_id)
     revision = await compute_player_revision(db, campaign_id)
     await ws_manager.broadcast(campaign_id, {"type": "revision", "revision": revision})
+
+
+async def broadcast_positions(
+    campaign_id: str, scene_id: str, characters: list[dict]
+) -> None:
+    """Empuja SOLO las posiciones que cambiaron, sin pedir un snapshot.
+
+    Mover un token es la mutacion mas frecuente de todas (cada tecla, cada tick) y
+    con `broadcast_revision` cada observador terminaba bajando el snapshot COMPLETO
+    de la campana: ~47 KB por cada 15 cm de recorrido. Medido: un token moviendose
+    produjo 71 snapshots (3.3 MB) en 9.6 s y el observador cayo a 10 FPS. Con este
+    mensaje el observador parchea `characters` en memoria y no descarga nada.
+
+    Ojo con la revision: el epoch SI se bumpea (aca y en `broadcast_revision`),
+    asi que quien solo tiene el sondeo de respaldo la ve cambiar y baja el
+    snapshot. Ese camino es el lento y es aceptable: es el respaldo del respaldo.
+    """
+    invalidate_player_revision(campaign_id)
+    await ws_manager.broadcast(
+        campaign_id,
+        {"type": "scene_characters", "scene_id": scene_id, "characters": characters},
+    )
 
 
 @campaigns_router.websocket("/ws/invite/{code}")
