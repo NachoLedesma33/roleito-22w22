@@ -1,4 +1,4 @@
-from sqlalchemy import text
+from sqlalchemy import event, text
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from models import Base
 from datetime import datetime
@@ -13,7 +13,43 @@ logger = logging.getLogger("roleito.db")
 DB_PATH = Path(os.environ.get("ROLEITO_DB_PATH") or Path(__file__).parent.parent / "data" / "roleito.db")
 DB_URL = f"sqlite+aiosqlite:///{DB_PATH}"
 
-engine = create_async_engine(DB_URL, echo=False)
+engine = create_async_engine(
+    DB_URL,
+    echo=False,
+    # `timeout` es el lock de escritura de SQLite: sin esto, dos escritores
+    # simultaneos reciben "database is locked" en vez de esperar.
+    connect_args={"timeout": 30.0},
+)
+
+
+@event.listens_for(engine.sync_engine, "connect")
+def _sqlite_pragmas(dbapi_connection, _connection_record):
+    """Pragmas POR CONEXION. Un `PRAGMA` suelto en `init_db` no alcanza.
+
+    Un token que se mueve escribe ~25 veces por segundo y, mientras tanto, cada
+    observador sondea la revision. Con los defaults de SQLite eso se serializa
+    TODO: el rollback journal bloquea lectores y escritores, y `synchronous=FULL`
+    hace fsync en cada commit. Medido en esta maquina antes del cambio:
+    `PATCH /move` p50 136 ms / p95 437 ms, contra 5 ms de un endpoint sin base.
+
+    - WAL: lectores y escritor conviven. El sondeo de revision deja de pelearse
+      con el movimiento del token.
+    - `synchronous=NORMAL` en WAL no fsyncea en cada commit (solo en el
+      checkpoint). Lo que se pierde es la ultima transaccion si se corta la LUZ;
+      un crash de la app no pierde nada. Para un VTT local-first es el canje.
+
+    Va por `cursor().execute(<string>)` y no por `text()`: el adaptador de
+    aiosqlite espera SQL plano y colgaría el arranque con una `TextClause`.
+    """
+    cur = dbapi_connection.cursor()
+    try:
+        cur.execute("PRAGMA journal_mode=WAL")
+        cur.execute("PRAGMA synchronous=NORMAL")
+        cur.execute("PRAGMA busy_timeout=30000")
+    finally:
+        cur.close()
+
+
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 MIGRATIONS = [
