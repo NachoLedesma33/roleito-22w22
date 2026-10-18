@@ -261,8 +261,22 @@ export default function DmDashboard() {
       sock.onmessage = async (ev) => {
         if (cancelled) return;
         try {
-          const msg = JSON.parse(ev.data as string) as { type?: string };
-          if (msg.type === 'revision' && Date.now() - lastLocalChangeRef.current > 500) {
+          const msg = JSON.parse(ev.data as string) as {
+            type?: string;
+            scene_id?: string;
+            characters?: SceneCharacter[];
+          };
+          // Camino barato: un token se movio. Antes esto caia al `revision` y
+          // hacia `GET /scenes/{id}/characters` por cada tick de teclado.
+          if (
+            msg.type === 'scene_characters' &&
+            msg.scene_id === activeScene.id &&
+            Date.now() - lastLocalChangeRef.current > 500 &&
+            Array.isArray(msg.characters) &&
+            msg.characters.length > 0
+          ) {
+            setSceneChars(msg.characters);
+          } else if (msg.type === 'revision' && Date.now() - lastLocalChangeRef.current > 500) {
             const sc = await api.scenes.getCharacters(campaignId, activeScene.id);
             if (!cancelled) setSceneChars(sc);
           }
