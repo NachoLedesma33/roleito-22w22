@@ -40,7 +40,7 @@ export default function SegmentedControl<T extends string>({
     <div
       role="radiogroup"
       aria-label={label}
-      className={cn('flex items-center gap-1', className)}
+      className={cn('flex items-center gap-0.5', className)}
       data-testid={testId}
     >
       {options.map((opt) => (
@@ -53,10 +53,15 @@ export default function SegmentedControl<T extends string>({
           data-testid={opt.testId ?? `segmented-${opt.value}`}
           onClick={() => onChange(opt.value)}
           className={cn(
-            'text-[10px] px-2 py-0.5 rounded transition-colors',
+            // Antes: `text-[10px] px-2 py-0.5` → 19px de alto. Este control es el
+            // que decide si lo que pintás tapa o no, y a 19px no se distingue de
+            // una etiqueta. 28px es el mínimo razonable y coincide con IconButton.
+            'rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs leading-4 transition-colors',
+            'duration-[var(--dur-fast)] ease-[var(--ease-standard)]',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]',
             value === opt.value
-              ? (opt.activeClassName ?? 'bg-green-600 text-white')
-              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]',
+              ? (opt.activeClassName ?? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)]')
+              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]',
             buttonClassName,
           )}
         >

@@ -77,6 +77,33 @@ const CURSORS: Record<ResizeEdge, string> = {
   sw: 'nesw-resize',
 };
 
+/**
+ * Botón de la cabecera. El `title` va también como `aria-label` porque los
+ * locators de e2e los buscan por nombre accesible (y el SVG no aporta texto al
+ * DOM).
+ */
+function PanelAction({
+  onClick,
+  label,
+  children,
+}: {
+  onClick: () => void;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      className="grid h-6 w-6 place-items-center rounded-[var(--radius-sm)] text-[var(--text-secondary)] transition-colors duration-[var(--dur-fast)] ease-[var(--ease-standard)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+    >
+      {children}
+    </button>
+  );
+}
+
 // Global minimize registry
 export type MinimizedCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 type MinimizedEntry = {
@@ -327,7 +354,7 @@ export default function HudPanel({
     <div
       ref={panelRef}
       data-testid={`hud-${panelId}`}
-      className={`fixed bg-[var(--bg-primary)] [backdrop-filter:blur(2px)] border border-[var(--bg-tertiary)] rounded-lg shadow-lg flex flex-col ${className}`}
+      className={`fixed flex flex-col overflow-hidden border border-[var(--border)] bg-[var(--bg-primary)] [backdrop-filter:blur(8px)] rounded-[var(--radius-lg)] shadow-2xl shadow-black/50 ${className}`}
       style={
         maximized
           ? { left: '4vw', top: '4vh', width: '92vw', height: '88vh', zIndex, cursor: 'default' }
@@ -342,49 +369,42 @@ export default function HudPanel({
             }
       }
     >
-      {/* Drag bar — botones siempre visibles */}
+      {/*
+        Barra de arrastre. Antes era una tira absoluta de 24px encima del
+        contenido y el cuerpo tenía que compensarla con `pt-6`: por eso los
+        botones quedaban pegados al borde y el contenido starting right below.
+        Ahora la barra es una fila real del flujo y el cuerpo no necesita hack.
+      */}
       <div
-        className="absolute inset-x-0 top-0 h-6 cursor-grab active:cursor-grabbing group"
+        className={`flex shrink-0 items-center gap-2 border-b border-[var(--border)] px-3 select-none ${
+          maximized ? '' : 'cursor-grab active:cursor-grabbing'
+        }`}
+        style={{ height: 36 }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
       >
-        <span className="absolute left-2 top-1 text-[10px] leading-none font-medium text-[var(--text-secondary)] truncate max-w-[60%] pointer-events-none select-none">
+        <span className="pointer-events-none flex-1 truncate text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--text-secondary)]">
           {title}
         </span>
 
-        <div className="absolute right-1 top-1 flex gap-1">
-          <button
-            onClick={handleMinimize}
-            className="bg-[var(--bg-tertiary)] text-[var(--text-primary)] hover:text-white p-1 rounded"
-            title="Minimizar"
-            aria-label="Minimizar"
-          >
-            <Minus className="h-3 w-3" />
-          </button>
-          <button
-            onClick={handleMaximize}
-            className="bg-[var(--bg-tertiary)] text-[var(--text-primary)] hover:text-white p-1 rounded"
-            title={maximized ? 'Restaurar' : 'Maximizar'}
-            aria-label={maximized ? 'Restaurar' : 'Maximizar'}
-          >
-            {maximized ? <Copy className="h-3 w-3" /> : <Square className="h-3 w-3" />}
-          </button>
+        <div className="flex shrink-0 items-center gap-0.5">
+          <PanelAction onClick={handleMinimize} label="Minimizar">
+            <Minus className="h-3.5 w-3.5" />
+          </PanelAction>
+          <PanelAction onClick={handleMaximize} label={maximized ? 'Restaurar' : 'Maximizar'}>
+            {maximized ? <Copy className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
+          </PanelAction>
           {hideClose ? null : (
-            <button
-              onClick={onClose}
-              className="bg-[var(--bg-tertiary)] text-[var(--text-primary)] hover:text-white p-1 rounded"
-              title="Cerrar"
-              aria-label="Cerrar"
-            >
-              <X className="h-3 w-3" />
-            </button>
+            <PanelAction onClick={onClose} label="Cerrar">
+              <X className="h-3.5 w-3.5" />
+            </PanelAction>
           )}
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-3 pt-6 scrollbar-none">{children}</div>
+      <div className="min-h-0 flex-1 overflow-y-auto p-4 scrollbar-none">{children}</div>
 
       {/* Edge/corner resize handles */}
       {edges.map((edge) => {
