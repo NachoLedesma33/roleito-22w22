@@ -39,7 +39,10 @@ test.describe('Dice Roller', () => {
   test('DR3: roll 4d6 muestra 4 resultados', async ({ page, campaign }) => {
     await openRoller(page, campaign.id);
 
-    const plus = page.getByRole('button', { name: '+' });
+    // Acotado al panel: `getByRole` matchea por SUBSTRING del nombre accesible, y
+// los botones de deshacer/rehacer se llaman "Deshacer (Ctrl+Z)" / "Rehacer
+// (Ctrl+Shift+Z)", que también contienen un "+".
+const plus = page.getByTestId('hud-dice-roller').getByRole('button', { name: '+' });
     await plus.click();
     await plus.click();
     await plus.click();
