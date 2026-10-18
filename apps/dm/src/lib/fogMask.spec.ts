@@ -170,6 +170,8 @@ describe('fogMask/roundtrip', () => {
     const added = res.items.find((i) => i.id.includes('fog-zone'))
     expect(added).toBeDefined()
     expect((added?.metadata as { revealed: boolean }).revealed).toBe(false)
+    // Modo `secret`: con `cover` la herramienta no tapaba nada para el jugador.
+    expect((added?.metadata as { mode?: string }).mode).toBe('secret')
     expect((added?.shape as ShapePolygon | undefined)?.points).toEqual([0.4, 0.4, 0.6, 0.4, 0.6, 0.6, 0.4, 0.6])
     expect(((added?.shape as ShapePolygon | undefined)?.points ?? []).length % 2).toBe(0)
     expect(added?.layer).toBe(SceneLayer.FOG)

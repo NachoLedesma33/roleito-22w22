@@ -176,7 +176,10 @@ export function toggleZoneFog(items: SceneItem[], zoneId: string, zonePolygon: [
     disableAttachmentBehavior: [],
     layer: SceneLayer.FOG,
     shape: { type: 'polygon', points: poly, fill: '#000000' },
-    metadata: { type: 'fog', fogType: 'static', revealed: false },
+    // `secret` y no nada: `cover` es penumbra y no le gana a nada, asi que la
+    // herramienta "Niebla de zona" tapaba la zona y el jugador no veía cambio
+    // ninguno. Cubrir una zona tiene que tapar de verdad.
+    metadata: { type: 'fog', fogType: 'static', mode: 'secret', revealed: false },
   }
   return { items: [...items, fogItem], applied: 'hide' }
 }

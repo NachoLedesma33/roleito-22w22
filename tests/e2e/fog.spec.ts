@@ -307,6 +307,8 @@ test.describe('Fog (Phase D)', () => {
     const fogAfterHide = fogItems(items);
     expect(fogAfterHide).toHaveLength(1);
     expect((fogAfterHide[0].metadata as { revealed: boolean }).revealed).toBe(false);
+    // `secret`: con `cover` el jugador no veía diferencia ninguna al "cubrir".
+    expect((fogAfterHide[0].metadata as { mode?: string }).mode).toBe('secret');
     const pts = (fogAfterHide[0].shape as { points?: number[] }).points ?? [];
     expect(pts.length % 2).toBe(0);
     for (const p of pts) {
