@@ -159,6 +159,7 @@ Cada paso es un commit con CI verde. Los tests van **antes** de la implementaci�
   1. **La atenuación es del `dimRange` de la visión, no de la luz.** El §4.1 decía "celdas con luz entre 0 y el umbral se ven atenuadas, no negras", pero eso contradice el umbral duro que decide el §4bis.1: si una `normal` ve con 25%, la luz entre 0 y 25% es oscuridad. Lo que sí se atenúa es el borde del rango del personaje (`dimRange`, que `PlayerView.tsx:367` ya mandaba pero `computeVisibilityMask` ignoraba). Resultado: el `dimRange` deja de ser dato muerto.
   2. **El círculo ambiente es `ve_en_oscuridad` de una `normal`**, no un parche aparte: `dist <= AMBIENT_RADIUS`. Es la forma de que §4bis.2 siga siendo cierto sin una bandera especial.
   3. **`blindsight`/`tremorsense`/`truesight` caen en la rama de `normal`**, explícito y no por default silencioso (el §6 los deja fuera; el paso 5 saca sus opciones del dropdown del DM).
+- **Zonas ≠ niebla.** Una `ShadowZone` es oclusor de movimiento, luz y LoS (su perímetro bloquea visión en `losSystem.ts`): es un muro con nombre, no visibilidad. Por eso se dibuja distinto para el jugador: **solo el perímetro, sin relleno** (el relleno de color tapaba el mapa y el jugador no lo pidió), y sin los marcadores de portal, que son dato del DM. Lo único que tapa de verdad es la niebla.
 - **Pendiente de los pasos siguientes**: `composePerceptionMask` todavía no sabe leer la niebla que el DM pintó — recibe un `DmFogGrid` de roles por celda, pero construirlo desde los `SceneItem` es trabajo del paso 4/5 (hoy la niebla del DM es polígono con `revealed: boolean`).
 - **Paso 4 (HECHO)**: el worker (`losWorker.ts`) devuelve `{cols, rows, data: Float32Array}` en vez del polígono con `zIndex: 1000`, y `FogOverlay` lo pinta como textura (`paintPerception`: rellena con el color de niebla y perfora con `destination-out`, que es el mismo mecanismo de siempre pero con alpha continuo). Muertos en este commit: `losMaskToVisionRegion`, `computeVisionRegions`, `lightToVisionRegion` y sus specs. Cuatro cosas que se decided acá:
   1. **El jugador ya no recibe polígonos de niebla**: `fogRegions` se le pasa vacío y todo entra por `fogPerception`. El DM sigue con polígonos (`§4.3`: el DM ve todo).
@@ -178,6 +179,20 @@ Cada paso es un commit con CI verde. Los tests van **antes** de la implementaci�
   1. **El worker acumula y el main thread guarda.** El worker no toca `localStorage` (no existe ahí): recibe `explored` (lo previamente guardado) y `accumulate`, y devuelve `explored` (la unión) en el mismo postMessage. El main thread llama a `saveExplored` y actualiza el ref. Así el guardado no bloquea el render.
   2. **`encodeRle` siempre empieza con un run de ceros**, aunque la máscara arranque vista: si no, el decoder no sabe si arrancó en 0 o en 1 y una máscara toda vista se guardaría como toda oculta. Costó un test rojo.
   3. **El cálculo de cols/rows de la memoria se hace en el main thread**, no en el worker, porque `loadExplored` tiene que correr antes del primer job (si el worker lo calculara, la memoria llegaría tarde y la primera máscara saldría sin recordar).
+
+### Invariantes de render (los 5 bugs que la suite no veía)
+
+Todo lo de arriba estaba bien y, aun así, **en la pantalla del jugador no se veía nada**. Los `e2e` de niebla solo assertaban `data-visible-cells`, que es la **máscara**: con la máscara bien y la textura rota, la suite entera pasaba en verde. Estos son los cincoFAULTS y las reglas que salen, para que no se repitan.
+
+1. **`destination-out` perfora, no pinta.** El alpha va tal cual: `1 = agujero = se ve de plano`. Invertirlo (`(1 - v)`) deja el mapa al revés: niebla donde el personaje ve y claridad donde no ve, que es indistinguible de "no sincroniza".
+2. **Una `CanvasTexture` no se puede redimensionar después de su primera subida.** Three usa `texImage2D` solo la primera vez y después `texSubImage2D`; si el canvas cambió de tamaño el offset desborda (`GL_INVALID_VALUE: ... Offset overflows texture dimensions`), la subida falla **sin ningún error en la app** y la textura queda obsoleta para siempre. El canvas nace con su tamaño final; si el aspect del mapa cambia, se crea otra textura.
+3. **El plano de niebla va con `depthTest: false`.** Está en `y=0.08` y los tokens en `y≈0.6` (modelos 3D en `y=6`+): con el test de profundidad la niebla se pierde detrás de ellos y el jugador ve a un NPC parado en una zona secreta.
+4. **La revisión del jugador tiene que incluir `items_json`.** `compute_player_revision` no lo miraba; `updated_at` con `onupdate` no alcanza como garantía de wake cuando los items cambian seguido.
+5. **Todo secreto es invisible en el mapa del DM, y eso también es un bug.** Con `Secreto` (el default) el DM pulsaba, arrastraba y no pasaba nada: cero feedback. Los secretos llegan a `FogOverlay` marcados y se pintan como contorno ámbar punteado, compuestos en un canvas aparte para que el solapamiento de trazos no acumule alpha.
+
+**El seam que faltaba**: `tests/helpers/pixels.ts` lee píxeles del canvas de Three con `readPixels` dentro de `requestAnimationFrame` (no sirve `toDataURL` ni `drawImage` sin `preserveDrawingBuffer`). `fog.spec.ts` `F7`/`F8` lo usan contra un fondo **claro**: con un fondo oscuro, "niebla" y "mapa" dan el mismo brillo y la aserción pasa siempre.
+
+**Y el default del pincel es `secret`, no `cover`.** `cover` es penumbra: no le gana a nada, así que pintar no cambiaba nada visible y era indistinguible de que la herramienta no agarrara. Queda como opción explícita con el matiz en el tooltip. `toggleZoneFog` crea `secret` por lo mismo: anunciaba "cubriendo la zona" y al jugador no le pasaba nada.
 
 ### Riesgos y caminos de aborto
 
