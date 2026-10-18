@@ -9,19 +9,31 @@ interface FogBrushCanvasProps {
   radius: number
   mapWidth: number
   mapHeight: number
-  onPaint: (point: { x: number; y: number }) => void
+  /**
+   * Un trazo = la línea central de la pincelada, ya muestreada.
+   *
+   * Antes se emitía un item por punto de mouse (`onPaint`), y un drag de ancho
+   * completo dejaba ~25 items: cada uno es un mesh en la escena, una fila en
+   * `items_json` que viaja entero a cada jugador, y un turno de `buildDmFogGrid`.
+   * Ahora el trazo se arma acá y se entrega **una vez**, al soltar.
+   */
+  onStroke: (points: number[]) => void
   renderMode?: RenderMode
 }
+
+/** Muestreo mínimo del trazo, en espacio normalizado. */
+const MIN_SAMPLE_DIST = 0.02
 
 export default function FogBrushCanvas({
   reveal,
   radius,
   mapWidth,
   mapHeight,
-  onPaint,
+  onStroke,
   renderMode = '2d',
 }: FogBrushCanvasProps) {
   const draggingRef = useRef(false)
+  const strokeRef = useRef<number[]>([])
   const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null)
   const Y = getY(renderMode)
 
@@ -33,15 +45,26 @@ export default function FogBrushCanvas({
     [mapWidth, mapHeight],
   )
 
+  const sample = useCallback((p: { x: number; y: number }) => {
+    const stroke = strokeRef.current
+    const n = stroke.length
+    if (n >= 2) {
+      const dx = p.x - stroke[n - 2]
+      const dy = p.y - stroke[n - 1]
+      if (Math.hypot(dx, dy) < MIN_SAMPLE_DIST) return
+    }
+    stroke.push(p.x, p.y)
+  }, [])
+
   const handleDown = useCallback(
     (e: ThreeEvent<PointerEvent>) => {
       e.stopPropagation()
       draggingRef.current = true
       const p = toNormalized(e)
+      strokeRef.current = [p.x, p.y]
       setLastPoint(p)
-      onPaint(p)
     },
-    [onPaint, toNormalized],
+    [toNormalized],
   )
 
   const handleMove = useCallback(
@@ -50,15 +73,22 @@ export default function FogBrushCanvas({
       e.stopPropagation()
       const p = toNormalized(e)
       setLastPoint(p)
-      onPaint(p)
+      sample(p)
     },
-    [onPaint, toNormalized],
+    [toNormalized, sample],
   )
 
-  const handleUp = useCallback((e: ThreeEvent<PointerEvent>) => {
-    e.stopPropagation()
-    draggingRef.current = false
-  }, [])
+  const handleUp = useCallback(
+    (e: ThreeEvent<PointerEvent>) => {
+      e.stopPropagation()
+      if (!draggingRef.current) return
+      draggingRef.current = false
+      const points = strokeRef.current
+      strokeRef.current = []
+      if (points.length >= 2) onStroke(points)
+    },
+    [onStroke],
+  )
 
   return (
     <group>

@@ -106,7 +106,8 @@ interface SceneRendererProps {
   onDrawMove?: (point: { x: number; y: number }) => void;
   onDrawEnd?: () => void;
   fogBrush?: { mode: DmFogMode; radius: number } | null;
-  onFogPaint?: (point: { x: number; y: number }) => void;
+  /** Un trazo de pincel ya muestreado (línea central), entregado al soltar. */
+  onFogStroke?: (points: number[]) => void;
   fogRect?: { mode: DmFogMode } | null;
   onFogRect?: (points: number[]) => void;
   fogColor?: string;
@@ -2076,7 +2077,7 @@ export default function SceneRenderer({
   onDrawMove,
   onDrawEnd,
   fogBrush = null,
-  onFogPaint,
+  onFogStroke,
   fogRect = null,
   onFogRect,
   fogColor = 'rgba(15, 23, 42, 0.55)',
@@ -2309,15 +2310,23 @@ export default function SceneRenderer({
         />
       )}
       {(fogRegions.length > 0 || fogPerception) && (
-        <FogOverlay regions={fogRegions} perception={fogPerception} color={fogColor} mapWidth={mapWidth} mapHeight={mapHeight} renderMode={renderMode} />
+        <FogOverlay
+          regions={fogRegions}
+          perception={fogPerception}
+          paintsOverContent={readOnly}
+          color={fogColor}
+          mapWidth={mapWidth}
+          mapHeight={mapHeight}
+          renderMode={renderMode}
+        />
       )}
-      {fogBrush && onFogPaint && (
+      {fogBrush && onFogStroke && (
         <FogBrushCanvas
           reveal={fogBrush.mode === 'reveal'}
           radius={fogBrush.radius}
           mapWidth={mapWidth}
           mapHeight={mapHeight}
-          onPaint={onFogPaint}
+          onStroke={onFogStroke}
           renderMode={renderMode}
         />
       )}

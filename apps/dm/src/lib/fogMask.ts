@@ -8,6 +8,11 @@ export interface FogRegion {
   revealed: boolean
   zIndex: number
   /**
+   * Si está, `points` es la línea central del trazo y esto el radio: hay que
+   * dibujarlo con grosor, no rellenarlo.
+   */
+  brushRadius?: number
+  /**
    * Solo para el mapa del DM. Un secreto no se pinta como niebla (si el DM se
    * dibujara su propia zona secreta se ciega), pero tampoco puede desaparecer:
    * sin esta marca el DM pintaba en `Secreto` y no veía absolutamente nada, y
@@ -40,6 +45,54 @@ export function fogItemMode(item: SceneItem): DmFogMode {
 }
 
 /**
+ * El radio del pincel de un item, o `null` si es un polígono relleno.
+ * La presencia del campo ES la marca: los items viejos no lo tienen.
+ */
+export function fogBrushRadius(item: SceneItem): number | null {
+  const meta = item.metadata as FogMetadata
+  const r = meta.brushRadius
+  return typeof r === 'number' && r > 0 ? r : null
+}
+
+/**
+ * Rasteriza un segmento con grosor en la rejilla, yendo solo sobre su bounding
+ * box. Importante: un trazo largo tiene el bbox de todo el mapa, así que probar
+ * celda por celda contra TODOS los segmentos sería O(celdas × segmentos) y peor
+ * que los discos sueltos que reemplaza.
+ */
+function stampSegment(
+  grid: DmFogGrid,
+  cols: number,
+  rows: number,
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
+  radius: number,
+  mode: DmFogMode,
+) {
+  const c0 = Math.max(0, Math.floor((Math.min(ax, bx) - radius) * cols))
+  const c1 = Math.min(cols - 1, Math.ceil((Math.max(ax, bx) + radius) * cols))
+  const r0 = Math.max(0, Math.floor((Math.min(ay, by) - radius) * rows))
+  const r1 = Math.min(rows - 1, Math.ceil((Math.max(ay, by) + radius) * rows))
+  const ex = bx - ax
+  const ey = by - ay
+  const len2 = ex * ex + ey * ey
+  const r2 = radius * radius
+  for (let r = r0; r <= r1; r++) {
+    const row = grid[r]
+    const ny = (r + 0.5) / rows
+    for (let c = c0; c <= c1; c++) {
+      if (row[c] === 'secret' || row[c] === 'reveal') continue
+      const dx = (c + 0.5) / cols - ax
+      const dy = ny - ay
+      const t = len2 === 0 ? 0 : Math.min(1, Math.max(0, (dx * ex + dy * ey) / len2))
+      if ((dx - ex * t) ** 2 + (dy - ey * t) ** 2 <= r2) row[c] = mode
+    }
+  }
+}
+
+/**
  * La niebla del DM como rejilla de roles, en la misma convención que la máscara
  * del LoS (`[row][col]` con el mapa centrado en el origen).
  */
@@ -48,9 +101,23 @@ export function buildDmFogGrid(items: SceneItem[], cols: number, rows: number): 
   for (const item of items) {
     if (item.metadata.type !== 'fog') continue
     const shape = item.shape
-    if (!shape || shape.type !== 'polygon' || shape.points.length < 6) continue
+    if (!shape || shape.type !== 'polygon' || shape.points.length < 2) continue
     const pts = shape.points
     const mode = fogItemMode(item)
+    const radius = fogBrushRadius(item)
+
+    if (radius !== null) {
+      // Trazo: un disco por segmento. Un solo punto es un segmento de largo 0.
+      for (let i = 0; i + 1 < pts.length; i += 2) {
+        const ax = pts[i]
+        const ay = pts[i + 1]
+        const hasNext = i + 3 < pts.length
+        stampSegment(grid, cols, rows, ax, ay, hasNext ? pts[i + 2] : ax, hasNext ? pts[i + 3] : ay, radius, mode)
+      }
+      continue
+    }
+
+    if (pts.length < 6) continue
     // Bounding box normalizado: sin esto cada polígono se prueba contra toda la
     // rejilla, y son miles de celdas por celda.
     let minX = Infinity
@@ -85,7 +152,10 @@ export function extractFogRegions(items: SceneItem[]): FogRegion[] {
     if (item.metadata.type !== 'fog') continue
     const shape = item.shape
     if (!shape || shape.type !== 'polygon') continue
-    if (shape.points.length < 6) continue
+    const radius = fogBrushRadius(item)
+    // Un trazo puede ser de un solo segmento (2 puntos); un polígono relleno
+    // necesita 3 para cerrar un área.
+    if (shape.points.length < (radius !== null ? 2 : 6)) continue
     const mode = fogItemMode(item)
     regions.push({
       id: item.id,
@@ -93,6 +163,7 @@ export function extractFogRegions(items: SceneItem[]): FogRegion[] {
       revealed: (item.metadata as FogMetadata).revealed ?? false,
       zIndex: item.zIndex,
       secret: mode === 'secret',
+      ...(radius !== null ? { brushRadius: radius } : {}),
     })
   }
   return regions

@@ -13,7 +13,7 @@ import { WEATHER_META, WEATHER_NONE_LABEL, WEATHER_KIND_LABEL, clampWeatherInten
 import { createEmptyDrawState, createWallItem, type DrawState } from '@/components/WallDrawer';
 import { createEmptyZoneDraft, createZoneItem, ZONE_COLORS, ZONE_DEFAULT_COLOR, type ZoneDraft } from '@/components/ZoneDrawer';
 import { zonesToGeometry } from '@/components/ZonePortal';
-import { circlePoints, toggleZoneFog, type DmFogMode } from '@/lib/fogMask';
+import { toggleZoneFog, type DmFogMode } from '@/lib/fogMask';
 import SegmentedControl, { type SegmentedOption } from '@/components/ui/SegmentedControl';
 import { createLightItem, LIGHT_PRESETS, attachLightToToken, detachLight, normalizeLightConfig, updateLightSource, FIRE_RADIUS_MIN, FIRE_RADIUS_MAX, FIRE_RADIUS_STEP, FIRE_RADIUS_DEFAULT } from '@/lib/light';
 import { LightMetadata } from '@core/domain/types';
@@ -124,7 +124,6 @@ export default function DmDashboard() {
       return 'secret';
     }
   });
-  const lastFogPointRef = useRef<{ x: number; y: number } | null>(null);
   const [zoneFogActive, setZoneFogActive] = useState(false);
   const [lightPlaceMode, setLightPlaceMode] = useState<{ preset: string; fx?: 'flame' | 'embers'; fxRadius?: number } | null>(null);
   const [placingToken, setPlacingToken] = useState<{ entity_type: string; entity_id: string } | null>(null);
@@ -529,7 +528,6 @@ const applyFogMode = useCallback(
 );
 
 const startFogMode = useCallback(() => {
-    lastFogPointRef.current = null
     setDrawState(null)
     setZoneDraft(null)
     cancelPortalMode()
@@ -543,7 +541,6 @@ const startFogMode = useCallback(() => {
   }, [cancelPortalMode, lastFogMode]);
 
   const startRectFogMode = useCallback(() => {
-    lastFogPointRef.current = null
     setDrawState(null)
     setZoneDraft(null)
     cancelPortalMode()
@@ -556,11 +553,8 @@ const startFogMode = useCallback(() => {
     setBuildMenuOpen(false)
   }, [cancelPortalMode, lastFogMode]);
 
-  const handleFogPaint = useCallback((point: { x: number; y: number }) => {
-    if (!fogMode) return
-    const last = lastFogPointRef.current
-    if (last && Math.hypot(point.x - last.x, point.y - last.y) < 0.04) return
-    lastFogPointRef.current = point
+  const handleFogStroke = useCallback((points: number[]) => {
+    if (!fogMode || points.length < 2) return
     const item: SceneItem = {
       id: `fog-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       name: 'Fog',
@@ -579,8 +573,16 @@ const startFogMode = useCallback(() => {
       attachmentIds: [],
       disableAttachmentBehavior: [],
       layer: SceneLayer.FOG,
-      shape: { type: 'polygon', points: circlePoints(point.x, point.y, fogMode.radius), fill: '#000000' },
-      metadata: { type: 'fog', fogType: 'static', mode: fogMode.mode, revealed: fogMode.mode === 'reveal' },
+      // `points` es la línea central y `brushRadius` el grosor: un item por
+      // pincelada, no uno por punto de mouse.
+      shape: { type: 'polygon', points, fill: '#000000' },
+      metadata: {
+        type: 'fog',
+        fogType: 'static',
+        mode: fogMode.mode,
+        revealed: fogMode.mode === 'reveal',
+        brushRadius: fogMode.radius,
+      },
     }
     graphRef.addItem(item)
     handleItemsChange(graphRef.getItems())
@@ -2917,7 +2919,7 @@ const startFogMode = useCallback(() => {
                 portalDraft={portalDraft}
                 fogBrush={fogMode}
                 fogColor="rgba(15, 23, 42, 0.55)"
-                onFogPaint={handleFogPaint}
+                onFogStroke={handleFogStroke}
                 fogRect={rectFogMode}
                 onFogRect={handleFogRect}
                 portalZones={portalZones}

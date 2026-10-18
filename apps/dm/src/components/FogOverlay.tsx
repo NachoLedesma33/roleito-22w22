@@ -16,6 +16,20 @@ export const FOG_MASK_SIZE = 512
  * tamaño final y, si el aspect del mapa cambia, se crea otra textura.
  */
 
+/** Traza la línea central de una región con el grosor del pincel. */
+function traceStroke(ctx: CanvasRenderingContext2D, r: FogRegion, w: number, h: number) {
+  ctx.beginPath()
+  for (let i = 0; i + 1 < r.points.length; i += 2) {
+    const px = r.points[i] * w
+    const py = r.points[i + 1] * h
+    if (i === 0) ctx.moveTo(px, py)
+    else ctx.lineTo(px, py)
+  }
+  // Un trazo de un solo punto es un punto: `stroke()` no pinta nada, hay que
+  // terminar en el mismo lugar para que la tapa redonda lo cubra.
+  if (r.points.length === 2) ctx.lineTo(r.points[0] * w, r.points[1] * h)
+}
+
 function paintMask(canvas: HTMLCanvasElement, color: string, regions: FogRegion[]) {
   const w = canvas.width
   const h = canvas.height
@@ -27,9 +41,11 @@ function paintMask(canvas: HTMLCanvasElement, color: string, regions: FogRegion[
   ctx.fillStyle = color
   ctx.fillRect(0, 0, w, h)
 
-  // Los secretos van a un canvas aparte y se componen de una sola vez: el
-  // pincel deja un item por trazo, así que pintarlos directo sobre el mapa
-  // amontonaba un contorno por trazo y el alpha se acumulaba en cadaOverlap.
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+
+  // Los secretos van a un canvas aparte y se componen de una sola vez: sin esto
+  // un trazo largo solapa sus propias partes y el alpha se acumula en cada una.
   const secrets = regions.filter((r) => r.secret)
   if (secrets.length > 0) {
     const hint = document.createElement('canvas')
@@ -40,14 +56,24 @@ function paintMask(canvas: HTMLCanvasElement, color: string, regions: FogRegion[
       hctx.strokeStyle = '#f59e0b'
       hctx.lineWidth = Math.max(2, Math.round(Math.min(w, h) / 180))
       hctx.setLineDash([12, 9])
+      hctx.lineCap = 'round'
+      hctx.lineJoin = 'round'
       for (const r of secrets) {
-        hctx.beginPath()
-        for (let i = 0; i < r.points.length; i += 2) {
-          const px = r.points[i] * w
-          const py = r.points[i + 1] * h
-          if (i === 0) hctx.moveTo(px, py)
-          else hctx.lineTo(px, py)
+        if (r.brushRadius !== undefined) {
+          // El contorno de un trazo son sus dos bordes; el del medio seria un
+          // tubo naranja en el medio de la niebla, que no dice nada.
+          hctx.lineWidth = Math.max(2, r.brushRadius * 2 * w)
+          hctx.beginPath()
+          for (let i = 0; i + 1 < r.points.length; i += 2) {
+            const px = r.points[i] * w
+            const py = r.points[i + 1] * h
+            if (i === 0) hctx.moveTo(px, py)
+            else hctx.lineTo(px, py)
+          }
+          hctx.stroke()
+          continue
         }
+        traceStroke(hctx, r, w, h)
         hctx.closePath()
         hctx.stroke()
       }
@@ -60,13 +86,17 @@ function paintMask(canvas: HTMLCanvasElement, color: string, regions: FogRegion[
   const order = [...regions].sort((a, b) => a.zIndex - b.zIndex)
   for (const r of order) {
     if (r.secret) continue
-    ctx.beginPath()
-    for (let i = 0; i < r.points.length; i += 2) {
-      const px = r.points[i] * w
-      const py = r.points[i + 1] * h
-      if (i === 0) ctx.moveTo(px, py)
-      else ctx.lineTo(px, py)
+
+    if (r.brushRadius !== undefined) {
+      ctx.globalCompositeOperation = r.revealed ? 'destination-out' : 'source-over'
+      ctx.strokeStyle = r.revealed ? '#000000' : color
+      ctx.lineWidth = Math.max(1, r.brushRadius * 2 * w)
+      traceStroke(ctx, r, w, h)
+      ctx.stroke()
+      continue
     }
+
+    traceStroke(ctx, r, w, h)
     ctx.closePath()
     if (r.revealed) {
       ctx.globalCompositeOperation = 'destination-out'
@@ -138,6 +168,16 @@ interface FogOverlayProps {
    * (`engineering/PLAN-VISION-PERCEPCION.md` §4.3: el DM ve todo).
    */
   perception?: PerceptionMask | null
+  /**
+   * Si la niebla tiene que pintar POR ENCIMA de tokens y modelos 3D.
+   *
+   * Solo el jugador: para él la niebla es lo que separa "veo" de "no veo", así
+   * que un token parado en una zona secreta no puede asomar. El DM la deja en
+   * `false` porque el §4.3 dice que el DM ve todo, y con `true` en un mapa 3D el
+   * plano de y=6 le tapaba sus propios modelos y se quedaba a ciegas en la mesa
+   * que está preparando.
+   */
+  paintsOverContent?: boolean
   color: string
   mapWidth: number
   mapHeight: number
@@ -147,6 +187,7 @@ interface FogOverlayProps {
 export default function FogOverlay({
   regions,
   perception = null,
+  paintsOverContent = false,
   color,
   mapWidth,
   mapHeight,
@@ -189,7 +230,7 @@ export default function FogOverlay({
         map={texture}
         transparent
         depthWrite={false}
-        depthTest={false}
+        depthTest={!paintsOverContent}
         toneMapped={false}
       />
     </mesh>

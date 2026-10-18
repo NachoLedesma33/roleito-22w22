@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { SceneItem, SceneLayer, ShapePolygon } from '@core/domain/types'
-import { buildDmFogGrid, circlePoints, extractFogRegions, fogItemMode, isFogItem, pointInPolygon, toggleZoneFog } from './fogMask'
+import { buildDmFogGrid, circlePoints, extractFogRegions, fogBrushRadius, fogItemMode, isFogItem, pointInPolygon, toggleZoneFog } from './fogMask'
 
 function fogItem(id: string, revealed: boolean, points: number[], zIndex = 0): SceneItem {
   return {
@@ -24,6 +24,16 @@ function fogItem(id: string, revealed: boolean, points: number[], zIndex = 0): S
     shape: { type: 'polygon', points, fill: '#000000' },
     metadata: { type: 'fog', fogType: 'static', revealed },
   }
+}
+
+function strokeItem(id: string, points: number[], brushRadius: number, mode?: string): SceneItem {
+  const item = fogItem(id, false, points)
+  item.metadata = {
+    ...(item.metadata as object),
+    brushRadius,
+    ...(mode ? { mode } : {}),
+  } as typeof item.metadata
+  return item
 }
 
 describe('fogMask/buildDmFogGrid', () => {
@@ -68,6 +78,71 @@ describe('fogMask/buildDmFogGrid', () => {
     const notFog: SceneItem = { ...fogItem('w', true, [0, 0, 1, 0, 1, 1]), metadata: { type: 'wall' } as unknown as SceneItem['metadata'] }
     const grid = buildDmFogGrid([notFog], COLS, ROWS)
     expect(grid.every((row) => row.every((c) => c === null))).toBe(true)
+  })
+})
+
+describe('fogMask/trazo de pincel', () => {
+  const COLS = 100
+  const ROWS = 100
+
+  it('cubre la línea central y el grosor, y no lo que está afuera', () => {
+    // Trazo horizontal por y=0.5, radio 0.1. Corto a propósito: con los topes
+    // redondos un trazo largo cubre también las celdas de los bordes.
+    const grid = buildDmFogGrid([strokeItem('s1', [0.3, 0.5, 0.7, 0.5], 0.1)], COLS, ROWS)
+    expect(grid[50][50]).toBe('cover') // sobre la línea
+    expect(grid[45][50]).toBe('cover') // dentro del radio (0.05)
+    expect(grid[55][50]).toBe('cover')
+    expect(grid[38][50]).toBeNull() // 0.12 de distancia: afuera
+    expect(grid[50][15]).toBeNull() // antes del arranque
+    expect(grid[50][85]).toBeNull() // después del final
+  })
+
+  it('une dos puntos con una tira continua, no dos discos sueltos', () => {
+    // Dos puntos muy separados: tiene que haber niebla en el medio.
+    const grid = buildDmFogGrid([strokeItem('s2', [0.1, 0.5, 0.9, 0.5], 0.05)], COLS, ROWS)
+    for (const c of [15, 30, 45, 60, 75, 85]) expect(grid[50][c]).toBe('cover')
+  })
+
+  it('un trazo de un solo punto es un disco', () => {
+    const grid = buildDmFogGrid([strokeItem('s3', [0.5, 0.5], 0.1)], COLS, ROWS)
+    expect(grid[50][50]).toBe('cover')
+    expect(grid[45][50]).toBe('cover')
+    expect(grid[38][50]).toBeNull()
+  })
+
+  it('respeta el modo y la precedencia: secret gana sobre cover', () => {
+    const grid = buildDmFogGrid(
+      [strokeItem('s4', [0.2, 0.5, 0.8, 0.5], 0.15, 'cover'), strokeItem('s5', [0.5, 0.3, 0.5, 0.7], 0.15, 'secret')],
+      COLS,
+      ROWS,
+    )
+    expect(grid[50][50]).toBe('secret')
+    expect(grid[50][10]).toBe('cover')
+  })
+
+  it('el trazo cubre LAS MISMAS celdas que sellarlo con un item por punto', () => {
+    // El motivo del cambio no es el área (que es idéntica) sino el conteo de
+    // items: 25 puntos de mouse eran 25 items, 25 meshes y 25 filas de
+    // `items_json` en el snapshot de cada jugador. Acá va UN item.
+    const samples = 25;
+    const sello: SceneItem[] = [];
+    for (let i = 0; i < samples; i++) {
+      sello.push(fogItem(`k${i}`, false, circlePoints(0.1 + (0.8 * i) / (samples - 1), 0.5, 0.04)));
+    }
+    const area = (grid: (string | null)[][]) => grid.flat().filter((c) => c !== null).length;
+    const trazo = buildDmFogGrid([strokeItem('trazo', [0.1, 0.5, 0.9, 0.5], 0.04)], COLS, ROWS);
+    expect(area(trazo)).toBe(area(buildDmFogGrid(sello, COLS, ROWS)));
+  })
+
+  it('fogBrushRadius: null en un polígono viejo, número en un trazo', () => {
+    expect(fogBrushRadius(fogItem('p', false, circlePoints(0.5, 0.5, 0.1)))).toBeNull()
+    expect(fogBrushRadius(strokeItem('t', [0.1, 0.5, 0.9, 0.5], 0.08))).toBe(0.08)
+  })
+
+  it('extractFogRegions pasa el brushRadius para que el DM lo dibuje con grosor', () => {
+    const regions = extractFogRegions([strokeItem('t2', [0.1, 0.5, 0.9, 0.5], 0.08)])
+    expect(regions[0].brushRadius).toBe(0.08)
+    expect(regions[0].points).toEqual([0.1, 0.5, 0.9, 0.5])
   })
 })
 

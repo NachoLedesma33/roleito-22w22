@@ -717,23 +717,57 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
 
 function FogHitRegion({ item, isSelected, onClick, onContextMenu, mapScale = 1, imageAspect = 1, renderMode = DEFAULT_RENDER_MODE }: ItemRendererProps) {
   const shape = item.shape as import('@core/domain/types').ItemShape & { type: 'polygon'; points: number[] }
+  const meta = item.metadata as import('@core/domain/types').FogMetadata
+  const brushRadius = meta.brushRadius ?? null
   const mapHeight = 10 * mapScale
   const mapWidth = mapHeight * imageAspect
   const Y = getY(renderMode)
 
-  const geom = useMemo(() => {
-    const s = new THREE.Shape()
-    for (let i = 0; i + 1 < shape.points.length; i += 2) {
-      const wx = (shape.points[i] - 0.5) * mapWidth
-      const wz = (shape.points[i + 1] - 0.5) * mapHeight
-      if (i === 0) s.moveTo(wx, -wz)
-      else s.lineTo(wx, -wz)
+  /**
+   * Trazo de pincel: `shape.points` es la línea central. Un `ShapeGeometry` de
+   * eso da un polígono de área cero, o sea que sin esto el DM no podría
+   * seleccionar ni borrar nada de lo que pintó con el pincel. `lineWidth` en
+   * WebGL no engaña (siempre 1px), así que el área de click son discos: uno cada
+   * `r * 0.6` normalizados, que es más fino que la malla de la rejilla de
+   * visión sin dejar huecos.
+   */
+  const hitGeometry = useMemo(() => {
+    if (brushRadius === null) {
+      const s = new THREE.Shape()
+      for (let i = 0; i + 1 < shape.points.length; i += 2) {
+        const wx = (shape.points[i] - 0.5) * mapWidth
+        const wz = (shape.points[i + 1] - 0.5) * mapHeight
+        if (i === 0) s.moveTo(wx, -wz)
+        else s.lineTo(wx, -wz)
+      }
+      s.closePath()
+      const geo = new THREE.ShapeGeometry(s, 1)
+      geo.rotateX(-Math.PI / 2)
+      return [{ geo, cx: 0, cy: 0, r: 0 }]
     }
-    s.closePath()
-    const geo = new THREE.ShapeGeometry(s, 1)
-    geo.rotateX(-Math.PI / 2)
-    return geo
-  }, [shape, mapWidth, mapHeight])
+    const step = Math.max(0.01, brushRadius * 0.6)
+    const discs: Array<{ geo: THREE.BufferGeometry; cx: number; cy: number; r: number }> = []
+    const radiusWorld = brushRadius * mapWidth
+    let prevX = shape.points[0]
+    let prevY = shape.points[1]
+    const push = (nx: number, ny: number) => {
+      const dist = Math.hypot(nx - prevX, ny - prevY)
+      const n = Math.max(1, Math.ceil(dist / step))
+      for (let k = 1; k <= n; k++) {
+        const cx = prevX + ((nx - prevX) * k) / n
+        const cy = prevY + ((ny - prevY) * k) / n
+        const g = new THREE.CircleGeometry(radiusWorld, 12)
+        g.rotateX(-Math.PI / 2)
+        discs.push({ geo: g, cx: (cx - 0.5) * mapWidth, cy: (cy - 0.5) * mapHeight, r: radiusWorld })
+      }
+      prevX = nx
+      prevY = ny
+    }
+    for (let i = 2; i + 1 < shape.points.length; i += 2) push(shape.points[i], shape.points[i + 1])
+    return discs
+  }, [shape.points, brushRadius, mapWidth, mapHeight])
+
+  useEffect(() => () => hitGeometry.forEach((d) => d.geo.dispose()), [hitGeometry])
 
   const outline = useMemo(() => {
     const pts: THREE.Vector3[] = []
@@ -742,16 +776,24 @@ function FogHitRegion({ item, isSelected, onClick, onContextMenu, mapScale = 1, 
     }
     if (pts.length > 0) pts.push(pts[0])
     return new THREE.BufferGeometry().setFromPoints(pts)
-  }, [shape, mapWidth, mapHeight, Y])
+  }, [shape.points, mapWidth, mapHeight, Y])
 
   return (
     <group
       onClick={(e) => { e.stopPropagation(); onClick?.() }}
       onContextMenu={(e) => { e.stopPropagation(); onContextMenu?.(e.nativeEvent) }}
     >
-      <mesh geometry={geom}>
-        <meshBasicMaterial transparent opacity={0} side={THREE.DoubleSide} depthWrite={false} />
-      </mesh>
+      {hitGeometry.map((d, i) => (
+        <mesh key={i} geometry={d.geo} position={[d.cx, 0, d.cy]}>
+          <meshBasicMaterial transparent opacity={0} side={THREE.DoubleSide} depthWrite={false} />
+        </mesh>
+      ))}
+      {isSelected && brushRadius !== null && (
+        <mesh position={[(shape.points[0] - 0.5) * mapWidth, Y.zoneOutline, (shape.points[1] - 0.5) * mapHeight]} rotation={[-Math.PI / 2, 0, 0]}>
+          <circleGeometry args={[brushRadius * mapWidth, 24]} />
+          <meshBasicMaterial color="#3b82f6" transparent opacity={0.4} side={THREE.DoubleSide} />
+        </mesh>
+      )}
       {isSelected && (
         <lineSegments geometry={outline}>
           <lineBasicMaterial color="#3b82f6" />

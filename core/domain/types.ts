@@ -313,6 +313,19 @@ export interface FogMetadata {
   /** Ausente en items viejos: se lee como `revealed ? 'reveal' : 'cover'`. */
   mode?: DmFogMode
   cutMask?: string
+  /**
+   * Trazo de pincel: `shape.points` es la LÍNEA CENTRAL y esto el radio.
+   *
+   * Antes el pincel sellaba un polígono (un círculo) por cada punto de mouse, así
+   * que un solo drag dejaba decenas de items: cada uno es un mesh en la escena,
+   * una fila en `items_json` que viaja entero a cada jugador en el snapshot, y un
+   * turno de `buildDmFogGrid`. Un trazo es un item con la línea central y el
+   * radio; `buildDmFogGrid` lo rasteriza como discos a lo largo del segmento.
+   *
+   * Su presencia ES la marca de "esto es un trazo": un item viejo sin el campo
+   * sigue siendo un polígono relleno.
+   */
+  brushRadius?: number
 }
 
 export type LightMode = 'hard' | 'soft' | 'directional'

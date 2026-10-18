@@ -11,7 +11,7 @@ import {
   PNG_1PX,
   PNG_LIGHT_CHECKER,
 } from '../helpers/api-helpers';
-import { pixelBrightness, readViewPixel } from '../helpers/pixels';
+import { brightnessInRegion, maxBrightnessInRegion, pixelBrightness, readViewPixel } from '../helpers/pixels';
 
 /** Antorcha en el centro del mapa: ilumina toda la sala. */
 function centerTorch() {
@@ -166,20 +166,85 @@ test.describe('Fog (Phase D)', () => {
 
     const { items } = await getSceneItems(request, campaign.id, scene.id);
     const fogs = fogItems(items);
-    expect(fogs.length).toBeGreaterThanOrEqual(3);
+    // UN item por pincelada. Antes sellaba un círculo por punto de mouse y este
+    // drag dejaba ~25 items: cada uno un mesh, una fila de `items_json` que
+    // viaja entero a cada jugador, y un turno de `buildDmFogGrid`.
+    expect(fogs).toHaveLength(1);
     for (const f of fogs) {
       const pts = (f.shape as { points?: number[] }).points ?? [];
-      expect(pts.length).toBeGreaterThanOrEqual(6);
+      // La línea central del trazo, muestreada: al menos un par de puntos (x,y).
+      expect(pts.length % 2).toBe(0);
+      expect(pts.length).toBeGreaterThanOrEqual(4);
       for (const p of pts) {
         expect(p).toBeGreaterThanOrEqual(0);
         expect(p).toBeLessThanOrEqual(1);
       }
+      // El grosor va en `brushRadius`; su presencia es lo que dice "esto es un
+      // trazo" y no un polígono relleno.
+      const radius = (f.metadata as { brushRadius?: number }).brushRadius;
+      expect(typeof radius).toBe('number');
+      expect(radius).toBeGreaterThan(0);
+      expect(radius).toBeLessThanOrEqual(0.2);
       // El pincel entra en modo `secret` (oculta por defecto: es lo que el DM espera
       // que haga la niebla). El tooltip explica el matiz de cada modo.
       expect((f.metadata as { mode?: string }).mode).toBe('secret');
       expect((f.metadata as { revealed: boolean }).revealed).toBe(false);
     }
-    expect((fogs[0].shape as { points: number[] }).points.length % 2).toBe(0);
+  });
+
+  test('F9: el DM ve su mapa a través de la niebla, el jugador no', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    // El plano de niebla va con `depthTest: false` para que le tapare al
+    // jugador los tokens (si no, un NPC en una zona secreta se ve igual). Pero
+    // el DM tiene que ver TODO lo que está preparando: con el mismo material se
+    // quedaba a ciegas en su propia mesa. Por eso `paintsOverContent` es del
+    // jugador, no del plano.
+    const scene = await createScene(request, campaign.id, 'Fog DM vs jugador');
+    await uploadBackground(request, campaign.id, scene.id, {
+      name: 'bg.png',
+      mimeType: 'image/png',
+      buffer: PNG_LIGHT_CHECKER,
+    });
+    const char = await createCharacter(request, campaign.id, { name: 'Vane' });
+    await seedTokens(request, campaign.id, scene.id, [
+      { entityType: 'character', entityId: char.id, x: 0, z: 0, visionType: 'darkvision', visionRange: 14 },
+    ]);
+    await updateScene(request, campaign.id, scene.id, { status: 'active' });
+
+    // 1) El DM pinta niebla secreta sobre todo el mapa. Es el único modo que
+    //    oculta de verdad en las DOS vistas: `cover` no le gana a nada para el
+    //    jugador (deja su percepción como está), así que con `cover` este test
+    //    no probaría el depth test, probaría la semántica del modo.
+    await putSceneItems(request, campaign.id, scene.id, [
+      fogPolygon('fog-f9-secret', false, 0.5, 0.5, 0.75, 'secret'),
+    ]);
+
+    // 2) El DM: su mesa no se vela. Es el §4.3 ("el DM ve todo"): si el plano de
+    //    niebla tapara también lo que está por encima, el DM se quedaría a ciegas
+    //    en la zona que acaba de preparar. Se mide el PROMEDIO de una franja de
+    //    mapa (un punto suelto mide una celda del damero u otra, según dónde
+    //    caiga) y el MÁXIMO del centro, que es donde está el token.
+    await openScene(page, campaign.id, scene.id);
+    const dMapa = await brightnessInRegion(page, 0.6, 0.25, 0.9, 0.55);
+    const dCentro = await brightnessInRegion(page, 0.4, 0.4, 0.65, 0.7);
+    expect(dMapa.avg, 'el DM ve el mapa a traves de su propio secreto').toBeGreaterThan(110);
+    expect(dCentro.max, 'el DM ve su token por encima de su propio secreto').toBeGreaterThan(150);
+
+    // 3) El jugador: la misma escena, la misma niebla, nada asoma.
+    const code = await generateInviteCode(request, campaign.id);
+    const mask = await openPlayerWithLightMap(page, campaign.id, scene.id, 'Vane', code);
+    await expect
+      .poll(async () => Number(await mask.getAttribute('data-visible-cells')), { timeout: 20_000 })
+      .toBe(0);
+    await expect
+      .poll(async () => (await brightnessInRegion(page, 0.6, 0.25, 0.9, 0.55)).avg, { timeout: 20_000 })
+      .toBeLessThan(90);
+    await expect
+      .poll(async () => maxBrightnessInRegion(page, 0.4, 0.4, 0.65, 0.7), { timeout: 20_000 })
+      .toBeLessThan(90);
   });
 
   test('F5: el modo Secreto guarda el mode y el jugador no ve esa zona', async ({

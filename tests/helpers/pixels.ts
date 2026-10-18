@@ -57,3 +57,74 @@ export function pixelBrightness(px: [number, number, number, number] | null): nu
   if (px[3] === 0) return 0;
   return Math.round((px[0] + px[1] + px[2]) / 3);
 }
+
+/**
+ * Brillo máximo y promedio de una región, con un margen.
+ *
+ * Para preguntar "¿hay ALGO asomando por encima de la niebla?" sin saber
+ * dónde está clavado ese algo: el token no cae en una coordenada fija porque
+ * depende del ancho de la ventana y de los paneles que la cubren. Y para el
+ * fondo conviene el **promedio**, no un punto: un fondo a damero tiene celdas
+ * claras y oscuras, así que un punto suelto mide una u otra según dónde caiga.
+ *
+ * Una sola llamada a `readPixels` de toda la región: 300 readPixels de a uno
+ * por pixel es lentísimo y además lee un frame distinto en cada una.
+ */
+export async function brightnessInRegion(
+  page: Page,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+): Promise<{ max: number; avg: number }> {
+  return page.evaluate(
+    ([ax, ay, bx, by]) =>
+      new Promise((resolve) => {
+        const canvas = document.querySelector('canvas') as HTMLCanvasElement | null;
+        if (!canvas) {
+          resolve({ max: 0, avg: 0 });
+          return;
+        }
+        const gl = (canvas.getContext('webgl2') ?? canvas.getContext('webgl')) as
+          | WebGL2RenderingContext
+          | WebGLRenderingContext
+          | null;
+        if (!gl) {
+          resolve({ max: 0, avg: 0 });
+          return;
+        }
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            const px0 = Math.floor(gl.drawingBufferWidth * (ax as number));
+            const py0 = Math.floor(gl.drawingBufferHeight * (ay as number));
+            const w = Math.max(1, Math.floor(gl.drawingBufferWidth * ((bx as number) - (ax as number))));
+            const h = Math.max(1, Math.floor(gl.drawingBufferHeight * ((by as number) - (ay as number))));
+            const buf = new Uint8Array(w * h * 4);
+            gl.readPixels(px0, py0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+            let max = 0;
+            let sum = 0;
+            let n = 0;
+            for (let i = 0; i < buf.length; i += 4) {
+              if (buf[i + 3] === 0) continue;
+              const b = (buf[i] + buf[i + 1] + buf[i + 2]) / 3;
+              if (b > max) max = b;
+              sum += b;
+              n++;
+            }
+            resolve({ max: Math.round(max), avg: n ? Math.round(sum / n) : 0 });
+          }),
+        );
+      }),
+    [x0, y0, x1, y1] as [number, number, number, number],
+  );
+}
+
+export async function maxBrightnessInRegion(
+  page: Page,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+): Promise<number> {
+  return (await brightnessInRegion(page, x0, y0, x1, y1)).max;
+}
