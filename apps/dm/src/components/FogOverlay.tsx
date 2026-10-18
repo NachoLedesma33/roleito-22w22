@@ -27,8 +27,39 @@ function paintMask(canvas: HTMLCanvasElement, color: string, regions: FogRegion[
   ctx.fillStyle = color
   ctx.fillRect(0, 0, w, h)
 
+  // Los secretos van a un canvas aparte y se componen de una sola vez: el
+  // pincel deja un item por trazo, así que pintarlos directo sobre el mapa
+  // amontonaba un contorno por trazo y el alpha se acumulaba en cadaOverlap.
+  const secrets = regions.filter((r) => r.secret)
+  if (secrets.length > 0) {
+    const hint = document.createElement('canvas')
+    hint.width = w
+    hint.height = h
+    const hctx = hint.getContext('2d')
+    if (hctx) {
+      hctx.strokeStyle = '#f59e0b'
+      hctx.lineWidth = Math.max(2, Math.round(Math.min(w, h) / 180))
+      hctx.setLineDash([12, 9])
+      for (const r of secrets) {
+        hctx.beginPath()
+        for (let i = 0; i < r.points.length; i += 2) {
+          const px = r.points[i] * w
+          const py = r.points[i + 1] * h
+          if (i === 0) hctx.moveTo(px, py)
+          else hctx.lineTo(px, py)
+        }
+        hctx.closePath()
+        hctx.stroke()
+      }
+      ctx.globalAlpha = 0.85
+      ctx.drawImage(hint, 0, 0)
+      ctx.globalAlpha = 1
+    }
+  }
+
   const order = [...regions].sort((a, b) => a.zIndex - b.zIndex)
   for (const r of order) {
+    if (r.secret) continue
     ctx.beginPath()
     for (let i = 0; i < r.points.length; i += 2) {
       const px = r.points[i] * w

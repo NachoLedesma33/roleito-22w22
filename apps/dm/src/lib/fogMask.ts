@@ -7,6 +7,13 @@ export interface FogRegion {
   points: number[]
   revealed: boolean
   zIndex: number
+  /**
+   * Solo para el mapa del DM. Un secreto no se pinta como niebla (si el DM se
+   * dibujara su propia zona secreta se ciega), pero tampoco puede desaparecer:
+   * sin esta marca el DM pintaba en `Secreto` y no veía absolutamente nada, y
+   * no hay forma de saber si el pincel agarró o no. Se dibuja como contorno.
+   */
+  secret?: boolean
 }
 
 /**
@@ -76,17 +83,16 @@ export function extractFogRegions(items: SceneItem[]): FogRegion[] {
   const regions: FogRegion[] = []
   for (const item of items) {
     if (item.metadata.type !== 'fog') continue
-    // Un secreto es para el jugador: si el DM se lo dibujara en su propio mapa
-    // quedaría a ciegas en la zona que acaba de tapar (§4.3: el DM ve todo).
-    if (fogItemMode(item) === 'secret') continue
     const shape = item.shape
     if (!shape || shape.type !== 'polygon') continue
     if (shape.points.length < 6) continue
+    const mode = fogItemMode(item)
     regions.push({
       id: item.id,
       points: shape.points,
       revealed: (item.metadata as FogMetadata).revealed ?? false,
       zIndex: item.zIndex,
+      secret: mode === 'secret',
     })
   }
   return regions

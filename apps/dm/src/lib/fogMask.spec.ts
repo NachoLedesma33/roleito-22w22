@@ -72,12 +72,16 @@ describe('fogMask/buildDmFogGrid', () => {
 })
 
 describe('fogMask/extractFogRegions', () => {
-  it('un secreto no se pinta en el mapa del DM (si no, se ciega en su propia zona)', () => {
+  it('un secreto no se rellena en el mapa del DM, pero tampoco desaparece', () => {
+    // Si el DM se lo dibujara como niebla se ciega en su propia zona, pero si no
+    // se dibuja tampoco tiene feedback: pintaba en `Secreto` y no veía nada.
     const secret = fogItem('f-secret', false, [0.1, 0.1, 0.4, 0.1, 0.4, 0.4, 0.1, 0.4])
     secret.metadata = { ...(secret.metadata as object), mode: 'secret' } as typeof secret.metadata
     const cover = fogItem('f-cover', false, [0.5, 0.5, 0.8, 0.5, 0.8, 0.8, 0.5, 0.8])
     const regions = extractFogRegions([secret, cover])
-    expect(regions.map((r) => r.id)).toEqual(['f-cover'])
+    expect(regions.map((r) => r.id)).toEqual(['f-secret', 'f-cover'])
+    expect(regions[0].secret).toBe(true)
+    expect(regions[1].secret).toBe(false)
   })
 
   it('fogItemMode: mode manda, y sin mode se lee revealed', () => {
