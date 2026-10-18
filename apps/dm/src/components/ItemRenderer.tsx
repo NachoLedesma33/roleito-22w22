@@ -42,7 +42,7 @@ export default function ItemRenderer({ item, isSelected, readOnly = false, showZ
 
   if (item.metadata.type === 'zone') {
     if (!showZones) return null
-    return <ZoneRenderer item={item} isSelected={isSelected} onClick={onClick} onContextMenu={onContextMenu} mapScale={mapScale} imageAspect={imageAspect} renderMode={renderMode} />
+    return <ZoneRenderer item={item} isSelected={isSelected} onClick={onClick} onContextMenu={onContextMenu} mapScale={mapScale} imageAspect={imageAspect} readOnly={readOnly} renderMode={renderMode} />
   }
 
   if (item.metadata.type === 'fog') {
@@ -379,11 +379,21 @@ function ShapeRenderer({ item, isSelected, onClick, renderMode = DEFAULT_RENDER_
   return null
 }
 
-function ZoneRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, imageAspect = 1, renderMode = DEFAULT_RENDER_MODE }: ItemRendererProps) {
+function ZoneRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, imageAspect = 1, readOnly = false, renderMode = DEFAULT_RENDER_MODE }: ItemRendererProps) {
   const meta = item.metadata as ZoneMetadata
   const mapHeight = 10 * mapScale
   const mapWidth = mapHeight * imageAspect
   const Y = getY(renderMode)
+
+  /**
+   * Para el jugador la zona es solo el perimetro. El relleno de color lo que
+   * hace es tapar el mapa: seis tonos (emerald/sky/amber/violet/rose/slate) que
+   * el DM elige para distinguir sus zonas terminan siendo decoracion que el
+   * jugador no pidio. Lo unico que tiene que tapar de verdad es la niebla.
+   */
+  const fillOpacity = readOnly ? 0 : meta.fillOpacity
+  const strokeColor = readOnly ? '#cbd5e1' : meta.fillColor
+  const strokeOpacity = readOnly ? 0.35 : 1
 
   const groupPos = [item.x, 0, item.y] as const
   const fillY = Y.zoneFill
@@ -456,12 +466,12 @@ function ZoneRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, 
         <mesh onClick={(e) => { e.stopPropagation(); onClick?.() }}
           onContextMenu={(e) => { e.stopPropagation(); onContextMenu?.(e.nativeEvent) }}>
           <planeGeometry args={[item.width, item.height]} />
-          <meshBasicMaterial color={meta.fillColor} transparent opacity={meta.fillOpacity} side={THREE.DoubleSide} />
+          <meshBasicMaterial color={meta.fillColor} transparent opacity={fillOpacity} side={THREE.DoubleSide} />
         </mesh>
         <lineSegments geometry={outlineGeo}>
-          <lineBasicMaterial color={meta.fillColor} linewidth={2} />
+          <lineBasicMaterial color={strokeColor} transparent opacity={strokeOpacity} />
         </lineSegments>
-        <ZonePortalMarkers nodes={portalNodes} />
+        {readOnly ? null : <ZonePortalMarkers nodes={portalNodes} />}
         {isSelected && (
           <mesh position={[0, 0.01, 0]}>
             <planeGeometry args={[item.width + 0.05, item.height + 0.05]} />
@@ -478,15 +488,15 @@ function ZoneRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, 
   return (
     <group position={groupPos}>
       <mesh geometry={geometry} position={[0, fillY, 0]} rotation={[-Math.PI / 2, 0, 0]} onClick={handleClick} onContextMenu={handleContextMenu}>
-        <meshBasicMaterial color={meta.fillColor} transparent opacity={meta.fillOpacity} side={THREE.DoubleSide} />
+        <meshBasicMaterial color={meta.fillColor} transparent opacity={fillOpacity} side={THREE.DoubleSide} />
       </mesh>
       <lineSegments geometry={outlineGeo}>
-        <lineBasicMaterial color={meta.fillColor} linewidth={2} />
+        <lineBasicMaterial color={strokeColor} transparent opacity={strokeOpacity} />
       </lineSegments>
-      <ZonePortalMarkers nodes={portalNodes} />
+      {readOnly ? null : <ZonePortalMarkers nodes={portalNodes} />}
       {isSelected && (
         <lineSegments geometry={outlineGeo} position={[0, 0.01, 0]}>
-          <lineBasicMaterial color="#3b82f6" linewidth={3} />
+          <lineBasicMaterial color="#3b82f6" />
         </lineSegments>
       )}
     </group>
