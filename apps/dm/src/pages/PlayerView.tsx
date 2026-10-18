@@ -652,7 +652,14 @@ export default function PlayerView() {
     return () => { running = false; cancelAnimationFrame(rafRef.current); };
   }, [choice, data]);
 
-  // WASD/QE keyboard movement for player's own character
+  // ─── Movimiento por teclado ──────────────────────────────────────────
+  // `MOVE_TICK_MS` es el piso de la fluidity: cada tick avanza `MOVE_SPEED`
+  // unidades y PATCHea la posicion. 90 ms con interpolacion en el cliente se ve
+  // continuo; 40 ms era tan rapido que solo servia para saturar el backend, y con
+  // el PATCH a 130 ms terminaba generando trabajo que no salia (ver `sendMove`).
+  const MOVE_TICK_MS = 90;
+  const MOVE_SPEED = 0.34;
+
   useEffect(() => {
     const c = choiceRef.current;
     if (!c || c.kind !== 'character') return;
@@ -660,6 +667,53 @@ export default function PlayerView() {
     const ROTATE_SPEED = Math.PI / 8;
     const keysPressed = keysPressedRef.current;
     let moveTimer: number;
+
+    /**
+     * Un PATCH por tick, nunca dos a la vez.
+     *
+     * Con 40 ms de tick y un PATCH que tardaba 130 ms (medido) se acumulaban ~3
+     * peticiones por cada una que salia: el token se quedaba atras segundos y
+     * arrastraba a los observadores, que veian un snapshot entero por cada PATCH
+     * atrasado. Ahora, si hay uno en vuelo, este tick se guarda y sale solo
+     * cuando el anterior termina.
+     */
+    let moveInFlight = false;
+    let pending: { x: number; z: number; rotation: number } | null = null;
+
+    const sendMove = async (target: { x: number; z: number; rotation: number }) => {
+      moveInFlight = true;
+      const currentData = dataRef.current;
+      const cur = choiceRef.current;
+      if (!currentData || cur?.kind !== 'character') {
+        moveInFlight = false;
+        return;
+      }
+      try {
+        await api.scenes.moveCharacter(currentData.campaign_id, currentData.scene_id!, {
+          character_id: cur.id,
+          x: target.x,
+          z: target.z,
+          rotation: target.rotation,
+        });
+      } catch {
+        /* la posicion se reenvia en el proximo tick */
+      } finally {
+        moveInFlight = false;
+        if (pending) {
+          const next = pending;
+          pending = null;
+          void sendMove(next);
+        }
+      }
+    };
+
+    /** Vuelca la posicion pendiente sin esperar al proximo tick. */
+    const flushMove = async () => {
+      if (!pending) return;
+      const next = pending;
+      pending = null;
+      await sendMove(next);
+    };
 
     const applyMovement = async () => {
       const currentData = dataRef.current;
@@ -678,7 +732,7 @@ export default function PlayerView() {
       let moved = false;
       let hasWasd = false;
 
-      const moveSpeed = 0.15 * (sc.move_speed ?? 1);
+      const moveSpeed = MOVE_SPEED * (sc.move_speed ?? 1);
 
       if (keysPressed.has('w') || keysPressed.has('arrowup')) {
         x += Math.sin(rotation) * moveSpeed;
@@ -752,10 +806,11 @@ export default function PlayerView() {
         const target = { x, z, rotation: ((rotation % (2 * Math.PI)) + Math.PI) % (2 * Math.PI) - Math.PI };
         wasdTargetRef.current = target;
         setWasdTarget(target);
-        api.scenes.moveCharacter(currentData.campaign_id, currentData.scene_id!, {
-          character_id: cur.id,
-          x, z, rotation,
-        }).catch(() => {});
+        if (moveInFlight) {
+          pending = target;
+        } else {
+          void sendMove(target);
+        }
       }
     };
 
@@ -770,16 +825,20 @@ export default function PlayerView() {
 
     const onKeyUp = (e: KeyboardEvent) => {
       keysPressed.delete(e.key.toLowerCase());
+      // Posicion final: el tick puede haber descartado un movimiento por colision
+      // o por tener uno en vuelo. Sin esto el token se queda donde lo dejo el
+      // ultimo tick que SI llego.
+      if (keysPressed.size === 0) void flushMove();
     };
 
     const gameLoop = () => {
       if (keysPressed.size > 0) applyMovement();
-      moveTimer = window.setTimeout(gameLoop, 40);
+      moveTimer = window.setTimeout(gameLoop, MOVE_TICK_MS);
     };
 
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
-    moveTimer = window.setTimeout(gameLoop, 40);
+    moveTimer = window.setTimeout(gameLoop, MOVE_TICK_MS);
 
     return () => {
       window.removeEventListener('keydown', onKeyDown);
