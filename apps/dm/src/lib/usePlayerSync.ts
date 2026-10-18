@@ -7,7 +7,12 @@ import type { SceneItem } from '@core/domain/types';
  * Frecuencia del poll de revisiones. 16ms (~62/s) porque cada respuesta es un
  * GET chico contra localhost; con el WS abierto el tick no llega a ejecutarse.
  */
-const POLL_MS = 16;
+/**
+ * Respaldo del WS. Arranca rapido para recuperar una conexion caida y se
+ * aleja si el WS no levanta: 16 ms fijos eran 62 peticiones/s por jugador.
+ */
+const POLL_FAST_MS = 250;
+const POLL_SLOW_MS = 2000;
 
 /** Duración del crossfade al cambiar de escena. */
 const FADE_IN_MS = 380;
@@ -179,6 +184,42 @@ export function usePlayerSync(code: string | undefined, refs: UsePlayerSyncRefs)
       });
   }, [code, fetchSnapshot, fetchMyChar, syncNotesDraft, sceneIdRef, choiceRef]);
 
+  /**
+ * Aplica posiciones que llegan por WS sin bajar el snapshot.
+ *
+ * Es la diferencia entre 47 KB y 0 KB por cada 15 cm que se mueve un token: el
+ * snapshot trae escenas, NPCs, quests, handouts e `items_json` de TODA la
+ * campaña, y se entera además de que cambió una x. Con un token en movimiento eso
+ * son ~7 descargas por segundo y el hilo principal a 10 FPS (medido).
+ *
+ * El parche es identity-preserving por personaje: si no cambió nada se devuelve
+ * el mismo objeto, así que `PlayerView` no reinicia sus interpolaciones.
+ */
+const applySceneCharacters = useCallback((sceneId: string, incoming: unknown[]) => {
+  setData((prev) => {
+    if (!prev || prev.scene_id !== sceneId || incoming.length === 0) return prev;
+    const byId = new Map<string, Record<string, unknown>>();
+    for (const c of incoming as Array<Record<string, unknown>>) {
+      if (typeof c?.id === 'string') byId.set(c.id as string, c);
+    }
+    if (byId.size === 0) return prev;
+    let changed = false;
+    const characters = prev.characters.map((c) => {
+      const u = byId.get(c.id);
+      if (!u) return c;
+      const samePose =
+        u.x === c.x && u.y === c.y && u.z === c.z &&
+        (u.rotation ?? 0) === (c.rotation ?? 0);
+      // Posición igual pero `last_move_at`/velocidad nueva: eso SÍ importa para
+      // la extrapolación, así que solo se devuelve el mismo objeto si no cambió.
+      if (samePose && u.last_move_at === c.last_move_at) return c;
+      changed = true;
+      return { ...c, ...(u as Partial<typeof c>) };
+    });
+    return changed ? { ...prev, characters } : prev;
+  });
+}, []);
+
   // Sync continuo. Depende de `data` a propósito: cuando llega un snapshot el
   // WS se reabre, así que cambiar de escena y reconectar comparten camino.
   useEffect(() => {
@@ -220,13 +261,23 @@ export function usePlayerSync(code: string | undefined, refs: UsePlayerSyncRefs)
       }
     };
 
+    // Backoff del sondeo. Antes: 16 ms fijos. Con el WS caido eso son 62
+    // peticiones por segundo y POR JUGADOR, y cada una son 6 SELECTs + un sha1
+    // del estado entero de la campana. En una mesa de 5 personas son 310
+    // peticiones/s de respaldo para algo que el WS ya cubria: el respaldo se
+    // estaba comiendo el backend entero. Arranca en 250 ms y sube hasta 2 s si
+    // sigue sin abrir, y vuelve a 250 ms apenas el WS levanta.
+    let pollDelayMs = POLL_FAST_MS;
+    const scheduleNextPoll = () => {
+      if (!cancelled) timer = window.setTimeout(tick, pollDelayMs);
+      pollDelayMs = Math.min(pollDelayMs * 2, POLL_SLOW_MS);
+    };
+
     const tick = async () => {
       if (ws && ws.readyState === WebSocket.OPEN) return; // el WS cubre el sync
       if (!ws || ws.readyState === WebSocket.CLOSED) connectWs();
       await pollRevision();
-      if (!cancelled && !(ws && ws.readyState === WebSocket.OPEN)) {
-        timer = window.setTimeout(tick, POLL_MS);
-      }
+      if (!cancelled && !(ws && ws.readyState === WebSocket.OPEN)) scheduleNextPoll();
     };
 
     const connectWs = () => {
@@ -237,15 +288,25 @@ export function usePlayerSync(code: string | undefined, refs: UsePlayerSyncRefs)
       sock.onopen = () => {
         if (cancelled) return;
         setLive(true);
+        pollDelayMs = POLL_FAST_MS;
         void pollRevision();
       };
       sock.onmessage = (ev) => {
         if (cancelled) return;
         try {
-          const msg = JSON.parse(ev.data as string) as { type?: string; revision?: string };
+          const msg = JSON.parse(ev.data as string) as {
+            type?: string;
+            revision?: string;
+            scene_id?: string;
+            characters?: unknown[];
+          };
           if (msg.type === 'revision' && msg.revision) {
             setLive(true);
             void applyRevision(msg.revision);
+          } else if (msg.type === 'scene_characters' && msg.scene_id) {
+            setLive(true);
+            // Camino barato: un token se movio. NO se baja el snapshot.
+            applySceneCharacters(msg.scene_id, msg.characters ?? []);
           }
         } catch {
           // mensaje no JSON: ignorar
@@ -255,18 +316,18 @@ export function usePlayerSync(code: string | undefined, refs: UsePlayerSyncRefs)
         if (cancelled) return;
         if (ws === sock) ws = null;
         setLive(false);
-        timer = window.setTimeout(tick, POLL_MS);
+        scheduleNextPoll();
       };
     };
 
     connectWs();
-    timer = window.setTimeout(tick, POLL_MS);
+    scheduleNextPoll();
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
       if (ws) ws.close();
     };
-  }, [code, data, fetchSnapshot, applySnapshot, fetchMyChar, syncNotesDraft, choiceRef]);
+  }, [code, data, fetchSnapshot, applySnapshot, fetchMyChar, syncNotesDraft, choiceRef, applySceneCharacters]);
 
   return {
     data,
