@@ -57,9 +57,13 @@ export const test = base.extend<Fixtures>({
     const campaign = await res.json();
     register(campaign.id);
     await use(campaign);
-    await request.delete(`${API}/campaigns/${campaign.id}`, {
-      headers: withAuth(dmToken),
-    });
+    // La limpieza es best-effort: si el backend corta la conexion al cerrar (lo
+    // hace cuando hay carga o un reload del server) el test ya paso y no puede
+    // dar rojo por eso. El id quedo en el REGISTRY, asi que `purge_e2e_junk.py`
+    // lo limpia igual en la proxima corrida.
+    await request
+      .delete(`${API}/campaigns/${campaign.id}`, { headers: withAuth(dmToken) })
+      .catch(() => {});
   },
 
   page: async ({ page, dmToken }, use) => {

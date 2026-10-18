@@ -59,8 +59,10 @@ import { rollToToast, useToastQueue } from '@/lib/toastQueue';
 import TopBar from '@/components/TopBar';
 import MinimizedBar from '@/components/MinimizedBar';
 import HudPanel from '@/components/HudPanel';
+import ToolButton from '@/components/ui/ToolButton';
+import IconButton from '@/components/ui/IconButton';
 import { staticUrl } from '@/lib/staticUrl';
-import { Dices, Swords, NotebookPen, ClipboardList, CalendarDays, ScrollText, FolderOpen, Map as MapIcon, Bot, MessageCircle, Zap, BookOpen, StickyNote } from 'lucide-react';
+import { Dices, Swords, NotebookPen, ClipboardList, CalendarDays, ScrollText, FolderOpen, Map as MapIcon, Bot, MessageCircle, Zap, BookOpen, StickyNote, LayoutGrid, Brush, SquareDashed, PaintBucket, Undo2, Redo2, CloudSun, Settings, ImagePlus, Wand2, Square, Mountain, ChevronDown } from 'lucide-react';
 
 export default function DmDashboard() {
   const { t } = useTranslation();
@@ -1962,29 +1964,25 @@ const startFogMode = useCallback(() => {
           onClose={() => {}}
           hideClose
           defaultX={8}
-          defaultY={8}
+          defaultY={52}
           defaultWidth={190}
           defaultHeight={typeof window !== 'undefined' ? Math.min(720, window.innerHeight - 120) : 600}
           minWidth={150}
         >
           <div className="flex flex-col items-stretch gap-1">
             <div className="flex items-center gap-1 shrink-0">
-              <button
-                onClick={handleUndo}
+              <IconButton
+                icon={<Undo2 className="h-4 w-4" />}
+                label={t('dm.undo', 'Deshacer (Ctrl+Z)')}
                 disabled={!canUndo}
-                className="text-xs px-1.5 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
-                title={t('dm.undo', 'Deshacer (Ctrl+Z)')}
-              >
-                ↶
-              </button>
-              <button
-                onClick={handleRedo}
+                onClick={handleUndo}
+              />
+              <IconButton
+                icon={<Redo2 className="h-4 w-4" />}
+                label={t('dm.redo', 'Rehacer (Ctrl+Shift+Z)')}
                 disabled={!canRedo}
-                className="text-xs px-1.5 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
-                title={t('dm.redo', 'Rehacer (Ctrl+Shift+Z)')}
-              >
-                ↷
-              </button>
+                onClick={handleRedo}
+              />
             </div>
             <div className="relative shrink-0" data-anchor="build">
               <button
@@ -1992,46 +1990,48 @@ const startFogMode = useCallback(() => {
                   buildMenu.anchorFrom(e.currentTarget);
                   setBuildMenuOpen(!buildMenuOpen);
                 }}
-                className={`w-full text-xs px-2 py-1 rounded transition-colors ${drawState || zoneDraft || portalDraft || fogMode || rectFogMode || zoneFogActive || lightPlaceMode || attachLightMode ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                className={`flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs transition-colors duration-[var(--dur-fast)] ease-[var(--ease-standard)] ${drawState || zoneDraft || portalDraft || fogMode || rectFogMode || zoneFogActive || lightPlaceMode || attachLightMode ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
               >
-                {t('dm.build', '🧱 Construir ▾')}
+                <Mountain aria-hidden="true" className="h-4 w-4 shrink-0" />
+                <span className="flex-1 text-left">{t('dm.build', 'Construir')}</span>
+                <ChevronDown aria-hidden="true" className="h-3.5 w-3.5 shrink-0 opacity-60" />
               </button>
               <AnchoredMenu open={buildMenuOpen} rect={buildMenu.rect} anchorId="build" testId="build-menu" minWidth={180}>
                   <button
                     onClick={() => startDrawMode('wall')}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawState?.mode === 'wall' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
                   >
-                    {t('dm.drawWall', '🧱 Dibujar pared')}
+                    {t('dm.drawWall', 'Dibujar pared')}
                   </button>
                   <button
                     onClick={() => startDrawMode('door')}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawState?.mode === 'door' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
                   >
-                    {t('dm.placeDoor', '🚪 Colocar puerta')}
+                    {t('dm.placeDoor', 'Colocar puerta')}
                   </button>
                   <button
                     onClick={() => startZoneMode('rect')}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${zoneDraft?.mode === 'rect' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
                   >
-                    {t('dm.zoneRect', '▭ Zona (rect)')}
+                    {t('dm.zoneRect', 'Zona (rect)')}
                   </button>
                   <button
                     onClick={() => startZoneMode('polygon')}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${zoneDraft?.mode === 'polygon' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
                   >
-                    {t('dm.zonePolygon', '⬠ Zona (polígono)')}
+                    {t('dm.zonePolygon', 'Zona (polígono)')}
                   </button>
                   <button
                     onClick={handleStartPortal}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${portalDraft ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
                   >
-                    {t('dm.portalZone', '🚪 Portal (zona↔zona)')}
+                    {t('dm.portalZone', 'Portal (zona↔zona)')}
                   </button>
                   <button
                     onClick={startLightPlaceMode}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${lightPlaceMode ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
                   >
-                    {t('dm.lightPlace', '💡 Luz (colocar)')}
+                    {t('dm.lightPlace', 'Luz (colocar)')}
                   </button>
                   <div className="border-t border-[var(--bg-tertiary)] my-1" />
                   <div className="px-3 py-1">
@@ -2073,13 +2073,13 @@ const startFogMode = useCallback(() => {
                     disabled={detectingWalls}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${detectingWalls ? 'text-amber-400 animate-pulse' : 'text-[var(--text-secondary)]'}`}
                   >
-                    {detectingWalls ? t('dm.detecting', '⏳ Detectando...') : t('dm.detectWalls', '🔍 Detectar paredes')}
+                    {detectingWalls ? t('dm.detecting', 'Detectando...') : t('dm.detectWalls', 'Detectar paredes')}
                   </button>
                   <button
                     onClick={handleClearAllWalls}
                     className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-red-400"
                   >
-                    {t('dm.clearWalls', '🗑️ Limpiar todas las paredes')}
+                    {t('dm.clearWalls', 'Limpiar todas las paredes')}
                   </button>
                   <button
                     onClick={handleClearAllZones}
@@ -2134,19 +2134,21 @@ const startFogMode = useCallback(() => {
             </div>
             <button
               onClick={() => fileInput.current?.click()}
-              className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0"
+              className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--bg-tertiary)] px-2 py-1.5 text-xs text-[var(--text-secondary)] transition-colors duration-[var(--dur-fast)] hover:text-[var(--text-primary)] shrink-0"
               title={t('dm.uploadBgTitle', 'Subir fondo de mapa')}
             >
-              {t('dm.uploadBg', 'Subir fondo')}
+              <ImagePlus aria-hidden="true" className="h-4 w-4 shrink-0" />
+              <span className="flex-1 text-left">{t('dm.uploadBg', 'Subir fondo')}</span>
             </button>
             <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={handleUploadBg} data-testid="bg-upload-input" />
             <button
               onClick={handleClassifyBackground}
               disabled={!activeScene?.background_path}
-              className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0 disabled:opacity-40"
+              className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--bg-tertiary)] px-2 py-1.5 text-xs text-[var(--text-secondary)] transition-colors duration-[var(--dur-fast)] hover:text-[var(--text-primary)] shrink-0 disabled:cursor-not-allowed disabled:opacity-40"
               title={t('dm.suggestBgTitle', 'Sugerir fondo para el mapa actual')}
             >
-              {t('dm.suggestBg', 'Sugerir fondo')}
+              <Wand2 aria-hidden="true" className="h-4 w-4 shrink-0" />
+              <span className="flex-1 text-left">{t('dm.suggestBg', 'Sugerir fondo')}</span>
             </button>
             <div className="relative shrink-0" data-anchor="lighting">
               <button
@@ -2154,9 +2156,13 @@ const startFogMode = useCallback(() => {
                 aria-expanded={openMenu === 'lighting'}
                 aria-haspopup="menu"
                 data-testid="lighting-select"
-                className="w-full text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--bg-tertiary)] px-2 py-1.5 text-xs text-[var(--text-secondary)] transition-colors duration-[var(--dur-fast)] hover:text-[var(--text-primary)]"
               >
-                {{ neutral: t('dm.lightNeutral', 'Neutra'), dark: t('dm.lightDark', 'Oscura'), dim: t('dm.lightDim', 'Tenue'), bright: t('dm.lightBright', 'Brillante'), torchlight: t('dm.lightTorch', 'Antorcha') }[activeScene?.lighting || 'neutral'] || activeScene?.lighting || t('dm.lightNeutral', 'Neutra')} ▾
+                <Square aria-hidden="true" className="h-4 w-4 shrink-0" />
+                <span className="flex-1 text-left">
+                  {{ neutral: t('dm.lightNeutral', 'Neutra'), dark: t('dm.lightDark', 'Oscura'), dim: t('dm.lightDim', 'Tenue'), bright: t('dm.lightBright', 'Brillante'), torchlight: t('dm.lightTorch', 'Antorcha') }[activeScene?.lighting || 'neutral'] || activeScene?.lighting || t('dm.lightNeutral', 'Neutra')}
+                </span>
+                <ChevronDown aria-hidden="true" className="h-3.5 w-3.5 shrink-0 opacity-60" />
               </button>
               <AnchoredMenu open={openMenu === 'lighting'} rect={lightingMenu.rect} anchorId="lighting" testId="lighting-menu" minWidth={150}>
                 {['neutral', 'dark', 'dim', 'bright', 'torchlight'].map((mode) => (
@@ -2184,11 +2190,15 @@ const startFogMode = useCallback(() => {
                 onClick={(e) => toggleMenu('weather', e.currentTarget)}
                 aria-expanded={openMenu === 'weather'}
                 aria-haspopup="menu"
-                className="w-full text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--bg-tertiary)] px-2 py-1.5 text-xs text-[var(--text-secondary)] transition-colors duration-[var(--dur-fast)] hover:text-[var(--text-primary)]"
                 data-testid="weather-select"
                 title={t('dm.weatherTitle', 'Clima de la escena')}
               >
-                {(activeScene?.weather && WEATHER_META[activeScene.weather] ? t(`dm.weather.${activeScene.weather}`, WEATHER_META[activeScene.weather].label) : t('dm.weather.none', WEATHER_NONE_LABEL))} ▾
+                <CloudSun aria-hidden="true" className="h-4 w-4 shrink-0" />
+                <span className="flex-1 text-left">
+                  {(activeScene?.weather && WEATHER_META[activeScene.weather] ? t(`dm.weather.${activeScene.weather}`, WEATHER_META[activeScene.weather].label) : t('dm.weather.none', WEATHER_NONE_LABEL))}
+                </span>
+                <ChevronDown aria-hidden="true" className="h-3.5 w-3.5 shrink-0 opacity-60" />
               </button>
               <AnchoredMenu open={openMenu === 'weather'} rect={weatherMenu.rect} anchorId="weather" testId="weather-menu" minWidth={170}>
                 <button
@@ -2256,10 +2266,11 @@ const startFogMode = useCallback(() => {
             </div>
             <button
               onClick={() => setShowSceneSettings(!showSceneSettings)}
-              className={`w-full text-xs px-2 py-1 rounded transition-colors shrink-0 ${showSceneSettings ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+              className={`flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs transition-colors duration-[var(--dur-fast)] shrink-0 ${showSceneSettings ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
               title={t('dm.sceneSettingsTitle', 'Ajustes de escena')}
             >
-              {t('dm.sceneBtn', '⚙ Escena')}
+              <Settings aria-hidden="true" className="h-4 w-4 shrink-0" />
+              <span className="flex-1 text-left">{t('dm.sceneBtn', 'Escena')}</span>
             </button>
             {maps.length > 0 && (
               <div className="relative shrink-0" data-anchor="map">
@@ -2341,7 +2352,7 @@ const startFogMode = useCallback(() => {
             </span>
           )}
           {fogMode && (
-            <div className="pointer-events-auto flex items-center gap-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-1.5 py-0.5 shrink-0">
+            <div className="pointer-events-auto flex shrink-0 items-center gap-2 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--bg-primary)] px-2 py-1.5 shadow-lg shadow-black/40">
               <SegmentedControl
                 value={fogMode.mode}
                 onChange={(mode) => applyFogMode(mode)}
@@ -2355,21 +2366,21 @@ const startFogMode = useCallback(() => {
                 step={0.01}
                 value={fogMode.radius}
                 onChange={(e) => setFogMode((prev) => prev ? { ...prev, radius: parseFloat(e.target.value) } : prev)}
-                className="w-20 h-1"
+                className="h-1 w-20 cursor-pointer"
                 title={t('dm.brushSize', 'Tamaño del pincel')}
               />
-              <span className="text-[9px] text-[var(--text-secondary)] w-8">
+              <span className="w-8 text-[11px] tabular-nums text-[var(--text-secondary)]">
                 {(fogMode.radius * 100).toFixed(0)}%
               </span>
             </div>
           )}
           {fogMode && (
-            <span className="text-[10px] text-amber-400 shrink-0">
-              {t('dm.hintPaintFog', '🌫️ Arrastrá para pintar niebla')} · {t('dm.escCancel', 'ESC cancela')}
+            <span className="shrink-0 text-[11px] text-amber-400">
+              {t('dm.hintPaintFog', 'Arrastrá para pintar niebla')} · {t('dm.escCancel', 'ESC cancela')}
             </span>
           )}
           {rectFogMode && (
-            <div className="pointer-events-auto flex items-center gap-1 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-1.5 py-0.5 shrink-0">
+            <div className="pointer-events-auto flex shrink-0 items-center gap-2 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--bg-primary)] px-2 py-1.5 shadow-lg shadow-black/40">
               <SegmentedControl
                 value={rectFogMode.mode}
                 onChange={(mode) => applyFogMode(mode)}
@@ -2379,13 +2390,13 @@ const startFogMode = useCallback(() => {
             </div>
           )}
           {rectFogMode && (
-            <span className="text-[10px] text-amber-400 shrink-0">
-              {t('dm.hintFogRect', '▭ Arrastrá para dibujar rect de niebla')} · {t('dm.escCancel', 'ESC cancela')}
+            <span className="shrink-0 text-[11px] text-amber-400">
+              {t('dm.hintFogRect', 'Arrastrá para dibujar rect de niebla')} · {t('dm.escCancel', 'ESC cancela')}
             </span>
           )}
           {zoneFogActive && (
-            <span className="text-[10px] text-amber-400 shrink-0">
-              {t('dm.hintZoneFog', '🧩 Clic dentro de una zona para alternar niebla')} · {t('dm.escCancel', 'ESC cancela')}
+            <span className="shrink-0 text-[11px] text-amber-400">
+              {t('dm.hintZoneFog', 'Clic dentro de una zona para alternar niebla')} · {t('dm.escCancel', 'ESC cancela')}
             </span>
           )}
           {lightPlaceMode && (
@@ -2670,43 +2681,47 @@ const startFogMode = useCallback(() => {
           panelId="dm-layers"
           onClose={() => {}}
           hideClose
-          defaultX={typeof window !== 'undefined' ? window.innerWidth - 201 : 1000}
+          defaultX={typeof window !== 'undefined' ? window.innerWidth - 226 : 1000}
           defaultY={200}
-          defaultWidth={185}
+          defaultWidth={210}
           defaultHeight={380}
         >
-          <div className="px-1.5 text-[10px] uppercase tracking-wide text-[var(--text-secondary)]">{t('dm.layers', 'Capas')}</div>
-          <button
-            onClick={() => setShowZones((v) => !v)}
-            className={`w-full text-xs px-2 py-1 rounded transition-colors text-left ${showZones ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)]' : 'bg-transparent text-[var(--text-secondary)]'}`}
+          <div className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--text-secondary)]">
+            {t('dm.layers', 'Capas')}
+          </div>
+          <ToolButton
+            icon={<LayoutGrid className="h-4 w-4" />}
+            label={t('dm.zonesBtn', 'Zonas')}
             title={t('dm.showZones', 'Mostrar zonas')}
-            data-testid="zones-toggle"
-          >
-            {t('dm.zonesBtn', '🧩 Zonas')} {showZones ? '●' : '○'}
-          </button>
-          <div className="border-t border-[var(--bg-tertiary)] my-1" />
-          <div className="px-1.5 text-[10px] uppercase tracking-wide text-[var(--text-secondary)]">{t('dm.fog', 'Niebla')}</div>
-          <button
-            onClick={startFogMode}
-            className={`block w-full text-left px-2 py-1 text-xs rounded transition-colors ${fogMode ? 'text-amber-400 bg-[var(--bg-tertiary)]' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
+            active={showZones}
+            testId="zones-toggle"
+            onClick={() => setShowZones((v) => !v)}
+          />
+          <div className="my-2 border-t border-[var(--bg-tertiary)]" />
+          <div className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--text-secondary)]">
+            {t('dm.fog', 'Niebla')}
+          </div>
+          <ToolButton
+            icon={<Brush className="h-4 w-4" />}
+            label={t('dm.fogBrush', 'Niebla (pincel)')}
             title={t('dm.fogBrushTitle', 'Niebla (pincel)')}
-          >
-            {t('dm.fogBrush', '🌫️ Niebla (pincel)')}
-          </button>
-          <button
-            onClick={startRectFogMode}
-            className={`block w-full text-left px-2 py-1 text-xs rounded transition-colors ${rectFogMode ? 'text-amber-400 bg-[var(--bg-tertiary)]' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
+            active={Boolean(fogMode)}
+            onClick={startFogMode}
+          />
+          <ToolButton
+            icon={<SquareDashed className="h-4 w-4" />}
+            label={t('dm.fogRect', 'Niebla (rect)')}
             title={t('dm.fogRectTitle', 'Niebla (rect)')}
-          >
-            {t('dm.fogRect', '▭ Niebla (rect)')}
-          </button>
-          <button
-            onClick={startZoneFogMode}
-            className={`block w-full text-left px-2 py-1 text-xs rounded transition-colors ${zoneFogActive ? 'text-amber-400 bg-[var(--bg-tertiary)]' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
+            active={Boolean(rectFogMode)}
+            onClick={startRectFogMode}
+          />
+          <ToolButton
+            icon={<PaintBucket className="h-4 w-4" />}
+            label={t('dm.fogZone', 'Niebla de zona')}
             title={t('dm.fogZoneTitle', 'Niebla de zona (alternar)')}
-          >
-            {t('dm.fogZone', '🧩 Niebla de zona (alternar)')}
-          </button>
+            active={zoneFogActive}
+            onClick={startZoneFogMode}
+          />
         </HudPanel>
         {/* Dock inferior — acciones de sesión, siempre abierto en desktop */}
         <DmDock

@@ -295,7 +295,7 @@ test.describe('Fog (Phase D)', () => {
         res.url().includes(`/scenes/${scene.id}/items`) && res.request().method() === 'PUT',
       { timeout: 20_000 },
     );
-    await page.getByRole('button', { name: /Niebla de zona \(alternar\)/ }).click();
+    await page.getByRole('button', { name: /Niebla de zona/ }).click();
     await expect(page.getByText(/Clic dentro de una zona para alternar niebla/)).toBeVisible();
     const cx = box.x + box.width * (0.3 + 0.15);
     const cy = box.y + box.height * (0.3 + 0.15);
@@ -442,9 +442,10 @@ test.describe('Fog (Phase D)', () => {
     await updateScene(request, campaign.id, scene.id, { status: 'active' });
     const code = await generateInviteCode(request, campaign.id);
 
-    await openPlayerWithLightMap(page, campaign.id, scene.id, 'Vane', code);
+    const mask = await openPlayerWithLightMap(page, campaign.id, scene.id, 'Vane', code);
 
-    // fy=0.5 es el centro de la pantalla, donde cae el token (centro del mapa).
+    // fy=0.5 en coordenadas GL (origen abajo) es el medio de la pantalla, donde
+    // cae el token (centro del mapa).
     await expect
       .poll(async () => pixelBrightness(await readViewPixel(page, 0.5, 0.5)), { timeout: 20_000 })
       .toBeGreaterThan(120);
@@ -453,6 +454,11 @@ test.describe('Fog (Phase D)', () => {
       fogPolygon('fog-f8-secret', false, 0.5, 0.5, 0.75, 'secret'),
     ]);
 
+    // La máscara es el dato; el píxel es la pantalla. Se esperan los dos: si la
+    // máscara baja y el píxel no, es un bug de render y no de sincronización.
+    await expect
+      .poll(async () => Number(await mask.getAttribute('data-visible-cells')), { timeout: 20_000 })
+      .toBe(0);
     await expect
       .poll(async () => pixelBrightness(await readViewPixel(page, 0.5, 0.5)), { timeout: 20_000 })
       .toBeLessThan(90);
