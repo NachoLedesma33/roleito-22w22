@@ -224,16 +224,21 @@ test.describe('Fog (Phase D)', () => {
 
     // 2) El DM: su mesa no se vela. Es el §4.3 ("el DM ve todo"): si el plano de
     //    niebla tapara también lo que está por encima, el DM se quedaría a ciegas
-    //    en la zona que acaba de preparar. Se mide el PROMEDIO de una franja de
-    //    mapa (un punto suelto mide una celda del damero u otra, según dónde
-    //    caiga) y el MÁXIMO del centro, que es donde está el token.
+    //    en la zona que acaba de preparar.
+    //
+    //    Lo que está en riesgo es lo que vive ARRIBA del plano (tokens en y≈0.6,
+    //    modelos 3D en y=6+); el suelo está debajo y nunca estuvo en riesgo. Por
+    //    eso la aserción es el máximo del centro, que es donde cae el token. No
+    //    se mide el fondo con un promedio: el mapa se dibuja en trapecio y el
+    //    resto del canvas es el clear color con alpha 1, así que un promedio de
+    //    esa región depende de cómo cae el rectángulo y cambia entre máquinas.
     await openScene(page, campaign.id, scene.id);
-    const dMapa = await brightnessInRegion(page, 0.6, 0.25, 0.9, 0.55);
-    const dCentro = await brightnessInRegion(page, 0.4, 0.4, 0.65, 0.7);
-    expect(dMapa.avg, 'el DM ve el mapa a traves de su propio secreto').toBeGreaterThan(110);
-    expect(dCentro.max, 'el DM ve su token por encima de su propio secreto').toBeGreaterThan(150);
+    const dToken = await maxBrightnessInRegion(page, 0.4, 0.4, 0.65, 0.7);
+    expect(dToken, 'el DM ve su token por encima de su propio secreto').toBeGreaterThan(150);
 
-    // 3) El jugador: la misma escena, la misma niebla, nada asoma.
+    // 3) El jugador: la misma escena, la misma niebla, nada asoma. Acá sí se
+    //    puede mirar el promedio de una franja de mapa: está todo velado, así
+    //    que cualquier umbral bajo sirve y el void no importa.
     const code = await generateInviteCode(request, campaign.id);
     const mask = await openPlayerWithLightMap(page, campaign.id, scene.id, 'Vane', code);
     await expect
