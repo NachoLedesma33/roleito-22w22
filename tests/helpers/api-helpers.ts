@@ -9,6 +9,16 @@ export const PNG_1PX = Buffer.from(
   'base64',
 );
 
+/**
+ * Damero claro de 32x32. Los tests que leen píxeles necesitan un fondo que se
+ * distinga del negro de la niebla: con `PNG_1PX` cualquier aserción de brillo
+ * pasa siempre.
+ */
+export const PNG_LIGHT_CHECKER = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAP0lEQVR4nGN4/ew6VrRq6XqsiFT1DKMWjFowBCyglkG41I9aMGrBULCA5hlt1IJRC4aABTTPaKMWjFow+C0AADfATIgyKY0tAAAAAElFTkSuQmCC',
+  'base64',
+);
+
 const ASSETS_DIR = path.resolve(__dirname, '../assets');
 
 export interface AssetFile {

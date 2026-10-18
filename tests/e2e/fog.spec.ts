@@ -7,8 +7,11 @@ import {
   putSceneItems,
   seedTokens,
   updateScene,
+  uploadBackground,
   PNG_1PX,
+  PNG_LIGHT_CHECKER,
 } from '../helpers/api-helpers';
+import { pixelBrightness, readViewPixel } from '../helpers/pixels';
 
 /** Antorcha en el centro del mapa: ilumina toda la sala. */
 function centerTorch() {
@@ -81,6 +84,30 @@ function fogPolygon(id: string, revealed: boolean, cx: number, cy: number, r: nu
 
 function fogItems(items: import('../helpers/api-helpers').SceneItem[]) {
   return items.filter((i) => i.metadata?.type === 'fog');
+}
+
+/**
+ * POV de jugador listo para mirar la pantalla: escena con fondo claro, token con
+ * darkvision amplia (así la vision no tapa el efecto de la niebla) y la máscara
+ * ya calculada.
+ *
+ * El fondo tiene que ser claro a propósito: si fuera oscuro, "niebla" y "mapa"
+ * darían el mismo brillo y la aserción pasaría siempre.
+ */
+async function openPlayerWithLightMap(
+  page: import('@playwright/test').Page,
+  campaignId: string,
+  sceneId: string,
+  charName: string,
+  code: string,
+) {
+  await page.goto(`/campaigns/join/${code}`);
+  await page.getByRole('button', { name: new RegExp(charName) }).click();
+  const mask = page.getByTestId('perception-mask');
+  await expect
+    .poll(async () => Number(await mask.getAttribute('data-cols')), { timeout: 25_000 })
+    .toBeGreaterThan(0);
+  return mask;
 }
 
 test.describe('Fog (Phase D)', () => {
@@ -340,5 +367,92 @@ test.describe('Fog (Phase D)', () => {
     await expect
       .poll(async () => Number(await mask.getAttribute('data-visible-cells')), { timeout: 20_000 })
       .toBeGreaterThan(ambient * 2);
+  });
+
+  test('F7: la niebla del DM se ve en la PANTALLA del jugador, no solo en la máscara', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    // F5 mira `data-visible-cells`, que es la máscara. Con la máscara bien
+    // calculada y la textura rota, la niebla no se veía nada en pantalla y F5
+    // pasaba igual. Estos dos tests miran los píxeles del canvas.
+    const scene = await createScene(request, campaign.id, 'Fog Pantalla');
+    await uploadBackground(request, campaign.id, scene.id, {
+      name: 'bg.png',
+      mimeType: 'image/png',
+      buffer: PNG_LIGHT_CHECKER,
+    });
+    const char = await createCharacter(request, campaign.id, { name: 'Vane' });
+    await seedTokens(request, campaign.id, scene.id, [
+      { entityType: 'character', entityId: char.id, x: 0, z: 0, visionType: 'darkvision', visionRange: 14 },
+    ]);
+    await updateScene(request, campaign.id, scene.id, { status: 'active' });
+    const code = await generateInviteCode(request, campaign.id);
+
+    const mask = await openPlayerWithLightMap(page, campaign.id, scene.id, 'Vane', code);
+
+    // 1) Sin niebla el mapa se ve de plano.
+    expect(Number(await mask.getAttribute('data-visible-cells'))).toBeGreaterThan(0);
+    await expect
+      .poll(async () => pixelBrightness(await readViewPixel(page, 0.72, 0.4)), { timeout: 20_000 })
+      .toBeGreaterThan(120);
+
+    // 2) El DM pinta secreto sobre todo el mapa, en vivo (sin reload): la
+    //    pantalla tiene que ponerse oscura.
+    await putSceneItems(request, campaign.id, scene.id, [
+      fogPolygon('fog-f7-secret', false, 0.5, 0.5, 0.75, 'secret'),
+    ]);
+    await expect
+      .poll(async () => Number(await mask.getAttribute('data-visible-cells')), { timeout: 20_000 })
+      .toBe(0);
+    await expect
+      .poll(async () => pixelBrightness(await readViewPixel(page, 0.72, 0.4)), { timeout: 20_000 })
+      .toBeLessThan(90);
+
+    // 3) Revelar lo saca, también en vivo.
+    await putSceneItems(request, campaign.id, scene.id, [
+      fogPolygon('fog-f7-reveal', true, 0.5, 0.5, 0.75, 'reveal'),
+    ]);
+    await expect
+      .poll(async () => pixelBrightness(await readViewPixel(page, 0.72, 0.4)), { timeout: 20_000 })
+      .toBeGreaterThan(120);
+  });
+
+  test('F8: la niebla también tapa al token parado en la zona secreta', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    // El plano de niebla está en y=0.08 y los tokens en y≈0.6: con el test de
+    // profundidad el token se veía por encima de la niebla, así que el jugador
+    // veía a un NPC parado en una zona secreta.
+    const scene = await createScene(request, campaign.id, 'Fog Token');
+    await uploadBackground(request, campaign.id, scene.id, {
+      name: 'bg.png',
+      mimeType: 'image/png',
+      buffer: PNG_LIGHT_CHECKER,
+    });
+    const char = await createCharacter(request, campaign.id, { name: 'Vane' });
+    await seedTokens(request, campaign.id, scene.id, [
+      { entityType: 'character', entityId: char.id, x: 0, z: 0, visionType: 'darkvision', visionRange: 14 },
+    ]);
+    await updateScene(request, campaign.id, scene.id, { status: 'active' });
+    const code = await generateInviteCode(request, campaign.id);
+
+    await openPlayerWithLightMap(page, campaign.id, scene.id, 'Vane', code);
+
+    // fy=0.5 es el centro de la pantalla, donde cae el token (centro del mapa).
+    await expect
+      .poll(async () => pixelBrightness(await readViewPixel(page, 0.5, 0.5)), { timeout: 20_000 })
+      .toBeGreaterThan(120);
+
+    await putSceneItems(request, campaign.id, scene.id, [
+      fogPolygon('fog-f8-secret', false, 0.5, 0.5, 0.75, 'secret'),
+    ]);
+
+    await expect
+      .poll(async () => pixelBrightness(await readViewPixel(page, 0.5, 0.5)), { timeout: 20_000 })
+      .toBeLessThan(90);
   });
 });

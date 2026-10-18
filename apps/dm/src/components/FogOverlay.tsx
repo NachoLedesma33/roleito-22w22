@@ -5,16 +5,20 @@ import type { PerceptionMask } from '../lib/playerPerception'
 
 export const FOG_MASK_SIZE = 512
 
-function paintMask(
-  canvas: HTMLCanvasElement,
-  color: string,
-  regions: FogRegion[],
-  aspect: number,
-) {
-  const w = FOG_MASK_SIZE
-  const h = Math.max(32, Math.round(FOG_MASK_SIZE / aspect))
-  canvas.width = w
-  canvas.height = h
+/**
+ * Las dos pintadas usan el tamaño que YA tiene el canvas: no lo redimensionan.
+ *
+ * Redimensionar después de la primera subida de la textura la rompe. Three solo
+ * usa `texImage2D` en la primera subida; para las siguientes va por
+ * `texSubImage2D`, y si el canvas cambió de tamaño el offset desborda
+ * (`GL_INVALID_VALUE: ... Offset overflows texture dimensions`) y la niebla deja
+ * de pintarse sin ningún error visible en la app. Por eso el canvas nace con su
+ * tamaño final y, si el aspect del mapa cambia, se crea otra textura.
+ */
+
+function paintMask(canvas: HTMLCanvasElement, color: string, regions: FogRegion[]) {
+  const w = canvas.width
+  const h = canvas.height
   const ctx = canvas.getContext('2d')
   if (!ctx) return
 
@@ -55,19 +59,16 @@ function paintMask(
  * perfora con `destination-out`, que es lo mismo que hacía `paintMask` con las
  * regiones reveladas pero con alpha continuo (el `dimRange` de la visión).
  *
+ * El alpha va **tal cual**: `destination-out` perfora, así que alpha 1 = agujero
+ * = se ve de plano. Invertirlo dejaba el mapa al revés (niebla donde el
+ * personaje ve, claridad donde no ve) y era indistinguible de "no sincroniza".
+ *
  * `[row][col]` va hacia abajo en el canvas, igual que `paintMask` mapeaba los
  * puntos normalizados, así que la convención de ejes no cambia entre los dos.
  */
-function paintPerception(
-  canvas: HTMLCanvasElement,
-  color: string,
-  mask: PerceptionMask,
-  aspect: number,
-) {
-  const w = FOG_MASK_SIZE
-  const h = Math.max(32, Math.round(FOG_MASK_SIZE / aspect))
-  canvas.width = w
-  canvas.height = h
+function paintPerception(canvas: HTMLCanvasElement, color: string, mask: PerceptionMask) {
+  const w = canvas.width
+  const h = canvas.height
   const ctx = canvas.getContext('2d')
   if (!ctx || mask.cols <= 0 || mask.rows <= 0) return
 
@@ -79,7 +80,7 @@ function paintPerception(
   const img = sctx.createImageData(mask.cols, mask.rows)
   for (let i = 0; i < mask.data.length; i++) {
     const v = mask.data[i]
-    const a = v < 0 ? 0 : v > 1 ? 255 : Math.round((1 - v) * 255)
+    const a = v < 0 ? 0 : v > 1 ? 255 : Math.round(v * 255)
     const o = i * 4
     img.data[o] = 255
     img.data[o + 1] = 255
@@ -120,26 +121,46 @@ export default function FogOverlay({
   mapHeight,
   renderMode = '2d',
 }: FogOverlayProps) {
-  const texture = useMemo(() => {
-    const tex = new THREE.CanvasTexture(document.createElement('canvas'))
-    tex.needsUpdate = true
-    return tex
-  }, [])
-
   const aspect = mapHeight > 0 ? mapWidth / mapHeight : 1
   const fogY = renderMode === '2d' ? 0.08 : 6
 
+  // El tamaño va en la clave: si el aspect del mapa cambia (o se carga el fondo
+  // tarde) es OTRA textura, con su propia subida correcta.
+  const texture = useMemo(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = FOG_MASK_SIZE
+    canvas.height = Math.max(32, Math.round(FOG_MASK_SIZE / aspect))
+    const tex = new THREE.CanvasTexture(canvas)
+    tex.needsUpdate = true
+    return tex
+  }, [aspect])
+
+  useEffect(() => () => texture.dispose(), [texture])
+
   useEffect(() => {
     const canvas = texture.image as HTMLCanvasElement
-    if (perception) paintPerception(canvas, color, perception, aspect)
-    else paintMask(canvas, color, regions, aspect)
+    if (perception) paintPerception(canvas, color, perception)
+    else paintMask(canvas, color, regions)
     texture.needsUpdate = true
-  }, [texture, color, regions, perception, aspect])
+  }, [texture, color, regions, perception])
 
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, fogY, 0]} renderOrder={50}>
       <planeGeometry args={[mapWidth, mapHeight]} />
-      <meshBasicMaterial map={texture} transparent depthWrite={false} toneMapped={false} />
+      {/*
+        `depthTest: false` a propósito: la niebla tiene que tapar TODO lo que hay
+        en el mapa, incluidos los tokens (que en 2D flotan en y≈0.6) y los modelos
+        3D (que en 3D están en y=6 o más). Con el test de profundidad la niebla se
+        perdía justo detrás de ellos: el jugador veía al NPC parado en una zona
+        secreta.
+      */}
+      <meshBasicMaterial
+        map={texture}
+        transparent
+        depthWrite={false}
+        depthTest={false}
+        toneMapped={false}
+      />
     </mesh>
   )
 }
