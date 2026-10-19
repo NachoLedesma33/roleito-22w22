@@ -528,9 +528,23 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
   const Y = getY(renderMode)
 
   const glowOpacity = lightGlowOpacity(meta)
+  const groupRef = useRef<THREE.Group>(null)
   const haloMatRef = useRef<THREE.MeshBasicMaterial>(null)
   const orbMatRef = useRef<THREE.MeshStandardMaterial>(null)
   const orbMarkerRef = useRef<THREE.MeshBasicMaterial>(null)
+
+  // Apply position imperatively, igual que DraggableToken: R3F puede saltear la
+  // reconciliacion del array-prop `<group position={[...]}>`. Sin esto, una luz
+  // pegada a un token se quedaba congelada en su posicion original mientras el
+  // token se movia (el token si aplicaba su posicion por efecto). Corre en cada
+  // render porque `positionOverride` es un array nuevo, lo que garantiza que la
+  // luz quede siempre sincronizada con la posicion interpolada del token.
+  useEffect(() => {
+    if (!groupRef.current) return
+    const p = positionOverride ?? [item.x, 0, item.y]
+    groupRef.current.position.set(p[0], p[1], p[2])
+    groupRef.current.rotation.y = groupRotY
+  }, [positionOverride, item.x, item.y, groupRotY])
 
   useFrame((state) => {
     const mat = haloMatRef.current
@@ -668,6 +682,7 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
 
   return (
     <group
+      ref={groupRef}
       position={positionOverride ?? [item.x, 0, item.y]}
       rotation={[0, groupRotY, 0]}
       onClick={(e) => { e.stopPropagation(); onClick?.() }}
