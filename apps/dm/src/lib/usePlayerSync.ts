@@ -194,15 +194,24 @@ export function usePlayerSync(code: string | undefined, refs: UsePlayerSyncRefs)
  *
  * El parche es identity-preserving por personaje: si no cambió nada se devuelve
  * el mismo objeto, así que `PlayerView` no reinicia sus interpolaciones.
+ *
+ * SAFEGUARD: nunca reduce el número de personajes. Si el merge produce menos
+ * que el estado previo, algo va mal (IDs que no matchean, scene_id erróneo)
+ * y nos quedamos con el estado previo completo + log de diagnóstico.
  */
 const applySceneCharacters = useCallback((sceneId: string, incoming: unknown[]) => {
   setData((prev) => {
-    if (!prev || prev.scene_id !== sceneId || incoming.length === 0) return prev;
+    if (!prev || prev.scene_id !== sceneId || incoming.length === 0) {
+      if (import.meta.env?.DEV && !prev) console.debug('[sync] applySceneCharacters: sin data previo');
+      if (import.meta.env?.DEV && prev?.scene_id !== sceneId) console.debug('[sync] applySceneCharacters: scene_id mismatch', { prev: prev?.scene_id, msg: sceneId });
+      return prev;
+    }
     const byId = new Map<string, Record<string, unknown>>();
     for (const c of incoming as Array<Record<string, unknown>>) {
       if (typeof c?.id === 'string') byId.set(c.id as string, c);
     }
     if (byId.size === 0) return prev;
+    if (import.meta.env?.DEV) console.debug('[sync] applySceneCharacters', { sceneId, incomingIds: Array.from(byId.keys()), prevCount: prev.characters.length });
     let changed = false;
     const characters = prev.characters.map((c) => {
       const u = byId.get(c.id);
@@ -216,6 +225,16 @@ const applySceneCharacters = useCallback((sceneId: string, incoming: unknown[]) 
       changed = true;
       return { ...c, ...(u as Partial<typeof c>) };
     });
+    // SAFEGUARD: si por alguna razón perdimos personajes, NO aplicar el cambio
+    if (characters.length !== prev.characters.length) {
+      console.error('[sync] applySceneCharacters: PERDIDA DE PERSONAJES detectada', {
+        before: prev.characters.length,
+        after: characters.length,
+        incomingIds: Array.from(byId.keys()),
+        prevIds: prev.characters.map(c => c.id),
+      });
+      return prev;
+    }
     return changed ? { ...prev, characters } : prev;
   });
 }, []);
@@ -300,6 +319,7 @@ const applySceneCharacters = useCallback((sceneId: string, incoming: unknown[]) 
             scene_id?: string;
             characters?: unknown[];
           };
+          if (import.meta.env?.DEV) console.debug('[sync] WS message', { type: msg.type, scene_id: msg.scene_id, chars: msg.characters?.length });
           if (msg.type === 'revision' && msg.revision) {
             setLive(true);
             void applyRevision(msg.revision);
