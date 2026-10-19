@@ -237,9 +237,9 @@ export default function InitiativeTracker({
       title={`Iniciativa — Ronda ${combat ? combat.round : '-'}`}
       panelId="initiative"
       onClose={onClose}
-      defaultX={window.innerWidth - 360}
-      defaultY={160}
-      defaultWidth={340}
+      defaultX={Math.max(8, window.innerWidth - 380)}
+      defaultY={120}
+      defaultWidth={360}
     >
       <div className="space-y-2">
         {!combat && (

@@ -146,14 +146,14 @@ export default function DMNotebookHud({ campaignId, onClose }: DMNotebookHudProp
 
   if (loading) {
     return (
-      <HudPanel title="Cuaderno del DM" panelId="notebook" onClose={onClose} defaultX={100} defaultY={80} defaultWidth={420}>
+      <HudPanel title="Cuaderno del DM" panelId="notebook" onClose={onClose} defaultX={Math.max(8, window.innerWidth - 380)} defaultY={120} defaultWidth={360}>
         <p className="text-xs text-[var(--text-secondary)]">Cargando...</p>
       </HudPanel>
     );
   }
 
   return (
-    <HudPanel title="Cuaderno del DM" panelId="notebook" onClose={onClose} defaultX={100} defaultY={80} defaultWidth={440}>
+    <HudPanel title="Cuaderno del DM" panelId="notebook" onClose={onClose} defaultX={Math.max(8, window.innerWidth - 380)} defaultY={120} defaultWidth={360}>
       <div className="space-y-3">
         {/* Category Filter */}
         <div className="flex items-center gap-1 flex-wrap">

@@ -24,7 +24,7 @@ const MIN_HEIGHT = 150;
 const BASE_Z = 20;
 const MAX_Z = 29;
 let nextZ = BASE_Z;
-const STORAGE_PREFIX = 'roleito:hud:';
+const STORAGE_PREFIX = 'roleito:hud:v2:';
 const EDGE = 6;
 const SNAP = 20;
 

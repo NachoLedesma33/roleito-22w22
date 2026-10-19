@@ -140,9 +140,9 @@ export default function CalendarPanel({ campaignId, onClose }: CalendarPanelProp
       title="Calendario y relojes"
       panelId="calendar"
       onClose={onClose}
-      defaultX={window.innerWidth - 420}
+      defaultX={Math.max(8, window.innerWidth - 380)}
       defaultY={120}
-      defaultWidth={400}
+      defaultWidth={360}
     >
       <div className="p-3 space-y-3 text-sm">
         <div className="flex items-center justify-between gap-2">

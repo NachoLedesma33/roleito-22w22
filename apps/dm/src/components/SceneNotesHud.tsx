@@ -41,9 +41,9 @@ export default function SceneNotesHud({
       title={`Notas de la escena${sceneName ? ` — ${sceneName}` : ''}`}
       panelId="scene-notes"
       onClose={onClose}
-      defaultX={window.innerWidth - 340}
-      defaultY={300}
-      defaultWidth={320}
+      defaultX={Math.max(8, window.innerWidth - 380)}
+      defaultY={120}
+      defaultWidth={360}
     >
       {!sceneId && (
         <p className="text-[10px] text-[var(--text-secondary)] italic">

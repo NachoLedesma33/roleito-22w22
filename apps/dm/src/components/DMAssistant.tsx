@@ -77,7 +77,7 @@ export default function DMAssistant({ campaignId, onClose }: DMAssistantProps) {
   }, []);
 
   return (
-    <HudPanel title="Asistente del DM" panelId="dm-assistant" onClose={onClose} defaultX={500} defaultY={150} defaultWidth={380}>
+    <HudPanel title="Asistente del DM" panelId="dm-assistant" onClose={onClose} defaultX={Math.max(8, window.innerWidth - 380)} defaultY={120} defaultWidth={360}>
       <div className="flex flex-col gap-2 h-full min-h-0">
         <div
           ref={scrollRef}

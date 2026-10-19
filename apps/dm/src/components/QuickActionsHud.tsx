@@ -12,9 +12,9 @@ export default function QuickActionsHud({ campaignId, onClose }: QuickActionsHud
       title="Acciones rápidas"
       panelId="quick-actions"
       onClose={onClose}
-      defaultX={20}
-      defaultY={80}
-      defaultWidth={200}
+      defaultX={Math.max(8, window.innerWidth - 380)}
+      defaultY={120}
+      defaultWidth={360}
     >
       <div className="space-y-1">
         <Link

@@ -78,7 +78,7 @@ export default function QuestPanel({ campaignId, onClose }: QuestPanelProps) {
       title="Tablón de misiones"
       panelId="quests"
       onClose={onClose}
-      defaultX={window.innerWidth - 380}
+      defaultX={Math.max(8, window.innerWidth - 380)}
       defaultY={120}
       defaultWidth={360}
     >

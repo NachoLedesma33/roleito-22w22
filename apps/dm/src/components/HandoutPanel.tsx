@@ -110,7 +110,7 @@ export default function HandoutPanel({ campaignId, onClose }: HandoutPanelProps)
       title="Documentos para jugadores"
       panelId="handouts"
       onClose={onClose}
-      defaultX={window.innerWidth - 380}
+      defaultX={Math.max(8, window.innerWidth - 380)}
       defaultY={120}
       defaultWidth={360}
     >

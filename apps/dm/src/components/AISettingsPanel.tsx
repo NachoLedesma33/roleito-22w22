@@ -72,7 +72,7 @@ export default function AISettingsPanel({ onClose }: AISettingsPanelProps) {
 
   if (!settings) {
     return (
-      <HudPanel title="IA" panelId="ai-settings" onClose={onClose} defaultX={420} defaultY={90} defaultWidth={340}>
+      <HudPanel title="IA" panelId="ai-settings" onClose={onClose} defaultX={Math.max(8, window.innerWidth - 380)} defaultY={120} defaultWidth={360}>
         <p className="text-xs text-[var(--text-secondary)]">
           {saveError || 'Cargando...'}
         </p>
@@ -137,7 +137,7 @@ export default function AISettingsPanel({ onClose }: AISettingsPanelProps) {
   };
 
   return (
-    <HudPanel title="IA" panelId="ai-settings" onClose={onClose} defaultX={420} defaultY={90} defaultWidth={340}>
+    <HudPanel title="IA" panelId="ai-settings" onClose={onClose} defaultX={Math.max(8, window.innerWidth - 380)} defaultY={120} defaultWidth={360}>
       <div className="space-y-3" data-testid="ai-settings-panel">
         <div>
           <label className="block text-[10px] uppercase tracking-wide text-[var(--text-secondary)] mb-1">

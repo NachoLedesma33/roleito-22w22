@@ -306,9 +306,9 @@ export default function DiceRoller({
       title="Tirada de dados"
       panelId="dice-roller"
       onClose={onClose}
-      defaultX={80}
-      defaultY={80}
-      defaultWidth={280}
+      defaultX={Math.max(8, window.innerWidth - 380)}
+      defaultY={120}
+      defaultWidth={360}
     >
       <div className="space-y-3">
         <div>
