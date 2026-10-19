@@ -203,6 +203,7 @@ interface SceneRendererProps {
   onTokenDrop?: (sceneCharId: string, x: number, z: number) => void;
   onTokenDrag?: (sceneCharId: string, x: number, z: number) => void;
   onTokenContextMenu?: (sceneCharId: string, clientX: number, clientY: number) => void;
+  onTokenDoubleClick?: (sceneCharId: string, clientX: number, clientY: number) => void;
   onDrawStart?: (point: { x: number; y: number }) => void;
   onDrawMove?: (point: { x: number; y: number }) => void;
   onDrawEnd?: () => void;
@@ -736,12 +737,14 @@ function DraggableToken({
   isMovable,
   onClick,
   onContextMenu,
+  onDoubleClick,
 }: {
   entity: SceneEntity;
   isSelected: boolean;
   isMovable: boolean;
   onClick?: (sceneCharId: string) => void;
   onContextMenu?: (sceneCharId: string, clientX: number, clientY: number) => void;
+  onDoubleClick?: (sceneCharId: string, clientX: number, clientY: number) => void;
 }) {
   const groupRef = useRef<THREE.Group>(null);
 
@@ -797,7 +800,14 @@ function DraggableToken({
     : 1.3 * tokenScale;
 
   return (
-    <group ref={groupRef} position={[entity.x, entity.y, entity.z]}>
+    <group
+      ref={groupRef}
+      position={[entity.x, entity.y, entity.z]}
+      onDoubleClick={(e) => {
+        const domEvent = e as unknown as MouseEvent;
+        onDoubleClick?.(entity.sceneCharId, domEvent.clientX, domEvent.clientY);
+      }}
+    >
       {entity.modelUrl ? (
         <TokenModel
           id={entity.sceneCharId}
@@ -2177,6 +2187,7 @@ export default function SceneRenderer({
   onTokenDrop,
   onTokenDrag,
   onTokenContextMenu,
+  onTokenDoubleClick,
   onDrawStart,
   onDrawMove,
   onDrawEnd,
@@ -2367,6 +2378,7 @@ export default function SceneRenderer({
             isMovable={isMovable}
             onClick={isMovable ? handleTokenClickWrap : undefined}
             onContextMenu={isMovable ? onTokenContextMenu : undefined}
+            onDoubleClick={isMovable ? onTokenDoubleClick : undefined}
           />
         );
       })}

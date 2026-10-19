@@ -105,6 +105,7 @@ export default function DmDashboard() {
   const [distanceFrom, setDistanceFrom] = useState<string | null>(null);
   const [distanceTo, setDistanceTo] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
+  const [tokenQuickEdit, setTokenQuickEdit] = useState<{ sceneCharId: string; x: number; y: number } | null>(null);
   const [lightRequests, setLightRequests] = useState<LightRequest[]>([]);
   const { toasts: toastQueue, push, pushMany, dismiss } = useToastQueue();
   const [drawState, setDrawState] = useState<DrawState | null>(null);
@@ -1582,6 +1583,39 @@ const startFogMode = useCallback(() => {
     }
   }, [campaignId, activeScene, sceneChars, selectedTokenId]);
 
+  const tokenPatchTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const handleTokenPatch = useCallback(
+    (
+      sceneCharId: string,
+      patch: { token_scale?: number; facing_offset?: number; vision_type?: string; vision_range?: number }
+    ) => {
+      lastLocalChangeRef.current = Date.now();
+      setSceneChars((prev) => prev.map((s) => (s.id === sceneCharId ? { ...s, ...patch } : s)));
+      if (!campaignId || !activeScene) return;
+      clearTimeout(tokenPatchTimerRef.current);
+      tokenPatchTimerRef.current = setTimeout(() => {
+        const updated = sceneCharsRef.current.map((s) => ({
+          id: s.id,
+          entity_type: s.entity_type,
+          entity_id: s.entity_id,
+          x: s.x,
+          y: s.y,
+          z: s.z,
+          visible: !!s.visible,
+          order: s.order,
+          statuses: s.statuses ?? [],
+          token_scale: s.token_scale ?? 1,
+          move_speed: s.move_speed ?? 1,
+          facing_offset: s.facing_offset ?? 0,
+          vision_type: s.vision_type ?? 'normal',
+          vision_range: s.vision_range ?? 6.0,
+        }));
+        api.scenes.updateCharacters(campaignId, activeScene.id, updated).catch(() => {});
+      }, 300);
+    },
+    [campaignId, activeScene]
+  );
+
   const handleToggleVisibility = useCallback(async (sceneCharId: string) => {
     if (!campaignId || !activeScene) return;
     const updated = sceneChars.map((sc) =>
@@ -1646,6 +1680,19 @@ const startFogMode = useCallback(() => {
     return () => window.removeEventListener('click', close);
   }, [contextMenu]);
 
+  const quickEditRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!tokenQuickEdit) return;
+    const handleDown = (e: MouseEvent) => {
+      if (quickEditRef.current && !quickEditRef.current.contains(e.target as Node)) setTokenQuickEdit(null);
+    };
+    document.addEventListener('mousedown', handleDown);
+    return () => document.removeEventListener('mousedown', handleDown);
+  }, [tokenQuickEdit]);
+  useEffect(() => {
+    if (tokenQuickEdit && !sceneChars.some((s) => s.id === tokenQuickEdit.sceneCharId)) setTokenQuickEdit(null);
+  }, [tokenQuickEdit, sceneChars]);
+
   const handleTokenContextMenu = useCallback((sceneCharId: string, clientX: number, clientY: number) => {
     const sc = sceneChars.find((s) => s.id === sceneCharId);
     const ent = allEntities.find((x) => x.id === sc?.entity_id);
@@ -1709,6 +1756,10 @@ const startFogMode = useCallback(() => {
     });
   }, [sceneChars, allEntities, handleToggleVisibility, handleRemoveFromScene, graphRef, handleTokenLightAttach, handleTokenLightDetach, handleCreateAndAttachLight, handleToggleStatus]);
 
+  const handleTokenDoubleClick = useCallback((sceneCharId: string, clientX: number, clientY: number) => {
+    setTokenQuickEdit({ sceneCharId, x: clientX, y: clientY });
+  }, []);
+
   // Keyboard shortcuts
   useEffect(() => {
     const isEditable = (el: Element | null) =>
@@ -1725,6 +1776,8 @@ const startFogMode = useCallback(() => {
         case 'Escape':
           if (viewingMap) {
             setViewingMap(null);
+          } else if (tokenQuickEdit) {
+            setTokenQuickEdit(null);
           } else if (selectedTokenId) {
             setSelectedTokenId(null);
           } else if (showDiceRoller) {
@@ -1798,13 +1851,20 @@ const startFogMode = useCallback(() => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [scenes, activeScene, selectedTokenId, showQuickActions, showSessionLog, showSceneNotes, showDiceRoller, showRecap, showNotebook, showAssistant, viewingMap, handleRemoveFromScene, setContextMenu]);
+  }, [scenes, activeScene, selectedTokenId, showQuickActions, showSessionLog, showSceneNotes, showDiceRoller, showRecap, showNotebook, showAssistant, viewingMap, tokenQuickEdit, handleRemoveFromScene, setContextMenu]);
 
   const selectedEntity = selectedTokenId
     ? sceneChars.find((sc) => sc.id === selectedTokenId)
     : null;
   const selectedChar = selectedEntity
     ? allEntities.find((e) => e.id === selectedEntity.entity_id)
+    : null;
+
+  const quickEditChar = tokenQuickEdit
+    ? sceneChars.find((sc) => sc.id === tokenQuickEdit.sceneCharId)
+    : null;
+  const quickEditEntity = quickEditChar
+    ? allEntities.find((e) => e.id === quickEditChar.entity_id)
     : null;
 
   const initiativeCombatants = sceneChars
@@ -2964,6 +3024,7 @@ const startFogMode = useCallback(() => {
                 onTokenDrop={handleTokenDrop}
                 onTokenDrag={handleTokenDrag}
                 onTokenContextMenu={handleTokenContextMenu}
+                onTokenDoubleClick={handleTokenDoubleClick}
                 onItemClick={handleItemClickForAttach}
                 onItemContextMenu={(itemId, clientX, clientY) => {
                   const item = graphRef.getItem(itemId)
@@ -3151,134 +3212,6 @@ const startFogMode = useCallback(() => {
               </>
             )}
 
-            {/* Token Scale slider when selected */}
-            {selectedTokenId && (() => {
-              const sc = sceneChars.find((s) => s.id === selectedTokenId);
-              if (!sc) return null;
-              const ent = allEntities.find((e) => e.id === sc.entity_id);
-              const win = window as unknown as { __tokenScaleTimer?: ReturnType<typeof setTimeout>; __facingTimer?: ReturnType<typeof setTimeout>; __visionTypeTimer?: ReturnType<typeof setTimeout>; __visionRangeTimer?: ReturnType<typeof setTimeout> };
-              return (
-                <div className="mt-2 pt-2 border-t border-[var(--bg-tertiary)]">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] text-[var(--text-secondary)]">{t('dm.tokenSize', 'Tamaño')}</span>
-                    <span className="text-[10px] text-[var(--accent)] font-mono">{(sc.token_scale ?? 1).toFixed(1)}x</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0.5}
-                    max={3}
-                    step={0.1}
-                    value={sc.token_scale ?? 1}
-                    onChange={(e) => {
-                      const v = parseFloat(e.target.value);
-                      lastLocalChangeRef.current = Date.now();
-                      setSceneChars((prev) => prev.map((s) => s.id === selectedTokenId ? { ...s, token_scale: v } : s));
-                      if (!campaignId || !activeScene) return;
-                      const updated = sceneCharsRef.current.map((s) =>
-                        s.id === selectedTokenId
-                          ? { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: v, move_speed: s.move_speed ?? 1, facing_offset: s.facing_offset ?? 0, vision_type: s.vision_type ?? 'normal', vision_range: s.vision_range ?? 6.0 }
-                          : { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: s.facing_offset ?? 0, vision_type: s.vision_type ?? 'normal', vision_range: s.vision_range ?? 6.0 }
-                      );
-                      clearTimeout(win.__tokenScaleTimer);
-                      win.__tokenScaleTimer = setTimeout(() => {
-                        api.scenes.updateCharacters(campaignId, activeScene.id, updated).catch(() => {});
-                      }, 300);
-                    }}
-                    className="w-full h-1 accent-[var(--accent)]"
-                  />
-                  <p className="text-[9px] text-[var(--text-secondary)] mt-0.5 truncate">{ent?.name || t('dm.unknown', 'Desconocido')}</p>
-                  <div className="flex items-center justify-between mb-1 mt-2">
-                    <span className="text-[10px] text-[var(--text-secondary)]">{t('dm.tokenFacing', 'Orientación')}</span>
-                    <span className="text-[10px] text-[var(--accent)] font-mono">{Math.round(((sc.facing_offset ?? 0) * 180) / Math.PI)}°</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={6.28318}
-                    step={0.017453}
-                    value={sc.facing_offset ?? 0}
-                    onChange={(e) => {
-                      const v = parseFloat(e.target.value);
-                      lastLocalChangeRef.current = Date.now();
-                      setSceneChars((prev) => prev.map((s) => s.id === selectedTokenId ? { ...s, facing_offset: v } : s));
-                      if (!campaignId || !activeScene) return;
-                      const updated = sceneCharsRef.current.map((s) =>
-                        s.id === selectedTokenId
-                          ? { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: v, vision_type: s.vision_type ?? 'normal', vision_range: s.vision_range ?? 6.0 }
-                          : { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: s.facing_offset ?? 0, vision_type: s.vision_type ?? 'normal', vision_range: s.vision_range ?? 6.0 }
-                      );
-                      clearTimeout(win.__facingTimer);
-                      win.__facingTimer = setTimeout(() => {
-                        api.scenes.updateCharacters(campaignId, activeScene.id, updated).catch(() => {});
-                      }, 300);
-                    }}
-                    className="w-full h-1 accent-[var(--accent)]"
-                  />
-                {/* Vision Type */}
-                <div className="mb-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] text-[var(--text-secondary)]">{t('dm.visionType', 'Tipo de visión')}</span>
-                    <span className="text-[10px] text-[var(--accent)] font-mono">{sc.vision_type ?? 'normal'}</span>
-                  </div>
-                  <select
-                    value={sc.vision_type ?? 'normal'}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      lastLocalChangeRef.current = Date.now();
-                      setSceneChars((prev) => prev.map((s) => s.id === selectedTokenId ? { ...s, vision_type: v } : s));
-                      if (!campaignId || !activeScene) return;
-                      const updated = sceneCharsRef.current.map((s) =>
-                        s.id === selectedTokenId
-                          ? { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: s.facing_offset ?? 0, vision_type: v, vision_range: s.vision_range ?? 6.0 }
-                          : { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: s.facing_offset ?? 0, vision_type: s.vision_type ?? 'normal', vision_range: s.vision_range ?? 6.0 }
-                      );
-                      clearTimeout(win.__visionTypeTimer);
-                      win.__visionTypeTimer = setTimeout(() => {
-                        api.scenes.updateCharacters(campaignId, activeScene.id, updated).catch(() => {});
-                      }, 300);
-                    }}
-                    className="w-full bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-[10px] rounded px-1 py-0.5 border border-[var(--border)]"
-                  >
-                    <option value="normal">{t('dm.visionNormal', 'Normal')}</option>
-                    <option value="darkvision">{t('dm.visionDarkvision', 'Visión en la oscuridad')}</option>
-                    {/* blindsight / tremorsense / truesight filtran por tipo de entidad y la
-                        máscara de percepción no modela eso: no se ofrecen hasta que
-                        existan (engineering/PLAN-VISION-PERCEPCION.md §6). Un token que
-                        ya los tenga guardado se sigue leyendo como `normal`. */}
-                  </select>
-                </div>
-                <div className="mb-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] text-[var(--text-secondary)]">{t('dm.visionRange', 'Alcance de visión')}</span>
-                    <span className="text-[10px] text-[var(--accent)] font-mono">{(sc.vision_range ?? 6.0).toFixed(1)}</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={1}
-                    max={30}
-                    step={0.5}
-                    value={sc.vision_range ?? 6.0}
-                    onChange={(e) => {
-                      const v = parseFloat(e.target.value);
-                      lastLocalChangeRef.current = Date.now();
-                      setSceneChars((prev) => prev.map((s) => s.id === selectedTokenId ? { ...s, vision_range: v } : s));
-                      if (!campaignId || !activeScene) return;
-                      const updated = sceneCharsRef.current.map((s) =>
-                        s.id === selectedTokenId
-                          ? { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: s.facing_offset ?? 0, vision_type: s.vision_type ?? 'normal', vision_range: v }
-                          : { id: s.id, entity_type: s.entity_type, entity_id: s.entity_id, x: s.x, y: s.y, z: s.z, visible: !!s.visible, order: s.order, token_scale: s.token_scale ?? 1, move_speed: s.move_speed ?? 1, facing_offset: s.facing_offset ?? 0, vision_type: s.vision_type ?? 'normal', vision_range: s.vision_range ?? 6.0 }
-                      );
-                      clearTimeout(win.__visionRangeTimer);
-                      win.__visionRangeTimer = setTimeout(() => {
-                        api.scenes.updateCharacters(campaignId, activeScene.id, updated).catch(() => {});
-                      }, 300);
-                    }}
-                    className="w-full h-1 accent-[var(--accent)]"
-                  />
-                </div>
-              </div>
-            );
-          })()}
           </HudPanel>
 
           {/* Character Sheet HUD — bottom right on desktop, bottom sheet on mobile */}
@@ -3426,6 +3359,77 @@ const startFogMode = useCallback(() => {
         onTogglePortal={handlePortalToggle}
         onDeletePortal={handlePortalDelete}
       />
+
+      {tokenQuickEdit && quickEditChar && (
+        <div
+          ref={quickEditRef}
+          data-testid="token-quick-edit"
+          className="fixed z-50 w-56 rounded-lg border border-[var(--bg-tertiary)] bg-[var(--bg-secondary)] px-3 py-2 shadow-xl animate-in fade-in"
+          style={{
+            left: Math.min(tokenQuickEdit.x, window.innerWidth - 240),
+            top: Math.max(8, Math.min(tokenQuickEdit.y, window.innerHeight - 320)),
+          }}
+        >
+          <p className="text-xs font-semibold text-[var(--text-primary)] mb-2 truncate">
+            {quickEditEntity?.name || t('dm.unknown', 'Desconocido')}
+          </p>
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] text-[var(--text-secondary)]">{t('dm.tokenSize', 'Tamaño')}</span>
+            <span className="text-[10px] text-[var(--accent)] font-mono">{(quickEditChar.token_scale ?? 1).toFixed(1)}x</span>
+          </div>
+          <input
+            type="range"
+            min={0.5}
+            max={3}
+            step={0.1}
+            value={quickEditChar.token_scale ?? 1}
+            onChange={(e) => handleTokenPatch(tokenQuickEdit.sceneCharId, { token_scale: parseFloat(e.target.value) })}
+            className="w-full h-1 accent-[var(--accent)]"
+          />
+          <div className="flex items-center justify-between mb-1 mt-2">
+            <span className="text-[10px] text-[var(--text-secondary)]">{t('dm.tokenFacing', 'Orientación')}</span>
+            <span className="text-[10px] text-[var(--accent)] font-mono">{Math.round(((quickEditChar.facing_offset ?? 0) * 180) / Math.PI)}°</span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={6.28318}
+            step={0.017453}
+            value={quickEditChar.facing_offset ?? 0}
+            onChange={(e) => handleTokenPatch(tokenQuickEdit.sceneCharId, { facing_offset: parseFloat(e.target.value) })}
+            className="w-full h-1 accent-[var(--accent)]"
+          />
+          <div className="mt-2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] text-[var(--text-secondary)]">{t('dm.visionType', 'Tipo de visión')}</span>
+              <span className="text-[10px] text-[var(--accent)] font-mono">{quickEditChar.vision_type ?? 'normal'}</span>
+            </div>
+            <select
+              value={quickEditChar.vision_type ?? 'normal'}
+              onChange={(e) => handleTokenPatch(tokenQuickEdit.sceneCharId, { vision_type: e.target.value })}
+              className="w-full bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-[10px] rounded px-1 py-0.5 border border-[var(--border)]"
+            >
+              <option value="normal">{t('dm.visionNormal', 'Normal')}</option>
+              <option value="darkvision">{t('dm.visionDarkvision', 'Visión en la oscuridad')}</option>
+            </select>
+          </div>
+          <div className="mt-2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] text-[var(--text-secondary)]">{t('dm.visionRange', 'Alcance de visión')}</span>
+              <span className="text-[10px] text-[var(--accent)] font-mono">{(quickEditChar.vision_range ?? 6.0).toFixed(1)}</span>
+            </div>
+            <input
+              type="range"
+              min={1}
+              max={30}
+              step={0.5}
+              value={quickEditChar.vision_range ?? 6.0}
+              onChange={(e) => handleTokenPatch(tokenQuickEdit.sceneCharId, { vision_range: parseFloat(e.target.value) })}
+              className="w-full h-1 accent-[var(--accent)]"
+            />
+          </div>
+        </div>
+      )}
 
       {bgSelector && (
         <BackgroundSelector
