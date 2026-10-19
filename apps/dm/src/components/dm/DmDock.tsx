@@ -42,7 +42,10 @@ export default function DmDock({ expanded, onExpand, groups }: DmDockProps) {
       onMouseEnter={onExpand}
       title={t('dm.dmActions', 'Acciones del DM')}
     >
-      <div className="flex items-center gap-0.5 rounded-full bg-[var(--bg-primary)]/95 backdrop-blur border border-[var(--bg-tertiary)] px-2 py-1.5 shadow-xl overflow-x-auto">
+      {/* Sólido, sin blur: el backdrop-blur se fundía con cada mapa y perdía
+          contraste. `--surface` (obsidian-900) es el color característico del
+          tema y al ser opaco tapa lo que haya debajo. */}
+      <div className="flex items-center gap-0.5 rounded-full bg-[var(--surface)] border border-[var(--bg-tertiary)] px-2 py-1.5 shadow-xl overflow-x-auto">
         {!expanded ? (
           <button
             onClick={onExpand}
