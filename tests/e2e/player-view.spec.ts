@@ -288,9 +288,12 @@ test.describe('Player View', () => {
     const { scene, char, npc } = await setupActiveSceneWithTokens(request, campaign.id);
     const code = await generateInviteCode(request, campaign.id);
 
-    let revReqs = 0;
-    await page.route('**/campaigns/invite/*/revision', async (route) => {
-      revReqs += 1;
+    let revReqs = 0;   // sondeo /revision (polling de respaldo)
+    let snapReqs = 0;  // snapshot del join (lo que el push de revisión baja)
+    await page.route('**/campaigns/invite/**', async (route) => {
+      const url = route.request().url();
+      if (url.endsWith('/revision')) revReqs += 1;
+      else snapReqs += 1;
       await route.continue();
     });
 
@@ -300,18 +303,20 @@ test.describe('Player View', () => {
     // dejar que el WS abra y el polling inicial se asiente
     await page.waitForTimeout(2000);
     const baseline = revReqs;
+    const snapBaseline = snapReqs;
 
     // con WS activo no debe haber polling periódico de revisión
     await page.waitForTimeout(2000);
     expect(revReqs).toBe(baseline);
 
-    // mutación del DM → el WS despierta al player con un solo chequeo
+    // mutación del DM → el mensaje WS `revision` despierta al player con un
+    // solo fetch de snapshot (sin reabrir el WS ni sondear /revision)
     await seedTokens(request, campaign.id, scene.id, [
       { entityType: 'character', entityId: char.id, x: 2, z: 2 },
       { entityType: 'npc', entityId: npc.id, x: -1, z: 0 },
     ]);
     await page.waitForTimeout(1500);
-    expect(revReqs).toBeGreaterThan(baseline);
+    expect(snapReqs).toBeGreaterThan(snapBaseline);
     await expect(page.getByTestId('on-scene-list')).toContainText('En escena (2)');
   });
 

@@ -275,7 +275,18 @@ export default function DmDashboard() {
             Array.isArray(msg.characters) &&
             msg.characters.length > 0
           ) {
-            setSceneChars(msg.characters);
+            // broadcast_positions manda SOLO el token que cambio (o el de un
+            // jugador). Reemplazar el array aca borraba todos los demas de la
+            // vista del DM: el proximo PUT de characters los borraba de la DB.
+            const incomingArr = msg.characters;
+            const incoming = new Map(incomingArr.map((c) => [c.id, c]));
+            setSceneChars((prev) => {
+              const merged = prev.map((c) => incoming.get(c.id) ?? c);
+              for (const c of incomingArr) {
+                if (!prev.some((p) => p.id === c.id)) merged.push(c);
+              }
+              return merged;
+            });
           } else if (msg.type === 'revision' && Date.now() - lastLocalChangeRef.current > 500) {
             const sc = await api.scenes.getCharacters(campaignId, activeScene.id);
             if (!cancelled) setSceneChars(sc);

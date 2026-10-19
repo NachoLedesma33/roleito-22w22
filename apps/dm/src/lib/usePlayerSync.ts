@@ -113,6 +113,14 @@ export function usePlayerSync(code: string | undefined, refs: UsePlayerSyncRefs)
   const [panelRevision, setPanelRevision] = useState('');
   const [fading, setFading] = useState<'in' | 'out' | null>(null);
   const [notesDraft, setNotesDraft] = useState('');
+  /**
+   * Primer snapshot aplicado. El loop de sync depende de ESTO y no de `data`:
+   * `data` cambia identidad con cada merge de `scene_characters` (un movimiento
+   * de token), y con `data` en las deps el WS se cerraba y reabria POR MOVIMIENTO,
+   * bajando el snapshot completo en el onopen. Costo medido: 47 KB + hueco de
+   * reconexion por cada 15 cm recorridos = POV del jugador siempre atrasado.
+   */
+  const [joined, setJoined] = useState(false);
   const lastRevRef = useRef<string>('');
 
   const fetchSnapshot = useCallback(async (): Promise<JoinData> => {
@@ -157,6 +165,7 @@ export function usePlayerSync(code: string | undefined, refs: UsePlayerSyncRefs)
       .then((snap) => {
         sceneIdRef.current = snap.scene_id;
         setData(snap);
+        setJoined(true);
         setLoading(false);
 
         const stored = localStorage.getItem(`roleito:pv:${code}`);
@@ -239,10 +248,10 @@ const applySceneCharacters = useCallback((sceneId: string, incoming: unknown[]) 
   });
 }, []);
 
-  // Sync continuo. Depende de `data` a propósito: cuando llega un snapshot el
-  // WS se reabre, así que cambiar de escena y reconectar comparten camino.
+  // Sync continuo. Depende de `joined` (una sola vez) y NO de `data`: cada
+  // merge de `scene_characters` cambiaba `data` y reabria el WS por movimiento.
   useEffect(() => {
-    if (!code || !data) return;
+    if (!code || !joined) return;
     let cancelled = false;
     let timer: number;
     let ws: WebSocket | null = null;
@@ -347,7 +356,7 @@ const applySceneCharacters = useCallback((sceneId: string, incoming: unknown[]) 
       window.clearTimeout(timer);
       if (ws) ws.close();
     };
-  }, [code, data, fetchSnapshot, applySnapshot, fetchMyChar, syncNotesDraft, choiceRef, applySceneCharacters]);
+  }, [code, joined, fetchSnapshot, applySnapshot, fetchMyChar, syncNotesDraft, choiceRef, applySceneCharacters]);
 
   return {
     data,
