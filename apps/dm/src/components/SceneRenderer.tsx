@@ -6,6 +6,107 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+
+/** Interpolación visual 60fps para que tokens y luces pegadas se muevan en sincronía.
+ *  El prop `characters` trae posiciones autoritativas (llegadas por WS ~11 Hz).
+ *  Este hook interpola hacia ellas en cada frame y expone las posiciones visuales.
+ *  Usa requestAnimationFrame (no useFrame) porque se llama desde el padre del Canvas. */
+function useVisualInterpolation(
+  characters: SceneEntity[],
+  draggingId: string | null
+): Map<string, { x: number; z: number; rotation: number }> {
+  const visualPosRef = useRef<Map<string, { x: number; z: number; rotation: number }>>(new Map());
+  const serverPosRef = useRef<Map<string, { x: number; z: number; rotation: number }>>(new Map());
+  const serverPosAtRef = useRef<Map<string, number>>(new Map());
+  const velocitiesRef = useRef<Map<string, { vx: number; vz: number; vrot: number }>>(new Map());
+  const lastFrameRef = useRef<number>(0);
+  const rafRef = useRef<number>(0);
+
+  // Actualizar posiciones autoritativas cuando cambian (desde prop)
+  useEffect(() => {
+    const now = performance.now();
+    for (const c of characters) {
+      serverPosRef.current.set(c.sceneCharId, { x: c.x, z: c.z, rotation: c.rotation ?? 0 });
+      serverPosAtRef.current.set(c.sceneCharId, now);
+    }
+    // Limpiar IDs que ya no existen
+    for (const id of serverPosRef.current.keys()) {
+      if (!characters.find((c) => c.sceneCharId === id)) {
+        serverPosRef.current.delete(id);
+        serverPosAtRef.current.delete(id);
+        velocitiesRef.current.delete(id);
+        visualPosRef.current.delete(id);
+      }
+    }
+  }, [characters]);
+
+  // Loop de interpolación 60fps via requestAnimationFrame
+  useEffect(() => {
+    let running = true;
+    const tick = () => {
+      if (!running) return;
+      const now = performance.now();
+      const dtFrame = lastFrameRef.current
+        ? Math.min(Math.max((now - lastFrameRef.current) / 1000, 0.001), 0.12)
+        : 0.016;
+      lastFrameRef.current = now;
+
+      const k = 1 - Math.exp(-36 * dtFrame);
+
+      for (const [id, target] of serverPosRef.current.entries()) {
+        if (id === draggingId) continue;
+        const vel = velocitiesRef.current.get(id);
+        const t0 = serverPosAtRef.current.get(id) ?? now;
+        const el = Math.min((now - t0) / 1000, 0.05);
+
+        let px = target.x;
+        let pz = target.z;
+        let prot = target.rotation;
+        if (vel && el > 0) {
+          px += vel.vx * el;
+          pz += vel.vz * el;
+          prot += vel.vrot * el;
+        }
+
+        const prev = visualPosRef.current.get(id);
+        if (!prev) {
+          visualPosRef.current.set(id, { x: px, z: pz, rotation: prot });
+        } else {
+          prev.x += (px - prev.x) * k;
+          prev.z += (pz - prev.z) * k;
+          const dr = prot - prev.rotation;
+          prev.rotation += Math.atan2(Math.sin(dr), Math.cos(dr)) * k;
+        }
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => { running = false; cancelAnimationFrame(rafRef.current); };
+  }, [draggingId]);
+
+  // Calcular velocidades cuando llegan nuevas posiciones autoritativas
+  useEffect(() => {
+    const now = performance.now();
+    for (const c of characters) {
+      const prev = serverPosRef.current.get(c.sceneCharId);
+      if (prev) {
+        const dtSec = Math.max((now - (serverPosAtRef.current.get(c.sceneCharId) ?? now)) / 1000, 0.001);
+        const delX = c.x - prev.x;
+        const delZ = c.z - prev.z;
+        const delR = (c.rotation ?? 0) - prev.rotation;
+        const movingPos = Math.hypot(delX, delZ) >= 0.0005;
+        const movingRot = Math.abs(Math.atan2(Math.sin(delR), Math.cos(delR))) >= 0.001;
+        velocitiesRef.current.set(c.sceneCharId, {
+          vx: movingPos ? (Math.abs(delX / dtSec) > 0.001 ? delX / dtSec : 0) : 0,
+          vz: movingPos ? (Math.abs(delZ / dtSec) > 0.001 ? delZ / dtSec : 0) : 0,
+          vrot: movingRot ? (Math.abs(delR / dtSec) > 0.001 ? delR / dtSec : 0) : 0,
+        });
+      }
+    }
+  }, [characters]);
+
+  return visualPosRef.current;
+}
 import TokenSprite from './TokenSprite';
 import TokenModel from './TokenModel';
 import ItemRenderer from './ItemRenderer';
@@ -122,6 +223,9 @@ interface SceneRendererProps {
   renderMode?: import('@/lib/overlayY').RenderMode;
   /** Reporta el aspect real del fondo (1 = cuadrado). El DM/jugador lo usan para alinear dibujo y colisión con el render. */
   onAspectChange?: (aspect: number) => void;
+  /** ID del token que se está arrastrando (DM). Se usa para saltar la interpolación
+   *  y usar la posición cruda del puntero, evitando lag visual durante el drag. */
+  draggingId?: string | null;
 }
 
 type DragStarter = (
@@ -2091,12 +2195,29 @@ export default function SceneRenderer({
   onAssetDrop,
   renderMode = '2d',
   onAspectChange,
+  draggingId = null,
 }: SceneRendererProps) {
   const weatherIntensityK = clampWeatherIntensity(weatherIntensity);
-  const visibleChars = useMemo(() => characters.filter((c) => c.visible), [characters]);
+
+  // Interpolación visual 60fps: el prop `characters` trae posiciones autoritativas
+  // (WS ~11 Hz). Esta interpola en cada frame y expone posiciones visuales para
+  // tokens Y luces pegadas, eliminando el lag de un ciclo WS.
+  const visualPos = useVisualInterpolation(characters, draggingId);
+
+  // visibleChars con posiciones visuales interpoladas (para tokens, luces, arrastre)
+  const visibleCharsVisual = useMemo(() =>
+    characters
+      .filter((c) => c.visible)
+      .map((c) => {
+        const vp = visualPos.get(c.sceneCharId);
+        return vp ? { ...c, x: vp.x, z: vp.z, rotation: vp.rotation } : c;
+      }),
+    [characters, visualPos]
+  );
+
   const hasGlow = useMemo(
-    () => visibleChars.some((c) => (c.statuses ?? []).some((s) => GLOW_STATUSES.has(s))),
-    [visibleChars],
+    () => visibleCharsVisual.some((c) => (c.statuses ?? []).some((s) => GLOW_STATUSES.has(s))),
+    [visibleCharsVisual],
   );
   const renderItems = useMemo(() => {
     return items
@@ -2111,12 +2232,12 @@ export default function SceneRenderer({
     for (const item of items) {
       const meta = item.metadata as { type?: string; attachedTo?: string } | undefined;
       if (item.visible && meta?.type === 'light' && meta.attachedTo) {
-        const ch = visibleChars.find((c) => c.sceneCharId === meta.attachedTo);
+        const ch = visibleCharsVisual.find((c) => c.sceneCharId === meta.attachedTo);
         if (ch)       info.set(item.id, { pos: [ch.x, 0, ch.z], rotation: ch.rotation ?? 0 });
       }
     }
     return info;
-  }, [items, visibleChars]);
+  }, [items, visibleCharsVisual]);
   // Fuegos colocables: luces con `fx` puesto. Se renderizan acá y no en
   // ItemRenderer porque FireParticles/ParticleField viven en este archivo, y
   // SceneRenderer ya importa ItemRenderer: al revés se genera un ciclo.
@@ -2226,7 +2347,7 @@ export default function SceneRenderer({
           onAssetDrop={onAssetDrop}
           gridSize={gridSize}
           gridSnap={gridSnap}
-          otherTokens={visibleChars.map((c) => ({
+          otherTokens={visibleCharsVisual.map((c) => ({
             sceneCharId: c.sceneCharId,
             x: c.x,
             z: c.z,
@@ -2234,7 +2355,7 @@ export default function SceneRenderer({
           }))}
         />
       )}
-      {visibleChars.map((ch) => {
+      {visibleCharsVisual.map((ch) => {
         const isMovable = movableEntityIds
           ? movableEntityIds.includes(ch.sceneCharId)
           : !readOnly;

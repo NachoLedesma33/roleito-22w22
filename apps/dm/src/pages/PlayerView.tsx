@@ -1212,6 +1212,9 @@ export default function PlayerView() {
                     )?.id
                   : null;
                 const isMyChar = c.id === mySceneCharId;
+                // Posiciones autoritativas para otros; para el propio personaje usamos
+                // wasdTarget (optimista, inmediato) para que su token y sus luces
+                // respondan sin lag. La interpolación visual 60fps está en SceneRenderer.
                 if (isMyChar && wasdTarget) {
                   return {
                     id: c.id, sceneCharId: c.id, name: c.name, type: c.type,
@@ -1224,21 +1227,19 @@ export default function PlayerView() {
                     statuses: c.statuses ?? [],
                   };
                 }
-                const interpolated = renderedPosRef.current.get(c.id);
                 return {
                   id: c.id, sceneCharId: c.id, name: c.name, type: c.type,
-                  x: interpolated ? interpolated.x : c.x,
-                  y: c.y,
-                  z: interpolated ? interpolated.z : c.z,
+                  x: c.x, y: c.y, z: c.z,
                   visible: true, portraitUrl: staticUrl(c.portrait_path),
                   modelUrl: staticUrl(c.model_path),
-                  rotation: interpolated ? interpolated.rotation : (c.rotation ?? 0),
+                  rotation: c.rotation ?? 0,
                   tokenScale: c.token_scale ?? 1,
                   brightness: c.brightness ?? 0,
                   facingOffset: c.facing_offset ?? 0,
                   statuses: c.statuses ?? [],
                 };
               })}
+              draggingId={null}
               lighting={data.lighting}
               weather={data.weather ?? null}
               weatherIntensity={data.weather_intensity ?? 1}

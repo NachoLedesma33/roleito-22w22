@@ -2888,25 +2888,27 @@ const startFogMode = useCallback(() => {
                 backgroundUrl={staticUrl(activeScene.background_path)!}
                 characters={sceneChars.map((sc) => {
                   const ent = allEntities.find((e) => e.id === sc.entity_id);
-                  const interpolated = renderedPosRef.current.get(sc.id);
+                  // Posiciones autoritativas (sin interpolar): la interpolación visual
+                  // 60fps ahora vive en SceneRenderer via useFrame.
                   return {
                     id: sc.id,
                     sceneCharId: sc.id,
                     name: ent?.name || t('dm.unknown', 'Desconocido'),
                     type: sc.entity_type,
-                    x: interpolated ? interpolated.x : sc.x,
+                    x: sc.x,
                     y: sc.y,
-                    z: interpolated ? interpolated.z : sc.z,
+                    z: sc.z,
                     visible: !!sc.visible,
                     portraitUrl: staticUrl(ent?.portrait_path ?? null),
                     modelUrl: staticUrl(ent?.model_path ?? null),
-                    rotation: interpolated ? interpolated.rotation : (sc.rotation ?? 0),
+                    rotation: sc.rotation ?? 0,
                     tokenScale: sc.token_scale ?? 1,
                     brightness: sc.brightness ?? 0,
                     facingOffset: sc.facing_offset ?? 0,
                     statuses: sc.statuses ?? [],
                   };
                 })}
+                draggingId={draggingTokenIdRef.current}
                 items={sceneItems}
                 occluders={sceneOccluders}
                 fogRegions={sceneFogRegions}
