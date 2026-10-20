@@ -511,6 +511,7 @@ test.describe('Campaign Import', () => {
     const asset = await uploadRes.json();
 
     await page.goto(`/campaigns/${camp.id}`);
+    await page.getByTestId('fichas-toggle').click();
     await expect(page.getByText('Recursos (1)')).toBeVisible({ timeout: 10_000 });
     await page.waitForSelector('canvas', { timeout: 15_000 });
 
