@@ -391,7 +391,7 @@ Gates: pytest 91, ruff limpio, e2e `scene`+`zone`+`map` **15/15**.
 
 **D5** es el test de esta regla: detecta → aprueba → vuelve a detectar → el conteo de automáticos tiene que ser el mismo. **Verificado que falla sin el fix por la razón correcta: 10 automáticos donde debía haber 5.**
 
-Nota: `POST /scenes/{id}/detect-walls` también hace append en `scene.items_json`, pero el frontend persiste el grafo entero con debounce (`useSceneGraph.handleItemsChange` → `saveItems`), así que ese append se pisa. Queda como redundancia del endpoint, no como bug observable; se documentó y no se tocó.
+Nota: `POST /scenes/{id}/detect-walls` hacía append en `scene.items_json`, pero el frontend persistía el grafo entero con debounce (`useSceneGraph.handleItemsChange` → `saveItems`), así que ese append se pisaba. **Resuelto el 2026-10-20**: el endpoint ya no escribe — devuelve una propuesta y el DM la aprueba en la UI; el frontend es quien guarda. El bug latente era que, si el save del frontend fallaba, la escena quedaba con los muros duplicados (una copia por intento de detección).
 
 ---
 
@@ -459,5 +459,5 @@ Lo que queda no es refactor sino producto y deuda documentada:
 2. ~~`HudPanel` sin test unitario~~ — **RESUELTO** (2026-10-20): `apps/dm/src/components/HudPanel.spec.tsx` (jsdom, 8 tests: drag + snap, resize por borde con min/max, persistencia en localStorage, minimize/registry, maximize/restore, `hideClose`).
 3. ~~Asset de más de 8 MB en export/import~~ — **RESUELTO** (2026-10-20): el tope de 8 MB sigue (un mapa de 100 MB no va en un JSON), pero al importar de esta misma máquina el archivo que no viajó se copia a la campaña destino y la columna queda apuntando a la copia (`imported_path` en `routes.py`; pytest `test_import_copia_asset_que_no_viajo_en_el_bundle`). Si la fuente no existe (bundle de otra máquina), el path queda como estaba.
 4. `__init__.py` faltantes en `core/canon/`, `core/events/`, `core/memory/`, `core/world/` (funciona por namespace packages, pero es asimétrico).
-5. `POST /scenes/{id}/detect-walls` hace append en `items_json` y el frontend lo pisa con `saveItems`: redundancia del endpoint, no bug observable.
+5. ~~`POST /scenes/{id}/detect-walls` hace append en `items_json` y el frontend lo pisa con `saveItems`~~ — **RESUELTO** (2026-10-20): el endpoint ya no escribe; devuelve la propuesta y el frontend guarda el grafo al aprobar. Si el save fallaba, la escena quedaba con los muros duplicados.
 6. `_parse_dt` sigue privado en `routes.py`: si otro módulo lo necesita, la casa es `services/dates.py`.

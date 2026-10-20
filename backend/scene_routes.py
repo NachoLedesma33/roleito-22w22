@@ -309,12 +309,11 @@ async def detect_walls(
 
     new_items = scene_items_from_detection(detection)
 
-    existing_items = json.loads(scene.items_json) if scene.items_json else []
-    all_items = existing_items + new_items
-    scene.items_json = json.dumps(all_items)
-    await db.commit()
-    await db.refresh(scene)
-
+    # La detección NO escribe en la escena: devuelve una PROPUESTA. El DM la
+    # revisa y la aprueba en la UI, y es el frontend (PUT /items) quien guarda
+    # el grafo. Antes el endpoint appendeaba a items_json y ese write se pisaba
+    # con el save del frontend; si ese save fallaba, la escena quedaba con los
+    # muros duplicados (una copia por intento de detección).
     return {
         "items": new_items,
         "wall_count": detection.wall_count,

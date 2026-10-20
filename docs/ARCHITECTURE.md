@@ -1734,7 +1734,7 @@ Response:
 }
 ```
 
-Items are appended to existing scene items (non-destructive).
+The endpoint does NOT persist anything: it returns a **proposal**. The DM reviews it in the UI and, on approve, the frontend persists the whole scene graph (`PUT /campaigns/{id}/scenes/{id}/items`). The endpoint used to append to `items_json`, but that write was overwritten by the frontend's save — and if the save failed, the scene kept a duplicated copy of the detected walls.
 
 ---
 

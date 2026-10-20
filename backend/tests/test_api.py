@@ -1605,3 +1605,53 @@ async def test_import_sin_fuente_deja_el_path_original(client):
     assert res.status_code == 200, res.text
     got = (await client.get(f"/api/campaigns/{res.json()['id']}/scenes")).json()
     assert asset_rel(got[0]["background_path"]) == rel
+
+
+@pytest.mark.asyncio
+async def test_detect_walls_no_persiste_la_propuesta(client):
+    """La detección devuelve una propuesta, no geometría guardada.
+
+    El DM la aprueba en la UI y es el frontend (PUT /items) quien persiste el
+    grafo. El endpoint antes appendeaba a items_json y ese write se pisaba con
+    el save del frontend: si el save fallaba, la escena quedaba con los muros
+    duplicados (una copia por intento de detección).
+    """
+    import cv2
+    import numpy as np
+
+    from services.assets import asset_abs
+
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Detectar"})).json()
+    scen = (await client.post(f"/api/campaigns/{camp['id']}/scenes", json={"name": "Plano"})).json()
+
+    # Un plano con tres paredes verticales.
+    img = np.full((300, 400, 3), 255, np.uint8)
+    for x in (60, 150, 240):
+        cv2.line(img, (x, 40), (x, 260), (0, 0, 0), thickness=3)
+    rel = f"data/assets/{camp['id']}/scenes/{scen['id']}/background.png"
+    bg_abs = asset_abs(rel)
+    os.makedirs(os.path.dirname(bg_abs), exist_ok=True)
+    cv2.imwrite(bg_abs, img)
+    async with async_session() as db:
+        await db.execute(
+            text("UPDATE scenes SET background_path = :p WHERE id = :i"),
+            {"p": bg_abs, "i": scen["id"]},
+        )
+        await db.commit()
+
+    try:
+        res = await client.post(f"/api/campaigns/{camp['id']}/scenes/{scen['id']}/detect-walls")
+        assert res.status_code == 200, res.text
+        body = res.json()
+        # La propuesta viene en la respuesta...
+        assert body["wall_count"] >= 1
+        assert len(body["items"]) >= 1
+
+        # ...pero la escena sigue vacía: nadie la aprobó.
+        items = (
+            await client.get(f"/api/campaigns/{camp['id']}/scenes/{scen['id']}/items")
+        ).json()["items"]
+        assert items == []
+    finally:
+        if os.path.isfile(bg_abs):
+            os.remove(bg_abs)
