@@ -1685,6 +1685,7 @@ async def test_process_session_propone_eventos_para_aprobacion(client, monkeypat
             "date": "2026-10-20",
             "title": "Sesion 1",
             "summary": "La party entro a la mazmorra",
+            "raw_notes": "La party entro a la mazmorra.\n\n\n\nSe encontraron goblins.",
         },
     )
     assert ses_res.status_code == 200, ses_res.text
@@ -1708,6 +1709,11 @@ async def test_process_session_propone_eventos_para_aprobacion(client, monkeypat
     assert {e["id"] for e in events} == {p["event_id"] for p in body["proposed_events"]}
     # El actor que el modelo no pudo resolver queda sin asignar, no inventado.
     assert all(e["description"] for e in events)
+    # Las notas pasaron por Ingestion antes de procesarse (docs/AGENTS.md §104):
+    # los 3 saltos de linea de mas quedaron en 1.
+    ingestion = body["ingestion"]
+    assert "\n\n\n" not in ingestion["body"]
+    assert len(ingestion["segments"]) == 2
 
 
 @pytest.mark.asyncio

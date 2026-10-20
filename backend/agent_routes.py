@@ -95,8 +95,23 @@ async def process_session(
     provider = get_provider_for_agent()
     agent = SessionProcessor(provider)
 
+    # El flujo del producto (docs/AGENTS.md §104) es Ingestion -> Session
+    # Processor: las notas crudas se normalizan y segmentan antes de que el
+    # modelo las vea. La ingestion no juzga el canon, solo limpia.
+    raw_notes = session.raw_notes or session.summary or ""
+    ingestion = IngestionAgent(provider)
+    ingested = await ingestion.run(text=raw_notes, source="session-notes")
+    ingestion_data = None
+    if ingested.status == "success" and ingested.data:
+        raw_notes = ingested.data.body
+        ingestion_data = {
+            "chars": ingested.data.chars,
+            "segments": ingested.data.segments,
+            "body": ingested.data.body,
+        }
+
     result = await agent.run(
-        raw_notes=session.raw_notes or session.summary or "",
+        raw_notes=raw_notes,
         campaign_context=campaign.description or "",
     )
 
@@ -168,6 +183,8 @@ async def process_session(
         # revisa y aprueba (PUT /events/{id}).
         "proposed_events": proposed,
         "warnings": warnings,
+        # Como quedaron normalizadas las notas antes de procesarlas.
+        "ingestion": ingestion_data,
         "error": result.error,
     }
 
