@@ -125,3 +125,9 @@ data/canon/
 # Test artifacts
 backend/detection-result.json
 backend/test-dungeon.png
+
+# Scripts de trabajo local (no van al repo): los usa para medir perf.
+# Estan ignorados a proposito para que `ruff check backend` no falle por ellos:
+# en CI no existen, pero en local el lint los ve.
+backend/perf_probe.py
+backend/perf_probe2.py
