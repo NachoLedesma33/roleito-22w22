@@ -202,6 +202,14 @@ export interface SceneItem {
   // State
   visible: boolean
   locked: boolean
+  /**
+   * El item salió de una detección y el DM todavía no lo aprobó.
+   *
+   * Vive en el item (no en el estado del navegador) para que la propuesta
+   * sobreviva a que el DM recargue la página: sin esto, los muros detectados
+   * quedaban aceptados sin que nadie los revisara.
+   */
+  pendingReview?: boolean
 
   // Hit testing
   disableHit: boolean

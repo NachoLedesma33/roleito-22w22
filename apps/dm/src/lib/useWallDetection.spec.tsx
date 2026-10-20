@@ -56,7 +56,7 @@ function autoItem(id: string, type: 'wall' | 'door' = 'wall'): SceneItem {
   }
 }
 
-function setup(initial: SceneItem[] = []) {
+function setup(initial: SceneItem[] = [], items: SceneItem[] = []) {
   const graph = new SceneGraph()
   for (const item of initial) graph.addItem(item)
   const onChange = vi.fn()
@@ -66,6 +66,7 @@ function setup(initial: SceneItem[] = []) {
       campaignId: 'camp-1',
       sceneId: 'scene-1',
       graphRef: graph,
+      items,
       handleItemsChange: onChange,
       push,
     }),
@@ -215,5 +216,45 @@ describe('useWallDetection', () => {
 
     const labels = push.mock.calls.map((c) => String(c[0].label ?? ''))
     expect(labels.some((l) => l.includes('computer vision'))).toBe(false)
+  })
+
+  it('los items detectados quedan pendientes de revision', async () => {
+    const { result, graph } = setup()
+
+    await act(async () => {
+      await result.current.handleAutoDetect()
+    })
+
+    // El flag viaja con el item: sin esto, recargar la pagina dejaba los muros
+    // aceptados sin que nadie los revisara.
+    expect(graph.getItems().every((i) => i.pendingReview)).toBe(true)
+  })
+
+  it('aprobar saca el flag de pendiente', async () => {
+    const { result, graph } = setup()
+
+    await act(async () => {
+      await result.current.handleAutoDetect()
+    })
+    act(() => result.current.handleDetectApprove())
+
+    expect(graph.getItems().every((i) => !i.pendingReview)).toBe(true)
+  })
+
+  it('reabre la propuesta que quedo sin revisar', () => {
+    const pendiente = { ...autoItem('wall-auto-pend'), pendingReview: true }
+    const puerta = { ...autoItem('door-auto-pend', 'door'), pendingReview: true }
+    const { result } = setup([], [pendiente, puerta])
+
+    expect(result.current.detectProposal).toEqual({
+      ids: ['wall-auto-pend', 'door-auto-pend'],
+      walls: 1,
+      doors: 1,
+    })
+  })
+
+  it('no reabre nada si no hay items pendientes', () => {
+    const { result } = setup([], [autoItem('wall-auto-1')])
+    expect(result.current.detectProposal).toBeNull()
   })
 })

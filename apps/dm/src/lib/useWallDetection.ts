@@ -1,7 +1,7 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import i18n from '@/lib/i18n';
-import { isAutoDetectedItem } from '@/lib/autoDetected';
+import { autoDetectedKind, isAutoDetectedItem } from '@/lib/autoDetected';
 import type { SceneItem } from '@core/domain/types';
 import type { SceneGraph } from '@core/scene/scene-graph';
 import type { ToastRoll } from '@/lib/toastQueue';
@@ -19,6 +19,8 @@ export interface UseWallDetectionOptions {
   campaignId: string | undefined;
   sceneId: string | undefined;
   graphRef: SceneGraph;
+  /** Los items que hay en la grafo ahora: para reabrir una propuesta sin revisar. */
+  items?: SceneItem[];
   handleItemsChange: (items: SceneItem[]) => void;
   /** Notificación de la cola de toasts del dashboard. */
   push: (toast: ToastRoll) => void;
@@ -56,6 +58,7 @@ export function useWallDetection({
   campaignId,
   sceneId,
   graphRef,
+  items = [],
   handleItemsChange,
   push,
 }: UseWallDetectionOptions): UseWallDetectionResult {
@@ -82,7 +85,9 @@ export function useWallDetection({
       }
       const items = ((result.items ?? []) as SceneItem[]).filter((item) => item && item.id);
       for (const item of items) {
-        graphRef.addItem(item);
+        // Quedan pendientes de revision: el flag viaja con el item, asi que la
+        // propuesta sobrevive a que el DM recargue la pagina.
+        graphRef.addItem({ ...item, pendingReview: true });
       }
       handleItemsChange(graphRef.getItems());
       if (items.length > 0) {
@@ -148,9 +153,34 @@ export function useWallDetection({
     }
   }, [campaignId, sceneId, graphRef, handleItemsChange, detectionMode, useAi, push]);
 
+  /**
+   * Reabre una propuesta que quedo sin revisar (el DM recargo la pagina a
+   * mitad de la revision).
+   *
+   * Sin esto los muros detectados quedaban aceptados sin que nadie los
+   * mirara: el flag `pendingReview` viaja con el item, asi que la propuesta se
+   * reconstruye sola.
+   */
+  useEffect(() => {
+    if (detectProposal) return;
+    const pending = items.filter((item) => item.pendingReview);
+    if (pending.length === 0) return;
+    setDetectProposal({
+      ids: pending.map((item) => item.id),
+      walls: pending.filter((item) => autoDetectedKind(item) === 'wall').length,
+      doors: pending.filter((item) => autoDetectedKind(item) === 'door').length,
+    });
+  }, [items, detectProposal]);
+
   const handleDetectApprove = useCallback(() => {
     if (!detectProposal) return;
     const n = detectProposal.ids.length;
+    // Los items quedan aceptados: se les saca el flag de "pendiente" para que
+    // la propuesta no se reabra sola.
+    for (const id of detectProposal.ids) {
+      graphRef.updateItem(id, { pendingReview: false });
+    }
+    handleItemsChange(graphRef.getItems());
     setDetectProposal(null);
     push({
       id: `detect-ok-${Date.now()}`,
@@ -162,7 +192,7 @@ export function useWallDetection({
       label: i18n.t('dmToast.detectApproved', '{{n}} paredes confirmadas', { n }),
       timestamp: Date.now(),
     });
-  }, [detectProposal, push]);
+  }, [detectProposal, graphRef, handleItemsChange, push]);
 
   const handleDetectDiscard = useCallback(() => {
     if (!detectProposal) return;

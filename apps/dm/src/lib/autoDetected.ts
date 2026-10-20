@@ -12,3 +12,10 @@ const AUTO_ID_PREFIXES = ['wall-auto-', 'door-auto-'];
 export function isAutoDetectedItem(item: { id: string }): boolean {
   return AUTO_ID_PREFIXES.some((prefix) => item.id.startsWith(prefix));
 }
+
+/** Qué tipo de item detectado es: muro, puerta o nada (lo dibujado a mano). */
+export function autoDetectedKind(item: { id: string }): 'wall' | 'door' | null {
+  if (item.id.startsWith('wall-auto-')) return 'wall';
+  if (item.id.startsWith('door-auto-')) return 'door';
+  return null;
+}

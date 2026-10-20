@@ -884,6 +884,8 @@ const startFogMode = useCallback(() => {
     campaignId,
     sceneId: activeScene?.id,
     graphRef,
+    // Para reabrir una propuesta de deteccion que quedo sin revisar.
+    items: sceneItems,
     handleItemsChange,
     push,
   });

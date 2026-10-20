@@ -63,7 +63,7 @@ function sceneItems(
   authHeaders: { Authorization: string },
   campaignId: string,
   sceneId: string,
-): Promise<Array<{ id: string }>> {
+): Promise<Array<{ id: string; pendingReview?: boolean }>> {
   return request
     .get(`${API}/campaigns/${campaignId}/scenes/${sceneId}/items`, {
       headers: authHeaders,
@@ -199,6 +199,44 @@ test.describe('Auto wall detection', () => {
     await detectarYAprobar();
     // La clave: los muros del set viejo se fueron, no quedaron debajo.
     expect(await autoCount()).toBe(primera);
+  });
+
+  test('D7: la propuesta de detección sobrevive a recargar la página', async ({
+    page,
+    request,
+    campaign,
+    authHeaders,
+  }) => {
+    await page.goto('/');
+    const png = await blueprintMapPng(page);
+    const sceneId = await createSceneWithMap(request, authHeaders, campaign.id, png);
+
+    await page.goto(`/campaigns/${campaign.id}`);
+    await page.locator('header select').selectOption(sceneId);
+    await expect(page.locator('canvas').first()).toBeVisible({ timeout: 15_000 });
+
+    await page.getByRole('button', { name: 'Construir' }).click();
+    await page.getByRole('button', { name: 'Detectar paredes' }).click();
+    await expect(page.getByTestId('detect-review')).toBeVisible({ timeout: 30_000 });
+
+    // El guardado del grafo va con debounce: se espera a que los items
+    // pendientes esten en la API antes de recargar.
+    await expect
+      .poll(
+        async () => {
+          const items = await sceneItems(request, authHeaders, campaign.id, sceneId);
+          return items.filter((i) => i.pendingReview).length;
+        },
+        { timeout: 10_000 },
+      )
+      .toBeGreaterThan(0);
+
+    // El DM recarga sin revisar: la propuesta tiene que volver sola. Antes los
+    // muros quedaban aceptados sin que nadie los mirara.
+    await page.reload();
+    await page.locator('header select').selectOption(sceneId);
+    await expect(page.getByTestId('detect-review')).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId('detect-review')).toContainText('Revisar detección');
   });
 
   test('D6: la detección no borra lo que el DM dibujó a mano', async ({
