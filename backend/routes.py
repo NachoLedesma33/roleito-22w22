@@ -44,6 +44,7 @@ import secrets
 import hashlib
 import json
 import os
+import shutil
 import base64
 import time
 from datetime import datetime
@@ -754,6 +755,19 @@ async def import_campaign(
         rel = asset_rel(value) if value else None
         if rel and rel in asset_rewrites:
             return asset_abs(asset_rewrites[rel])
+        # No viajó en el bundle (pesa más que MAX_ASSET_BYTES): si el archivo
+        # sigue en el disco de esta máquina, se copia a la campaña destino.
+        # Sin eso la columna quedaba apuntando a la campaña de origen y borrarla
+        # rompía la importada.
+        if rel:
+            source = asset_abs(rel)
+            if os.path.isfile(source):
+                new_rel = rewrite_campaign_prefix(rel, campaign.id)
+                target = asset_abs(new_rel)
+                os.makedirs(os.path.dirname(target), exist_ok=True)
+                shutil.copyfile(source, target)
+                asset_rewrites[rel] = new_rel
+                return target
         return import_asset_path(value)
 
     id_map: dict[str, str] = {}

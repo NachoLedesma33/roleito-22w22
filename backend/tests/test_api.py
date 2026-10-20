@@ -1,5 +1,6 @@
 import asyncio
 import math
+import os
 from datetime import datetime, timedelta
 
 import pytest
@@ -1514,3 +1515,93 @@ async def test_dice_recent_all_orden_descendente(client):
 
     todos = (await client.get(f"/api/campaigns/{cid}/rolls/recent/all")).json()
     assert [r["results"][0] for r in todos][:3] == [3, 2, 1]
+
+
+@pytest.mark.asyncio
+async def test_import_copia_asset_que_no_viajo_en_el_bundle(client):
+    """Un asset pesado no viaja en el export (tope de 8 MB), pero al importar de
+    esta misma máquina se copia a la campaña destino.
+
+    Antes la columna quedaba apuntando a la campaña de ORIGEN: la importada
+    funcionaba hasta que se borraba la original.
+    """
+    from services.assets import ASSETS_DIR, asset_abs, asset_rel
+
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Origen"})).json()
+    scen = (await client.post(f"/api/campaigns/{camp['id']}/scenes", json={"name": "Cripta"})).json()
+    rel = f"data/assets/{camp['id']}/scenes/{scen['id']}/background.png"
+    src_abs = asset_abs(rel)
+    created: list[str] = []
+
+    # El archivo existe en disco pero queda fuera del bundle (es lo que hace
+    # embed_asset con los >8 MB): el path viaja en background_path de la escena,
+    # los bytes no.
+    os.makedirs(os.path.dirname(src_abs), exist_ok=True)
+    with open(src_abs, "wb") as f:
+        f.write(b"PNG-pesado")
+    async with async_session() as db:
+        await db.execute(
+            text("UPDATE scenes SET background_path = :p WHERE id = :i"),
+            {"p": src_abs, "i": scen["id"]},
+        )
+        await db.commit()
+
+    export = (await client.get(f"/api/campaigns/{camp['id']}/export")).json()
+    # El bundle trae el path de la campaña de origen; los bytes del asset quedan
+    # afuera (el test los simula sacándolos, igual que un archivo >8 MB).
+    export["assets"] = []
+    assert asset_rel(export["scenes"][0]["background_path"]) == rel
+
+    try:
+        res = await client.post("/api/campaigns/import", json={**export, "name": "Copia"})
+        assert res.status_code == 200, res.text
+        imported_id = res.json()["id"]
+        got = (await client.get(f"/api/campaigns/{imported_id}/scenes")).json()
+        new_path = got[0]["background_path"]
+        created.append(new_path)
+
+        # La columna apunta a la campaña destino, no a la de origen.
+        assert asset_rel(new_path) == f"data/assets/{imported_id}/scenes/{scen['id']}/background.png"
+        assert new_path != src_abs
+        assert os.path.isfile(new_path)
+        with open(new_path, "rb") as f:
+            assert f.read() == b"PNG-pesado"
+
+        # Borrar la campaña de origen no rompe la copia.
+        os.remove(src_abs)
+        assert os.path.isfile(new_path)
+    finally:
+        for path in created:
+            if os.path.isfile(path):
+                os.remove(path)
+
+
+@pytest.mark.asyncio
+async def test_import_sin_fuente_deja_el_path_original(client):
+    """Si el archivo pesado no existe en esta máquina (vino de otra), no hay
+    qué copiar: el path queda como estaba, sin inventar bytes."""
+    from services.assets import asset_abs, asset_rel
+
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Lejana"})).json()
+    scen = (await client.post(f"/api/campaigns/{camp['id']}/scenes", json={"name": "Torre"})).json()
+    rel = f"data/assets/{camp['id']}/scenes/{scen['id']}/background.png"
+    src_abs = asset_abs(rel)
+    os.makedirs(os.path.dirname(src_abs), exist_ok=True)
+    with open(src_abs, "wb") as f:
+        f.write(b"PNG")
+    async with async_session() as db:
+        await db.execute(
+            text("UPDATE scenes SET background_path = :p WHERE id = :i"),
+            {"p": src_abs, "i": scen["id"]},
+        )
+        await db.commit()
+
+    export = (await client.get(f"/api/campaigns/{camp['id']}/export")).json()
+    export["assets"] = []  # simula un asset >8 MB: el path viaja, los bytes no
+    assert asset_rel(export["scenes"][0]["background_path"]) == rel
+    os.remove(src_abs)  # la fuente ya no está: simula el bundle que vino de otra máquina
+
+    res = await client.post("/api/campaigns/import", json={**export, "name": "Sin fuente"})
+    assert res.status_code == 200, res.text
+    got = (await client.get(f"/api/campaigns/{res.json()['id']}/scenes")).json()
+    assert asset_rel(got[0]["background_path"]) == rel

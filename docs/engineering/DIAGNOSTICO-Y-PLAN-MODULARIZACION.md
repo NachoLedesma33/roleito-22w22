@@ -337,7 +337,7 @@ Fix: `services.assets.rewrite_campaign_prefix(rel, campaign_id)` + `asset_rewrit
 
 Lección: un test verde por el motivo equivocado es peor que un test rojo. C11 llevaba tiempo probando el prefijo del path en vez de la reescritura de campaña; el fix del path (correcto por sí) lo sacó a la luz. Cuando un test falla después de un refactor, primero preguntarse qué estaba realmente midiendo.
 
-Gap que sigue (documentado, no tocado): un asset de más de 8 MB no viaja (queda `skipped` en el export) y al importar su columna queda apuntando al archivo de la campaña de origen. Es el mismo criterio de cap que ya está anotado en `IMPLEMENTATION-STATUS`.
+Gap que ~~sigue~~ **se cerró el 2026-10-20**: el asset de más de 8 MB no viaja en el export (queda `skipped`, ese cap se mantiene), pero al importar de esta misma máquina `imported_path` (`backend/routes.py`) lo copia a la campaña destino y la columna queda apuntando a la copia. Sin fuente local (bundle de otra máquina) el path queda como estaba, sin inventar bytes.
 
 ---
 
@@ -457,7 +457,7 @@ Nota: `POST /scenes/{id}/detect-walls` también hace append en `scene.items_json
 Lo que queda no es refactor sino producto y deuda documentada:
 1. **Visión por token que nunca llega al jugador** — **RESUELTO** (commit `51b790c`, 2026-10-17): el join serializa `vision_type`/`vision_range` por token y el jugador los usa en la percepción (pytest `test_player_snapshot_includes_token_vision` + e2e PV13). Queda por diseño que solo `darkvision` está implementado; `blindsight`/`tremorsense`/`truesight` colapsan a ambiente (`playerPerception.ts`). **Actualizado 2026-10-19:** los tres sentidos especiales SÍ están implementados — revelan terreno dentro de `vision_range` sin luz y detectan criaturas a rango (`lib/playerSense.ts`, `sensedIds` en `SceneRenderer`); ver `engineering/PLAN-VISION-PERCEPCION.md` §6.
 2. `HudPanel` sin test unitario (drag/resize en jsdom).
-3. Asset de más de 8 MB en export/import: no viaja y al importar su columna queda apuntando al archivo de la campaña de origen.
+3. ~~Asset de más de 8 MB en export/import~~ — **RESUELTO** (2026-10-20): el tope de 8 MB sigue (un mapa de 100 MB no va en un JSON), pero al importar de esta misma máquina el archivo que no viajó se copia a la campaña destino y la columna queda apuntando a la copia (`imported_path` en `routes.py`; pytest `test_import_copia_asset_que_no_viajo_en_el_bundle`). Si la fuente no existe (bundle de otra máquina), el path queda como estaba.
 4. `__init__.py` faltantes en `core/canon/`, `core/events/`, `core/memory/`, `core/world/` (funciona por namespace packages, pero es asimétrico).
 5. `POST /scenes/{id}/detect-walls` hace append en `items_json` y el frontend lo pisa con `saveItems`: redundancia del endpoint, no bug observable.
 6. `_parse_dt` sigue privado en `routes.py`: si otro módulo lo necesita, la casa es `services/dates.py`.
