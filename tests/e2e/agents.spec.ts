@@ -234,4 +234,37 @@ test.describe('Agent Routes', () => {
     expect(body.data.environment).toBeTruthy();
     expect(body.data.lighting).toBeTruthy();
   });
+
+  test('AG14: el panel de agentes ofrece ingesta, estado y escena', async ({
+    page,
+    campaign,
+    dmToken,
+  }) => {
+    // Esta spec usa la fixture de auth (no la de campaña), que no inyecta el
+    // token en el browser: sin esto la app redirige a la landing.
+    await page.addInitScript((token: string) => {
+      sessionStorage.setItem('roleito:auth:token', token);
+    }, dmToken);
+
+    await page.goto(`/campaigns/${campaign.id}/agents`);
+    await expect(page.getByRole('heading', { name: 'Agentes de IA' })).toBeVisible({
+      timeout: 15_000,
+    });
+
+    // Ingesta: normaliza y segmenta.
+    await page.getByRole('button', { name: 'Ingesta' }).click();
+    await page
+      .getByPlaceholder('Las notas crudas de la sesión...')
+      .fill('Primera parte.\n\n\n\nSegunda parte.');
+    await page.getByRole('button', { name: 'Normalizar y segmentar' }).click();
+    await expect(page.getByText('2 segmentos')).toBeVisible({ timeout: 15_000 });
+
+    // Estado del mundo: responde y dice sobre que estado.
+    await page.getByRole('button', { name: 'Estado del mundo' }).click();
+    await page.getByPlaceholder('¿Dónde está el grupo?').fill('¿Dónde está el grupo?');
+    await page.getByRole('button', { name: 'Consultar el estado' }).click();
+    await expect(
+      page.getByText('El agente respondió sobre este estado:')
+    ).toBeVisible({ timeout: 15_000 });
+  });
 });
