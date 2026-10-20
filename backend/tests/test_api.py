@@ -1789,3 +1789,88 @@ async def test_orchestrator_de_campana_inexistente_da_404(client):
         json={"task_type": "lore_inquiry", "query": "?"},
     )
     assert res.status_code == 404, res.text
+
+
+@pytest.mark.asyncio
+async def test_agentes_ingest_world_state_y_scene(client, monkeypatch):
+    """Los tres agentes que faltaban expuestos por HTTP.
+
+    Ingestion normaliza y segmenta (no juzga canon), World State responde con
+    el estado real de la campaña y Scene propone la configuración visual.
+    """
+    from uuid import uuid4
+
+    from infrastructure.ai.mock import MockProvider
+    import agent_routes
+
+    monkeypatch.setattr(agent_routes, "get_provider_for_agent", lambda: MockProvider())
+
+    reg = await client.post(
+        "/api/auth/register", json={"name": f"DM Agentes {uuid4().hex[:6]}", "pin": "1234"}
+    )
+    headers = {"Authorization": f"Bearer {reg.json()['token']}"}
+
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Exposición"})).json()
+    await client.post(
+        f"/api/campaigns/{camp['id']}/characters",
+        json={
+            "name": "Aria",
+            "type": "player",
+            "vigor": "/",
+            "intelligence": "/",
+            "dexterity": "/",
+            "cunning": "/",
+        },
+    )
+    await client.post(
+        f"/api/campaigns/{camp['id']}/quests",
+        json={"title": "La mazmorra perdida", "status": "active"},
+    )
+
+    # INGEST: normaliza y segmenta, sin juzgar canon.
+    res = await client.post(
+        f"/api/campaigns/{camp['id']}/agents/ingest",
+        headers=headers,
+        json={"text": "La party entro a la mazmorra.\n\n\nSe encounteron a los goblins.", "title": "Notas"},
+    )
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["agent_id"] == "ingestion"
+    assert body["status"] == "success"
+    assert body["data"]["chars"] > 0
+    assert len(body["data"]["segments"]) == 2
+    # Texto vacio -> error, no excepcion.
+    res = await client.post(
+        f"/api/campaigns/{camp['id']}/agents/ingest",
+        headers=headers,
+        json={"text": "   "},
+    )
+    assert res.json()["status"] == "error"
+
+    # WORLD STATE: responde con el estado real de la campaña.
+    res = await client.post(
+        f"/api/campaigns/{camp['id']}/agents/world-state",
+        headers=headers,
+        json={"question": "¿Dónde está Aria?"},
+    )
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["agent_id"] == "world-state"
+    assert body["status"] == "success"
+    assert body["data"]["answer"]
+    # Y el estado sobre el que respondió es el de la campaña, no un invento.
+    assert any(c["name"] == "Aria" for c in body["state"]["characters"])
+    assert any(q["title"] == "La mazmorra perdida" for q in body["state"]["quests"])
+
+    # SCENE: propone la configuración visual.
+    res = await client.post(
+        f"/api/campaigns/{camp['id']}/agents/scene",
+        headers=headers,
+        json={"scene_description": "Una cripta inundada de agua negra", "mood": "dread"},
+    )
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["agent_id"] == "scene"
+    assert body["status"] == "success"
+    assert body["data"]["environment"]
+    assert body["data"]["lighting"]

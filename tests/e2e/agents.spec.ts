@@ -184,4 +184,54 @@ test.describe('Agent Routes', () => {
     });
     expect(res.status()).toBe(401);
   });
+
+  test('AG11: ingest normaliza y segmenta las notas', async ({
+    request,
+    campaign,
+    authHeaders,
+  }) => {
+    const res = await request.post(`${API}/campaigns/${campaign.id}/agents/ingest`, {
+      headers: authHeaders,
+      data: { text: 'La party entro a la mazmorra.\n\n\nSe encontraron goblins.', title: 'Notas' },
+    });
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    expect(body.agent_id).toBe('ingestion');
+    expect(body.status).toBe('success');
+    expect(body.data.chars).toBeGreaterThan(0);
+    expect(body.data.segments).toHaveLength(2);
+  });
+
+  test('AG12: world-state responde con el estado de la campaña', async ({
+    request,
+    campaign,
+    authHeaders,
+  }) => {
+    const res = await request.post(`${API}/campaigns/${campaign.id}/agents/world-state`, {
+      headers: authHeaders,
+      data: { question: '¿Dónde está el grupo?' },
+    });
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    expect(body.agent_id).toBe('world-state');
+    expect(body.status).toBe('success');
+    expect(body.data.answer).toBeTruthy();
+  });
+
+  test('AG13: scene propone la configuración visual', async ({
+    request,
+    campaign,
+    authHeaders,
+  }) => {
+    const res = await request.post(`${API}/campaigns/${campaign.id}/agents/scene`, {
+      headers: authHeaders,
+      data: { scene_description: 'Una cripta inundada', mood: 'dread' },
+    });
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    expect(body.agent_id).toBe('scene');
+    expect(body.status).toBe('success');
+    expect(body.data.environment).toBeTruthy();
+    expect(body.data.lighting).toBeTruthy();
+  });
 });

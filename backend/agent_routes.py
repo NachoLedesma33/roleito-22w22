@@ -13,16 +13,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from database import get_session
-from models import Campaign, Session, Character, NPC, Location, Event
+from models import Campaign, Session, Character, NPC, Location, Event, Quest
 from core.agents.session_processor import SessionProcessor
 from core.agents.lore_agent import LoreAgent
 from core.agents.narrator import NarratorAgent
 from core.agents.recap import RecapAgent
+from core.agents.ingestion import IngestionAgent
+from core.agents.scene_agent import SceneAgent
+from core.agents.world_state import WorldStateAgent
 from core.agents.provider import get_provider_for_agent
 from core.events.bus import get_event_bus
 from core.narrative.entity_resolver import resolve_entities
 from core.narrative.parser import ExtractedEvent
 from core.narrative.proposer import propose_events
+from core.world.engine import WorldStateEngine
 from auth import require_dm, AuthSession
 
 router = APIRouter(tags=["agents"])
@@ -46,6 +50,23 @@ class NarrateRequest(BaseModel):
 class RecapRequest(BaseModel):
     session_id: str
     previous_recap: str = ""
+
+
+class IngestRequest(BaseModel):
+    """Texto externo a normalizar. `filename` lo usa para deducir el titulo."""
+    text: str = ""
+    source: str = "dm-notes"
+    title: str = ""
+    filename: str = ""
+
+
+class WorldStateRequest(BaseModel):
+    question: str
+
+
+class SceneRequest(BaseModel):
+    scene_description: str = ""
+    mood: str = ""
 
 
 @router.post("/campaigns/{campaign_id}/agents/process-session")
@@ -285,6 +306,147 @@ async def recap_session(
             "highlights": result.data.highlights if result.data else [],
             "cliffhanger": result.data.cliffhanger if result.data else "",
             "next_session_hook": result.data.next_session_hook if result.data else "",
+        } if result.data else None,
+        "error": result.error,
+    }
+
+
+@router.post("/campaigns/{campaign_id}/agents/ingest")
+async def ingest_notes(
+    campaign_id: str,
+    body: IngestRequest,
+    db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+):
+    """Normaliza texto externo (notas del DM, documentos) en una sesion cruda.
+
+    El agente de ingestion NO juzga el canon: solo limpia y segmenta. El
+    Session Processor y el DM son los que deciden despues.
+    """
+    campaign = (await db.execute(
+        select(Campaign).where(Campaign.id == campaign_id)
+    )).scalar_one_or_none()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    agent = IngestionAgent(get_provider_for_agent())
+    result = await agent.run(
+        text=body.text,
+        source=body.source,
+        title=body.title,
+        filename=body.filename,
+    )
+
+    return {
+        "agent_id": result.agent_id,
+        "status": result.status,
+        "data": result.data.to_dict() if result.data else None,
+        "error": result.error,
+    }
+
+
+@router.post("/campaigns/{campaign_id}/agents/world-state")
+async def query_world_state(
+    campaign_id: str,
+    body: WorldStateRequest,
+    db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+):
+    """Responde con el estado ACTUAL de la campana (posiciones, misiones, NPCs).
+
+    El estado sale del World State Engine (los eventos aprobados). El agente
+    solo puede usar el estado que se le pasa: nunca inventa entidades.
+    """
+    campaign = (await db.execute(
+        select(Campaign).where(Campaign.id == campaign_id)
+    )).scalar_one_or_none()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    state = await WorldStateEngine(db).compute(campaign_id)
+
+    def location_name(entity) -> str:
+        loc = state.locations.get(entity.current_location_id or "")
+        return loc.name if loc else "unknown"
+
+    quests = (await db.execute(
+        select(Quest).where(Quest.campaign_id == campaign_id)
+    )).scalars().all()
+
+    characters = [
+        {"name": c.name, "location": location_name(c)}
+        for c in state.characters.values()
+    ]
+    npcs = [
+        {"name": n.name, "location": location_name(n)}
+        for n in state.npcs.values()
+    ]
+    locations = [{"name": l.name, "description": l.status} for l in state.locations.values()]
+    quest_list = [{"title": q.title, "status": q.status} for q in quests]
+
+    agent = WorldStateAgent(get_provider_for_agent())
+    result = await agent.run(
+        question=body.question,
+        characters=characters,
+        npcs=npcs,
+        locations=locations,
+        quests=quest_list,
+    )
+
+    return {
+        "agent_id": result.agent_id,
+        "status": result.status,
+        "data": {
+            "answer": result.data.answer if result.data else "",
+            "positions": result.data.positions if result.data else [],
+            "active_quests": result.data.active_quests if result.data else [],
+            "confidence": result.data.confidence if result.data else 0,
+        } if result.data else None,
+        # El estado sobre el que respondio: para que el DM vea de donde salio
+        # la respuesta y no la tome por un dato inventado.
+        "state": {
+            "characters": characters,
+            "npcs": npcs,
+            "locations": locations,
+            "quests": quest_list,
+        },
+        "error": result.error,
+    }
+
+
+@router.post("/campaigns/{campaign_id}/agents/scene")
+async def design_scene(
+    campaign_id: str,
+    body: SceneRequest,
+    db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+):
+    """Propone la configuracion visual de una escena a partir de su descripcion.
+
+    No escribe nada: devuelve environment, lighting, atmosphere, structures y
+    mood para que el DM lo use o lo descarte.
+    """
+    campaign = (await db.execute(
+        select(Campaign).where(Campaign.id == campaign_id)
+    )).scalar_one_or_none()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    agent = SceneAgent(get_provider_for_agent())
+    result = await agent.run(
+        scene_description=body.scene_description,
+        mood=body.mood,
+    )
+
+    return {
+        "agent_id": result.agent_id,
+        "status": result.status,
+        "data": {
+            "environment": result.data.environment if result.data else "",
+            "lighting": result.data.lighting if result.data else "",
+            "atmosphere": result.data.atmosphere if result.data else {},
+            "structures": result.data.structures if result.data else [],
+            "mood": result.data.mood if result.data else "",
         } if result.data else None,
         "error": result.error,
     }
