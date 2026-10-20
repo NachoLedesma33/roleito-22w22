@@ -13,6 +13,13 @@ export interface DetectProposal {
   ids: string[];
   walls: number;
   doors: number;
+  /**
+   * Las salas que encontró la detección.
+   *
+   * Todavía no son entidades del grafo: se muestran para que el DM sepa que
+   * el detector también las vio (antes se descartaban en silencio).
+   */
+  rooms: { id: string; label: string; area: number }[];
 }
 
 export interface UseWallDetectionOptions {
@@ -97,6 +104,7 @@ export function useWallDetection({
           ids: items.map((item) => item.id),
           walls: result.wall_count ?? items.length,
           doors: result.door_count ?? 0,
+          rooms: (result.rooms ?? []).map((r) => ({ id: r.id, label: r.label, area: r.area })),
         });
         push({
           id: `detect-${Date.now()}`,
@@ -189,6 +197,7 @@ export function useWallDetection({
               ids: conFlag.map((i) => i.id),
               walls: conFlag.filter((i) => autoDetectedKind(i) === 'wall').length,
               doors: conFlag.filter((i) => autoDetectedKind(i) === 'door').length,
+              rooms: [],
             });
           } else {
             // Otra escena: se guarda por la API, con la propuesta pendiente.
@@ -249,6 +258,8 @@ export function useWallDetection({
       ids: pending.map((item) => item.id),
       walls: pending.filter((item) => autoDetectedKind(item) === 'wall').length,
       doors: pending.filter((item) => autoDetectedKind(item) === 'door').length,
+      // Las salas no se guardan con el item: al reabrir no se saben.
+      rooms: [],
     });
   }, [items, detectProposal]);
 

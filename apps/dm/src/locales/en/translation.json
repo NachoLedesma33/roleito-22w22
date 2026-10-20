@@ -118,6 +118,7 @@
     "detectApprove": "Approve ({{n}})",
     "detectDiscard": "Discard",
     "detectReviewTitle": "Review detection",
+    "detectRooms": "{n} rooms",
     "detectWalls": "Detect walls",
     "detectWallsAll": "Detect in all scenes ({n})",
     "dice": "Roll dice",

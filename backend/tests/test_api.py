@@ -1624,10 +1624,13 @@ async def test_detect_walls_no_persiste_la_propuesta(client):
     camp = (await client.post("/api/campaigns", json={"name": "Camp Detectar"})).json()
     scen = (await client.post(f"/api/campaigns/{camp['id']}/scenes", json={"name": "Plano"})).json()
 
-    # Un plano con tres paredes verticales.
-    img = np.full((300, 400, 3), 255, np.uint8)
-    for x in (60, 150, 240):
-        cv2.line(img, (x, 40), (x, 260), (0, 0, 0), thickness=3)
+    # Un plano con tres verticales y dos horizontales: las líneas se cruzan y
+    # forman celdas, así que la detección también encuentra salas.
+    img = np.full((400, 600, 3), 255, np.uint8)
+    for x in (90, 300, 510):
+        cv2.line(img, (x, 40), (x, 360), (0, 0, 0), thickness=4)
+    for y in (120, 280):
+        cv2.line(img, (60, y), (540, y), (0, 0, 0), thickness=4)
     rel = f"data/assets/{camp['id']}/scenes/{scen['id']}/background.png"
     bg_abs = asset_abs(rel)
     os.makedirs(os.path.dirname(bg_abs), exist_ok=True)
@@ -1646,6 +1649,12 @@ async def test_detect_walls_no_persiste_la_propuesta(client):
         # La propuesta viene en la respuesta...
         assert body["wall_count"] >= 1
         assert len(body["items"]) >= 1
+        # ...incluidas las salas que encontró la detección: antes se descartaban
+        # en silencio y el DM no sabía que el detector también las vio.
+        assert len(body["rooms"]) >= 1
+        assert body["rooms"][0]["label"]
+        assert body["rooms"][0]["area"] > 0
+        assert body["rooms"][0]["polygon"]
 
         # ...pero la escena sigue vacía: nadie la aprobó.
         items = (

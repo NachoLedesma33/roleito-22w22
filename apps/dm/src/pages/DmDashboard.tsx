@@ -2866,6 +2866,11 @@ const startFogMode = useCallback(() => {
           >
             <span className="text-[var(--text-secondary)]">
               {t('dm.detectReviewTitle', 'Revisar detección')}: {detectProposal.walls}+{detectProposal.doors}
+              {detectProposal.rooms.length > 0 && (
+                <span className="ml-2 text-[var(--text-secondary)]/70">
+                  {t('dm.detectRooms', '{n} salas', { n: detectProposal.rooms.length })}
+                </span>
+              )}
             </span>
             <button
               type="button"

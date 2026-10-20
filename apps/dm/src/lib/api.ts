@@ -886,6 +886,8 @@ export const api = {
         door_count: number;
         /** False = la propuesta la hizo OpenCV, no la IA. */
         ai_used?: boolean;
+        /** Las salas que encontró la detección (aún no son entidades). */
+        rooms?: { id: string; label: string; area: number; polygon: { x: number; y: number }[] }[];
         image_size: { width: number; height: number };
       }>(
         `/campaigns/${campaignId}/scenes/${sceneId}/detect-walls?mode=${mode}`,

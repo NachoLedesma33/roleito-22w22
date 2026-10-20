@@ -118,6 +118,7 @@
     "detectApprove": "Aprobar ({{n}})",
     "detectDiscard": "Descartar",
     "detectReviewTitle": "Revisar detección",
+    "detectRooms": "{n} salas",
     "detectWalls": "Detectar paredes",
     "detectWallsAll": "Detectar en todas las escenas ({n})",
     "dice": "Tirar dados",

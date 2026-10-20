@@ -152,11 +152,14 @@ test.describe('Auto wall detection', () => {
     await page.getByRole('button', { name: 'Construir' }).click();
     await page.getByRole('button', { name: 'Detectar paredes' }).click();
 
+    // El DM ve también las salas que encontró la detección (antes se
+    // descartaban en silencio).
     const review = page.getByTestId('detect-review');
     await expect(review).toBeVisible({ timeout: 30_000 });
-    await expect(review).toContainText('Revisar detección');
+    await expect(review).toContainText('salas');
 
-    await page.getByTestId('detect-approve').click();
+    const detectApprove = page.getByTestId('detect-approve');
+    await detectApprove.click();
     await expect(review).toBeHidden();
     await expect(page.getByText(/paredes confirmadas/)).toBeVisible({ timeout: 10_000 });
   });

@@ -323,6 +323,19 @@ async def detect_walls(
         # False = la propuesta la hizo OpenCV, no la IA (plano clasificado como
         # blueprint, o la IA caida). El frontend lo muestra al DM.
         "ai_used": detection.ai_used,
+        # Las salas que la deteccion encontro. Antes se descartaban en
+        # silencio: el DM veia muros sin saber que el detector tambien habia
+        # encontrado rooms.
+        "rooms": [
+            {
+                "id": room.id,
+                "label": room.label,
+                "area": room.area,
+                "polygon": [{"x": p.x, "y": p.y} for p in room.polygon],
+                "door_ids": room.door_ids,
+            }
+            for room in detection.rooms
+        ],
         "image_size": {"width": detection.width, "height": detection.height},
     }
 

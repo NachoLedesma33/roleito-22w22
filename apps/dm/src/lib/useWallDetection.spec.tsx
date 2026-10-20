@@ -102,6 +102,7 @@ describe('useWallDetection', () => {
       ids: ['wall-auto-1', 'wall-auto-2', 'door-auto-1'],
       walls: 2,
       doors: 1,
+      rooms: [],
     })
   })
 
@@ -258,12 +259,33 @@ describe('useWallDetection', () => {
       ids: ['wall-auto-pend', 'door-auto-pend'],
       walls: 1,
       doors: 1,
+      rooms: [],
     })
   })
 
   it('no reabre nada si no hay items pendientes', () => {
     const { result } = setup([], [autoItem('wall-auto-1')])
     expect(result.current.detectProposal).toBeNull()
+  })
+
+  it('la propuesta muestra las salas que encontró la detección', async () => {
+    detectWalls.mockResolvedValue({
+      items: WALLS_RETURNED,
+      wall_count: 2,
+      door_count: 1,
+      rooms: [{ id: 'room-1', label: 'Room 1', area: 1200, polygon: [] }],
+    })
+    const { result } = setup()
+
+    await act(async () => {
+      await result.current.handleAutoDetect()
+    })
+
+    // Antes las salas se descartaban en silencio: el DM veia muros y no sabia
+    // que el detector también habia encontrado rooms.
+    expect(result.current.detectProposal?.rooms).toEqual([
+      { id: 'room-1', label: 'Room 1', area: 1200 },
+    ])
   })
 
   it('detecta en varias escenas y deja cada propuesta pendiente', async () => {
