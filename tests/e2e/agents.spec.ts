@@ -132,6 +132,20 @@ test.describe('Agent Routes', () => {
     expect(body.data.summary).toBeTruthy();
     expect(Array.isArray(body.data.events)).toBe(true);
     expect(Array.isArray(body.data.thread_hooks)).toBe(true);
+
+    // Los eventos quedan en la DB como PROPOSED: la IA propone, el DM
+    // aprueba. Antes el endpoint solo devolvia JSON y el DM los copiaba a mano.
+    expect(body.proposed_events.length).toBeGreaterThan(0);
+    const events = await (
+      await request.get(`${API}/campaigns/${campaign.id}/events`, { headers: authHeaders })
+    ).json();
+    const proposed = events.filter((e: { status: string }) => e.status === 'PROPOSED');
+    expect(proposed.length).toBe(body.proposed_events.length);
+    for (const p of body.proposed_events) {
+      const found = events.find((e: { id: string }) => e.id === p.event_id);
+      expect(found, `evento ${p.event_id} en la DB`).toBeTruthy();
+      expect(found.status).toBe('PROPOSED');
+    }
   });
 
   test('AG8: orchestrator ejecuta task_type válido', async ({

@@ -246,6 +246,8 @@ Vault Key
 
 Todavía no debe modificar información crítica.
 
+**Implementado:** `POST /campaigns/{campaign_id}/agents/process-session` toma las notas crudas de una sesión, las pasa por el Session Processor y deja cada evento extraído en la tabla `events` con `status = PROPOSED` (mismo camino que `POST /campaigns/{campaign_id}/narrative/parse`: entidades resueltas contra la campaña, actores sin resolver quedan sin asignar). El DM los revisa y los aprueba con `PUT /events/{event_id}`.
+
 ---
 
 # 10. REVIEW

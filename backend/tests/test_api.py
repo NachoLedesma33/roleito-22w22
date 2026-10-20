@@ -1655,3 +1655,56 @@ async def test_detect_walls_no_persiste_la_propuesta(client):
     finally:
         if os.path.isfile(bg_abs):
             os.remove(bg_abs)
+
+
+@pytest.mark.asyncio
+async def test_process_session_propone_eventos_para_aprobacion(client, monkeypatch):
+    """El agente propone eventos PROPOSED y el DM los aprueba.
+
+    Antes el endpoint solo devolvia JSON: el DM tenia que copiar los eventos a
+    mano. Ahora cada evento queda en la DB con status PROPOSED, el mismo camino
+    que /narrative/parse (la IA propone, el DM autoriza).
+    """
+    from uuid import uuid4
+
+    from infrastructure.ai.mock import MockProvider
+    import agent_routes
+
+    monkeypatch.setattr(agent_routes, "get_provider_for_agent", lambda: MockProvider())
+
+    reg = await client.post(
+        "/api/auth/register", json={"name": f"DM Agentes {uuid4().hex[:6]}", "pin": "1234"}
+    )
+    headers = {"Authorization": f"Bearer {reg.json()['token']}"}
+
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Agentes"})).json()
+    ses_res = await client.post(
+        f"/api/campaigns/{camp['id']}/sessions",
+        json={
+            "number": 1,
+            "date": "2026-10-20",
+            "title": "Sesion 1",
+            "summary": "La party entro a la mazmorra",
+        },
+    )
+    assert ses_res.status_code == 200, ses_res.text
+    ses = ses_res.json()
+
+    res = await client.post(
+        f"/api/campaigns/{camp['id']}/agents/process-session",
+        json={"session_id": ses["id"]},
+        headers=headers,
+    )
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["status"] == "success"
+    # El provider mock devuelve 2 eventos de la sesion.
+    assert len(body["proposed_events"]) == 2
+
+    events = (await client.get(f"/api/campaigns/{camp['id']}/events")).json()
+    assert len(events) == 2
+    # PROPOSED, no APPROVED: la IA propone y el DM decide.
+    assert all(e["status"] == "PROPOSED" for e in events)
+    assert {e["id"] for e in events} == {p["event_id"] for p in body["proposed_events"]}
+    # El actor que el modelo no pudo resolver queda sin asignar, no inventado.
+    assert all(e["description"] for e in events)

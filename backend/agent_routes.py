@@ -19,6 +19,10 @@ from core.agents.lore_agent import LoreAgent
 from core.agents.narrator import NarratorAgent
 from core.agents.recap import RecapAgent
 from core.agents.provider import get_provider_for_agent
+from core.events.bus import get_event_bus
+from core.narrative.entity_resolver import resolve_entities
+from core.narrative.parser import ExtractedEvent
+from core.narrative.proposer import propose_events
 from auth import require_dm, AuthSession
 
 router = APIRouter(tags=["agents"])
@@ -75,6 +79,60 @@ async def process_session(
         campaign_context=campaign.description or "",
     )
 
+    # La IA no escribe al canon: propone eventos PROPOSED y el DM los aprueba
+    # (el mismo camino que /narrative/parse). Antes esto solo devolvia JSON y
+    # el DM tenia que copiar los eventos a mano.
+    extracted = [
+        ExtractedEvent(
+            type=str(e.get("type") or "NARRATIVE"),
+            description=str(e.get("description") or ""),
+            actors=[str(a) for a in (e.get("actors") or [])],
+            targets=[str(t) for t in (e.get("targets") or [])],
+            location=str(e["location"]) if e.get("location") else None,
+            importance=str(e.get("importance") or "NORMAL"),
+        )
+        for e in (result.data.events if result.data else [])
+        if isinstance(e, dict) and (e.get("description") or e.get("type"))
+    ]
+
+    proposed: list[dict] = []
+    warnings: list[str] = []
+    if extracted:
+        names = list({
+            name
+            for e in extracted
+            for name in ([*e.actors, *e.targets] + ([e.location] if e.location else []))
+        })
+        resolution = await resolve_entities(db, campaign_id, names)
+        proposal = await propose_events(
+            db, campaign_id, session.id, extracted, resolution
+        )
+        await db.commit()
+        proposed = [
+            {
+                "event_id": p.event_id,
+                "type": p.type,
+                "description": p.description,
+                "actor_id": p.actor_id,
+                "target_id": p.target_id,
+                "location_id": p.location_id,
+                "confidence": p.confidence,
+                "unresolved_actors": p.unresolved_actors,
+                "unresolved_targets": p.unresolved_targets,
+            }
+            for p in proposal.proposed
+        ]
+        warnings = proposal.warnings
+        await get_event_bus().emit(
+            "session.processed",
+            {
+                "campaign_id": campaign_id,
+                "session_id": session.id,
+                "event_ids": [p["event_id"] for p in proposed],
+            },
+            source="session-processor",
+        )
+
     return {
         "agent_id": result.agent_id,
         "status": result.status,
@@ -85,6 +143,10 @@ async def process_session(
             "thread_hooks": result.data.thread_hooks if result.data else [],
             "character_changes": result.data.character_changes if result.data else [],
         } if result.data else None,
+        # Los eventos propuestos quedan en la DB con status PROPOSED: el DM los
+        # revisa y aprueba (PUT /events/{id}).
+        "proposed_events": proposed,
+        "warnings": warnings,
         "error": result.error,
     }
 
