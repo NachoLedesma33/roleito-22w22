@@ -110,7 +110,7 @@ Adopta la **variante defensiva** (devuelve `null` en vez de `undefined`). Import
 - `Spell` e `InventoryItem` de `PlayerView` eran copias exactas de `api.ts` → borrados. La versión laxa de `InventoryItem` (`[key: string]: unknown`) además era la que mentía: el contrato real ya es `api.InventoryItem`.
 - `PlayerToken` sí tenía shape propio (el join del snapshot del jugador): ahora `PlayerSceneToken` en `api.ts`, derivado con `Pick<SceneCharacter, …> & Pick<Character, …>` para no duplicar listas de campos.
 
-**Bug detectado, NO arreglado (decisión de producto):** `PlayerView.tsx:610-611` lee `sc.vision_type ?? 'normal'` y `sc.vision_range ?? 6`, pero el join de `routes.py:1180-1200` **no serializa esos dos campos**. El DM puede configurar visión por token (`DmDashboard.tsx:3460-3510`) y el jugador nunca la recibe: siempre ve con los defaults. Arreglarlo cambia comportamiento de juego, así que queda fuera de la fase de tipos.
+**Bug detectado en la fase, RESUELTO después** (commit `51b790c`, 2026-10-17): el join del snapshot del jugador serializa `vision_type`/`vision_range` por token (`routes.py:1211-1212`, dentro del revision hash en `:160`) y `PlayerView.tsx:392-393` los consume en la máscara de percepción. Cubierto por `test_player_snapshot_includes_token_vision` (pytest) y el e2e PV13. En la época de la fase quedaba fuera por decisión de producto; el pipeline está cerrado.
 
 ---
 
@@ -455,7 +455,7 @@ Nota: `POST /scenes/{id}/detect-walls` también hace append en `scene.items_json
 **PLAN COMPLETO: fases 0 a 10 cerradas** (2026-10-17). Las 11 fases del plan quedaron commiteadas con CI verde.
 
 Lo que queda no es refactor sino producto y deuda documentada:
-1. **Visión por token que nunca llega al jugador** (PENDIENTE DE DECISIÓN): el DM configura `vision_type`/`vision_range` por token, pero el join del snapshot no los serializa. El jugador ve siempre la visión por defecto.
+1. **Visión por token que nunca llega al jugador** — **RESUELTO** (commit `51b790c`, 2026-10-17): el join serializa `vision_type`/`vision_range` por token y el jugador los usa en la percepción (pytest `test_player_snapshot_includes_token_vision` + e2e PV13). Queda por diseño que solo `darkvision` está implementado; `blindsight`/`tremorsense`/`truesight` colapsan a ambiente (`playerPerception.ts`).
 2. `HudPanel` sin test unitario (drag/resize en jsdom).
 3. Asset de más de 8 MB en export/import: no viaja y al importar su columna queda apuntando al archivo de la campaña de origen.
 4. `__init__.py` faltantes en `core/canon/`, `core/events/`, `core/memory/`, `core/world/` (funciona por namespace packages, pero es asimétrico).

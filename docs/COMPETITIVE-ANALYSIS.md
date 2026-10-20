@@ -180,7 +180,7 @@
 - **Qué**: Música de fondo, efectos de sonido, spatial audio
 - **Foundry**: 10+ módulos de audio (Syrinscape, SoundPainter, etc.)
 - **Roll20**: Ninguno nativo
-- **Roleito**: Audio listado en ROADMAP pero no implementado
+- **Roleito**: Audio implementado (AudioDirector + AudioSettingsMenu, bloque de audio del `ROADMAP.md`)
 - **Implementación**: Audio engine con crossfade, spatial positioning
 - **Referencia**: Foundry Narrator's Jukebox, SoundPainter Conductor
 

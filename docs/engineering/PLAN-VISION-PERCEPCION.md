@@ -31,7 +31,7 @@ Los e2e `F2`/`F3`/`F4` verifican persistencia, roundtrip y toggle — que el dat
 
 ### 1.2 Los otros tres
 
-- **`vision_type` no lo lee nadie.** El DM configura 5 tipos por token (`DmDashboard:3129-3176`), persisten (`models.py:302-303`), y el join **no los serializa** (`routes.py:1117-1137`). El jugador siempre cae al default (`PlayerView:355-356`).
+- **`vision_type` no lo lee nadie** *(enunciado de origen de este plan — ya RESUELTO en `51b790c`: el join serializa `vision_type`/`vision_range` y `PlayerView` los usa en la percepción; ver Paso 1)*. El DM lo configura por token (`DmDashboard`), persiste en `scene_characters` (`models.py:306-307`).
 - **`dimRange` es dato muerto.** `PlayerView:367` lo calcula; `computeVisibilityMask` (`losRaycast.ts:139-169`) solo usa `range`, `angle` y `direction`. Ningún consumidor.
 - **`ROADMAP.md:2345` (E10) está desfasado**: dice que el jugador sin luz ve "el círculo mínimo (0.05)" y que `computeVisionRegions` es la visión; hoy el código tiene `AMBIENT_RADIUS = 0.15` y además el disco de LoS, que E10 no menciona porque se agregó después (F4/F6).
 

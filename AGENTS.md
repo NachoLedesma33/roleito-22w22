@@ -86,5 +86,6 @@ Luego solo los relevantes a la tarea. `scripts/check-docs-consistency.py` valida
 | `typescript-advanced-types` | TS strict: genéricos, narrowing, tipos de `apps/dm/src/lib/api.ts`, utilidades reutilizables |
 | `diagnosing-bugs` | Bugs duros / regresiones de perf (canvas `zone Z1/Z2`, `status S1`): loop de feedback antes de tocar código |
 | `roleito-modularizacion` *(skill del repo, `.opencode/skills/`)* | **Obligatoria** al escribir/refactorizar código: checklist de la directiva, fases del plan, y gate de verificación antes de commitear |
+| `roleito-docsync` *(skill del repo, `.opencode/skills/`)* | **Obligatoria** al cerrar feature/fase o cambiar comportamiento/decisión: checklist de docs a actualizar + `check-docs-consistency.py` antes de commitear |
 
 > Las skills del repo viven en `.opencode/skills/<nombre>/SKILL.md` y se cargan automáticamente al abrir el proyecto, aunque no se lean los `AGENTS.md`. Preferí una skill de repo a depender solo de `AGENTS.md`.
