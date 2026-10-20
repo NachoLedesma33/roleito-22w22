@@ -1525,7 +1525,7 @@ async def test_import_copia_asset_que_no_viajo_en_el_bundle(client):
     Antes la columna quedaba apuntando a la campaña de ORIGEN: la importada
     funcionaba hasta que se borraba la original.
     """
-    from services.assets import ASSETS_DIR, asset_abs, asset_rel
+    from services.assets import asset_abs, asset_rel
 
     camp = (await client.post("/api/campaigns", json={"name": "Camp Origen"})).json()
     scen = (await client.post(f"/api/campaigns/{camp['id']}/scenes", json={"name": "Cripta"})).json()
