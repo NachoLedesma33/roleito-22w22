@@ -38,8 +38,8 @@ Reference: `MAP-ANALYSIS.md` (20,382 bytes)
 | Item | Status | Notes |
 |------|--------|-------|
 | Image Ingestion | Implemented | Upload BG + grid-snap drag/drop |
-| Grid Detection | Partial | Grid manual/snap; auto Hough diseñado |
-| Feature Detection | Partial | Walls manuales via WallDrawer |
+| Grid Detection | Partial | Grid manual/snap; auto Hough diseñado (la grilla se detecta y se borra, pero sin metadata) |
+| Feature Detection | Implemented | Auto CV+IA con propuesta revisada por el DM (`detect-walls`); las salas siguen sin ser entidades |
 | Semantic Interpretation | Planned | AI-assisted room labeling |
 | DM Authoring Tools | Implemented | WallDrawer, fog tools, markers, lights |
 

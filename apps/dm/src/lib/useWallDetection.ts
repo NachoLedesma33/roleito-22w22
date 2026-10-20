@@ -104,6 +104,21 @@ export function useWallDetection({
           }),
           timestamp: Date.now(),
         });
+        // Se pidió IA y la propuesta la hizo OpenCV (plano clasificado como
+        // blueprint, o la IA caída): el DM tiene que saber con qué motor se
+        // hizo, o cree que revisó una propuesta de IA.
+        if (useAi && !result.ai_used) {
+          push({
+            id: `detect-cv-${Date.now()}`,
+            rollerName: i18n.t('dmToast.rollerDetect', 'Detección'),
+            diceType: 1,
+            count: 1,
+            results: [1],
+            total: 1,
+            label: i18n.t('dmToast.detectFallbackCv', 'La IA no se pudo usar: la detección la hizo computer vision'),
+            timestamp: Date.now(),
+          });
+        }
       } else {
         setDetectProposal(null);
         push({

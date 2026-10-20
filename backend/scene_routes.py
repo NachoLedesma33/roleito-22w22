@@ -320,6 +320,9 @@ async def detect_walls(
         "door_count": detection.door_count,
         "confidence": detection.confidence,
         "mode": detection.mode,
+        # False = la propuesta la hizo OpenCV, no la IA (plano clasificado como
+        # blueprint, o la IA caida). El frontend lo muestra al DM.
+        "ai_used": detection.ai_used,
         "image_size": {"width": detection.width, "height": detection.height},
     }
 

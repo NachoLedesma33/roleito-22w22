@@ -88,6 +88,12 @@ def detect_map(
             img, h, w, mode, grid_size, auto_grid, min_wall_length, max_dim, seed
         )
 
+    # El DM tiene que saber que motor produjo la propuesta. El camino IA solo
+    # corre si la imagen salio TEXTURED y hay credenciales: en los demas casos
+    # (plano clasificado como blueprint, IA caida) la deteccion igual sale, pero
+    # por CV.
+    detection.ai_used = ai_used
+
     from .geometry import detect_rooms as _detect_rooms, compute_walkable_areas as _compute_wa
 
     rooms = _detect_rooms(detection.walls, detection.width, detection.height)

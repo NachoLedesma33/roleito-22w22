@@ -6,6 +6,7 @@ expected structural content (walls, doors, rooms, walkable area).
 
 import os
 import tempfile
+from unittest.mock import patch
 
 import cv2
 import numpy as np
@@ -164,3 +165,60 @@ def test_to_dict_includes_walkable():
     assert "walkable_ratio" in d
     assert "walkable_areas" in d
     assert "rooms" in d
+
+
+def test_ia_no_se_usa_en_un_plano_y_el_flag_lo_dice():
+    """Pedir IA con una imagen que se clasifica como blueprint cae al camino CV.
+
+    La propuesta igual sale (muros de verdad), pero por OpenCV: sin el flag
+    `ai_used` el DM creeria que reviso una propuesta de IA.
+    """
+    img = np.full((300, 400, 3), 255, np.uint8)
+    cv2.line(img, (150, 30), (150, 270), 0, thickness=4)
+    path = _save(img)
+
+    result = detect_map(path, use_ai=True, ai_api_key="test-key")
+
+    assert result.ai_used is False
+    assert result.wall_count >= 1
+
+
+def test_ia_usada_cuando_corrio_el_camino_ia(monkeypatch):
+    """Con imagen textured y credenciales, la deteccion la hace la IA."""
+    from wall_detection.types import DetectedMap, DetectedWall, Point
+
+    img = np.full((300, 400, 3), 255, np.uint8)
+    cv2.line(img, (150, 30), (150, 270), (0, 0, 0), thickness=4)
+    path = _save(img)
+
+    fake = DetectedMap(width=400, height=300, mode="ai")
+    fake.walls.append(
+        DetectedWall(id="w1", points=[Point(10, 10), Point(10, 200)], thickness=10.0)
+    )
+    monkeypatch.setattr(
+        "wall_detection.ai_detector.detect_walls_ai_sync", lambda *a, **k: fake
+    )
+
+    result = detect_map(
+        path, mode=DetectionMode.TEXTURED, use_ai=True, ai_api_key="test-key"
+    )
+
+    assert result.ai_used is True
+
+
+def test_ia_que_falla_cae_a_cv_y_el_flag_lo_dice():
+    """Si la IA revienta, la deteccion sale por CV: tambien hay que avisar."""
+    img = np.full((300, 400, 3), 255, np.uint8)
+    cv2.line(img, (150, 30), (150, 270), 0, thickness=4)
+    path = _save(img)
+
+    def boom(*a, **k):
+        raise RuntimeError("la IA no responde")
+
+    with patch("wall_detection.ai_detector.detect_walls_ai_sync", boom):
+        result = detect_map(
+            path, mode=DetectionMode.TEXTURED, use_ai=True, ai_api_key="test-key"
+        )
+
+    assert result.ai_used is False
+    assert result.wall_count >= 1

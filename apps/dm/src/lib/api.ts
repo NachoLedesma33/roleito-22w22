@@ -871,7 +871,14 @@ export const api = {
         body: JSON.stringify({ items }),
       }),
     detectWalls: (campaignId: string, sceneId: string, mode: string = 'blueprint') =>
-      request<{ items: SceneItem[]; wall_count: number; door_count: number; image_size: { width: number; height: number } }>(
+      request<{
+        items: SceneItem[];
+        wall_count: number;
+        door_count: number;
+        /** False = la propuesta la hizo OpenCV, no la IA. */
+        ai_used?: boolean;
+        image_size: { width: number; height: number };
+      }>(
         `/campaigns/${campaignId}/scenes/${sceneId}/detect-walls?mode=${mode}`,
         { method: 'POST' }
       ),

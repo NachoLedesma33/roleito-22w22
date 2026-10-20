@@ -1730,9 +1730,12 @@ Response:
   "items": [SceneItem...],
   "wall_count": 42,
   "door_count": 5,
+  "ai_used": true,
   "image_size": { "width": 2048, "height": 1536 }
 }
 ```
+
+`ai_used` dice que motor produjo la propuesta. El camino IA solo corre si la imagen se clasifica como *textured* y hay credenciales; en los demás casos (plano clasificado como *blueprint*, IA caída) la detección sale igual, pero por OpenCV, y el flag va en `false` para que el frontend avise al DM en vez de dejarle creer que revisó una propuesta de IA.
 
 The endpoint does NOT persist anything: it returns a **proposal**. The DM reviews it in the UI and, on approve, the frontend persists the whole scene graph (`PUT /campaigns/{id}/scenes/{id}/items`). The endpoint used to append to `items_json`, but that write was overwritten by the frontend's save — and if the save failed, the scene kept a duplicated copy of the detected walls.
 

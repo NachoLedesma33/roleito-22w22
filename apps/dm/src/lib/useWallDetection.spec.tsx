@@ -180,4 +180,40 @@ describe('useWallDetection', () => {
     expect(graph.getItems().map((i) => i.id)).toEqual(['wall-mano-1'])
     expect(push).toHaveBeenCalled()
   })
+
+  it('avisa cuando se pidió IA pero la detección la hizo computer vision', async () => {
+    detectWalls.mockResolvedValue({
+      items: WALLS_RETURNED,
+      wall_count: 2,
+      door_count: 1,
+      ai_used: false,
+    })
+    const { result, push } = setup()
+
+    act(() => result.current.toggleAi())
+    await act(async () => {
+      await result.current.handleAutoDetect()
+    })
+
+    const labels = push.mock.calls.map((c) => String(c[0].label ?? ''))
+    expect(labels.some((l) => l.includes('computer vision'))).toBe(true)
+  })
+
+  it('no avisa cuando la detección sí la hizo la IA', async () => {
+    detectWalls.mockResolvedValue({
+      items: WALLS_RETURNED,
+      wall_count: 2,
+      door_count: 1,
+      ai_used: true,
+    })
+    const { result, push } = setup()
+
+    act(() => result.current.toggleAi())
+    await act(async () => {
+      await result.current.handleAutoDetect()
+    })
+
+    const labels = push.mock.calls.map((c) => String(c[0].label ?? ''))
+    expect(labels.some((l) => l.includes('computer vision'))).toBe(false)
+  })
 })

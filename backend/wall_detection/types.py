@@ -84,6 +84,13 @@ class DetectedMap:
     walkable_ratio: float = 0.0
     confidence: float = 1.0
     mode: str = "blueprint"
+    """True si la deteccion la hizo la IA. False = camino CV (OpenCV).
+
+    Existe para que el DM sepa que motor produjo la propuesta: pedir IA y
+    caer al camino CV en silencio (imagen clasificada como blueprint, o la IA
+    fallo) deja una propuesta util pero con otro motor del que se pidio.
+    """
+    ai_used: bool = False
 
     @property
     def wall_count(self) -> int:
