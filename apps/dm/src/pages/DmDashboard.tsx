@@ -2349,14 +2349,6 @@ const startFogMode = useCallback(() => {
                 )}
               </AnchoredMenu>
             </div>
-            <button
-              onClick={() => setShowSceneSettings(!showSceneSettings)}
-              className={`flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs transition-colors duration-[var(--dur-fast)] shrink-0 ${showSceneSettings ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
-              title={t('dm.sceneSettingsTitle', 'Ajustes de escena')}
-            >
-              <Settings aria-hidden="true" className="h-4 w-4 shrink-0" />
-              <span className="flex-1 text-left">{t('dm.sceneBtn', 'Escena')}</span>
-            </button>
             {maps.length > 0 && (
               <div className="relative shrink-0" data-anchor="map">
                 <button
@@ -2832,6 +2824,7 @@ const startFogMode = useCallback(() => {
               { key: 'quick-actions', label: t('dm.quickActionsTitle', 'Acciones rápidas'), icon: Zap, onClick: () => setShowQuickActions(!showQuickActions), active: showQuickActions },
               { key: 'session-log', label: t('dm.sessionLogTitle', 'Bitácora de sesión'), icon: BookOpen, onClick: () => setShowSessionLog(!showSessionLog), active: showSessionLog },
               { key: 'scene-notes', label: t('dm.sceneNotesTitle', 'Notas de la escena'), icon: StickyNote, onClick: () => setShowSceneNotes(!showSceneNotes), active: showSceneNotes },
+              { key: 'scene-settings', label: t('dm.sceneSettingsTitle', 'Ajustes de escena'), icon: Settings, onClick: () => setShowSceneSettings(!showSceneSettings), active: showSceneSettings },
             ],
           ]}
         />
