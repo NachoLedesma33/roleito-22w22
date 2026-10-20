@@ -943,6 +943,25 @@ export const api = {
   },
 
   agents: {
+    /**
+     * El orquestador: el flujo completo del producto
+     * (docs/AGENTS.md §104) — sesión -> world state -> recap.
+     */
+    runPipeline: (
+      campaignId: string,
+      data: { task_type: string; session_id?: string; raw_notes?: string; query?: string },
+    ) =>
+      apiPost<{
+        task_type: string;
+        status: string;
+        agent_results: Record<
+          string,
+          { status: string; data: unknown; error?: string | null; proposed?: string[] }
+        >;
+        summary: string;
+        errors: string[];
+        execution_time_ms: number;
+      }>(`/orchestrator/${campaignId}/execute`, data),
     recap: (campaignId: string, sessionId: string, previousRecap?: string) =>
       apiPost<{ agent_id: string; status: string; data: { recap: string; highlights: string[]; cliffhanger: string; next_session_hook: string } | null; error: string | null }>(
         `/campaigns/${campaignId}/agents/recap`,

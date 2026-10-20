@@ -267,4 +267,37 @@ test.describe('Agent Routes', () => {
       page.getByText('El agente respondió sobre este estado:')
     ).toBeVisible({ timeout: 15_000 });
   });
+
+  test('AG15: el panel corre el flujo completo de la sesión', async ({
+    page,
+    request,
+    campaign,
+    dmToken,
+  }) => {
+    await page.addInitScript((token: string) => {
+      sessionStorage.setItem('roleito:auth:token', token);
+    }, dmToken);
+
+    const session = await createSession(request, campaign.id, {
+      number: 1,
+      date: '2026-01-02',
+      title: 'Sesion del pipeline',
+    });
+
+    await page.goto(`/campaigns/${campaign.id}/agents`);
+    await expect(page.getByRole('heading', { name: 'Agentes de IA' })).toBeVisible({
+      timeout: 15_000,
+    });
+
+    await page.getByPlaceholder('session-...').fill(session.id);
+    await page.getByTestId('run-pipeline').click();
+
+    const out = page.getByTestId('pipeline-result');
+    await expect(out).toBeVisible({ timeout: 30_000 });
+    await expect(out).toContainText('session_processor');
+    await expect(out).toContainText('world_state');
+    await expect(out).toContainText('recap');
+    // Y los eventos quedaron propuestos para que el DM los apruebe.
+    await expect(out).toContainText('eventos propuestos');
+  });
 });

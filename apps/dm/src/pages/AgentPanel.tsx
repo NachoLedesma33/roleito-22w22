@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { apiPost } from '@/lib/api';
+import { api, apiPost } from '@/lib/api';
 
 interface SessionProcessResult {
   summary: string;
@@ -76,6 +76,18 @@ type AgentResponse = {
   error: string | null;
 };
 
+/** La respuesta del orquestador (el flujo completo de la sesion). */
+interface PipelineResult {
+  task_type: string;
+  status: string;
+  agent_results: Record<
+    string,
+    { status: string; data: unknown; error?: string | null; proposed?: string[] }
+  >;
+  summary: string;
+  errors: string[];
+}
+
 type Tab = 'session' | 'lore' | 'narrate' | 'ingest' | 'worldState' | 'scene';
 
 const TAB_LABELS: Record<Tab, string> = {
@@ -102,6 +114,7 @@ export default function AgentPanel() {
   const [sceneConfigDesc, setSceneConfigDesc] = useState('');
   const [sceneMood, setSceneMood] = useState('');
   const [result, setResult] = useState<AgentResponse | null>(null);
+  const [pipeline, setPipeline] = useState<PipelineResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -115,6 +128,28 @@ export default function AgentPanel() {
         { session_id: sessionId.trim() }
       );
       setResult(data);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'No se pudo');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * El flujo completo (docs/AGENTS.md §104): la sesion se procesa, se consulta
+   * el estado del mundo y se genera el recap. Los eventos quedan PROPOSED para
+   * que el DM los apruebe.
+   */
+  const handlePipeline = async () => {
+    if (!campaignId || !sessionId.trim()) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await api.agents.runPipeline(campaignId, {
+        task_type: 'full_pipeline',
+        session_id: sessionId.trim(),
+      });
+      setPipeline(data);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'No se pudo');
     } finally {
@@ -252,6 +287,49 @@ export default function AgentPanel() {
           >
             {loading ? 'Procesando...' : 'Procesar sesión'}
           </button>
+          <button
+            onClick={handlePipeline}
+            disabled={loading || !sessionId.trim()}
+            data-testid="run-pipeline"
+            className="self-start px-4 py-2 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] text-sm font-medium hover:text-[var(--text-primary)] disabled:opacity-50"
+          >
+            {loading ? 'Procesando...' : 'Procesar y resumir (flujo completo)'}
+          </button>
+        </div>
+      )}
+
+      {pipeline && (
+        <div className="border border-[var(--bg-tertiary)] rounded-lg p-4 mb-4" data-testid="pipeline-result">
+          <div className="text-xs text-[var(--text-secondary)] mb-2">
+            {pipeline.summary || pipeline.status}
+          </div>
+          {pipeline.errors.length > 0 && (
+            <ul className="text-xs text-red-400 mb-2">
+              {pipeline.errors.map((e, i) => (
+                <li key={i}>• {e}</li>
+              ))}
+            </ul>
+          )}
+          {Object.entries(pipeline.agent_results).map(([name, r]) => (
+            <div key={name} className="text-xs text-[var(--text-secondary)]">
+              {name}: {r.status}
+              {r.proposed && r.proposed.length > 0 && (
+                <span> — {r.proposed.length} eventos propuestos (aprobalos en la lista de eventos)</span>
+              )}
+            </div>
+          ))}
+          {typeof pipeline.agent_results.world_state?.data === 'object' &&
+            pipeline.agent_results.world_state?.data !== null && (
+              <p className="text-sm mt-2">
+                {(pipeline.agent_results.world_state.data as WorldStateResult).answer}
+              </p>
+            )}
+          {typeof pipeline.agent_results.recap?.data === 'object' &&
+            pipeline.agent_results.recap?.data !== null && (
+              <p className="text-sm mt-2 whitespace-pre-wrap italic">
+                {(pipeline.agent_results.recap.data as { recap: string }).recap}
+              </p>
+            )}
         </div>
       )}
 

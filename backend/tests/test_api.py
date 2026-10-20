@@ -1895,6 +1895,53 @@ async def test_detect_grid_sin_grilla_devuelve_none(client):
 
 
 @pytest.mark.asyncio
+async def test_full_pipeline_deja_eventos_propuestos_para_aprobacion(client, monkeypatch):
+    """El pipeline no tira el trabajo: deja los eventos PROPOSED.
+
+    Es el mismo camino que /agents/process-session (los dos usan
+    `propose_session_events`), asi que procesar la sesion por cualquiera de los
+    dos deja lo mismo en la DB.
+    """
+    from uuid import uuid4
+
+    from infrastructure.ai.mock import MockProvider
+    import agent_routes
+
+    monkeypatch.setattr(agent_routes, "get_provider_for_agent", lambda: MockProvider())
+    monkeypatch.setattr(
+        "core.agents.orchestrator.get_provider_for_agent", lambda: MockProvider()
+    )
+
+    reg = await client.post(
+        "/api/auth/register", json={"name": f"DM Pipeline {uuid4().hex[:6]}", "pin": "1234"}
+    )
+    headers = {"Authorization": f"Bearer {reg.json()['token']}"}
+
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Pipeline"})).json()
+    ses = (
+        await client.post(
+            f"/api/campaigns/{camp['id']}/sessions",
+            json={"number": 1, "date": "2026-10-20", "title": "Sesion 1", "raw_notes": "La party entro a la mazmorra."},
+        )
+    ).json()
+
+    res = await client.post(
+        f"/api/orchestrator/{camp['id']}/execute",
+        headers=headers,
+        json={"task_type": "full_pipeline", "session_id": ses["id"]},
+    )
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["status"] in ("completed", "partial"), body
+
+    # Los eventos quedaron Propuestos: el DM los aprueba.
+    events = (await client.get(f"/api/campaigns/{camp['id']}/events")).json()
+    assert len(events) == 2
+    assert all(e["status"] == "PROPOSED" for e in events)
+    assert all(e["session_id"] == ses["id"] for e in events)
+
+
+@pytest.mark.asyncio
 async def test_agentes_ingest_world_state_y_scene(client, monkeypatch):
     """Los tres agentes que faltaban expuestos por HTTP.
 

@@ -23,10 +23,7 @@ from core.agents.ingestion import IngestionAgent
 from core.agents.scene_agent import SceneAgent
 from core.agents.world_state import WorldStateAgent
 from core.agents.provider import get_provider_for_agent
-from core.events.bus import get_event_bus
-from core.narrative.entity_resolver import resolve_entities
-from core.narrative.parser import ExtractedEvent
-from core.narrative.proposer import propose_events
+from core.agents.proposals import propose_session_events
 from core.world.engine import WorldStateEngine
 from auth import require_dm, AuthSession
 
@@ -117,58 +114,25 @@ async def process_session(
     )
 
     # La IA no escribe al canon: propone eventos PROPOSED y el DM los aprueba
-    # (el mismo camino que /narrative/parse). Antes esto solo devolvia JSON y
-    # el DM tenia que copiar los eventos a mano.
-    extracted = [
-        ExtractedEvent(
-            type=str(e.get("type") or "NARRATIVE"),
-            description=str(e.get("description") or ""),
-            actors=[str(a) for a in (e.get("actors") or [])],
-            targets=[str(t) for t in (e.get("targets") or [])],
-            location=str(e["location"]) if e.get("location") else None,
-            importance=str(e.get("importance") or "NORMAL"),
-        )
-        for e in (result.data.events if result.data else [])
-        if isinstance(e, dict) and (e.get("description") or e.get("type"))
+    # (el mismo camino que /narrative/parse y que usa el orquestador). Antes
+    # esto solo devolvia JSON y el DM tenia que copiar los eventos a mano.
+    proposals, warnings = await propose_session_events(
+        db, campaign_id, session.id, result.data.events if result.data else []
+    )
+    proposed = [
+        {
+            "event_id": p.event_id,
+            "type": p.type,
+            "description": p.description,
+            "actor_id": p.actor_id,
+            "target_id": p.target_id,
+            "location_id": p.location_id,
+            "confidence": p.confidence,
+            "unresolved_actors": p.unresolved_actors,
+            "unresolved_targets": p.unresolved_targets,
+        }
+        for p in proposals
     ]
-
-    proposed: list[dict] = []
-    warnings: list[str] = []
-    if extracted:
-        names = list({
-            name
-            for e in extracted
-            for name in ([*e.actors, *e.targets] + ([e.location] if e.location else []))
-        })
-        resolution = await resolve_entities(db, campaign_id, names)
-        proposal = await propose_events(
-            db, campaign_id, session.id, extracted, resolution
-        )
-        await db.commit()
-        proposed = [
-            {
-                "event_id": p.event_id,
-                "type": p.type,
-                "description": p.description,
-                "actor_id": p.actor_id,
-                "target_id": p.target_id,
-                "location_id": p.location_id,
-                "confidence": p.confidence,
-                "unresolved_actors": p.unresolved_actors,
-                "unresolved_targets": p.unresolved_targets,
-            }
-            for p in proposal.proposed
-        ]
-        warnings = proposal.warnings
-        await get_event_bus().emit(
-            "session.processed",
-            {
-                "campaign_id": campaign_id,
-                "session_id": session.id,
-                "event_ids": [p["event_id"] for p in proposed],
-            },
-            source="session-processor",
-        )
 
     return {
         "agent_id": result.agent_id,

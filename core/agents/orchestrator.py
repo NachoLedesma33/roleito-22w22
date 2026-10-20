@@ -12,6 +12,7 @@ from core.agents.lore_agent import LoreAgent
 from core.agents.narrator import NarratorAgent
 from core.agents.recap import RecapAgent
 from core.agents.world_state import WorldStateAgent
+from core.agents.proposals import propose_session_events
 from core.agents.provider import get_provider_for_agent
 
 
@@ -231,6 +232,19 @@ class OrchestratorAgent:
             "data": agent_result.data if agent_result.status == "success" else None,
             "error": agent_result.error,
         }
+
+        # Igual que /agents/process-session: los eventos quedan PROPOSED en la
+        # DB y el DM los aprueba. Sin esto, procesar la sesion desde el
+        # pipeline tiraba el trabajo.
+        if self.db is not None and agent_result.status == "success":
+            proposals, warnings = await propose_session_events(
+                self.db, campaign_id, session_id, agent_result.data.events
+            )
+            result.agent_results["session_processor"]["proposed"] = [
+                p.event_id for p in proposals
+            ]
+            result.agent_results["session_processor"]["warnings"] = warnings
+
         result.summary = f"Processed session: status={agent_result.status}"
 
     async def _generate_recap(self, result: OrchestratorResult, campaign_id: str, **kwargs):
