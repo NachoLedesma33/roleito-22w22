@@ -62,7 +62,7 @@ import HudPanel from '@/components/HudPanel';
 import ToolButton from '@/components/ui/ToolButton';
 import IconButton from '@/components/ui/IconButton';
 import { staticUrl } from '@/lib/staticUrl';
-import { Dices, Swords, NotebookPen, ClipboardList, CalendarDays, ScrollText, FolderOpen, Map as MapIcon, Bot, MessageCircle, Zap, BookOpen, StickyNote, LayoutGrid, Brush, SquareDashed, PaintBucket, Undo2, Redo2, CloudSun, Settings, ImagePlus, Wand2, Square, Mountain, ChevronDown } from 'lucide-react';
+import { Dices, Swords, NotebookPen, ClipboardList, CalendarDays, ScrollText, FolderOpen, Map as MapIcon, Bot, MessageCircle, Zap, BookOpen, StickyNote, LayoutGrid, Brush, SquareDashed, PaintBucket, Undo2, Redo2, CloudSun, Settings, ImagePlus, Wand2, Square, Mountain, ChevronDown, Users, Layers } from 'lucide-react';
 
 export default function DmDashboard() {
   const { t } = useTranslation();
@@ -95,6 +95,8 @@ export default function DmDashboard() {
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [showAssistant, setShowAssistant] = useState(false);
   const [showSceneSettings, setShowSceneSettings] = useState(false);
+  const [showTokenTray, setShowTokenTray] = useState(false);
+  const [showLayers, setShowLayers] = useState(false);
   // Dock abierto por defecto en desktop; colapsado en pantallas chicas (el
   // pill ⋯ lo reabre). Sin auto-colapso por click-afuera: en desktop queda fijo.
   const [dockExpanded, setDockExpanded] = useState(
@@ -1805,6 +1807,10 @@ const startFogMode = useCallback(() => {
             setShowSessionLog(false);
           } else if (showSceneNotes) {
             setShowSceneNotes(false);
+          } else if (showTokenTray) {
+            setShowTokenTray(false);
+          } else if (showLayers) {
+            setShowLayers(false);
           }
           setContextMenu(null);
           break;
@@ -1854,7 +1860,7 @@ const startFogMode = useCallback(() => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [scenes, activeScene, selectedTokenId, showQuickActions, showSessionLog, showSceneNotes, showDiceRoller, showRecap, showNotebook, showAssistant, viewingMap, tokenQuickEdit, handleRemoveFromScene, setContextMenu]);
+  }, [scenes, activeScene, selectedTokenId, showQuickActions, showSessionLog, showSceneNotes, showDiceRoller, showRecap, showNotebook, showAssistant, showTokenTray, showLayers, viewingMap, tokenQuickEdit, handleRemoveFromScene, setContextMenu]);
 
   const selectedEntity = selectedTokenId
     ? sceneChars.find((sc) => sc.id === selectedTokenId)
@@ -2753,15 +2759,14 @@ const startFogMode = useCallback(() => {
           )}
         </div>
 
-        {/* Rail capas/niebla — HudPanel arrastrable/minimizable */}
-        <HudPanel
+        {/* Capas y niebla — panel del dock (posición uniforme) */}
+        {showLayers && <HudPanel
           title={t('dm.layersFogTitle', 'Capas y niebla')}
-          panelId="dm-layers"
-          onClose={() => {}}
-          hideClose
-          defaultX={typeof window !== 'undefined' ? window.innerWidth - 226 : 1000}
-          defaultY={200}
-          defaultWidth={210}
+          panelId="dm-layers-dock"
+          onClose={() => setShowLayers(false)}
+          defaultX={Math.max(8, window.innerWidth - 380)}
+          defaultY={120}
+          defaultWidth={360}
           defaultHeight={380}
         >
           <div className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--text-secondary)]">
@@ -2800,7 +2805,7 @@ const startFogMode = useCallback(() => {
             active={zoneFogActive}
             onClick={startZoneFogMode}
           />
-        </HudPanel>
+        </HudPanel>}
         {/* Dock inferior — acciones de sesión, siempre abierto en desktop */}
         <DmDock
           expanded={dockExpanded}
@@ -2817,6 +2822,7 @@ const startFogMode = useCallback(() => {
               ...(activeScene?.map_id
                 ? [{ key: 'map', label: t('dm.openMapTitle', 'Abrir mapa'), icon: MapIcon, onClick: openActiveSceneMap }]
                 : []),
+              { key: 'fichas', label: t('dm.tokenTrayTitle', 'Fichas'), icon: Users, onClick: () => setShowTokenTray((v) => !v), active: showTokenTray, testId: 'fichas-toggle' },
             ],
             [
               { key: 'ai', label: t('dm.aiPanelTitle', 'Configuración de IA'), icon: Bot, onClick: () => setShowAIPanel(!showAIPanel), active: showAIPanel, testId: 'ai-panel-button' },
@@ -2825,6 +2831,7 @@ const startFogMode = useCallback(() => {
               { key: 'session-log', label: t('dm.sessionLogTitle', 'Bitácora de sesión'), icon: BookOpen, onClick: () => setShowSessionLog(!showSessionLog), active: showSessionLog },
               { key: 'scene-notes', label: t('dm.sceneNotesTitle', 'Notas de la escena'), icon: StickyNote, onClick: () => setShowSceneNotes(!showSceneNotes), active: showSceneNotes },
               { key: 'scene-settings', label: t('dm.sceneSettingsTitle', 'Ajustes de escena'), icon: Settings, onClick: () => setShowSceneSettings(!showSceneSettings), active: showSceneSettings },
+              { key: 'layers', label: t('dm.layersFogTitle', 'Capas y niebla'), icon: Layers, onClick: () => setShowLayers((v) => !v), active: showLayers, testId: 'layers-toggle' },
             ],
           ]}
         />
@@ -3055,15 +3062,14 @@ const startFogMode = useCallback(() => {
             </div>
           )}
 
-          {/* Token Tray — HudPanel arrastrable/minimizable */}
-          <HudPanel
+          {/* Token Tray — panel del dock (posición uniforme) */}
+          {showTokenTray && <HudPanel
             title={t('dm.tokenTrayTitle', 'Fichas')}
-            panelId="dm-token-tray"
-            onClose={() => {}}
-            hideClose
-            defaultX={16}
-            defaultY={typeof window !== 'undefined' ? window.innerHeight - 340 : 400}
-            defaultWidth={208}
+            panelId="dm-token-tray-dock"
+            onClose={() => setShowTokenTray(false)}
+            defaultX={Math.max(8, window.innerWidth - 380)}
+            defaultY={120}
+            defaultWidth={360}
           >
             {/* Distance measurement overlay */}
             {distanceFrom && distanceTo && (() => {
@@ -3204,7 +3210,7 @@ const startFogMode = useCallback(() => {
               </>
             )}
 
-          </HudPanel>
+          </HudPanel>}
 
           {/* Character Sheet HUD — bottom right on desktop, bottom sheet on mobile */}
           {selectedChar && selectedEntity && campaignId && (

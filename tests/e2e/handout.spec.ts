@@ -38,6 +38,7 @@ test.describe('Handouts', () => {
 
   test('H1: DM crea un handout por UI y persiste via API', async ({ page, campaign, request }) => {
     await page.goto(`/campaigns/${campaign.id}`);
+    await page.getByTestId('fichas-toggle').click();
     await expect(page.getByText('En escena (1)')).toBeVisible({ timeout: 10_000 });
     await page.getByTitle('Acciones del DM').hover();
     await page.getByTestId('handouts-toggle').click();
@@ -64,6 +65,7 @@ test.describe('Handouts', () => {
     request,
   }) => {
     await page.goto(`/campaigns/${campaign.id}`);
+    await page.getByTestId('fichas-toggle').click();
     await expect(page.getByText('En escena (1)')).toBeVisible({ timeout: 10_000 });
     await page.getByTitle('Acciones del DM').hover();
     await page.getByTestId('handouts-toggle').click();
@@ -94,6 +96,7 @@ test.describe('Handouts', () => {
 
   test('H3: visibilidad a jugadores y borrado', async ({ page, campaign, request }) => {
     await page.goto(`/campaigns/${campaign.id}`);
+    await page.getByTestId('fichas-toggle').click();
     await expect(page.getByText('En escena (1)')).toBeVisible({ timeout: 10_000 });
     await page.getByTitle('Acciones del DM').hover();
     await page.getByTestId('handouts-toggle').click();

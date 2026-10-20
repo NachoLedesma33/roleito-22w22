@@ -12,6 +12,7 @@ test.describe('Character Sheet HUD', () => {
   ) {
     await seedToken(request, campaignId, sceneId, 'character', char.id, 0, 0);
     await page.goto(`/campaigns/${campaignId}`);
+    await page.getByTestId('fichas-toggle').click();
     await expect(page.getByText('En escena (1)')).toBeVisible({ timeout: 10_000 });
     await page.getByRole('button', { name: char.name }).click();
     await expect(page.getByText('PV máx.')).toBeVisible();

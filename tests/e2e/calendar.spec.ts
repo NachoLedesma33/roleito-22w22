@@ -32,6 +32,7 @@ test.describe('Calendar & Progress Clocks', () => {
     const code = await generateInviteCode(request, campaign.id);
 
     await page.goto(`/campaigns/${campaign.id}`);
+    await page.getByTestId('fichas-toggle').click();
     await expect(page.getByText('En escena (1)')).toBeVisible({ timeout: 10_000 });
     await page.getByTitle('Acciones del DM').hover();
     await page.getByTitle('Calendario y relojes').click();
@@ -74,6 +75,7 @@ test.describe('Calendar & Progress Clocks', () => {
     const code = await generateInviteCode(request, campaign.id);
 
     await page.goto(`/campaigns/${campaign.id}`);
+    await page.getByTestId('fichas-toggle').click();
     await expect(page.getByText('En escena (1)')).toBeVisible({ timeout: 10_000 });
     await page.getByTitle('Acciones del DM').hover();
     await page.getByTitle('Calendario y relojes').click();

@@ -141,6 +141,7 @@ test.describe('Fog (Phase D)', () => {
     const scene = await createScene(request, campaign.id, 'Fog Brush');
     const canvas = await openScene(page, campaign.id, scene.id);
 
+    await page.getByTestId('layers-toggle').click();
     await page.getByRole('button', { name: /Niebla \(pincel\)/ }).click();
     await expect(page.getByText(/Arrastrá para pintar niebla/)).toBeVisible();
 
@@ -365,6 +366,7 @@ test.describe('Fog (Phase D)', () => {
         res.url().includes(`/scenes/${scene.id}/items`) && res.request().method() === 'PUT',
       { timeout: 20_000 },
     );
+    await page.getByTestId('layers-toggle').click();
     await page.getByRole('button', { name: /Niebla de zona/ }).click();
     await expect(page.getByText(/Clic dentro de una zona para alternar niebla/)).toBeVisible();
     const cx = box.x + box.width * (0.3 + 0.15);

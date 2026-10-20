@@ -110,6 +110,7 @@ test.describe('Dashboard VTT Core', () => {
 
     await openSceneWithBackground(page, campaign.id, scene.id);
 
+    await page.getByTestId('fichas-toggle').click();
     await expect(page.getByText('En escena (0)')).toBeVisible();
     await expect(page.getByText('Sin tokens colocados')).toBeVisible();
 
@@ -136,6 +137,7 @@ test.describe('Dashboard VTT Core', () => {
     const sceneCharId = seeded[0].id;
 
     await openSceneWithBackground(page, campaign.id, scene.id);
+    await page.getByTestId('fichas-toggle').click();
     await expect(page.getByText('En escena (1)')).toBeVisible();
 
     const canvas = page.locator('canvas').first();
@@ -190,6 +192,7 @@ test.describe('Dashboard VTT Core', () => {
     await seedToken(request, campaign.id, scene.id, 'character', char.id, 0, 0);
 
     await page.goto(`/campaigns/${campaign.id}`);
+    await page.getByTestId('fichas-toggle').click();
     await expect(page.getByText('En escena (1)')).toBeVisible({ timeout: 10_000 });
     await page.getByRole('button', { name: 'Cedric' }).click();
 

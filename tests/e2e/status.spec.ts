@@ -68,6 +68,7 @@ test.describe('Status markers', () => {
     ]);
 
     await page.goto(`/campaigns/${campaign.id}`);
+    await page.getByTestId('fichas-toggle').click();
     await expect(page.getByText('En escena (1)')).toBeVisible({ timeout: 10_000 });
 
     await openTokenMenu(page, scene.id, request, campaign.id, true);
@@ -112,6 +113,7 @@ test.describe('Status markers', () => {
     const code = await generateInviteCode(request, campaign.id);
 
     await page.goto(`/campaigns/${campaign.id}`);
+    await page.getByTestId('fichas-toggle').click();
     await expect(page.getByText('En escena (1)')).toBeVisible({ timeout: 10_000 });
 
     await openTokenMenu(page, scene.id, request, campaign.id, true);
