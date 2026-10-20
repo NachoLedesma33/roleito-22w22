@@ -2030,6 +2030,7 @@ const startFogMode = useCallback(() => {
           </>
         }
       >
+        <AudioSettingsMenu className="ml-auto" canSync onToggleSync={handleToggleAudioSync} onVolumeChange={handleSharedVolumeChange} />
         
             
             
@@ -2269,12 +2270,6 @@ const startFogMode = useCallback(() => {
                 ))}
               </AnchoredMenu>
             </div>
-            <AudioSettingsMenu
-              className="ml-1"
-              canSync
-              onToggleSync={handleToggleAudioSync}
-              onVolumeChange={handleSharedVolumeChange}
-            />
             <div className="relative shrink-0" data-anchor="weather">
               <button
                 onClick={(e) => toggleMenu('weather', e.currentTarget)}
