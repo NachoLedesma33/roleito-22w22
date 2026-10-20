@@ -804,23 +804,26 @@ This enables:
 
 ## 18. Current Implementation Status
 
-Map Analysis is **not yet implemented**. The current codebase handles maps as simple image uploads:
+**Actualizado 2026-10-20.** Map Analysis está **parcialmente implementado**: la detección de muros y puertas existe y funciona (CV + IA), con propuesta revisada por el DM. Lo que sigue sin existir son las *capas semánticas* de este documento: metadata de grilla, salas como entidades, y la normalización a `ShadowZone[]`.
 
 | Existing Code | Map Analysis Equivalent | Notes |
 |---------------|------------------------|-------|
-| `Map` model (backend/models.py:172) | `MapMetadata` | Current: just file_path, name. New: grid, rooms, walls, doors. |
-| `MapMarker` model (backend/models.py:239) | `RoomMetadata` or overlay markers | Current: simple POIs. New: semantic room regions. |
-| `uploadBackground` (scene_routes.py:128) | Stage 1: Image Ingestion | Current: just saves file. New: normalize + analyze. |
-| Grid detection | **Not implemented** | Current: manual `grid_size` setting. New: auto-detect from image. |
-| Feature detection | **Not implemented** | No wall/door/room detection exists. |
-| DM map authoring tools | **Not implemented** | No brush tools for walls/doors. |
+| `Map` model (backend/models.py:229) | `MapMetadata` | Current: file_path, name, map_type. New: grid, rooms, walls, doors. **Not implemented.** |
+| `MapMarker` model (backend/models.py:312) | `RoomMetadata` or overlay markers | Current: simple POIs (`marker_type` default `"poi"`). New: semantic room regions. **Not implemented.** |
+| `upload-background` (scene_routes.py:327) | Stage 1: Image Ingestion | **Implemented**: guarda el fondo y setea `background_path`. Falta normalizar + analizar en el upload (hoy el análisis es un paso aparte). |
+| `detect-walls` (scene_routes.py:251) | Stage 3: Feature Detection | **Implemented (walls + doors)**: `backend/wall_detection/` (blueprint/textured por CV, IA por VLM + `refine.py`). Devuelve una **propuesta**, no persiste: el DM la aprueba en la UI y el frontend guarda el grafo (`PUT /items`). Las **rooms no se convierten en items** (`scene_items_from_detection` solo mapea walls y doors). |
+| `useWallDetection` (apps/dm/src/lib/) | DM Review Step | **Implemented (individual)**: banner `detect-review` con aprobar / descartar, y `pruneProposal` para rechazar un item. La propuesta vive **solo en memoria del cliente** (no hay tabla ni endpoint de propuestas). **No hay batch.** |
+| `WallDrawer` + herramientas de niebla/markers/luces | DM map authoring tools | **Implemented** (modo manual, el enfoque base del producto). |
+| `remove_grid_auto` (wall_detection/preprocessing.py:83) | Stage 2: Grid Detection | **Parcial**: detecta y **borra** la grilla, pero no devuelve metadata (`cellSize`, `origin`, `confidence`). `Scene.grid_size` sigue siendo manual. **No hay grid auto.** |
+| `apps/dm/src/lib/wall-collision.ts` | CollisionGraph | **Superado**: la colisión ya está resuelta acá (con `lightOcclusion.ts` y tests). No hay `CollisionGraph` en el repo — no implementar (ver `WALL-DETECTION-PLAN.md:393`). |
+| `DetectedRoom` / `detect_rooms` (wall_detection/geometry.py:188) | Semantic Interpretation | **Not implemented como producto**: las salas se detectan con Shapely pero se etiquetan `"Room N"` y se descartan; no hay entidad "sala" en el modelo ni review por sala. |
 
 ### Integration Point
 
-When Map Analysis is implemented, it will:
-1. Generate `Item` entities (from `SCENE-GRAPH.md`) for detected walls, doors, rooms
-2. Store analysis results in `MapMetadata`
-3. Feed into Fog of War system for room-based flood fill
-4. Feed into Wall/LoS system for raycasting
-5. Feed into 3D Renderer for wall geometry generation
-6. Feed into `FOG-AND-VISIBILITY.md` for fog mask computation
+Cuando Map Analysis esté completo, va a:
+1. Generar `Item` entities (from `SCENE-GRAPH.md`) for detected walls, doors, rooms — **hoy solo walls y doors, y como `SceneItem` del grafo, no como `Item` entities**
+2. Store analysis results in `MapMetadata` — **not implemented**
+3. Feed into Fog of War system for room-based flood fill — **parcial**: la niebla consume los walls del grafo; el flood fill por salas no existe
+4. Feed into Wall/LoS system for raycasting — **hecho**: los muros detectados ya bloquean LoS (`wall-collision.ts` + `lightOcclusion.ts`)
+5. Feed into 3D Renderer for wall geometry generation — **hecho**: los muros detectados se renderizan como `SceneItem` del grafo
+6. Feed into `FOG-AND-VISIBILITY.md` for fog mask computation — **hecho** por la vía de los items, no por metadata de análisis
