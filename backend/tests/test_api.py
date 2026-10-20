@@ -1880,3 +1880,67 @@ async def test_agentes_ingest_world_state_y_scene(client, monkeypatch):
     assert body["status"] == "success"
     assert body["data"]["environment"]
     assert body["data"]["lighting"]
+
+
+@pytest.mark.asyncio
+async def test_recap_del_agente_queda_guardado_en_la_sesion(client, monkeypatch):
+    """El recap del agente se guarda: antes solo vivia en el navegador.
+
+    Ademas, si el body no trae `previous_recap`, se usa el recap guardado de la
+    sesion anterior (la continuidad que el agente necesita).
+    """
+    from uuid import uuid4
+
+    from infrastructure.ai.mock import MockProvider
+    import agent_routes
+
+    monkeypatch.setattr(agent_routes, "get_provider_for_agent", lambda: MockProvider())
+
+    reg = await client.post(
+        "/api/auth/register", json={"name": f"DM Recap {uuid4().hex[:6]}", "pin": "1234"}
+    )
+    headers = {"Authorization": f"Bearer {reg.json()['token']}"}
+
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Recap"})).json()
+    ses1 = (
+        await client.post(
+            f"/api/campaigns/{camp['id']}/sessions",
+            json={"number": 1, "date": "2026-10-19", "title": "Sesion 1", "raw_notes": "La party entro a la mazmorra."},
+        )
+    ).json()
+    ses2 = (
+        await client.post(
+            f"/api/campaigns/{camp['id']}/sessions",
+            json={"number": 2, "date": "2026-10-20", "title": "Sesion 2", "raw_notes": "Salieron con el tesoro."},
+        )
+    ).json()
+
+    res = await client.post(
+        f"/api/campaigns/{camp['id']}/agents/recap",
+        headers=headers,
+        json={"session_id": ses1["id"]},
+    )
+    assert res.status_code == 200, res.text
+    assert res.json()["data"]["recap"]
+
+    # Quedo guardado en la sesion: se lee con el listado.
+    sessions = (await client.get(f"/api/campaigns/{camp['id']}/sessions")).json()
+    guardada = next(s for s in sessions if s["id"] == ses1["id"])
+    assert guardada["ai_recap"]["recap"]
+    assert guardada["ai_recap"]["highlights"] is not None
+    assert guardada["ai_recap"]["cliffhanger"]
+
+    # La sesion sin recap no tiene el campo (None, no un dict vacio).
+    sin_recap = next(s for s in sessions if s["id"] == ses2["id"])
+    assert sin_recap["ai_recap"] is None
+
+    # El recap de la sesion 2 usa el de la 1 como previous_recap.
+    res = await client.post(
+        f"/api/campaigns/{camp['id']}/agents/recap",
+        headers=headers,
+        json={"session_id": ses2["id"]},
+    )
+    assert res.status_code == 200, res.text
+    sessions = (await client.get(f"/api/campaigns/{camp['id']}/sessions")).json()
+    guardada2 = next(s for s in sessions if s["id"] == ses2["id"])
+    assert guardada2["ai_recap"]["recap"]

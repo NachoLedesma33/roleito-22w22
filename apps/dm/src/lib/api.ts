@@ -198,6 +198,14 @@ type NPCCreateFields = {
 
 type NPCUpdateFields = Partial<NPCCreateFields>;
 
+/** El recap que genero el agente para la sesion (null si no lo hay). */
+export interface AIRecap {
+  recap: string;
+  highlights: string[];
+  cliffhanger: string;
+  next_session_hook: string;
+}
+
 export interface Session {
   id: string;
   campaign_id: string;
@@ -207,6 +215,7 @@ export interface Session {
   raw_notes: string;
   summary: string;
   status: string;
+  ai_recap?: AIRecap | null;
   created_at: string;
   updated_at: string;
 }

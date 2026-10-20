@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+import json
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -289,7 +290,12 @@ async def recap_session(
     db: AsyncSession = Depends(get_session),
     _auth: AuthSession = Depends(require_dm),
 ):
-    """Generate a session recap."""
+    """Generate a session recap.
+
+    El recap se guarda en la sesion: antes vivia solo en el navegador y se
+    perdia al recargar. Si el body no trae `previous_recap`, se usa el recap
+    guardado de la sesion ANTERIOR (la continuidad que el agente necesita).
+    """
     campaign = (await db.execute(
         select(Campaign).where(Campaign.id == campaign_id)
     )).scalar_one_or_none()
@@ -305,25 +311,43 @@ async def recap_session(
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
+    previous_recap = body.previous_recap
+    if not previous_recap:
+        prev = (await db.execute(
+            select(Session).where(
+                Session.campaign_id == campaign_id,
+                Session.number < session.number,
+            ).order_by(Session.number.desc())
+        )).scalars().first()
+        prev_data = prev.ai_recap if prev else None
+        if prev_data:
+            previous_recap = prev_data.get("recap", "")
+
     provider = get_provider_for_agent()
     agent = RecapAgent(provider)
 
     result = await agent.run(
         session_notes=session.raw_notes or "",
         session_summary=session.summary or "",
-        previous_recap=body.previous_recap,
+        previous_recap=previous_recap,
         campaign_context=campaign.description or "",
     )
+
+    recap_data = None
+    if result.data and result.data.recap:
+        recap_data = {
+            "recap": result.data.recap,
+            "highlights": result.data.highlights,
+            "cliffhanger": result.data.cliffhanger,
+            "next_session_hook": result.data.next_session_hook,
+        }
+        session.ai_recap_json = json.dumps(recap_data, ensure_ascii=False)
+        await db.commit()
 
     return {
         "agent_id": result.agent_id,
         "status": result.status,
-        "data": {
-            "recap": result.data.recap if result.data else "",
-            "highlights": result.data.highlights if result.data else [],
-            "cliffhanger": result.data.cliffhanger if result.data else "",
-            "next_session_hook": result.data.next_session_hook if result.data else "",
-        } if result.data else None,
+        "data": recap_data,
         "error": result.error,
     }
 

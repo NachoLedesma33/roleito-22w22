@@ -348,7 +348,7 @@ Reference: `ROADMAP.md` (22,082 bytes)
 | 7 | 2D to 3D | Implemented | Escena 3D desde mapa 2D: walls, items, fog, glow |
 | 8 | Narrative Engine | Partial | Routes exist, AI integration basic |
 | 9 | Event Pipeline | Partial | Event bus exists, extraction partial |
-| 10 | Recap System | Partial | Routes exist, generation via AI |
+| 10 | Recap System | Implemented | Generación por IA + el recap queda guardado en la sesión (`sessions.ai_recap_json`) y sobrevive a recargar |
 | 11 | Memory System | Implemented | `memory_routes` + tiers + 10 tests e2e |
 | 12 | AI Agents | Partial | 8 agentes reales en `core/agents/` (orchestrator, context manager, ingestion, session processor, lore, world state, recap, scene) + 8 endpoints; `process-session` deja los eventos PROPOSED en la DB; falta que lore/narrate/recap persistan y el wiring del flujo |
 | 13 | DM Voice Input | Not Started | No code |

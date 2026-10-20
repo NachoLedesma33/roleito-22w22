@@ -104,8 +104,14 @@ test.describe('Recap System', () => {
       panel.getByText('Resumen editado por el DM durante el test'),
     ).toBeVisible({ timeout: 10_000 });
 
-    const saved = await getSession(request, campaign.id, session.id);
-    expect(saved.summary).toBe('Resumen editado por el DM durante el test');
+    // La API puede leer un snapshot viejo (WAL): se espera a que el guardado
+    // llegue, en vez de asumir que ya esta.
+    await expect
+      .poll(
+        async () => (await getSession(request, campaign.id, session.id)).summary,
+        { timeout: 10_000 },
+      )
+      .toBe('Resumen editado por el DM durante el test');
   });
 
   test('R4: exporta recap como .md', async ({ page, campaign, request }) => {
@@ -125,5 +131,31 @@ test.describe('Recap System', () => {
 
     expect(download.suggestedFilename()).toBe('session-3-recap.md');
     await download.saveAs('C:\\Users\\nacho\\AppData\\Local\\Temp\\opencode\\session-3-recap.md');
+  });
+
+  test('R5: el resumen IA sobrevive a recargar la página', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    await createSession(request, campaign.id, {
+      number: 1,
+      title: 'Con IA',
+      summary: 'La party entró a la mazmorra',
+    });
+
+    await openDashboard(page, campaign.id);
+    await page.keyboard.press('r');
+    const panel = recapPanel(page);
+    await panel.getByRole('button', { name: 'Resumen IA' }).click();
+    // El recap generado aparece...
+    await expect(panel.getByText(/dark cavern/)).toBeVisible({ timeout: 15_000 });
+
+    // ...y sigue ahí después de recargar: el backend lo guardó en la sesión.
+    await openDashboard(page, campaign.id);
+    await page.keyboard.press('r');
+    await expect(recapPanel(page).getByText(/dark cavern/)).toBeVisible({
+      timeout: 15_000,
+    });
   });
 });

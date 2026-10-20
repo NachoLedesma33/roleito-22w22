@@ -52,8 +52,23 @@ class Session(Base):
     raw_notes = Column(Text, default="")
     summary = Column(Text, default="")
     status = Column(String, default="DRAFT")
+    # El recap que genero el agente, en JSON (recap, highlights, cliffhanger,
+    # next_session_hook). Antes vivia solo en el navegador: al recargar se
+    # perdia. Es del agente, no del DM: el resumen que escribe a mano el DM
+    # vive en `summary`.
+    ai_recap_json = Column(Text, default="{}")
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    @property
+    def ai_recap(self) -> dict | None:
+        """El recap del agente, parseado. None si la sesion no tiene."""
+        raw = self.ai_recap_json or "{}"
+        try:
+            data = json.loads(raw)
+        except (TypeError, ValueError):
+            return None
+        return data if isinstance(data, dict) and data else None
 
     campaign = relationship("Campaign", back_populates="sessions")
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import HudPanel from './HudPanel';
-import { api, Session, Event, Character, NPC } from '@/lib/api';
+import { api, Session, Event, Character, NPC, AIRecap } from '@/lib/api';
 
 interface RecapPanelProps {
   campaignId: string;
@@ -65,13 +65,6 @@ function buildRecapMarkdown(
   return lines.join('\n');
 }
 
-interface AIRecap {
-  recap: string;
-  highlights: string[];
-  cliffhanger: string;
-  next_session_hook: string;
-}
-
 export default function RecapPanel({ campaignId, onClose }: RecapPanelProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string>('');
@@ -118,6 +111,13 @@ export default function RecapPanel({ campaignId, onClose }: RecapPanelProps) {
       });
   }, [selectedSessionId, campaignId, sessions, characters, npcs]);
 
+  // El recap del agente vive en la sesion, asi que sobrevive a recargar la
+  // pagina: antes solo existia en el estado del componente y se perdia.
+  useEffect(() => {
+    const s = sessions.find((x) => x.id === selectedSessionId);
+    setAiRecap(s?.ai_recap ?? null);
+  }, [sessions, selectedSessionId]);
+
   const handleAIRecap = useCallback(async () => {
     if (!selectedSessionId) return;
     setAiLoading(true);
@@ -127,6 +127,11 @@ export default function RecapPanel({ campaignId, onClose }: RecapPanelProps) {
       const res = await api.agents.recap(campaignId, selectedSessionId);
       if (res.status === 'success' && res.data) {
         setAiRecap(res.data);
+        // El backend lo guardo en la sesion: lo reflejamos en el estado local
+        // para que no se lo pise el efecto que lo restaura.
+        setSessions((prev) =>
+          prev.map((s) => (s.id === selectedSessionId ? { ...s, ai_recap: res.data } : s)),
+        );
       } else {
         setAiError(res.error || 'Error generando recap con IA');
       }

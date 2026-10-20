@@ -259,6 +259,8 @@ class SessionResponse(BaseModel):
     raw_notes: str
     summary: str
     status: str
+    # El recap que genero el agente, ya parseado. None si no hay.
+    ai_recap: Optional[dict] = None
     created_at: datetime
     updated_at: datetime
 
