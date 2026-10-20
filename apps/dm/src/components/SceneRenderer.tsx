@@ -791,7 +791,7 @@ function DraggableToken({
     [entity, isMovable, onClick]
   );
 
-  const invisible = (entity.statuses ?? []).includes('invisible');
+  const invisible = (entity.statuses ?? []).includes('invisible') || !entity.visible;
   const petrified = (entity.statuses ?? []).includes('petrified');
   const [modelH, setModelH] = useState(0);
   const tokenScale = entity.tokenScale ?? 1;
@@ -855,6 +855,7 @@ function DraggableToken({
         statuses={entity.statuses ?? []}
         tokenScale={tokenScale}
         topY={topY}
+        ghosted={invisible}
       />
     </group>
   );
@@ -1139,7 +1140,7 @@ function SleepZ({ scale, y }: { scale: number; y: number }) {
   );
 }
 
-function StatusEffects({ statuses, tokenScale, topY }: { statuses: string[]; tokenScale: number; topY: number }) {
+function StatusEffects({ statuses, tokenScale, topY, ghosted = false }: { statuses: string[]; tokenScale: number; topY: number; ghosted?: boolean }) {
   const s = tokenScale;
   const auraLayers = [
     { color: '#3b82f6', count: 16, size: 0.05, vy: 0.5, life: 0.5 },
@@ -1291,7 +1292,7 @@ function StatusEffects({ statuses, tokenScale, topY }: { statuses: string[]; tok
           }}
         />
       )}
-      {statuses.includes('invisible') && (
+      {(statuses.includes('invisible') || ghosted) && (
         <ParticleField
           count={12}
           color="#c4b5fd"
@@ -2218,12 +2219,12 @@ export default function SceneRenderer({
   // visibleChars con posiciones visuales interpoladas (para tokens, luces, arrastre)
   const visibleCharsVisual = useMemo(() =>
     characters
-      .filter((c) => c.visible)
+      .filter((c) => c.visible || !readOnly)
       .map((c) => {
         const vp = visualPos.get(c.sceneCharId);
         return vp ? { ...c, x: vp.x, z: vp.z, rotation: vp.rotation } : c;
       }),
-    [characters, visualPos]
+    [characters, visualPos, readOnly]
   );
 
   const hasGlow = useMemo(
