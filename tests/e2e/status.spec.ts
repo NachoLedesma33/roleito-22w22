@@ -71,6 +71,7 @@ test.describe('Status markers', () => {
     await expect(page.getByText('En escena (1)')).toBeVisible({ timeout: 10_000 });
 
     await openTokenMenu(page, scene.id, request, campaign.id, true);
+    await page.getByRole('button', { name: /Físico/ }).click();
     await page.getByRole('button', { name: /Marcar Envenenado/ }).click();
 
     const chs = await (
@@ -114,6 +115,7 @@ test.describe('Status markers', () => {
     await expect(page.getByText('En escena (1)')).toBeVisible({ timeout: 10_000 });
 
     await openTokenMenu(page, scene.id, request, campaign.id, true);
+    await page.getByRole('button', { name: /Mente/ }).click();
     await page.getByRole('button', { name: /Marcar Concentrando/ }).click();
 
     // El click dispara el marca async; esperar el status en el snapshot (race-safe).

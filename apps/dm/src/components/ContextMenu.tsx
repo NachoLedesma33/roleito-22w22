@@ -69,7 +69,8 @@ export default function ContextMenu({ x, y, items, onClose }: ContextMenuProps) 
         return (
           <Fragment key={i}>
             <button
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 if (hasSubmenu) {
                   setOpenSubmenu(isOpen ? null : i);
                   return;
@@ -90,7 +91,8 @@ export default function ContextMenu({ x, y, items, onClose }: ContextMenuProps) 
                 {item.submenu.map((sub, j) => (
                   <button
                     key={j}
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       sub.onClick();
                       onClose();
                     }}

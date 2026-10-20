@@ -1716,7 +1716,7 @@ const startFogMode = useCallback(() => {
     }
     lightItems.push({ label: i18n.t('dmContext.newLight', 'Crear nueva luz'), icon: '✨', onClick: () => handleCreateAndAttachLight(sceneCharId) })
 
-    // Estado: sección "Activas" (quitar rápido) + categorías para marcar — evita lista plana de 18.
+    // Estado: sección "Activas" (quitar rápido) + un submenú por categoría — evita lista plana de 18.
     const buildStatusMenuItems = (statusIds: string[]): ContextMenuItem[] => {
       const items: ContextMenuItem[] = [];
       const active = STATUS_OPTIONS.filter((s) => statusIds.includes(s.id));
@@ -1729,10 +1729,15 @@ const startFogMode = useCallback(() => {
       for (const g of STATUS_GROUPS) {
         const rest = STATUS_OPTIONS.filter((s) => s.group === g.key && !statusIds.includes(s.id));
         if (rest.length === 0) continue;
-        items.push({ label: i18n.t('dmContext.statusGroup', '· {{name}}', { name: g.label }), icon: '▸', disabled: true, onClick: () => {} });
-        for (const s of rest) {
-          items.push({ label: i18n.t('dmContext.markStatus', 'Marcar {{name}}', { name: s.label }), icon: '＋', onClick: () => handleToggleStatus(sceneCharId, s.id) });
-        }
+        items.push({
+          label: i18n.t('dmContext.statusGroup', '· {{name}}', { name: g.label }),
+          onClick: () => {},
+          submenu: rest.map((s) => ({
+            label: i18n.t('dmContext.markStatus', 'Marcar {{name}}', { name: s.label }),
+            icon: '＋',
+            onClick: () => handleToggleStatus(sceneCharId, s.id),
+          })),
+        });
       }
       return items;
     };
