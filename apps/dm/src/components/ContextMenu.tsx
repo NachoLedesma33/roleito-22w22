@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 
 export interface ContextMenuItem {
   label: string;
@@ -7,7 +7,18 @@ export interface ContextMenuItem {
   danger?: boolean;
   disabled?: boolean;
   separator?: boolean;
+  /** Items anidados: al clickear el padre se despliegan indentados debajo. */
+  submenu?: ContextMenuItem[];
 }
+
+const rowClass = (m: ContextMenuItem) =>
+  `w-full text-left px-3 py-1.5 text-xs flex items-center gap-2 transition-colors ${
+    m.danger
+      ? 'text-red-400 hover:bg-red-500/10'
+      : m.disabled
+      ? 'text-[var(--text-secondary)] opacity-40 cursor-not-allowed'
+      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
+  }`;
 
 interface ContextMenuProps {
   x: number;
@@ -18,6 +29,7 @@ interface ContextMenuProps {
 
 export default function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
+  const [openSubmenu, setOpenSubmenu] = useState<number | null>(null);
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -48,30 +60,52 @@ export default function ContextMenu({ x, y, items, onClose }: ContextMenuProps) 
       className="fixed z-50 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded-lg shadow-xl py-1 min-w-[180px] max-h-[70vh] overflow-y-auto animate-in fade-in"
       style={{ left: adjustedX, top: adjustedY }}
     >
-      {items.map((item, i) =>
-        item.separator ? (
-          <div key={i} className="my-1 border-t border-[var(--bg-tertiary)]" />
-        ) : (
-          <button
-            key={i}
-            onClick={() => {
-              item.onClick();
-              onClose();
-            }}
-            disabled={item.disabled}
-            className={`w-full text-left px-3 py-1.5 text-xs flex items-center gap-2 transition-colors ${
-              item.danger
-                ? 'text-red-400 hover:bg-red-500/10'
-                : item.disabled
-                ? 'text-[var(--text-secondary)] opacity-40 cursor-not-allowed'
-                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'
-            }`}
-          >
-            {item.icon && <span className="text-[10px] w-4 text-center">{item.icon}</span>}
-            {item.label}
-          </button>
-        )
-      )}
+      {items.map((item, i) => {
+        if (item.separator) {
+          return <div key={i} className="my-1 border-t border-[var(--bg-tertiary)]" />;
+        }
+        const hasSubmenu = !!item.submenu && item.submenu.length > 0;
+        const isOpen = hasSubmenu && openSubmenu === i;
+        return (
+          <Fragment key={i}>
+            <button
+              onClick={() => {
+                if (hasSubmenu) {
+                  setOpenSubmenu(isOpen ? null : i);
+                  return;
+                }
+                item.onClick();
+                onClose();
+              }}
+              disabled={item.disabled}
+              aria-expanded={hasSubmenu ? isOpen : undefined}
+              className={rowClass(item)}
+            >
+              {item.icon && <span className="text-[10px] w-4 text-center">{item.icon}</span>}
+              <span className="flex-1">{item.label}</span>
+              {hasSubmenu && <span className="text-[9px] opacity-60">{isOpen ? '▾' : '▸'}</span>}
+            </button>
+            {isOpen && item.submenu && (
+              <div className="ml-4 border-l border-[var(--bg-tertiary)] pl-1 py-0.5">
+                {item.submenu.map((sub, j) => (
+                  <button
+                    key={j}
+                    onClick={() => {
+                      sub.onClick();
+                      onClose();
+                    }}
+                    disabled={sub.disabled}
+                    className={rowClass(sub)}
+                  >
+                    {sub.icon && <span className="text-[10px] w-4 text-center">{sub.icon}</span>}
+                    {sub.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </Fragment>
+        );
+      })}
     </div>
   );
 }
