@@ -2185,12 +2185,6 @@ const startFogMode = useCallback(() => {
                     {t('dm.clearZones', '🗑️ Limpiar todas las zonas')}
                   </button>
                   <button
-                    onClick={handleClearAllFog}
-                    className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-red-400"
-                  >
-                    {t('dm.clearFog', '🗑️ Limpiar toda la niebla')}
-                  </button>
-                  <button
                     onClick={handleClearAllLights}
                     className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-red-400"
                   >
@@ -2805,6 +2799,13 @@ const startFogMode = useCallback(() => {
             active={zoneFogActive}
             onClick={startZoneFogMode}
           />
+          <div className="my-2 border-t border-[var(--bg-tertiary)]" />
+          <button
+            onClick={handleClearAllFog}
+            className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-red-400"
+          >
+            {t('dm.clearFog', '🗑️ Limpiar toda la niebla')}
+          </button>
         </HudPanel>}
         {/* Dock inferior — acciones de sesión, siempre abierto en desktop */}
         <DmDock

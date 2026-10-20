@@ -311,7 +311,7 @@ test.describe('Fog (Phase D)', () => {
         res.url().includes(`/scenes/${scene.id}/items`) && res.request().method() === 'PUT',
       { timeout: 20_000 },
     );
-    await page.getByRole('button', { name: /Construir/i }).click();
+    await page.getByTestId('layers-toggle').click();
     await page.getByRole('button', { name: /Limpiar toda la niebla/ }).click();
     await expect(page.getByText(/regiones de niebla eliminadas/)).toBeVisible({ timeout: 10_000 });
     await putPromise;
