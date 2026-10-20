@@ -350,7 +350,7 @@ Reference: `ROADMAP.md` (22,082 bytes)
 | 9 | Event Pipeline | Partial | Event bus exists, extraction partial |
 | 10 | Recap System | Partial | Routes exist, generation via AI |
 | 11 | Memory System | Implemented | `memory_routes` + tiers + 10 tests e2e |
-| 12 | AI Agents | Stub | Agent routes exist, no real agents |
+| 12 | AI Agents | Partial | 8 agentes reales en `core/agents/` (orchestrator, context manager, ingestion, session processor, lore, world state, recap, scene) + 5 endpoints; faltan rutas de Ingestion/WorldState/Scene y el wiring (no persisten a canon/estado) |
 | 13 | DM Voice Input | Not Started | No code |
 | 14 | Voice Recap | Implemented | TTS completo: `tts_routes`, panel UI, 10 tests e2e |
 | 15 | Atmosphere System | Not Started | No code |
@@ -408,7 +408,7 @@ La directiva de ingeniería obligatoria (`ROLEITO_GUIA_MODULARIZACION_ARQUITECTU
 - Refs internos de `items_json` **remapeados**: `metadata.attachedTo` (luz → scene_characters) y portales/zonas (refs intra-escena, sin remap necesario) tras import
 - Real-time sync (WebSocket) **implementado**: `/api/ws/invite/{code}` (room por campaña) empuja revisión tras mutaciones player-visible (scene sync/items/characters/move, character/npc PUT); PlayerView escucha push con fallback de polling 16ms solo si el WS no conecta. DM dashboard sigue polling 100ms (no cubierto)
 - `apps/player` / `apps/renderer` placeholders (vista jugador vive en apps/dm por decisión AGENTS.md)
-- AI agents reales: orchestrator stub (fase 12)
+- AI agents: los 8 agentes del MVP **existen y son código real** (`core/agents/`), no stubs. Lo que falta es la parte cara: rutas HTTP para Ingestion/WorldState/Scene, conectarlos al flujo (`docs/AGENTS.md` §104) y que persistan — hoy los endpoints devuelven JSON y no escriben canon ni estado. El orchestrator además corre sin DB (queries hardcodeadas, sin contexto de campaña).
 - Grid auto-detection (Hough) diseñado, no implementado — grid manual + snap
 - Audio ambience (Fase 16) **implementada**: `Scene.audio_path` con UI en SceneDetail (upload/quitar + player) y reproducción loop por escena activa en PlayerView (toggle 🔊/🔇, arranca tras gesto, swap automático al cambiar escena; broadcast WS incluido).
 - Weather/FX atmosphere (Fase 15, parcial) **implementada**: `Scene.weather` (7 variantes sobre 3 componentes — lluvia Points 16-24 u/s, nieve Points, niebla Planes con textura radial; tint CSS por clima; las variantes son multiplicadores, ver la entrada de abajo) — switcher "Clima" en DmDashboard (junto a lighting), render en SceneRenderer (DM + PlayerView + SceneDetail), entra en revision/snapshot → broadcast WS; migraciones `scenes.weather` + `scenes.weather_intensity` en database.py. OJO: la lluvia pasó de LineSegments a Points porque con cámara casi cenital un segmento vertical de 1px se escorza y "flota"
@@ -451,7 +451,7 @@ Based on dependency analysis and documentation completeness:
 | 2 | Filtros de clima por debajo del preset | HECHO: `snowFlurry` cierra fase 15 (filtros ya estaban: tint, audio, multiplicadores, slider) |
 | 3 | Menús con click-toggle | HECHO: clima/lighting/dock/map ya eran click; lobby `group-hover` gateado táctil; W1 ya usaba `click()` |
 | 4 | AI Map Analysis | Revisión DM antes de confirmar (batch + individual); CollisionGraph superado (colisión ya en `wall-collision.ts`) |
-| 5 | AI Agents reales | Fase 12 roadmap (cobertura mock + fix recap hechos; faltan Context/Ingestión/WorldState/Scene) |
+| 5 | AI Agents reales | Los 8 agentes del MVP ya existen (context manager, ingestion, world state y scene, desde 2026-10-14). Falta lo caro: rutas HTTP para Ingestion/WorldState/Scene + conectarlos al flujo (hoy devuelven JSON y no persisten a canon/estado) |
 | 6 | Voice input | HECHO slice dictado: `VoiceInputButton` (Web Speech) en asistente DM + notas DM |
 | 7 | REA (futuro, post-todo) | Docs reales otros VTT vía `rea-agents` externo; solo targets autorizados, reimplementación limpia |
 
