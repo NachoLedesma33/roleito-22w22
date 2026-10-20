@@ -24,3 +24,20 @@ export function sceneWorldSize(
   const mapH = sceneWorldHeight(mapScale);
   return { mapH, mapW: mapH * aspect };
 }
+
+/**
+ * El tamano de celda de una grilla detectada, en unidades del mundo.
+ *
+ * La grilla se detecta en pixeles de la imagen; el mundo mide
+ * `sceneWorldHeight(mapScale)` unidades de alto, asi que la conversion es
+ * lineal con la altura de la imagen. Como el mundo conserva el aspecto de la
+ * imagen, el ancho da la misma escala.
+ */
+export function gridCellUnits(
+  cellPx: number,
+  imageHeightPx: number,
+  mapScale: number | null | undefined,
+): number {
+  if (cellPx <= 0 || imageHeightPx <= 0) return 0;
+  return (cellPx * sceneWorldHeight(mapScale)) / imageHeightPx;
+}

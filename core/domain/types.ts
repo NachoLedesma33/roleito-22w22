@@ -411,6 +411,23 @@ export interface ZoneMetadata {
   portals: PortalRef[]
 }
 
+/**
+ * La grilla regular de una imagen de mapa, en PIXELES.
+ *
+ * La conversion a unidades del mundo la hace el frontend (que sabe el tamano
+ * del mundo de la escena). `type: 'none'` significa que no se encontro grilla:
+ * el DM la ajusta a mano.
+ */
+export interface GridMetadata {
+  type: 'square' | 'hex' | 'none'
+  cell_size: number
+  origin: { x: number; y: number }
+  offset: { x: number; y: number }
+  confidence: number
+  x_lines: number[]
+  y_lines: number[]
+}
+
 export interface Point2D {
   x: number
   y: number

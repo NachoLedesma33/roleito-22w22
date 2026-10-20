@@ -1807,6 +1807,86 @@ async def test_orchestrator_de_campana_inexistente_da_404(client):
 
 
 @pytest.mark.asyncio
+async def test_detect_grid_devuelve_la_grilla_en_pixeles(client):
+    """La grilla se mide en px de la imagen; la conversion a unidades la hace
+    el frontend (que sabe el tamano del mundo de la escena)."""
+    import cv2
+    import numpy as np
+
+    from services.assets import asset_abs
+
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Grilla"})).json()
+    scen = (await client.post(f"/api/campaigns/{camp['id']}/scenes", json={"name": "Plano"})).json()
+
+    # Una grilla regular cada 50 px.
+    img = np.full((400, 600, 3), 255, np.uint8)
+    for x in range(50, 600, 50):
+        cv2.line(img, (x, 0), (x, 400), (200, 200, 200), 1)
+    for y in range(50, 400, 50):
+        cv2.line(img, (0, y), (600, y), (200, 200, 200), 1)
+    rel = f"data/assets/{camp['id']}/scenes/{scen['id']}/background.png"
+    bg_abs = asset_abs(rel)
+    os.makedirs(os.path.dirname(bg_abs), exist_ok=True)
+    cv2.imwrite(bg_abs, img)
+    async with async_session() as db:
+        await db.execute(
+            text("UPDATE scenes SET background_path = :p WHERE id = :i"),
+            {"p": bg_abs, "i": scen["id"]},
+        )
+        await db.commit()
+
+    try:
+        res = await client.post(f"/api/campaigns/{camp['id']}/scenes/{scen['id']}/detect-grid")
+        assert res.status_code == 200, res.text
+        body = res.json()
+        assert body["grid"]["type"] == "square"
+        assert body["grid"]["cell_size"] == 50
+        assert body["grid"]["confidence"] > 0.5
+        assert body["grid"]["x_lines"]
+        assert body["grid"]["y_lines"]
+        assert body["image_size"] == {"width": 600, "height": 400}
+    finally:
+        if os.path.isfile(bg_abs):
+            os.remove(bg_abs)
+
+
+@pytest.mark.asyncio
+async def test_detect_grid_sin_grilla_devuelve_none(client):
+    """Sin grilla no se inventa ninguna: type none y el DM ajusta a mano."""
+    import cv2
+    import numpy as np
+
+    from services.assets import asset_abs
+
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Sin Grilla"})).json()
+    scen = (await client.post(f"/api/campaigns/{camp['id']}/scenes", json={"name": "Plano"})).json()
+
+    img = np.full((400, 600, 3), 255, np.uint8)
+    cv2.line(img, (120, 30), (120, 370), (0, 0, 0), thickness=4)
+    rel = f"data/assets/{camp['id']}/scenes/{scen['id']}/background.png"
+    bg_abs = asset_abs(rel)
+    os.makedirs(os.path.dirname(bg_abs), exist_ok=True)
+    cv2.imwrite(bg_abs, img)
+    async with async_session() as db:
+        await db.execute(
+            text("UPDATE scenes SET background_path = :p WHERE id = :i"),
+            {"p": bg_abs, "i": scen["id"]},
+        )
+        await db.commit()
+
+    try:
+        res = await client.post(f"/api/campaigns/{camp['id']}/scenes/{scen['id']}/detect-grid")
+        assert res.status_code == 200, res.text
+        body = res.json()
+        assert body["grid"]["type"] == "none"
+        assert body["grid"]["cell_size"] == 0
+        assert body["grid"]["confidence"] == 0.0
+    finally:
+        if os.path.isfile(bg_abs):
+            os.remove(bg_abs)
+
+
+@pytest.mark.asyncio
 async def test_agentes_ingest_world_state_y_scene(client, monkeypatch):
     """Los tres agentes que faltaban expuestos por HTTP.
 

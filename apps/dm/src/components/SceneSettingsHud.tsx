@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import type { Scene } from '@/lib/api';
+import { api } from '@/lib/api';
+import { gridCellUnits } from '@/lib/sceneWorld';
 import HudPanel from './HudPanel';
 
 interface SceneSettingsHudProps {
@@ -14,6 +16,10 @@ export default function SceneSettingsHud({ scene, onUpdate, onClose }: SceneSett
   const [gridSize, setGridSize] = useState(scene.grid_size ?? 0);
   const [gridSnap, setGridSnap] = useState(scene.grid_snap ?? false);
   const [saving, setSaving] = useState(false);
+  const [detecting, setDetecting] = useState(false);
+  /** La grilla detectada, en unidades del mundo. */
+  const [detected, setDetected] = useState<{ cell: number; confidence: number } | null>(null);
+  const [detectError, setDetectError] = useState('');
 
   const isModel = /\.(glb|gltf)$/i.test(scene.background_path ?? '');
 
@@ -23,6 +29,36 @@ export default function SceneSettingsHud({ scene, onUpdate, onClose }: SceneSett
       await onUpdate({ [field]: value });
     } finally {
       setSaving(false);
+    }
+  };
+
+  /**
+   * Detecta la grilla del fondo y la propone en unidades del mundo.
+   *
+   * El backend la mide en pixeles; la conversion es lineal con el alto del
+   * mundo (que es el alto de la imagen en unidades).
+   */
+  const handleDetectGrid = async () => {
+    if (!scene.campaign_id || !scene.id) return;
+    setDetecting(true);
+    setDetectError('');
+    try {
+      const res = await api.scenes.detectGrid(scene.campaign_id, scene.id);
+      if (res.grid.type === 'none' || res.grid.cell_size <= 0) {
+        setDetected(null);
+        setDetectError('No se encontró grilla en el fondo');
+        return;
+      }
+      const cell = gridCellUnits(
+        res.grid.cell_size,
+        res.image_size.height,
+        scene.map_scale ?? 1,
+      );
+      setDetected({ cell, confidence: res.grid.confidence });
+    } catch {
+      setDetectError('No se pudo detectar la grilla');
+    } finally {
+      setDetecting(false);
     }
   };
 
@@ -106,6 +142,33 @@ export default function SceneSettingsHud({ scene, onUpdate, onClose }: SceneSett
               </button>
             ))}
           </div>
+          <button
+            onClick={handleDetectGrid}
+            disabled={detecting}
+            data-testid="detect-grid"
+            className="mt-1 w-full text-[10px] py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors disabled:opacity-50"
+          >
+            {detecting ? 'Detectando grilla...' : 'Detectar grilla del fondo'}
+          </button>
+          {detected && (
+            <div className="mt-1 text-[9px] text-[var(--text-secondary)]">
+              <div>
+                Detectada: celda {detected.cell.toFixed(2)} unidades (confianza{' '}
+                {Math.round(detected.confidence * 100)}%)
+              </div>
+              <button
+                onClick={() => {
+                  setGridSize(detected.cell);
+                  handleUpdate('grid_size', detected.cell);
+                }}
+                data-testid="detect-grid-apply"
+                className="mt-1 w-full text-[10px] py-1 rounded bg-[var(--accent)] text-white hover:opacity-90 transition-opacity"
+              >
+                Usar esta cuadrícula
+              </button>
+            </div>
+          )}
+          {detectError && <p className="mt-1 text-[9px] text-red-400">{detectError}</p>}
         </div>
 
         {/* Grid Snap */}

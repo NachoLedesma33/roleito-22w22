@@ -5,6 +5,38 @@ from typing import List, Optional
 
 
 @dataclass
+class GridMetadata:
+    """La grilla regular de una imagen de mapa, en PIXELES.
+
+    La conversion a unidades del mundo la hace el frontend (que es quien sabe
+    el tamano del mundo de la escena): aca todo es px de la imagen.
+
+    `type` sigue el diseno de `docs/MAP-ANALYSIS.md` (Stage 2): square, hex o
+    none. Hoy solo se detecta square.
+    """
+
+    type: str = "none"
+    cell_size: int = 0
+    origin: tuple[int, int] = (0, 0)
+    offset: tuple[int, int] = (0, 0)
+    confidence: float = 0.0
+    # Las lineas de la grilla en px (verticales en X, horizontales en Y).
+    x_lines: List[int] = field(default_factory=list)
+    y_lines: List[int] = field(default_factory=list)
+
+    def to_dict(self) -> dict:
+        return {
+            "type": self.type,
+            "cell_size": self.cell_size,
+            "origin": {"x": self.origin[0], "y": self.origin[1]},
+            "offset": {"x": self.offset[0], "y": self.offset[1]},
+            "confidence": round(self.confidence, 3),
+            "x_lines": list(self.x_lines),
+            "y_lines": list(self.y_lines),
+        }
+
+
+@dataclass
 class Point:
     x: float
     y: float

@@ -340,6 +340,49 @@ async def detect_walls(
     }
 
 
+@router.post("/campaigns/{campaign_id}/scenes/{scene_id}/detect-grid")
+async def detect_scene_grid(
+    campaign_id: str,
+    scene_id: str,
+    db: AsyncSession = Depends(get_session),
+):
+    """Detecta la grilla regular del fondo de la escena, en PIXELES.
+
+    La conversion a unidades del mundo la hace el frontend (que es quien sabe
+    el tamano del mundo de la escena): aca todo es px de la imagen.
+
+    Si no encuentra grilla devuelve `type: none` con confianza 0: el DM ajusta
+    a mano (ver `docs/MAP-ANALYSIS.md`, Stage 2).
+    """
+    import cv2
+    from wall_detection.preprocessing import detect_grid, grid_binary
+
+    scene = (await db.execute(
+        select(Scene).where(
+            Scene.id == scene_id,
+            Scene.campaign_id == campaign_id,
+        )
+    )).scalar_one_or_none()
+    if not scene:
+        raise HTTPException(status_code=404, detail="Scene not found")
+    if not scene.background_path or not os.path.exists(scene.background_path):
+        raise HTTPException(status_code=400, detail="No background image to analyze")
+
+    img = cv2.imread(scene.background_path)
+    if img is None:
+        raise HTTPException(status_code=400, detail="Could not read background image")
+
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # Binario suave: las lineas finas de la grilla no sobreviven al
+    # preprocesado de muros (el opening de 1px las borra).
+    grid = detect_grid(grid_binary(gray), gray)
+
+    return {
+        "grid": grid.to_dict(),
+        "image_size": {"width": img.shape[1], "height": img.shape[0]},
+    }
+
+
 @router.post("/campaigns/{campaign_id}/scenes/{scene_id}/upload-background", response_model=SceneResponse)
 async def upload_scene_background(
     campaign_id: str,

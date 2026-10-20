@@ -4,6 +4,8 @@ import cv2
 import numpy as np
 from enum import Enum
 
+from .types import GridMetadata
+
 
 class DetectionMode(Enum):
     BLUEPRINT = "blueprint"
@@ -78,6 +80,89 @@ def remove_grid(binary: np.ndarray, grid_size: int = 0) -> np.ndarray:
             result[:, max(0, x-1):min(w, x+2)] = 0
 
     return result
+
+
+def detect_grid(binary: np.ndarray, gray: np.ndarray = None) -> GridMetadata:
+    """Detecta la grilla regular de una imagen, en pixeles.
+
+    Reusa la misma proyeccion que `remove_grid_auto`: si la grilla se puede
+    borrar, se puede medir. La confianza sube con cuantas lineas se encuentre
+    y con lo regular que sean los espacios entre ellas.
+    """
+    h, w = binary.shape[:2]
+    meta = GridMetadata()
+    if h < 20 or w < 20:
+        return meta
+    if gray is not None and float(gray.mean()) < 90:
+        return meta
+
+    row_mean = binary.astype(np.float32).mean(axis=1)
+    col_mean = binary.astype(np.float32).mean(axis=0)
+
+    # `_regular_grid_positions` ya descarta lo que no es regular.
+    y_lines = _regular_grid_positions(row_mean, min(h, w))
+    x_lines = _regular_grid_positions(col_mean, min(h, w))
+    if not x_lines or not y_lines:
+        return meta
+
+    cell_x = _median_gap(x_lines)
+    cell_y = _median_gap(y_lines)
+    if cell_x <= 0 or cell_y <= 0:
+        return meta
+
+    # Una grilla de juego es cuadrada: si el espaciado difiere mucho entre los
+    # dos ejes, no es la grilla del mapa.
+    ratio = cell_x / cell_y
+    if ratio < 0.85 or ratio > 1.18:
+        return meta
+
+    cell = int(round((cell_x + cell_y) / 2))
+    origin = (int(x_lines[0]), int(y_lines[0]))
+    meta.type = "square"
+    meta.cell_size = cell
+    meta.origin = origin
+    meta.offset = (origin[0] % cell if cell else 0, origin[1] % cell if cell else 0)
+    meta.x_lines = [int(p) for p in x_lines]
+    meta.y_lines = [int(p) for p in y_lines]
+    meta.confidence = _grid_confidence(x_lines, y_lines, cell)
+    return meta
+
+
+def _median_gap(positions: list) -> int:
+    """El espacicio tipico entre posiciones consecutivas."""
+    if len(positions) < 2:
+        return 0
+    gaps = [positions[i + 1] - positions[i] for i in range(len(positions) - 1)]
+    return int(np.median(gaps))
+
+
+def _grid_confidence(x_lines: list, y_lines: list, cell: int) -> float:
+    """0-1: cuantas lineas se encontraron y con que regularidad."""
+    if cell <= 0:
+        return 0.0
+    count = min(len(x_lines), len(y_lines))
+    if count < 2:
+        return 0.0
+    # 2 lineas ya dan una grilla (una celda); 6 o mas, una grilla firme.
+    by_count = min(1.0, (count - 1) / 5.0)
+    # Que los espacios se parezcan al espacicio mediano.
+    deltas: list[int] = []
+    for lines in (x_lines, y_lines):
+        deltas.extend(lines[i + 1] - lines[i] for i in range(len(lines) - 1))
+    regular = sum(1 for d in deltas if abs(d - cell) <= max(2, cell * 0.1))
+    by_regularity = regular / len(deltas) if deltas else 0.0
+    return round(0.4 * by_count + 0.6 * by_regularity, 3)
+
+
+def grid_binary(gray: np.ndarray) -> np.ndarray:
+    """Binario suave para buscar la grilla.
+
+    El preprocesado de muros (threshold adaptativo + opening de 1px) borra las
+    lineas finas de una grilla: una grilla de juego son trazos de 1-2 px. Para
+    medir la grilla alcanza con "todo lo que no es blanco".
+    """
+    _, binary = cv2.threshold(gray, 245, 255, cv2.THRESH_BINARY_INV)
+    return binary
 
 
 def remove_grid_auto(binary: np.ndarray, gray: np.ndarray = None) -> np.ndarray:

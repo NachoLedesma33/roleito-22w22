@@ -1,4 +1,4 @@
-import type { SceneItem } from '@core/domain/types';
+import type { GridMetadata, SceneItem } from '@core/domain/types';
 
 const API_BASE = '/api';
 
@@ -874,6 +874,12 @@ export const api = {
       }),
     getItems: (campaignId: string, sceneId: string) =>
       request<{ items: SceneItem[] }>(`/campaigns/${campaignId}/scenes/${sceneId}/items`),
+    /** La grilla regular del fondo, en pixeles de la imagen. */
+    detectGrid: (campaignId: string, sceneId: string) =>
+      request<{ grid: GridMetadata; image_size: { width: number; height: number } }>(
+        `/campaigns/${campaignId}/scenes/${sceneId}/detect-grid`,
+        { method: 'POST' },
+      ),
     saveItems: (campaignId: string, sceneId: string, items: SceneItem[]) =>
       request<Scene>(`/campaigns/${campaignId}/scenes/${sceneId}/items`, {
         method: 'PUT',

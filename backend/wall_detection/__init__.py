@@ -19,10 +19,11 @@ from .types import (
     DetectedDoor,
     DetectedWindow,
     DetectedRoom,
+    GridMetadata,
     WalkableArea,
     Point,
 )
-from .preprocessing import DetectionMode
+from .preprocessing import DetectionMode, detect_grid
 from .pipeline import detect_map
 from .ai_detector import detect_walls_ai, detect_walls_ai_sync
 
