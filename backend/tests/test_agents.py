@@ -44,6 +44,7 @@ def _orch():
     orch.lore_agent = LoreAgent(provider)
     orch.narrator = NarratorAgent(provider)
     orch.recap_agent = RecapAgent(provider)
+    orch.world_state_agent = WorldStateAgent(provider)
     return orch
 
 
@@ -121,6 +122,22 @@ async def test_orchestrator_process_session_missing_id_is_partial():
     res = await orch.execute(TaskType.PROCESS_SESSION, "camp-1")
     assert res.status == "partial"
     assert res.errors
+
+
+async def test_orchestrator_full_pipeline_encadena_sesion_estado_y_recap():
+    """El flujo del producto (docs/AGENTS.md §104): sesion -> world state -> recap.
+
+    Antes encadenaba session + lore + narrate, que no es el flujo del doc, y el
+    World State Agent (que existia) no se usaba nunca.
+    """
+    orch = _orch()
+    res = await orch.execute(
+        TaskType.FULL_PIPELINE, "camp-1", session_id="sess-1", raw_notes="Notas de la sesion."
+    )
+    assert res.status == "completed", res.errors
+    assert "session_processor" in res.agent_results
+    assert "world_state" in res.agent_results
+    assert "recap" in res.agent_results
 
 
 def _events(n, status="CANON"):

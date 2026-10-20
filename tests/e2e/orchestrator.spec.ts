@@ -79,9 +79,10 @@ test.describe('Orchestrator Agent', () => {
     expect(res.status()).toBe(200);
     const data = await res.json();
     expect(data.task_type).toBe('full_pipeline');
+    // El flujo del producto (docs/AGENTS.md §104): sesion -> world state -> recap.
     expect(data.agent_results).toHaveProperty('session_processor');
-    expect(data.agent_results).toHaveProperty('lore');
-    expect(data.agent_results).toHaveProperty('narrator');
+    expect(data.agent_results).toHaveProperty('world_state');
+    expect(data.agent_results).toHaveProperty('recap');
   });
 
   test('ORCH6: Generate recap task executes', async ({
