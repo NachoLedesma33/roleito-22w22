@@ -1744,8 +1744,6 @@ const startFogMode = useCallback(() => {
         { label: i18n.t('dmContext.selectToken', 'Seleccionar {{name}}', { name }), icon: '◉', onClick: () => setSelectedTokenId(sceneCharId) },
         { label: sc?.visible ? i18n.t('dmContext.hidePlayers', 'Ocultar a los jugadores') : i18n.t('dmContext.showPlayers', 'Mostrar a los jugadores'), icon: sc?.visible ? '👁' : '🚫', onClick: () => handleToggleVisibility(sceneCharId) },
         { label: '', separator: true, onClick: () => {} },
-        { label: i18n.t('dmContext.viewSheet', 'Ver ficha de personaje'), icon: '📄', onClick: () => setSelectedTokenId(sceneCharId), disabled: !ent },
-        { label: '', separator: true, onClick: () => {} },
         { label: i18n.t('dmContext.statusTitle', 'Estado'), icon: '⚠️', onClick: () => {}, disabled: true },
         ...buildStatusMenuItems(sc?.statuses ?? []),
         { label: '', separator: true, onClick: () => {} },
@@ -2411,6 +2409,7 @@ const startFogMode = useCallback(() => {
               to={`/campaigns/${campaignId}/scenes`}
               className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0"
               title={t('dm.sceneMgmtTitle', 'Gestión de escenas')}
+              aria-label={t('dm.sceneMgmtTitle', 'Gestión de escenas')}
             >
               ⚙
             </Link>
