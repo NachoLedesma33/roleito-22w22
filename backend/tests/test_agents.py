@@ -35,8 +35,11 @@ def _mock():
 
 def _orch():
     # __new__ + inyección directa: evita leer data/ai_config.json real.
+    # db=None: el orquestador coordina pero no ve la campaña (los sub-agentes
+    # quedan sin contexto, que es el caso sin DB).
     orch = OrchestratorAgent.__new__(OrchestratorAgent)
     provider = _mock()
+    orch.db = None
     orch.session_processor = SessionProcessor(provider)
     orch.lore_agent = LoreAgent(provider)
     orch.narrator = NarratorAgent(provider)

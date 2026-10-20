@@ -7,9 +7,13 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.agents.orchestrator import OrchestratorAgent, TaskType
 from auth import require_dm, AuthSession
+from database import get_session
+from models import Campaign
 
 router = APIRouter(prefix="/orchestrator", tags=["orchestrator"])
 
@@ -37,6 +41,7 @@ class AgentResultResponse(BaseModel):
 async def execute_task(
     campaign_id: str,
     req: OrchestratorRequest,
+    db: AsyncSession = Depends(get_session),
     _auth: AuthSession = Depends(require_dm),
 ):
     try:
@@ -44,7 +49,15 @@ async def execute_task(
     except ValueError:
         raise HTTPException(status_code=400, detail=f"Invalid task type: {req.task_type}")
 
-    orchestrator = OrchestratorAgent()
+    campaign = (await db.execute(
+        select(Campaign).where(Campaign.id == campaign_id)
+    )).scalar_one_or_none()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    # Con la db: el orquestador arma el contexto de la campaña y se lo pasa a
+    # los sub-agentes. Sin ella, responden al aire.
+    orchestrator = OrchestratorAgent(db)
     result = await orchestrator.execute(
         task_type,
         campaign_id,

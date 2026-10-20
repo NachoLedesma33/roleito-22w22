@@ -1708,3 +1708,84 @@ async def test_process_session_propone_eventos_para_aprobacion(client, monkeypat
     assert {e["id"] for e in events} == {p["event_id"] for p in body["proposed_events"]}
     # El actor que el modelo no pudo resolver queda sin asignar, no inventado.
     assert all(e["description"] for e in events)
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_le_pasa_el_contexto_real_de_la_campana(client, monkeypatch):
+    """El orquestador coordina, pero sin DB sus sub-agentes responden al aire.
+
+    Ahora arma el contexto con los datos de la campaña (personajes, NPCs,
+    lugares y los últimos eventos) y se lo pasa al Lore.
+    """
+    from core.agents.base import AgentResult
+    from core.agents.orchestrator import OrchestratorAgent, TaskType
+    from infrastructure.ai.mock import MockProvider
+
+    monkeypatch.setattr(
+        "core.agents.orchestrator.get_provider_for_agent", lambda: MockProvider()
+    )
+
+    camp = (
+        await client.post(
+            "/api/campaigns", json={"name": "Camp Orquestador", "description": "La campaña"}
+        )
+    ).json()
+    char = (
+        await client.post(
+            f"/api/campaigns/{camp['id']}/characters",
+            json={
+                "name": "Aria",
+                "type": "player",
+                "vigor": "/",
+                "intelligence": "/",
+                "dexterity": "/",
+                "cunning": "/",
+            },
+        )
+    ).json()
+    ses = (
+        await client.post(
+            f"/api/campaigns/{camp['id']}/sessions",
+            json={"number": 1, "date": "2026-10-20", "title": "Sesion 1"},
+        )
+    ).json()
+    ev_res = await client.post(
+        f"/api/campaigns/{camp['id']}/sessions/{ses['id']}/events",
+        json={
+            "session_id": ses["id"],
+            "type": "DIALOGUE",
+            "actor_id": char["id"],
+            "description": "Aria hablo con el guard",
+        },
+    )
+    assert ev_res.status_code == 200, ev_res.text
+
+    captured: dict = {}
+
+    class FakeLore:
+        async def run(self, **kwargs):
+            captured.update(kwargs)
+            return AgentResult(status="success", data=None, agent_id="lore")
+
+    async with async_session() as db:
+        orch = OrchestratorAgent(db)
+        orch.lore_agent = FakeLore()
+        await orch.execute(TaskType.LORE_INQUIRY, camp["id"], query="¿Que sabe de Aria?")
+
+    # El sub-agente recibio la campana real, no un placeholder.
+    assert captured["characters"][0]["name"] == "Aria"
+    assert captured["events"][0]["description"] == "Aria hablo con el guard"
+    assert "Camp Orquestador" in captured["campaign_context"]
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_de_campana_inexistente_da_404(client):
+    reg = await client.post("/api/auth/register", json={"name": "DM Orq 404", "pin": "1234"})
+    headers = {"Authorization": f"Bearer {reg.json()['token']}"}
+
+    res = await client.post(
+        "/api/orchestrator/campaña-que-no-existe/execute",
+        headers=headers,
+        json={"task_type": "lore_inquiry", "query": "?"},
+    )
+    assert res.status_code == 404, res.text
