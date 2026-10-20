@@ -455,7 +455,7 @@ Nota: `POST /scenes/{id}/detect-walls` también hace append en `scene.items_json
 **PLAN COMPLETO: fases 0 a 10 cerradas** (2026-10-17). Las 11 fases del plan quedaron commiteadas con CI verde.
 
 Lo que queda no es refactor sino producto y deuda documentada:
-1. **Visión por token que nunca llega al jugador** — **RESUELTO** (commit `51b790c`, 2026-10-17): el join serializa `vision_type`/`vision_range` por token y el jugador los usa en la percepción (pytest `test_player_snapshot_includes_token_vision` + e2e PV13). Queda por diseño que solo `darkvision` está implementado; `blindsight`/`tremorsense`/`truesight` colapsan a ambiente (`playerPerception.ts`).
+1. **Visión por token que nunca llega al jugador** — **RESUELTO** (commit `51b790c`, 2026-10-17): el join serializa `vision_type`/`vision_range` por token y el jugador los usa en la percepción (pytest `test_player_snapshot_includes_token_vision` + e2e PV13). Queda por diseño que solo `darkvision` está implementado; `blindsight`/`tremorsense`/`truesight` colapsan a ambiente (`playerPerception.ts`). **Actualizado 2026-10-19:** los tres sentidos especiales SÍ están implementados — revelan terreno dentro de `vision_range` sin luz y detectan criaturas a rango (`lib/playerSense.ts`, `sensedIds` en `SceneRenderer`); ver `engineering/PLAN-VISION-PERCEPCION.md` §6.
 2. `HudPanel` sin test unitario (drag/resize en jsdom).
 3. Asset de más de 8 MB en export/import: no viaja y al importar su columna queda apuntando al archivo de la campaña de origen.
 4. `__init__.py` faltantes en `core/canon/`, `core/events/`, `core/memory/`, `core/world/` (funciona por namespace packages, pero es asimétrico).

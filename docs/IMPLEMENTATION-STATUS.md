@@ -64,7 +64,7 @@ Reference: `WALLS-AND-LINE-OF-SIGHT.md` (21,246 bytes)
 | Door System | Implemented | `WallContextMenu.tsx` (open/close/locked) |
 | LoS Raycasting | Implemented | `core/scene/wall-collision.ts` + rays |
 | Visibility Mask | Implemented | Hybrid shadow geometry (HYBRID-SHADOW-GEOMETRY.md, canon) |
-| Visión por token → jugador | Implemented | Plan completo (pasos 1-6): transporte (join serializa vision_type/range), mask de luz, composición `sin_obstruccion AND (luz OR ve_en_oscuridad)`, worker+render (máscara de alpha), 3 modos de niebla (cubrir/secreto/revelar), memoria de lo explorado opt-in por escena (RLE en localStorage). El jugador ve menos que antes, correctamente. `engineering/PLAN-VISION-PERCEPCION.md` |
+| Visión por token → jugador | Implemented | Plan completo (pasos 1-6): transporte (join serializa vision_type/range), mask de luz, composición `sin_obstruccion AND (luz OR ve_en_oscuridad)`, worker+render (máscara de alpha), 3 modos de niebla (cubrir/secreto/revelar), memoria de lo explorado opt-in por escena (RLE en localStorage). 2026-10-19: sentidos especiales (blindsight/tremorsense/truesight) revelan terreno sin luz y detectan criaturas a rango (`lib/playerSense.ts`, fantasma detectado vía `sensedIds`). El jugador ve menos que antes, correctamente. `engineering/PLAN-VISION-PERCEPCION.md` |
 | Movement Pathfinding | Planned | A* on walkable grid |
 
 ## Lighting System

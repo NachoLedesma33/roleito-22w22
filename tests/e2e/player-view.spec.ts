@@ -524,4 +524,31 @@ test.describe('Player View', () => {
       .poll(async () => Number(await mask.getAttribute('data-visible-cells')), { timeout: 20_000 })
       .toBeGreaterThan(0);
   });
+
+  test('PV16: blindsight revela el terreno en la oscuridad hasta su rango', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    const scene = await createScene(request, campaign.id, 'Cripta PV16');
+    const char = await createCharacter(request, campaign.id, { name: 'Vane' });
+    await seedTokens(request, campaign.id, scene.id, [
+      { entityType: 'character', entityId: char.id, x: 0, z: 0, visionType: 'blindsight', visionRange: 14 },
+    ]);
+    await updateScene(request, campaign.id, scene.id, { status: 'active' });
+    const code = await generateInviteCode(request, campaign.id);
+
+    await page.goto(`/campaigns/join/${code}`);
+    await page.getByRole('button', { name: /Vane/ }).click();
+
+    const mask = page.getByTestId('perception-mask');
+    await expect
+      .poll(async () => Number(await mask.getAttribute('data-cols')), { timeout: 20_000 })
+      .toBeGreaterThan(0);
+    const raw = await mask.evaluate((el) => ({
+      visible: Number(el.getAttribute('data-visible-cells')),
+      total: Number(el.getAttribute('data-cols')) * Number(el.getAttribute('data-rows')),
+    }));
+    expect(raw.visible / raw.total).toBeGreaterThan(0.02);
+  });
 });

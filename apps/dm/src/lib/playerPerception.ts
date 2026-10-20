@@ -77,13 +77,15 @@ export function cellCenterZ(grid: PerceptionGrid, row: number): number {
  * regla nueva es redundante —es "luz a distancia 0"— pero §4bis.2 lo deja a
  * propósito, para que el cambio sea medible contra el comportamiento anterior.
  *
- * `darkvision` ve hasta `vision_range`. Los otros tres tipos (`blindsight`,
- * `tremorsense`, `truesight`) filtran por tipo de entidad, que esta máscara no
- * modela (§6): hasta que existan se comportan como `normal`.
+ * `darkvision` y los sentidos especiales (`blindsight`, `tremorsense`,
+ * `truesight`) ven el terreno hasta `vision_range` sin depender de la luz.
+ * Semántica de máscara (§6): los tres ignoran muros y luz igual que darkvision;
+ * lo que los distingue es la detección de criaturas, que vive en
+ * `playerSense.ts` y no acá.
  */
 function seesInDark(type: VisionType, dist: number, range: number): boolean {
-  if (type === 'darkvision') return dist <= range
-  return dist <= AMBIENT_RADIUS
+  if (type === 'normal') return dist <= AMBIENT_RADIUS
+  return dist <= range
 }
 
 /**

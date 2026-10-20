@@ -26,6 +26,7 @@ import { usePlayerSync, type Choice } from '@/lib/usePlayerSync';
 import { type CharPos } from '@/lib/playerVision';
 import { buildOccluders } from '@/lib/lightOcclusion';
 import { countVisibleCells, type PerceptionMask } from '@/lib/playerPerception';
+import { computeSensed, sensedIds as sensedIdSet, type SensedChar } from '@/lib/playerSense';
 import { loadExplored, saveExplored } from '@/lib/exploredMemory';
 import type { VisionConfig } from '@core/domain/types';
 import type { FogRegion } from '@/lib/fogMask';
@@ -350,6 +351,9 @@ export default function PlayerView() {
   // polígonos que competían por zIndex y la visión ganaba contra la niebla siempre.
   // El mask (10K+ DDA rays) corre en un Web Worker para no bloquear el render thread.
   const [perception, setPerception] = useState<PerceptionMask | null>(null)
+  // Criaturas que el personaje detecta pero no ve (blindsight/tremorsense/
+  // truesight, `lib/playerSense.ts`). Se recalcula con cada máscara del worker.
+  const [sensed, setSensed] = useState<SensedChar[]>([])
   const mySceneCharIdRef = useRef<string | null>(null)
   useEffect(() => { mySceneCharIdRef.current = mySceneCharId }, [mySceneCharId])
   const mapperRef = useRef({ w: mapperW, h: mapperH })
@@ -366,6 +370,27 @@ export default function PlayerView() {
       if (msg?.kind !== 'los') return
       if (!lastLosRef.current || msg.jobId !== lastLosRef.current.jobId) return
       setPerception(msg.mask)
+      // Detección de criaturas (sentidos especiales): con la máscara fresca y
+      // la posición actual, no la del render anterior.
+      const sd = dataRef.current
+      const myId = mySceneCharIdRef.current
+      const mySc = sd?.characters.find((c) => c.id === myId)
+      if (sd && myId && mySc && msg.mask) {
+        const p = wasdTargetRef.current ?? { x: mySc.x, z: mySc.z }
+        const { w, h } = mapperRef.current
+        setSensed(
+          computeSensed(
+            sd.characters.map((c) => ({ sceneCharId: c.id, x: c.x, z: c.z })),
+            myId,
+            { x: p.x, z: p.z },
+            { type: mySc.vision_type ?? 'normal', range: mySc.vision_range ?? 6 },
+            msg.mask,
+            { width: w, height: h },
+          ),
+        )
+      } else {
+        setSensed([])
+      }
       // Guardar lo acumulado para la próxima sesión (solo si el DM la pidió).
       const d = dataRef.current
       if (msg.explored && d?.scene_id) {
@@ -1251,6 +1276,7 @@ export default function PlayerView() {
               occluders={sceneOccluders}
               fogRegions={sceneFogRegions}
               fogPerception={perception}
+              sensedIds={sensedIdSet(sensed)}
               showZones
               readOnly
               fogColor="rgba(5, 5, 20, 0.82)"

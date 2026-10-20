@@ -167,6 +167,12 @@ interface SceneRendererProps {
    * `fogRegions`: es una sola rejilla en vez de polígonos compiten por zIndex.
    */
   fogPerception?: PerceptionMask | null;
+  /**
+   * Tokens que el jugador detecta por un sentido especial (blindsight,
+   * tremorsense, truesight) aunque no los vea: entran al render como fantasma
+   * (`lib/playerSense.ts`). Vacío para el DM.
+   */
+  sensedIds?: Set<string>;
   lighting?: string;
   weather?: string | null;
   weatherIntensity?: number | null;
@@ -735,6 +741,7 @@ function DraggableToken({
   entity,
   isSelected,
   isMovable,
+  sensed = false,
   onClick,
   onContextMenu,
   onDoubleClick,
@@ -742,6 +749,8 @@ function DraggableToken({
   entity: SceneEntity;
   isSelected: boolean;
   isMovable: boolean;
+  /** Detectado por un sentido especial pero no visible: se pinta como fantasma. */
+  sensed?: boolean;
   onClick?: (sceneCharId: string) => void;
   onContextMenu?: (sceneCharId: string, clientX: number, clientY: number) => void;
   onDoubleClick?: (sceneCharId: string, clientX: number, clientY: number) => void;
@@ -791,7 +800,7 @@ function DraggableToken({
     [entity, isMovable, onClick]
   );
 
-  const invisible = (entity.statuses ?? []).includes('invisible') || !entity.visible;
+  const invisible = (entity.statuses ?? []).includes('invisible') || !entity.visible || sensed;
   const petrified = (entity.statuses ?? []).includes('petrified');
   const [modelH, setModelH] = useState(0);
   const tokenScale = entity.tokenScale ?? 1;
@@ -2157,6 +2166,7 @@ export default function SceneRenderer({
   occluders,
   fogRegions,
   fogPerception = null,
+  sensedIds,
   lighting = 'neutral',
   weather = null,
   weatherIntensity = null,
@@ -2219,12 +2229,12 @@ export default function SceneRenderer({
   // visibleChars con posiciones visuales interpoladas (para tokens, luces, arrastre)
   const visibleCharsVisual = useMemo(() =>
     characters
-      .filter((c) => c.visible || !readOnly)
+      .filter((c) => c.visible || !readOnly || sensedIds?.has(c.sceneCharId))
       .map((c) => {
         const vp = visualPos.get(c.sceneCharId);
         return vp ? { ...c, x: vp.x, z: vp.z, rotation: vp.rotation } : c;
       }),
-    [characters, visualPos, readOnly]
+    [characters, visualPos, readOnly, sensedIds]
   );
 
   const hasGlow = useMemo(
@@ -2377,6 +2387,7 @@ export default function SceneRenderer({
             entity={ch}
             isSelected={isMovable && selectedTokenId === ch.sceneCharId}
             isMovable={isMovable}
+            sensed={!!sensedIds?.has(ch.sceneCharId)}
             onClick={isMovable ? handleTokenClickWrap : undefined}
             onContextMenu={isMovable ? onTokenContextMenu : undefined}
             onDoubleClick={isMovable ? onTokenDoubleClick : undefined}

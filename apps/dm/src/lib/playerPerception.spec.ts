@@ -190,12 +190,31 @@ describe('playerPerception/perceptionAlpha', () => {
     expect(perceptionAlpha({ grid: GRID, los, lightAt: torchAt(3, 0, 6, 0.8), charX: 0, charZ: 0, vision: darkvision }, lit.col, lit.row)).toBe(1)
   })
 
-  it('los tipos sin implementar se comportan como normal (plan §6)', () => {
+  it('los sentidos especiales ven el terreno en la oscuridad hasta su rango', () => {
+    // §6: blindsight/tremorsense/truesight revelan el terreno dentro de
+    // vision_range sin luz; el comportamiento que los distinguiría (qué criaturas
+    // detectan) es playerSense.ts, no esta máscara.
     const los = openMask()
-    const target = cell(3, 0)
+    const near = cell(3, 0) // dentro del rango, fuera del ambiente
     for (const type of ['blindsight', 'tremorsense', 'truesight'] as const) {
-      expect(perceptionAlpha({ grid: GRID, los, lightAt: light(0), charX: 0, charZ: 0, vision: { type, range: 6 } }, target.col, target.row)).toBe(0)
-      expect(perceptionAlpha({ grid: GRID, los, lightAt: light(1), charX: 0, charZ: 0, vision: { type, range: 6 } }, target.col, target.row)).toBe(1)
+      expect(perceptionAlpha({ grid: GRID, los, lightAt: light(0), charX: 0, charZ: 0, vision: { type, range: 6 } }, near.col, near.row)).toBe(1)
+    }
+  })
+
+  it('los sentidos especiales no ven fuera de su rango', () => {
+    const los = openMask()
+    const far = cell(4.75, 4.75) // ~6.7 unidades, contra range 6
+    for (const type of ['blindsight', 'tremorsense', 'truesight'] as const) {
+      expect(perceptionAlpha({ grid: GRID, los, lightAt: light(1), charX: 0, charZ: 0, vision: { type, range: 6 } }, far.col, far.row)).toBe(0)
+    }
+  })
+
+  it('los sentidos especiales respetan el LoS: un muro tapa a la vez la luz y el sentido', () => {
+    const los = openMask()
+    const behind = cell(-3, 0)
+    los[behind.row][behind.col] = false
+    for (const type of ['blindsight', 'tremorsense', 'truesight'] as const) {
+      expect(perceptionAlpha({ grid: GRID, los, lightAt: light(1), charX: 0, charZ: 0, vision: { type, range: 6 } }, behind.col, behind.row)).toBe(0)
     }
   })
 })

@@ -55,7 +55,7 @@ visible(celda) = sin_obstruccion(celda) Y ( hay_luz(celda) O ve_en_oscuridad(cel
 |---|---|---|
 | `normal` | solo con luz tenue por encima del umbral | El "círculo ambiente" es el caso límite: luz a distancia 0. Se conserva como `range` pequeño explícito, no como parche. |
 | `darkvision` | siempre, hasta `vision_range` | El único tipo nuevo que se implementa. |
-| `blindsight`, `tremorsense`, `truesight` | **no se implementan** | Ver §6. |
+| `blindsight`, `tremorsense`, `truesight` | siempre, hasta `vision_range` | Implementados 2026-10-19 (resuelto en §6): revelan terreno sin luz y detectan criaturas a rango. |
 
 **Por qué esta regla y no la inversa** (luz que no te alcanza a ver): una antorcha iluminando una pared a 25 m no significa que la veas si estás a oscuras y a 30 m. La luz describe el mundo; la visión describe al personaje. Se cruzan.
 
@@ -205,7 +205,7 @@ Todo lo de arriba estaba bien y, aun así, **en la pantalla del jugador no se ve
 
 ## 6. Lo que NO entra (y por qué)
 
-- **`blindsight`, `tremorsense`, `truesight`**: no son "más luz". Son **filtros de percepción por tipo de entidad** ("veo solo criaturas", "siento females que tiemblan"). El mask actual es `boolean[][]`: no sabe qué hay en cada celda. Implementarlos requiere que cada celda lleve qué entidades hay y un filtro — otro sistema, sin diseño hecho. No se prometen ni se exponen en la UI hasta que existan.
+- **`blindsight`, `tremorsense`, `truesight`**: ~~no son "más luz" / filtros por tipo de entidad~~ **IMPLEMENTADOS 2026-10-19.** Revelan el terreno dentro de `vision_range` sin depender de la luz (igual que `darkvision`, `playerPerception.ts` → `seesInDark`) y además **detectan criaturas**: un token que el jugador no ve (fuera de su LoS o con estado `invisible`) pero está a rango aparece como fantasma detectado (`lib/playerSense.ts`, `sensedIds` en `SceneRenderer`). Simplificación asumida y documentada: la detección es por **distancia pura**, no filtra por tipo de entidad (vuelo/etéreo para tremorsense) — el modelo de tokens no tiene esos campos; cuando existan, el filtro va en `computeSensed`. El dropdown del popup del DM ofrece los 5 tipos. Unit: `playerSense.spec.ts` (9), `playerPerception.spec.ts` (3 nuevos); e2e: PV16.
 - **Exploración recordada** (lo que Roll20 llama " explored"): el modelo actual recalcula desde cero y no persiste. Es una feature aparte con su propio storage.
 - **Luz que revela para el DM**: el DM ve todo, no aplica.
 

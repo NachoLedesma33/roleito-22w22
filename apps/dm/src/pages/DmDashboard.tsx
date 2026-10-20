@@ -3410,6 +3410,9 @@ const startFogMode = useCallback(() => {
             >
               <option value="normal">{t('dm.visionNormal', 'Normal')}</option>
               <option value="darkvision">{t('dm.visionDarkvision', 'Visión en la oscuridad')}</option>
+              <option value="blindsight">{t('dm.visionBlindsight', 'Ceguera (percibe sin ver)')}</option>
+              <option value="tremorsense">{t('dm.visionTremorsense', 'Sentir tiembla (vibraciones)')}</option>
+              <option value="truesight">{t('dm.visionTruesight', 'Visión verdadera')}</option>
             </select>
           </div>
           <div className="mt-2">
