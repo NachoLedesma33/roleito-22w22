@@ -450,8 +450,8 @@ Based on dependency analysis and documentation completeness:
 | 1 | Mobile pass | HECHO: D-pad táctil, diálogos bottom-sheet, acciones lobby visibles sin hover |
 | 2 | Filtros de clima por debajo del preset | HECHO: `snowFlurry` cierra fase 15 (filtros ya estaban: tint, audio, multiplicadores, slider) |
 | 3 | Menús con click-toggle | HECHO: clima/lighting/dock/map ya eran click; lobby `group-hover` gateado táctil; W1 ya usaba `click()` |
-| 4 | AI Map Analysis | Revisión DM antes de confirmar (batch + individual); CollisionGraph superado (colisión ya en `wall-collision.ts`) |
-| 5 | AI Agents reales | Los 8 agentes del MVP ya existen (context manager, ingestion, world state y scene, desde 2026-10-14) y los 8 tienen endpoint HTTP. Hecho: `process-session` deja los eventos PROPOSED y el orchestrator ve la campaña real. Falta: el wiring del flujo (`docs/AGENTS.md` §104) y que lore/narrate/recap persistan |
+| 4 | AI Map Analysis | Revisión DM antes de confirmar (batch + individual); CollisionGraph superado (colisión ya en `wall-collision.ts`). **HECHO 2026-10-20** salvo `ShadowZone[]` (decisión de producto) — ver `engineering/PLAN-VISION-PERCEPCION.md` |
+| 5 | AI Agents reales | Los 8 agentes del MVP ya existen (context manager, ingestion, world state y scene, desde 2026-10-14) y los 8 tienen endpoint HTTP. Hecho: `process-session` deja los eventos PROPOSED, el orchestrator ve la campaña real y su `full_pipeline` es el flujo del `docs/AGENTS.md` §104. **Providers y seguridad**: plan en `engineering/PLAN-PROVEEDORES-IA-Y-SEGURIDAD.md` (perfiles por proveedor, descubrimiento de modelos, límites de la salida de la IA, roles, presupuesto) |
 | 6 | Voice input | HECHO slice dictado: `VoiceInputButton` (Web Speech) en asistente DM + notas DM |
 | 7 | REA (futuro, post-todo) | Docs reales otros VTT vía `rea-agents` externo; solo targets autorizados, reimplementación limpia |
 
