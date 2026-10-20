@@ -164,6 +164,10 @@ test.describe('Character Sheet HUD', () => {
   });
 
   test('CS8: control PV ajusta current_pv y persiste', async ({ page, campaign, request }) => {
+    // Cargar la escena 3D + abrir la ficha lleva el test al borde del timeout
+    // default: en el runner del CI (mas lento) se pasaba.
+    test.setTimeout(60_000);
+
     const scene = await createScene(request, campaign.id, 'Escena PV');
     const char = await createCharacter(request, campaign.id, {
       name: 'Cedric',

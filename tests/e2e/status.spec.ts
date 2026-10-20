@@ -36,6 +36,12 @@ async function openTokenMenu(
     { timeout: 15_000 },
   );
   await page.waitForTimeout(700);
+  // El canvas puede estar "visible" y aun asi no tener caja: la escena 3D todavia
+  // no se posiciono. El assert puntual fallaba ahi y el click del token se
+  // iba al vacio (el flake de S1).
+  await expect
+    .poll(async () => (await canvas.boundingBox())?.width ?? 0, { timeout: 10_000 })
+    .toBeGreaterThan(0);
   const box = await canvas.boundingBox();
   expect(box).not.toBeNull();
   // El sprite del token compite con el piso en el hit-test del centro; probar
@@ -61,6 +67,11 @@ test.describe('Status markers', () => {
     campaign,
     request,
   }) => {
+    // Cargar la escena 3D + esperar el push por WS lleva el test al borde del
+    // timeout default (30s): local tardaba ~16s, y en el runner del CI (mas
+    // lento) se pasaba.
+    test.setTimeout(60_000);
+
     const scene = await createScene(request, campaign.id, 'Escena Status');
     const aria = await createCharacter(request, campaign.id, { name: 'Aria' });
     await seedTokens(request, campaign.id, scene.id, [
@@ -81,13 +92,18 @@ test.describe('Status markers', () => {
       )
     ).json();
     expect(chs[0].statuses).toContain('poisoned');
-    // Esperar a que el estado local del tablero refleje el cambio antes de reabrir.
-    await page.waitForTimeout(400);
 
-    // Reabrir menú (sin recargar) → el item ahora ofrece quitarlo.
-    await openTokenMenu(page, scene.id, request, campaign.id);
+    // El menú del token lo arma el estado LOCAL del board, que lo actualiza el
+    // push por WS. Si el push todavía no llegó, el menú abre sin la opcion de
+    // quitarlo: hay que reabrirlo hasta que aparezca. El waitForTimeout(400)
+    // fijo fallaba cuando el push tardaba mas.
     const removeBtn = page.getByRole('button', { name: /Quitar Envenenado/ });
-    await expect(removeBtn).toBeVisible();
+    for (let intento = 0; intento < 10; intento++) {
+      await openTokenMenu(page, scene.id, request, campaign.id);
+      if (await removeBtn.isVisible().catch(() => false)) break;
+      await page.waitForTimeout(300);
+    }
+    await expect(removeBtn).toBeVisible({ timeout: 10_000 });
     await removeBtn.click();
 
     const after = await (
@@ -104,6 +120,13 @@ test.describe('Status markers', () => {
     request,
     browser,
   }) => {
+    // El poll final espera hasta 20s a que el jugador vea su personaje, y el
+    // resto del test ya lleva ~10s (abrir la escena 3D, el menú del token).
+    // Con el timeout default de 30s el test expiraba con el estado YA
+    // correcto en pantalla: se veía "Viendo como Aria" y el status en la ficha
+    // del jugador.
+    test.setTimeout(60_000);
+
     const scene = await createScene(request, campaign.id, 'Escena Status2');
     const aria = await createCharacter(request, campaign.id, { name: 'Aria' });
     await seedTokens(request, campaign.id, scene.id, [
@@ -135,15 +158,14 @@ test.describe('Status markers', () => {
     await p.goto(`/campaigns/join/${code}`);
     await p.getByRole('button', { name: /Aria/ }).click();
     // chooseCharacter hace fetchMyChar async: bajo carga de CI el snapshot del
-    // jugador tarda en reflejar el personaje activo. Poll hasta que player-role
-    // muestre el nombre del personaje en lugar de "Viendo como ...".
-    await expect
-      .poll(async () => {
-        const el = p.getByTestId('player-role');
-        return (await el.textContent()) ?? '';
-      }, { timeout: 20_000 })
-      .toContain('Aria');
-    // El jugador recibe el status en su snapshot (la badge 3D no es assertable en DOM).
+    // jugador tarda en reflejar el personaje activo. `toContainText` sobre el
+    // locator reintenta solo (el poll con textContent hacia un round-trip por
+    // intento y tardaba 20s en el peor caso).
+    await expect(p.getByTestId('player-role')).toContainText('Aria', { timeout: 25_000 });
+    // El status que llega al jugador ya se verifico arriba, contra el
+    // snapshot del invite (el mismo que consume el jugador). En la vista del
+    // jugador el estado se ve en la ficha, pero el texto vive en un title, no
+    // en el DOM visible: la badge 3D no es assertable.
     await ctx.close();
   });
 

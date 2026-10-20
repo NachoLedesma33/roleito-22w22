@@ -142,6 +142,10 @@ test.describe('Player Shell — Grimorio', () => {
     campaign,
     request,
   }) => {
+    // Unirse a la campaña + cargar la vista del jugador lleva el test al borde
+    // del timeout default: en el runner del CI (mas lento) se pasaba.
+    test.setTimeout(60_000);
+
     await setupGrimorio(request, campaign.id, 'Kaelen');
     await joinAs(page, request, campaign.id, 'Kaelen');
     await openGrimorio(page);

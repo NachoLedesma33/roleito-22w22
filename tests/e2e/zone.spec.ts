@@ -30,6 +30,12 @@ async function openSceneWithBackground(
     { timeout: 15_000 },
   );
   await page.waitForTimeout(700);
+  // El canvas puede estar "visible" y aun asi no tener caja: la escena 3D todavia
+  // no se posiciono. Sin esperar la caja, el drag del rect se perdia (el flake
+  // de Z1/Z2).
+  await expect
+    .poll(async () => (await canvas.boundingBox())?.width ?? 0, { timeout: 10_000 })
+    .toBeGreaterThan(0);
   return canvas;
 }
 
@@ -56,6 +62,10 @@ test.describe('Zones (Build menu)', () => {
     campaign,
     request,
   }) => {
+    // Cargar la escena 3D (render por software en CI) lleva el test al borde del
+    // timeout default: en el runner del CI se pasaba.
+    test.setTimeout(60_000);
+
     const scene = await createScene(request, campaign.id, 'Zona Rect');
 
     const canvas = await openSceneWithBackground(page, campaign.id, scene.id);
@@ -97,6 +107,9 @@ test.describe('Zones (Build menu)', () => {
     campaign,
     request,
   }) => {
+    // Ver Z1: cargar la escena 3D lleva el test al borde del timeout default.
+    test.setTimeout(60_000);
+
     const scene = await createScene(request, campaign.id, 'Zona Poly');
 
     const canvas = await openSceneWithBackground(page, campaign.id, scene.id);
