@@ -63,7 +63,7 @@ function sceneItems(
   authHeaders: { Authorization: string },
   campaignId: string,
   sceneId: string,
-): Promise<Array<{ id: string; pendingReview?: boolean }>> {
+): Promise<Array<{ id: string; pendingReview?: boolean; metadata?: { type: string } }>> {
   return request
     .get(`${API}/campaigns/${campaignId}/scenes/${sceneId}/items`, {
       headers: authHeaders,
@@ -162,6 +162,15 @@ test.describe('Auto wall detection', () => {
     await detectApprove.click();
     await expect(review).toBeHidden();
     await expect(page.getByText(/paredes confirmadas/)).toBeVisible({ timeout: 10_000 });
+
+    // Las salas detectadas quedan en el grafo como items room (el guardado va
+    // con debounce: se espera a que lleguen).
+    await expect
+      .poll(async () => {
+        const items = await sceneItems(request, authHeaders, campaign.id, sceneId);
+        return items.filter((i) => i.metadata?.type === 'room').length;
+      }, { timeout: 15_000 })
+      .toBeGreaterThan(0);
   });
 
   test('D5: detectar dos veces regenera el set automático, no lo apila', async ({

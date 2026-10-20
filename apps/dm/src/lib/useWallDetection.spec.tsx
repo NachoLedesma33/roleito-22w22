@@ -263,6 +263,17 @@ describe('useWallDetection', () => {
     })
   })
 
+  it('aprobar no reabre la propuesta', async () => {
+    const pendiente = { ...autoItem('wall-auto-pend'), pendingReview: true }
+    const { result } = setup([], [pendiente])
+
+    expect(result.current.detectProposal).not.toBeNull()
+    act(() => result.current.handleDetectApprove())
+    // Si se reabriera, el banner volvería a aparecer apenas se actualizara el
+    // prop `items` (que todavia tiene el valor viejo).
+    expect(result.current.detectProposal).toBeNull()
+  })
+
   it('no reabre nada si no hay items pendientes', () => {
     const { result } = setup([], [autoItem('wall-auto-1')])
     expect(result.current.detectProposal).toBeNull()

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import i18n from '@/lib/i18n';
 import { autoDetectedKind, isAutoDetectedItem } from '@/lib/autoDetected';
@@ -243,17 +243,27 @@ export function useWallDetection({
   );
 
   /**
-   * Reabre una propuesta que quedo sin revisar (el DM recargo la pagina a
+   * Reabre una propuesta que quedo sin revisar (el DM recargó la pagina a
    * mitad de la revision).
    *
    * Sin esto los muros detectados quedaban aceptados sin que nadie los
    * mirara: el flag `pendingReview` viaja con el item, asi que la propuesta se
    * reconstruye sola.
+   *
+   * UNA vez por escena: si no, competiria con el approve (este quita el flag
+   * del grafo, pero el prop `items` todavia tiene el valor viejo y la
+   * reapertura volveria a abrirla).
    */
+  const reopenedRef = useRef(false);
   useEffect(() => {
-    if (detectProposal) return;
+    reopenedRef.current = false;
+  }, [sceneId]);
+
+  useEffect(() => {
+    if (detectProposal || reopenedRef.current) return;
     const pending = items.filter((item) => item.pendingReview);
     if (pending.length === 0) return;
+    reopenedRef.current = true;
     setDetectProposal({
       ids: pending.map((item) => item.id),
       walls: pending.filter((item) => autoDetectedKind(item) === 'wall').length,
@@ -261,7 +271,7 @@ export function useWallDetection({
       // Las salas no se guardan con el item: al reabrir no se saben.
       rooms: [],
     });
-  }, [items, detectProposal]);
+  }, [items, detectProposal, sceneId]);
 
   const handleDetectApprove = useCallback(() => {
     if (!detectProposal) return;
@@ -272,6 +282,8 @@ export function useWallDetection({
       graphRef.updateItem(id, { pendingReview: false });
     }
     handleItemsChange(graphRef.getItems());
+    // Esta propuesta ya se aprobo: no se reabre sola.
+    reopenedRef.current = true;
     setDetectProposal(null);
     push({
       id: `detect-ok-${Date.now()}`,
@@ -290,6 +302,8 @@ export function useWallDetection({
     const ids = new Set(detectProposal.ids);
     for (const id of ids) graphRef.removeItem(id);
     handleItemsChange(graphRef.getItems());
+    // Descartada: tampoco se reabre sola.
+    reopenedRef.current = true;
     setDetectProposal(null);
     push({
       id: `detect-no-${Date.now()}`,

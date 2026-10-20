@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Billboard, Text } from '@react-three/drei'
 import * as THREE from 'three'
-import { SceneItem, ZoneMetadata, LightMetadata } from '@core/domain/types'
+import { SceneItem, ZoneMetadata, RoomMetadata, LightMetadata } from '@core/domain/types'
 import { PORTAL_COLORS } from './ZonePortal'
 import { normalizeLightConfig, lightGlowOpacity, hexToRgba, computeLightZones, animateLightIntensity } from '../lib/light'
 import { lightShapePoints } from '../lib/lightOcclusion'
@@ -43,6 +43,10 @@ export default function ItemRenderer({ item, isSelected, readOnly = false, showZ
   if (item.metadata.type === 'zone') {
     if (!showZones) return null
     return <ZoneRenderer item={item} isSelected={isSelected} onClick={onClick} onContextMenu={onContextMenu} mapScale={mapScale} imageAspect={imageAspect} readOnly={readOnly} renderMode={renderMode} />
+  }
+
+  if (item.metadata.type === 'room') {
+    return <RoomRenderer item={item} isSelected={isSelected} onClick={onClick} onContextMenu={onContextMenu} mapScale={mapScale} imageAspect={imageAspect} readOnly={readOnly} renderMode={renderMode} />
   }
 
   if (item.metadata.type === 'fog') {
@@ -503,8 +507,87 @@ function ZoneRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, 
   )
 }
 
-function ZonePortalMarkers({ nodes }: { nodes: { points: THREE.Vector3[]; color: string }[] }) {
+/**
+ * Una sala detectada: el poligono de la habitacion y su nombre.
+ *
+ * El jugador NO la ve: es una herramienta del DM para organizar el mapa (la
+ * forma y el nombre ya estan en la imagen de fondo). Tampoco bloquea: las
+ * zonas son las que bloquean el movimiento, no las salas.
+ */
+function RoomRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, imageAspect = 1, readOnly = false, renderMode = DEFAULT_RENDER_MODE }: ItemRendererProps) {
+  const meta = item.metadata as RoomMetadata
+  const mapHeight = 10 * mapScale
+  const mapWidth = mapHeight * imageAspect
+  const Y = getY(renderMode)
+
+  const room = useMemo(() => {
+    const shape = item.shape as import('@core/domain/types').ShapePolygon
+    if (shape?.type !== 'polygon' || shape.points.length < 6) return null
+    const verts: THREE.Vector2[] = []
+    const world: THREE.Vector3[] = []
+    for (let i = 0; i + 1 < shape.points.length; i += 2) {
+      const nx = shape.points[i]
+      const ny = shape.points[i + 1]
+      const wx = (nx - 0.5) * mapWidth - item.x
+      const wz = (ny - 0.5) * mapHeight - item.y
+      verts.push(new THREE.Vector2(wx, -wz))
+      world.push(new THREE.Vector3(wx, Y.zoneOutline, wz))
+    }
+    const shape3 = new THREE.Shape(verts)
+    const geometry = new THREE.ShapeGeometry(shape3, 4)
+    const outlinePts: THREE.Vector3[] = []
+    for (let i = 0; i < world.length; i++) {
+      outlinePts.push(world[i], world[(i + 1) % world.length])
+    }
+    const outlineGeo = new THREE.BufferGeometry().setFromPoints(outlinePts)
+    // El centro del poligono, para poner el nombre.
+    const cx = world.reduce((s, p) => s + p.x, 0) / world.length
+    const cz = world.reduce((s, p) => s + p.z, 0) / world.length
+    return { geometry, outlineGeo, center: [cx, cz] as const }
+  }, [item.shape, item.x, item.y, mapWidth, mapHeight, Y])
+
+  const handleClick = useCallback((e: { stopPropagation: () => void }) => {
+    e.stopPropagation()
+    onClick?.()
+  }, [onClick])
+
+  const handleContextMenu = useCallback((e: { stopPropagation: () => void; nativeEvent: MouseEvent }) => {
+    e.stopPropagation()
+    onContextMenu?.(e.nativeEvent)
+  }, [onContextMenu])
+
+  if (readOnly || !room) return null
+  const { geometry, outlineGeo, center } = room
+
   return (
+    <group position={[item.x, 0, item.y]}>
+      <mesh geometry={geometry} position={[0, Y.zoneFill, 0]} rotation={[-Math.PI / 2, 0, 0]} onClick={handleClick} onContextMenu={handleContextMenu}>
+        <meshBasicMaterial color="#6366f1" transparent opacity={0.07} side={THREE.DoubleSide} depthWrite={false} />
+      </mesh>
+      <lineSegments geometry={outlineGeo}>
+        <lineBasicMaterial color="#818cf8" transparent opacity={0.7} />
+      </lineSegments>
+      <Text
+        position={[center[0], Y.zoneOutline + 0.05, center[1]]}
+        fontSize={0.2}
+        color="#c7d2fe"
+        outlineWidth={0.02}
+        outlineColor="black"
+        anchorX="center"
+        anchorY="middle"
+      >
+        {meta.name}
+      </Text>
+      {isSelected && (
+        <lineSegments geometry={outlineGeo} position={[0, 0.01, 0]}>
+          <lineBasicMaterial color="#3b82f6" />
+        </lineSegments>
+      )}
+    </group>
+  )
+}
+
+function ZonePortalMarkers({ nodes }: { nodes: { points: THREE.Vector3[]; color: string }[] }) {  return (
     <group>
       {nodes.map((node, i) => (
         <lineSegments key={i} geometry={new THREE.BufferGeometry().setFromPoints(node.points)}>

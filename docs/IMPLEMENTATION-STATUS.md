@@ -40,7 +40,7 @@ Reference: `MAP-ANALYSIS.md` (20,382 bytes)
 | Image Ingestion | Implemented | Upload BG + grid-snap drag/drop |
 | Grid Detection | Partial | Grilla auto detectada (`detect-grid`: celda, origen y confianza en px) y propuesta al DM en unidades; la grilla sigue siendo manual si no se detecta |
 | Feature Detection | Implemented | Auto CV+IA con propuesta revisada por el DM (`detect-walls`, en una escena o en todas por lote); la propuesta sobrevive al reload (`pendingReview` en el item) |
-| Semantic Interpretation | Partial | Las salas detectadas llegan al grafo como items `room` (con el nombre que dio el detector: semántico si fue IA, "Room N" si fue CV); falta que el DM las renombre |
+| Semantic Interpretation | Partial | Las salas detectadas llegan al grafo como items `room` y se dibujan en el canvas (solo para el DM, no bloquean); el nombre es el que dio el detector (semántico si fue IA, "Room N" si fue CV) |
 | DM Authoring Tools | Implemented | WallDrawer, fog tools, markers, lights |
 
 ## Fog of War
