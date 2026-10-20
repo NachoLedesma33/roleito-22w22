@@ -119,6 +119,7 @@
     "detectDiscard": "Descartar",
     "detectReviewTitle": "Revisar detección",
     "detectWalls": "Detectar paredes",
+    "detectWallsAll": "Detectar en todas las escenas ({n})",
     "dice": "Tirar dados",
     "diceTitle": "Tirar dados (D)",
     "distance": "Distancia: {{v}} unidades{{sq}}",
@@ -315,6 +316,7 @@
   "dmToast": {
     "blockedByWall": "Bloqueado por pared",
     "detectApproved": "{{n}} paredes confirmadas",
+    "detectBatch": "{{n}} escenas detectadas — revisá la propuesta de cada una",
     "detectDiscarded": "detección descartada",
     "detectFallbackCv": "La IA no se pudo usar: la detección la hizo computer vision",
     "detectFailed": "No se pudo detectar - revisá el backend",

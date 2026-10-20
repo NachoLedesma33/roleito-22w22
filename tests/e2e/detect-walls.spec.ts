@@ -239,6 +239,42 @@ test.describe('Auto wall detection', () => {
     await expect(page.getByTestId('detect-review')).toContainText('Revisar detección');
   });
 
+  test('D8: el batch deja la propuesta pendiente en cada escena', async ({
+    page,
+    request,
+    campaign,
+    authHeaders,
+  }) => {
+    await page.goto('/');
+    const png = await blueprintMapPng(page);
+    const sceneA = await createSceneWithMap(request, authHeaders, campaign.id, png);
+    const sceneB = await createSceneWithMap(request, authHeaders, campaign.id, png);
+
+    await page.goto(`/campaigns/${campaign.id}`);
+    await page.locator('header select').selectOption(sceneA);
+    await expect(page.locator('canvas').first()).toBeVisible({ timeout: 15_000 });
+
+    await page.getByRole('button', { name: 'Construir' }).click();
+    await page.getByRole('button', { name: /Detectar en todas las escenas/ }).click();
+
+    // Las dos escenas quedan con propuesta pendiente.
+    for (const sceneId of [sceneA, sceneB]) {
+      await expect
+        .poll(
+          async () => {
+            const items = await sceneItems(request, authHeaders, campaign.id, sceneId);
+            return items.filter((i) => i.pendingReview).length;
+          },
+          { timeout: 30_000 },
+        )
+        .toBeGreaterThan(0);
+    }
+
+    // Y al entrar a la segunda, el banner se reabre solo.
+    await page.locator('header select').selectOption(sceneB);
+    await expect(page.getByTestId('detect-review')).toBeVisible({ timeout: 30_000 });
+  });
+
   test('D6: la detección no borra lo que el DM dibujó a mano', async ({
     page,
     request,

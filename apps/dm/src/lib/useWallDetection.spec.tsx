@@ -6,10 +6,14 @@ import { SceneLayer } from '@core/domain/types'
 import type { SceneItem } from '@core/domain/types'
 
 const detectWalls = vi.fn()
+const getItems = vi.fn()
+const saveItems = vi.fn()
 vi.mock('@/lib/api', () => ({
   api: {
     scenes: {
       detectWalls: (...args: unknown[]) => detectWalls(...args),
+      getItems: (...args: unknown[]) => getItems(...args),
+      saveItems: (...args: unknown[]) => saveItems(...args),
     },
   },
 }))
@@ -80,6 +84,10 @@ describe('useWallDetection', () => {
   beforeEach(() => {
     detectWalls.mockReset()
     detectWalls.mockResolvedValue({ items: WALLS_RETURNED, wall_count: 2, door_count: 1 })
+    getItems.mockReset()
+    getItems.mockResolvedValue({ items: [] })
+    saveItems.mockReset()
+    saveItems.mockResolvedValue({})
   })
 
   it('agrega los items detectados y deja la propuesta abierta', async () => {
@@ -256,5 +264,38 @@ describe('useWallDetection', () => {
   it('no reabre nada si no hay items pendientes', () => {
     const { result } = setup([], [autoItem('wall-auto-1')])
     expect(result.current.detectProposal).toBeNull()
+  })
+
+  it('detecta en varias escenas y deja cada propuesta pendiente', async () => {
+    const { result } = setup()
+
+    await act(async () => {
+      await result.current.handleAutoDetectAll([{ id: 'scene-a' }, { id: 'scene-b' }])
+    })
+
+    // Cada escena guardo su propuesta con el flag: el DM la revisa al entrar.
+    expect(saveItems).toHaveBeenCalledTimes(2)
+    for (const call of saveItems.mock.calls) {
+      const [, sceneId, items] = call as unknown as [string, string, SceneItem[]]
+      expect(['scene-a', 'scene-b']).toContain(sceneId)
+      expect(items.every((i) => i.pendingReview)).toBe(true)
+    }
+  })
+
+  it('el batch regenera el set automatico de cada escena', async () => {
+    getItems.mockResolvedValue({
+      items: [autoItem('wall-auto-viejo'), { ...autoItem('wall-mano-1') }],
+    })
+    const { result } = setup()
+
+    await act(async () => {
+      await result.current.handleAutoDetectAll([{ id: 'scene-a' }])
+    })
+
+    const [, , items] = saveItems.mock.calls[0] as unknown as [string, string, SceneItem[]]
+    const ids = items.map((i) => i.id)
+    // El set viejo se fue y lo dibujado a mano sigue.
+    expect(ids).not.toContain('wall-auto-viejo')
+    expect(ids).toContain('wall-mano-1')
   })
 })

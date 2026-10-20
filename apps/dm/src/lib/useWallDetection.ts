@@ -35,6 +35,8 @@ export interface UseWallDetectionResult {
   /** Propuesta sin aprobar: los items ya están en el grafo pero en revisión. */
   detectProposal: DetectProposal | null;
   handleAutoDetect: () => Promise<void>;
+  /** Detecta en varias escenas de una vez (batch). */
+  handleAutoDetectAll: (targets: { id: string }[]) => Promise<void>;
   handleDetectApprove: () => void;
   handleDetectDiscard: () => void;
   /** Saca un item de la propuesta; si se vacía, la revisión termina sola. */
@@ -154,6 +156,84 @@ export function useWallDetection({
   }, [campaignId, sceneId, graphRef, handleItemsChange, detectionMode, useAi, push]);
 
   /**
+   * Detecta en varias escenas de una vez.
+   *
+   * Cada escena queda con su propuesta PENDIENTE (pendingReview), así que el
+   * DM la revisa al entrar a cada una: el flag viaja con el item y el banner
+   * se reabre solo. Como la deteccion no persiste, el frontend decide que se
+   * guarda en cada escena.
+   */
+  const handleAutoDetectAll = useCallback(
+    async (targets: { id: string }[]) => {
+      if (!campaignId || targets.length === 0) return;
+      setDetectingWalls(true);
+      try {
+        let detectadas = 0;
+        for (const target of targets) {
+          const [{ items: existentes }, res] = await Promise.all([
+            api.scenes.getItems(campaignId, target.id),
+            api.scenes.detectWalls(campaignId, target.id, useAi ? 'ai' : detectionMode),
+          ]);
+          const nuevos = ((res.items ?? []) as SceneItem[]).filter((i) => i && i.id);
+          if (nuevos.length === 0) continue;
+          const conFlag = nuevos.map((i) => ({ ...i, pendingReview: true }));
+          if (target.id === sceneId) {
+            // La escena activa: el grafo local se actualiza ya, como en la
+            // deteccion individual.
+            for (const item of graphRef.getItems()) {
+              if (isAutoDetectedItem(item)) graphRef.removeItem(item.id);
+            }
+            for (const item of conFlag) graphRef.addItem(item);
+            handleItemsChange(graphRef.getItems());
+            setDetectProposal({
+              ids: conFlag.map((i) => i.id),
+              walls: conFlag.filter((i) => autoDetectedKind(i) === 'wall').length,
+              doors: conFlag.filter((i) => autoDetectedKind(i) === 'door').length,
+            });
+          } else {
+            // Otra escena: se guarda por la API, con la propuesta pendiente.
+            // Regenera el set automatico de esa escena (como la deteccion
+            // individual) y deja los nuevos pendientes de revision.
+            await api.scenes.saveItems(campaignId, target.id, [
+              ...existentes.filter((i) => !isAutoDetectedItem(i)),
+              ...conFlag,
+            ]);
+          }
+          detectadas++;
+        }
+        push({
+          id: `detect-batch-${Date.now()}`,
+          rollerName: i18n.t('dmToast.rollerDetect', 'Detección'),
+          diceType: 20,
+          count: 1,
+          results: [detectadas],
+          total: detectadas,
+          label: i18n.t(
+            'dmToast.detectBatch',
+            '{{n}} escenas detectadas — revisá la propuesta de cada una',
+            { n: detectadas },
+          ),
+          timestamp: Date.now(),
+        });
+      } catch {
+        push({
+          id: `detect-batch-err-${Date.now()}`,
+          rollerName: i18n.t('dmToast.rollerDetect', 'Detección'),
+          diceType: 1,
+          count: 1,
+          results: [1],
+          total: 1,
+          label: i18n.t('dmToast.detectFailed', 'No se pudo detectar — revisá el backend'),
+          timestamp: Date.now(),
+        });
+      } finally {
+        setDetectingWalls(false);
+      }
+    },
+    [campaignId, sceneId, graphRef, handleItemsChange, detectionMode, useAi, push],
+  );
+
+  /**
    * Reabre una propuesta que quedo sin revisar (el DM recargo la pagina a
    * mitad de la revision).
    *
@@ -228,6 +308,7 @@ export function useWallDetection({
     detectingWalls,
     detectProposal,
     handleAutoDetect,
+    handleAutoDetectAll,
     handleDetectApprove,
     handleDetectDiscard,
     pruneProposal,

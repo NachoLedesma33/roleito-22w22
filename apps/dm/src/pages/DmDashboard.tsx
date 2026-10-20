@@ -877,6 +877,7 @@ const startFogMode = useCallback(() => {
     detectingWalls,
     detectProposal,
     handleAutoDetect,
+    handleAutoDetectAll,
     handleDetectApprove,
     handleDetectDiscard,
     pruneProposal,
@@ -895,6 +896,17 @@ const startFogMode = useCallback(() => {
     setBuildMenuOpen(false);
     void handleAutoDetect();
   }, [handleAutoDetect]);
+
+  // Escenas con fondo: sin fondo la deteccion no tiene contra que trabajar.
+  const scenesConFondo = useMemo(
+    () => scenes.filter((s) => !!s.background_path),
+    [scenes],
+  );
+
+  const handleDetectAllClick = useCallback(() => {
+    setBuildMenuOpen(false);
+    void handleAutoDetectAll(scenesConFondo.map((s) => ({ id: s.id })));
+  }, [handleAutoDetectAll, scenesConFondo]);
 
   const handleDeleteItem = useCallback((itemId: string) => {
     graphRef.removeItem(itemId)
@@ -2174,6 +2186,15 @@ const startFogMode = useCallback(() => {
                   >
                     {detectingWalls ? t('dm.detecting', 'Detectando...') : t('dm.detectWalls', 'Detectar paredes')}
                   </button>
+                  {scenesConFondo.length > 1 && (
+                    <button
+                      onClick={handleDetectAllClick}
+                      disabled={detectingWalls}
+                      className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${detectingWalls ? 'text-amber-400 animate-pulse' : 'text-[var(--text-secondary)]'}`}
+                    >
+                      {t('dm.detectWallsAll', 'Detectar en todas las escenas ({n})', { n: scenesConFondo.length })}
+                    </button>
+                  )}
                   <button
                     onClick={handleClearAllWalls}
                     className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-red-400"
