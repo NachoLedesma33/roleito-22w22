@@ -106,4 +106,40 @@ def scene_items_from_detection(detection_result: DetectedMap) -> list:
             },
         })
 
+    for i, room in enumerate(detection_result.rooms):
+        # Una sala con menos de 3 vertices no es un poligono: no hay nada que
+        # dibujar.
+        if len(room.polygon) < 3:
+            continue
+        item_id = f"room-auto-{base_time}-{i}-{random.randint(1000, 9999)}"
+
+        normalized_points = []
+        for p in room.polygon:
+            normalized_points.append(p.x / detection_result.width)
+            normalized_points.append(p.y / detection_result.height)
+
+        items.append({
+            "id": item_id,
+            "type": "shape",
+            "shape": {
+                "type": "polygon",
+                "points": normalized_points,
+            },
+            "position": {"x": 0, "y": 0, "z": 0},
+            "rotation": 0,
+            "scale": 1,
+            "layer": 1,
+            "zIndex": 0,
+            "locked": False,
+            "visible": True,
+            "metadata": {
+                "type": "room",
+                "roomId": room.id,
+                # El nombre que dio el detector: semantico si la deteccion fue
+                # con IA, "Room N" si fue computer vision.
+                "name": room.label,
+                "description": "",
+            },
+        })
+
     return items

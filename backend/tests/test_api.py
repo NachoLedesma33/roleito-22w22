@@ -1655,6 +1655,14 @@ async def test_detect_walls_no_persiste_la_propuesta(client):
         assert body["rooms"][0]["label"]
         assert body["rooms"][0]["area"] > 0
         assert body["rooms"][0]["polygon"]
+        # Y las salas llegan como items del grafo (tipo room), no se tiran.
+        salas = [i for i in body["items"] if i["metadata"]["type"] == "room"]
+        assert len(salas) == len(body["rooms"])
+        assert salas[0]["shape"]["type"] == "polygon"
+        assert salas[0]["shape"]["points"]
+        # Los puntos van normalizados (0-1), como los de los muros.
+        assert all(0 <= p <= 1 for p in salas[0]["shape"]["points"])
+        assert salas[0]["metadata"]["name"]
 
         # ...pero la escena sigue vacía: nadie la aprobó.
         items = (
