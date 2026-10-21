@@ -111,6 +111,8 @@
     "inviteHere": "From this machine",
     "inviteLan": "On the local network (LAN)",
     "inviteCopied": "Copied",
+    "invitePublic": "Public link (tunnel)",
+    "invitePublicLabel": "Public URL (if you use a tunnel)",
     "inviteNoCode": "Generating the invite code...",
     "deleteFogRegion": "Delete fog region",
     "deleteLight": "Delete light",

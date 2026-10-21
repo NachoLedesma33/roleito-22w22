@@ -63,6 +63,11 @@ test.describe('Campaign CRUD', () => {
     await expect(menu).toBeVisible();
     const urls = page.getByTestId('invite-url');
     await expect(urls.first()).toContainText('/campaigns/join/');
+
+    // Con una URL publica pegada (el playtest remoto, por tunel), ese es el
+    // link que se ofrece: el que llega a la casa del otro jugador.
+    await page.getByLabel('URL publica (si usas un tunel)').fill('https://mesa.trycloudflare.com');
+    await expect(urls.first()).toContainText('https://mesa.trycloudflare.com/campaigns/join/');
   });
 
 test.describe('Campaign Bulk Operations', () => {

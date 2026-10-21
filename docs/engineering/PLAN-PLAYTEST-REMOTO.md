@@ -1,0 +1,274 @@
+# Plan: jugar la campaña desde casas y ciudades distintas
+
+> Estado: **propuesto** (2026-10-21). Decisión de Approaches: el DM juega en su casa con
+> amigos en otras casas (y a veces en otras ciudades). No hay red local común: hace falta
+> exponer el juego a internet por un **túnel**.
+
+Este documento es el plan, no la implementación. La parte de código que ya está
+hecha y se leverages está en §2.
+
+---
+
+## 1. Por qué el planteo LAN quedó atrás
+
+La primera versión del invite resolvía el caso "todos en la misma wifi" (§ el
+menú de invitación muestra la IP de la LAN). Con jugadores en **casas y
+ciudades distintas** eso no sirve: la IP privada de la casa del DM no es
+alcanzable desde afuera.
+
+La solución estándar es un **túnel** (reverse tunnel): un proceso en la máquina
+del DM abre una conexión **saliente** a un servicio público y ese servicio
+publica un URL HTTPS que reenvía el tráfico al proceso local. El jugador entra
+por ese URL desde donde esté.
+
+> Los **Dev Tunnels de VS Code** que mencionás son exactamente esto: el mismo
+> servicio que usa el "Forward a Port" de VS Code, pero con la CLI `devtunnel`
+>standalone (sin necesidad de tener VS Code abierto).
+
+---
+
+## 2. Lo que YA está listo (no hay que tocarlo)
+
+| Pieza | Dónde | Por qué importa acá |
+|---|---|---|
+| Menú de invitación con los links | `components/InviteMenu.tsx` | El link que se manda es el del **túnel**, no la IP de la LAN. |
+| `GET /api/network/ips` (solo DM) | `backend/routes.py` | Sirve para el caso LAN y para el diagnóstico. |
+| **El backend no se expone**: solo el frontend | `apps/dm/vite.config.ts` (proxy `/api` + `ws: true`) | El túnel apunta **al frontend**, que hace de proxy hacia el backend local. El backend nunca queda en internet. |
+| Las escrituras son del DM | `require_dm` en toda la superficie | Un túnel es una URL pública: sin esto, cualquiera que tuviera el link podría reescribir la campaña. **Esto ya está cerrado** (B5c + partes 1 y 2). |
+| El jugador conserva su superficie | usos, dados, pedir luz, mover el token, sus notas | Los jugadores no necesitan rol (van sin token). |
+| Sync por **WebSocket** primero | `lib/usePlayerSync.ts` | El push de las revisiones no es polling: es lo que hace que la latencia no se sienta. |
+| Poll con backoff 250 ms → 2 s | `lib/usePlayerSync.ts` | Si el WS no abre, el poll se **desacelera solo**: no se queda martilleando el túnel. |
+| La LoS se calcula en el **worker** | `pages/PlayerView.tsx` | Cero red para la línea de visión (el cálculo es local del jugador). |
+| El snapshot se pide solo cuando la **revisión** cambia | `lib/usePlayerSync.ts` | No se baja el snapshot entero en cada tick. |
+
+---
+
+## 3. La anatomía del tráfico (medida del código, 2026-10-21)
+
+Lo que realmente viaja por el túnel si el jugador está en otra ciudad:
+
+| Flujo | Frecuencia por jugador | Tamaño | Nota |
+|---|---|---|---|
+| Sync del mundo (WS `/api/ws/invite/{code}`) | push | eventos chicos | **El canal principal** ✅ |
+| Poll de revisión (fallback, sin WS) | 250 ms → 2 s (backoff) | ~1 KB | Solo si el WS no abre |
+| Snapshot (`GET /invite/{code}`) | solo cuando cambia la revisión | **~47 KB** | El dato pesado: se pide por evento de revisión, no en bucle |
+| Tiradas (`GET /rolls/recent`) | 1 por segundo | chico | Es un poll fijo (no tiene backoff) |
+| Mover el token | por evento del jugador | chico | POST, no un stream continuo |
+| La LoS | **0 red** | — | Va en un Web Worker |
+
+**Conclusión 1 (rendimiento)**: el tráfico es **chico y sporadic** (≈1–5 req/s por
+jugador). Ningún túnel se rompe con eso. Los límites de los servicios gratis
+los mata el **snapshot de 47 KB** y, sobre todo, la **carga inicial**.
+
+**Conclusión 2 (el cuello de botella real)**: el **dev server de vite** sirve
+cientos de módulos ES sueltos (sin bundlear). Un jugador en otra ciudad
+pide cientos de archivos: la primera carga por un túnel sería de **minutos**.
+Por eso el playtest remoto **no puede ir con `npm run dev`**: tiene que ir con
+un **build de producción** servido estáticamente.
+
+---
+
+## 4. Las opciones (estado 2026-10-21, con números)
+
+| Opción | Costo | URL | Latencia | Límites que duelen | Setup | Veredicto |
+|---|---|---|---|---|---|---|
+| **Cloudflare Tunnel** (quick) | $0 | `algo.trycloudflare.com` **cambia en cada corrida** | baja (edge global) | sin cuenta; sin límite de ancho de banda; **100 MB por request** (irrelevante) | `cloudflared tunnel --url http://localhost:5173` (un binario) | ✅ **el más simple para una partida** |
+| **Cloudflare Tunnel** (nombrado) | $0 (+ un dominio propio) | fija, tipo `mesa.ritoclaro.com` | baja | igual que el quick | cuenta + DNS | ✅ mejor si se juega seguido |
+| **Tailscale Funnel** | $0 (personal) | fija `maquina.tailnet.ts.net` | media (el tráfico va a los servidores de Tailscale y de ahí al jugador) | Funnel sigue en beta; puertos 443/8443/10000 | cliente Tailscale + cuenta | ⚠️ estable pero más pasos y menosredos que Cloudflare |
+| **VS Code Dev Tunnels** / CLI `devtunnel` | $0 (cuenta GitHub/Microsoft) | fija `puerto-hash.devtunnels.ms` | media | **privada por defecto**: hay que ponerla *pública*; sin firewall ni puertos | instalar la CLI o usar el panel de Ports | ⚠️ lo que ya conocés, pero con un paso extra de visibilidad pública |
+| **ngrok** (free) | $0 | efímera | media | **1 GB/mes y 20.000 requests/mes** (una partida de 3 h con 4 jugadores lo revienta) + **página de intersticial** al visitante | cuenta | ❌ descartado por los cuotas y el aviso |
+| **Playit / localhost.run / bore** | $0 | efímera | variable | menos Maduras, sin garantías | varies | ❌ no para una partida |
+
+**Criterio (el que pesa)**: el jugador tiene que **entrar con un link y que
+funcione**. Todo lo que agregue un paso de cuenta o una advertencia en la
+pantalla del jugador se paga en la mesa.
+
+---
+
+## 5. La recomendación
+
+**Opción: Cloudflare Tunnel en modo *quick* para la primera partida, y *nombrado*
+cuando el playtest se acerque.**
+
+```bash
+# 1) el build de producción (OBLIGATORIO para remoto: ver §3)
+npm run build --workspace=apps/dm
+
+# 2) el frontend estático + el proxy al backend
+npm run serve:prod          # (nuevo, §8.1)
+
+# 3) el túnel
+cloudflared tunnel --url http://localhost:5173
+#    -> https<algo>.trycloudflare.com
+```
+
+Por qué esta y no otra:
+
+- **Cero cuentas y cero fricción** para el DM: un binario, un comando, un HTTPS.
+- **Sin cuotas de requests** (el límite de ngrok es lo que mata una partida).
+- **HTTPS de verdad** (el navegador no muestra "no seguro").
+- **El backend no se expone**: el túnel apunta al frontend, que proxea `/api` y
+  el WebSocket al backend local (`ws: true` ya está en la config).
+- El **URL efímero** es el costo: el link cambia por partida. Para el DM es
+  trivial (lo copia y lo manda de nuevo). Si molesta, un túnel nombrado con un
+  dominio propio (Cloudflare free + un dominio) lo arregla.
+
+**Plan B si el túnel se cae a mitad de partida**: la app ya tiene el poll de
+revisión con backoff (§2) → si el WS se cae, los jugadores siguen viendo los
+cambios (con hasta 2 s de retraso) ✓. Y el DM puede reabrir el túnel y mandar
+el link nuevo por el chat de la mesa ✓. **Esto no requiere código** ✓.
+
+**Lo que NO recomiendo**: Tailscale Funnel o Dev Tunnels como primera opción:
+exigen instalar cliente, cuenta y (en Dev Tunnels) cambiar la visibilidad a
+pública — tres pasos extra para algo que `cloudflared` hace en uno.
+
+---
+
+## 6. La arquitectura de la sesión remota
+
+```
+jugador (otra ciudad)          maquina del DM
+  navegador                      ┌──────────────────────────────┐
+     │  HTTPS                    │  tunel (saliente)             │
+     ▼                           │      │                       │
+┌──────────┐  (edge publico)    │      ▼                       │
+│  CDN/edge│────────────────────►│  servidor estatico :5173    │
+└──────────┘                    │      │  proxy /api + /ws      │
+                                │      ▼                       │
+                                │  backend :8000 (127.0.0.1)   │
+                                └──────────────────────────────┘
+```
+
+- **Lo público**: el frontend (bundles, assets, mapa, audio) + el proxy `/api`.
+- **Lo que no sale nunca de la máquina del DM**: el backend y la base SQLite
+  ✓ (`data/roleito.db`).
+- **El DM** juega desde `localhost` (sin túnel) → sus requests no pasan por
+  internet ✓.
+
+---
+
+## 7. Seguridad
+
+**Lo que ya está resuelto** (y es la mitad del trabajo):
+
+- Toda **escritura** de la campaña exige rol DM (401 sin token, 403 con token
+  de jugador) ✓. Un link público ya no es una puerta al backend ✓.
+- El jugador **no tiene token** y su superficie es mínima y de solo lectura +
+  sus propias acciones ✓.
+- El **código del invite** es un token de un solo uso por campaña (se genera
+  con `secrets` ✓) → sin él no hay campaña ✓.
+
+**Lo que falta y hay que hacer antes de jugar con un link público**:
+
+| # | Riesgo | Mitigación | Costo |
+|---|---|---|---|
+| S1 | Alguien que se entera del link entra a la campaña y ve el lore | El link se manda por un canal privado (WhatsApp de la mesa) y **se regenera al terminar la partida** (`POST /invite-code` genera uno nuevo ✓) | bajo |
+| S2 | El túnel queda abierto y alguien lo encuentra por el azar | **Cerrar el túnel al terminar** (`Ctrl+C`) + un `cloudflared` con **Access** (login) si se quiere una capa más | bajo |
+| S3 | Abuso de la URL pública (scanners que pegan en `/api/*`) | El proxy solo expone `/api` y el WS; los 401/403 ya responden ✓. Opcional: `Cloudflare Access` delante del túnel (un login para entrar) | bajo |
+| S4 | El **DM** expone su sesión por el link | El token del DM va en el `sessionStorage` de **su** navegador, no viaja por el link ✓ (el link es solo el código del invite) | — |
+| S5 | Un jugador descarga el código del invite y lo reusa | Se regenera al terminar la partida ✓ (S1) | bajo |
+| S6 | El túnel sirve el `.env` o el `data/` | El servidor estatico sirve **solo** `dist/` ✓ (el `data/` y el `.env` quedan fuera del bundle) | — |
+
+**Extra opcional pero recomendado**: un **rate limit** en el backend (por IP) para
+las rutas públicas (`/invite/*`, `/rolls/recent`): hoy no hay ninguno y el
+túnel es público. Un límite simple (p. ej. 10 req/s por IP para las rutas
+públicas) evita que un scannerastesore el backend.
+
+---
+
+## 8. Latencia y rendimiento (el plan por fases)
+
+### 8.1 Latencia: qué la siente el jugador
+
+| Acción | Qué siente el jugador | Con el WS (típico) | Sin WS (fallback) |
+|---|---|---|---|
+| El DM mueve un token | Su token se mueve | ~1 RTT (80–150 ms) | hasta 2 s (el backoff) |
+| El DM cambia la escena | El snapshot se recarga | ~2 RTT + los 47 KB | hasta 2 s |
+| Una tirada del DM | El toast de la tirada | ~1 RTT | 1 s (el poll de las tiradas) |
+| El jugador se mueve | Su token se mueve (interpolado en local) | el input es local ✓ | idem |
+| La LoS | Nada (es local) | 0 | 0 |
+
+**Conclusión**: con el WS abierto, la latencia del túnel es la de un RTT por
+internet normal (80–150 ms entre ciudades) → **imperceptible para una mesa**.
+Lo que **no** se puede perdonar es la **carga inicial** (§8.2).
+
+**Mitigaciones ya hechas**: el LoS en el worker ✓, el poll con backoff ✓, el
+snapshot solo cuando cambia la revisión ✓, la interpolación de la posición
+en el cliente (`velocitiesRef`, `clockOffsetRef` ✓ → el token del jugador se
+mueve suave aunque el DM o la red tarden).
+
+**Mitigación pendiente (P2)**: un **watchdog de WS** que reconecta solo con
+backoff (hoy `connectWs` reintenta ✓ pero sin backoff exponencial → ante una
+red inestable puede martillear el túnel). Y un aviso en la UI de "reconectando"
+(la vista ya muestra el estado de conexión ✓ → falta el aviso).
+
+### 8.2 Rendimiento: la carga inicial (lo que hay que arreglar)
+
+| Qué | En dev | En producción (build) | Objetivo |
+|---|---|---|---|
+| Requests para la primera pantalla | **cientos** (un módulo por archivo) | ~5–10 (bundles) | < 10 |
+| Peso del JS | — (sin minificar) | medir con `npm run perf:budget` ✓ (el repo ya tiene ese gate) | dentro del presupuesto |
+| El bundle del jugador | incluye el dashboard del DM (tree-shaking por ruta ✓) | idem | que el bundle del jugador NO arrastre el dashboard |
+| Imágenes del mapa | `/api/static` ✓ | idem (el backend las sirve) | cachear |
+| Audio | `/api/static` ✓ | idem | cachear |
+
+**Plan de assets**: servir `dist/` con cache headers largos (el bundle tiene
+hash en el nombre ✓) y las imágenes/audio con `Cache-Control` (el backend los
+sirve de `data/assets/` → hoy sin cache explícito ✗ → **pendiente**).
+
+### 8.3 El plan por fases
+
+| Fase | Qué | Terminado cuando | Riesgo |
+|---|---|---|---|
+| **P0** | Servir el **build de producción** + el proxy `/api` y `/ws` (script `serve:prod`) y exponerlo con `cloudflared` | Un jugador en otra red carga la pantalla del login en < 5 s | bajo |
+| **P1** | El **túnel con nombre** (dominio propio) + **regenerar el invite** al terminar la partida + cerrar el túnel | El link es el mismo para todas las partidas y caduca al terminar | bajo |
+| **P2** | **Watchdog del WS** con backoff + aviso de "reconectando" + cache de assets | El WS se recupera solo de un corte de red sin que el jugador note | medio |
+| **P3** | **Rate limit** en las rutas públicas + `Cloudflare Access` opcional (login) | Un scanner no puede martillear el backend | bajo |
+| **P4** | Medir la partida real: el tamaño de la primera carga, la latencia por acción, el uso de ancho de banda | Hay números del playtest en el doc | — |
+
+---
+
+## 9. El plan de prueba (el playtest)
+
+1. `npm run build --workspace=apps/dm` y `npm run serve:prod`.
+2. `cloudflared tunnel --url http://localhost:5173` → copiar el URL.
+3. `POST /invite-code` (o el botón "🔗 Invitar") → copiar el link del **túnel**
+   (¡no el de la LAN! → el menú debe ofrecer el link del túnel; hoy ofrece el
+   de esta máquina y el de la LAN → **P1**: que el link que se copia sea el
+   del túnel, no el de localhost ✗✗ **esto es un bug del flujo actual**).
+4. Mandar el link por WhatsApp al grupo.
+5. Cada jugador: entra, elige su personaje, tira un dado, pide luz, se mueve.
+6. El DM: ve las peticiones de luz, las tiradas y los movimientos.
+7. Medir: el tiempo de la primera carga, la latencia de un dado, si el WS se
+   cortó.
+
+**El paso 3 tiene un hueco**: el menú de invitación ofrece el link de esta
+máquina y el de la LAN, pero **no el del túnel** → si el DM está en localhost
+y tuneliza, el link que copia es el equivocado ✗. **P1 lo arregla**: el menú
+tiene que ofrecer "el link público (túnel)".
+
+---
+
+## 10. Riesgos
+
+| Riesgo | Mitigación |
+|---|---|
+| El túnel se cae a mitad de partida | El poll de revisión con backoff mantiene a los jugadores al día (con retraso) ✓; el DM reabre y reenvía el link ✓ |
+| La primera carga es lentísima (dev server) | **P0**: build de producción ✓ |
+| Alguien encuentra el link público | Se regenera el invite al terminar ✓ + cerrar el túnel ✓ + Access opcional ✓ |
+| El WS no abre en una red con proxy corporativo | El poll de revisión (250 ms → 2 s) cubre ✓; el aviso de conexión ayuda ✓ |
+| El backend se satura con requests públicos | **P3**: rate limit ✓ |
+| El túnel paga factura | Cloudflare quick es gratis e ilimitado en ancho de banda ✓; ngrok se descarta por las cuotas ✓ |
+
+---
+
+## 11. Decisiones que hay que tomar (del DM)
+
+1. **¿Túnel con nombre (dominio propio) o link efímero por partida?** → El
+   efímero es cero fricción; el nombre es cómodo si se juega seguido.
+2. **¿Cloudflare Access (que los jugadores tengan que loguearse) o link
+   abierto?** → Link abierto: la fricción de un login para 4 jugadores en una
+   mesa es alta. El invite ya es un secreto.
+3. **¿Dónde vive la "mesa"?** → La máquina del DM (con `serve:prod` + el
+   túnel) es lo simple; una VPS es lo "siempre arriba" (costo: que alguien
+   la mantenga encendida).
