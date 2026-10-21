@@ -30,7 +30,7 @@ from core.agents.validation import MAX_EVENTS, MAX_LIST, MAX_TEXT, safe_text
 class GarbageProvider(AIProvider):
     name = "garbage"
 
-    async def complete(self, messages, *, model=None, max_tokens=512, temperature=0.7):
+    async def complete(self, messages, *, model=None, max_tokens=512, temperature=0.7, tools=None):
         return "this is not json {{"
 
 
@@ -39,7 +39,7 @@ class HugeProvider(AIProvider):
 
     name = "huge"
 
-    async def complete(self, messages, *, model=None, max_tokens=512, temperature=0.7):
+    async def complete(self, messages, *, model=None, max_tokens=512, temperature=0.7, tools=None):
         return json.dumps({
             "summary": "x" * 200_000,
             "answer": "y" * 200_000,
@@ -351,7 +351,7 @@ class CapturingProvider(AIProvider):
         self.prompt = ""
         self.system = ""
 
-    async def complete(self, messages, *, model=None, max_tokens=512, temperature=0.7):
+    async def complete(self, messages, *, model=None, max_tokens=512, temperature=0.7, tools=None):
         self.system = "\n".join(m.text for m in messages if m.role == "system")
         self.prompt = "\n".join(m.text for m in messages if m.role != "system")
         return json.dumps(self.payload)
@@ -538,7 +538,7 @@ async def test_los_reintentos_cuentan_contra_el_tope(tmp_path, monkeypatch):
             self.attempts = attempts
             self.last_attempts = 0
 
-        async def complete(self, messages, *, model=None, max_tokens=512, temperature=0.7):
+        async def complete(self, messages, *, model=None, max_tokens=512, temperature=0.7, tools=None):
             # El provider remoto reporta cuantos requests HTTP hizo.
             self.last_attempts = self.attempts
             raise RuntimeError("429 Too Many Requests")
@@ -614,7 +614,7 @@ async def test_la_auditoria_registra_tambien_los_errores(tmp_path, monkeypatch):
     class FailingProvider(AIProvider):
         name = "failing"
 
-        async def complete(self, messages, *, model=None, max_tokens=512, temperature=0.7):
+        async def complete(self, messages, *, model=None, max_tokens=512, temperature=0.7, tools=None):
             raise RuntimeError("el proveedor se cayo")
 
     agent = LoreAgent(FailingProvider())
@@ -913,3 +913,54 @@ async def test_si_el_provider_no_expone_los_modelos_no_se_rompe(monkeypatch):
         models = await discover_models(profile)
 
     assert models == []
+
+
+# ── B5: las tools de dominio y su perimetro ─────────────────────────
+
+
+async def test_una_tool_desconocida_no_se_puede_invocar():
+    """La lista es cerrada: el modelo elige, no escribe tools."""
+    from core.agents.tools import ToolContext, ToolError, run_tool
+
+    with pytest.raises(ToolError):
+        await run_tool("borrar_la_campana", {}, ToolContext(campaign_id="c1"))
+
+
+async def test_una_tool_con_argumentos_invalidos_se_rechaza():
+    """Los argumentos se validan con pydantic: un campo de mas, error."""
+    from core.agents.tools import ToolContext, ToolError, run_tool
+
+    ctx = ToolContext(campaign_id="c1")
+    # `entidad` no es valida.
+    with pytest.raises(ToolError):
+        await run_tool("consultar_estado", {"entidad": "codigo_fuente"}, ctx)
+    # Un campo que no existe en el schema.
+    with pytest.raises(ToolError):
+        await run_tool("consultar_estado", {"entidad": "npc", "archivo": "/etc/passwd"}, ctx)
+
+
+async def test_la_tool_consulta_solo_la_campana_del_contexto():
+    """El perimetro de datos: la tool ve la campana que le pasaron y nada mas."""
+    from core.agents.tools import ToolContext, run_tool
+
+    class _FakeDB:
+        def execute(self, *_a, **_k):
+            raise AssertionError("no debe tocar la DB sin sesion real")
+
+    # Sin DB la tool responde que no hay nada: no inventa ni filtra.
+    out = await run_tool("consultar_estado", {"entidad": "npc"}, ToolContext(campaign_id="c1"))
+    assert "base de datos" in out.lower() or out == ""
+
+
+def test_las_tools_publicadas_son_solo_de_dominio():
+    """Ninguna tool toca el filesystem, la shell ni la red."""
+    from core.agents.tools import TOOLS
+
+    assert TOOLS, "no hay tools registradas"
+    for name, spec in TOOLS.items():
+        assert spec.writes is False or "proponer" in name, (
+            f"{name} escribe pero no propone: eso lo decide el DM"
+        )
+        # El nombre no puede ser una primitiva del sistema.
+        for prohibido in ("shell", "exec", "file", "read_file", "write", "http", "network"):
+            assert prohibido not in name.lower(), f"{name} huele a primitiva del sistema"

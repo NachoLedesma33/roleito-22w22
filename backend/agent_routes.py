@@ -200,10 +200,14 @@ async def query_lore(
 
     live_state = await build_live_state(db, campaign_id)
 
+    from core.agents.tools import ToolContext
+
     result = await agent.run(
         question=body.question,
         history=body.history,
         live_state=live_state,
+        # El perimetro de las tools: la campana y nada mas.
+        tool_context=ToolContext(campaign_id=campaign_id, db=db),
         campaign_context=f"{campaign.name}: {campaign.description or ''}",
         # Lista blanca: del personaje solo el nombre y la descripcion de la
         # ficha. Las notas del jugador (`player_notes`) no llegan al prompt

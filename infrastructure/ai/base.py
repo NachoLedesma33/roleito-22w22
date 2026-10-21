@@ -66,6 +66,12 @@ class AIProvider(ABC):
         model: str | None = None,
         max_tokens: int = 512,
         temperature: float = 0.7,
+        tools: list[dict] | None = None,
     ) -> str:
-        """Send the messages and return the model's text response."""
+        """Send the messages and return the model's text response.
+
+        Con `tools`, el modelo puede pedir una tool: el adapter devuelve
+        entonces el JSON de la tool call (`{"tool_call": {...}}`) y el bucle
+        del agente la ejecuta. El contrato sigue siendo texto->texto.
+        """
         raise NotImplementedError

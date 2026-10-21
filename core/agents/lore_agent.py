@@ -9,6 +9,13 @@ from typing import Any
 from core.agents.base import AgentResult, BaseAgent
 from core.agents.validation import safe_text, safe_str_list
 from core.agents.context_manager import build_context, system_with_rule, wrap_data
+from core.agents.tools import (
+    MAX_TOOL_ITERATIONS,
+    ToolError,
+    parse_tool_call,
+    run_tool,
+    tool_specs,
+)
 
 LORE_SYSTEM = """You are a tabletop RPG lore keeper. Given campaign context and a question, provide a helpful answer.
 
@@ -89,6 +96,7 @@ class LoreAgent(BaseAgent):
         events: list[dict[str, str]] | None = None,
         history: list[dict[str, str]] | None = None,
         live_state: str = "",
+        tool_context: Any = None,
         **kwargs: Any,
     ) -> AgentResult:
         if not question.strip():
@@ -117,12 +125,37 @@ class LoreAgent(BaseAgent):
 
         user_msg = f"Campaign Context:\n{wrap_data(context_str)}\n\nQuestion: {question}"
 
+        # Las tools: solo si la ruta nos dio un contexto (sin DB no hay nada
+        # que consultar). El modelo PIDE una tool; el backend la ejecuta.
+        tools = tool_specs() if tool_context is not None else []
+
         raw = await self._complete(
             user_msg,
             system=system_with_rule(LORE_SYSTEM),
             max_tokens=1024,
             temperature=0.3,
+            tools=tools or None,
         )
+
+        for _ in range(MAX_TOOL_ITERATIONS):
+            call = parse_tool_call(raw)
+            if not call:
+                break
+            try:
+                tool_result = await run_tool(
+                    call.get("name", ""), call.get("arguments") or {}, tool_context
+                )
+            except ToolError as e:
+                tool_result = f"La tool no se pudo usar: {e}"
+            # El resultado de la tool es DATO, no instruccion.
+            raw = await self._complete(
+                f"{user_msg}\n\nResultado de la tool (dato):\n"
+                f"<datos>\n{tool_result}\n</datos>",
+                system=system_with_rule(LORE_SYSTEM),
+                max_tokens=1024,
+                temperature=0.3,
+                tools=tools or None,
+            )
 
         return self._parse_response(raw, context_str)
 

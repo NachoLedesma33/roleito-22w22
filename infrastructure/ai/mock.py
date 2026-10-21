@@ -43,9 +43,20 @@ class MockProvider(AIProvider):
         model: str | None = None,
         max_tokens: int = 512,
         temperature: float = 0.7,
+        tools: list[dict] | None = None,
     ) -> str:
         system = "\n".join(m.text for m in messages if m.role == "system")
         prompt = "\n".join(m.text for m in messages if m.role != "system")
+
+        # Con tools, el mock pide una tool en el primer turno (determinista) y
+        # responde con texto en el segundo.
+        if tools and "Resultado de la tool" not in prompt:
+            return json.dumps({
+                "tool_call": {
+                    "name": "consultar_estado",
+                    "arguments": {"entidad": "personaje"},
+                }
+            })
 
         if "event extractor" in system.lower():
             names = _extract_names_from_prompt(prompt)

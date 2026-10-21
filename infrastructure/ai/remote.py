@@ -106,6 +106,7 @@ class OpenAICompatibleProvider(AIProvider):
         model: str | None = None,
         max_tokens: int = 512,
         temperature: float = 0.7,
+        tools: list[dict] | None = None,
     ) -> str:
         if not self.api_key:
             raise RuntimeError(
@@ -118,6 +119,9 @@ class OpenAICompatibleProvider(AIProvider):
             "max_tokens": max_tokens,
             "temperature": temperature,
         }
+        if tools:
+            payload["tools"] = tools
+            payload["tool_choice"] = "auto"
         headers = {"Authorization": f"Bearer {self.api_key}"}
 
         last_error: Exception | None = None
@@ -175,7 +179,26 @@ class OpenAICompatibleProvider(AIProvider):
             else:
                 self.last_usage = get_usage_info(data)
                 try:
-                    return data["choices"][0]["message"]["content"]
+                    message = data["choices"][0]["message"]
+                    # El modelo pidio una tool: se devuelve serializada (el
+                    # bucle del agente la ejecuta).
+                    calls = message.get("tool_calls") or []
+                    if calls:
+                        call = calls[0]
+                        fn = call.get("function") or {}
+                        args = fn.get("arguments")
+                        if isinstance(args, str):
+                            try:
+                                args = json.loads(args)
+                            except json.JSONDecodeError:
+                                args = {}
+                        return json.dumps({
+                            "tool_call": {
+                                "name": fn.get("name", ""),
+                                "arguments": args or {},
+                            }
+                        })
+                    return message["content"]
                 except (KeyError, IndexError, TypeError) as e:
                     raise RuntimeError(f"Respuesta con formato inesperado: {data}") from e
 

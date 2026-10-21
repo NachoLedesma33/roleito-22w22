@@ -1756,7 +1756,7 @@ async def test_las_notas_del_jugador_no_llegan_al_prompt_del_dm(client, monkeypa
     class CapturingProvider(AIProvider):
         name = "capturing"
 
-        async def complete(self, messages, *, model=None, max_tokens=512, temperature=0.7):
+        async def complete(self, messages, *, model=None, max_tokens=512, temperature=0.7, tools=None):
             captured["system"] = "\n".join(m.text for m in messages if m.role == "system")
             captured["prompt"] = "\n".join(m.text for m in messages if m.role != "system")
             return json.dumps({
@@ -2796,3 +2796,44 @@ async def test_el_advisor_ve_el_estado_vivo_de_la_campana(client, monkeypatch):
     assert "Encuentra la llave" in data["live_state"], data["live_state"]
     # Y el modelo lo vio (esta en el contexto que se le mando).
     assert "Live campaign state" in data["context"], data["context"]
+
+
+@pytest.mark.asyncio
+async def test_el_advisor_puede_consultar_una_tool_de_la_campana(client, monkeypatch):
+    """B5: el modelo PIDE una tool, el backend la ejecuta y le devuelve el dato.
+
+    Y el perimetro: la tool solo ve la campana del contexto.
+    """
+    from uuid import uuid4
+
+    from infrastructure.ai.mock import MockProvider
+    import agent_routes
+
+    monkeypatch.setattr(agent_routes, "get_provider_for_agent", lambda *_args: MockProvider())
+
+    reg = (
+        await client.post(
+            "/api/auth/register", json={"name": f"DM Tools {uuid4().hex[:6]}", "pin": "1234"}
+        )
+    ).json()
+    headers = {"Authorization": f"Bearer {reg['token']}"}
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Tools"})).json()
+    await client.post(
+        f"/api/campaigns/{camp['id']}/characters",
+        json={"name": "Ardan", "type": "player", "description": "el heroe"},
+    )
+
+    res = await client.post(
+        f"/api/campaigns/{camp['id']}/agents/lore",
+        json={"question": "quien es Ardan?"},
+        headers=headers,
+    )
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["status"] == "success", body
+    # El mock pide la tool en el primer turno: si el bucle no la ejecutara, la
+    # respuesta seria el JSON de la tool call, no una respuesta.
+    assert body["data"]["answer"]
+    assert not body["data"]["answer"].startswith("{")
+    # Y la tool leyo de ESTA campana.
+    assert "Ardan" in body["data"]["context"], body["data"]["context"]

@@ -120,6 +120,7 @@ async def audited_call(
     temperature: float = 0.7,
     image_base64: str | None = None,
     image_mime: str | None = None,
+    tools: list[dict] | None = None,
 ) -> str:
     """La llamada al modelo, auditada.
 
@@ -152,11 +153,15 @@ async def audited_call(
 
     start = time.perf_counter()
     try:
+        # `tools` solo se pasa si hay: un provider que no lo acepta (un test
+        # viejo, un adapter sin tools) sigue funcionando.
+        extra = {"tools": tools} if tools else {}
         raw = await provider.complete(
             simple_messages(system, prompt, image_base64, image_mime),
             model=model,
             max_tokens=max_tokens,
             temperature=temperature,
+            **extra,
         )
     except Exception as e:
         attempts = getattr(provider, "last_attempts", 1) or 1
