@@ -365,6 +365,70 @@ tiene que ofrecer "el link público (túnel)".
 
 ---
 
+---
+
+## 12. Sin dominio propio: las tres formas gratis (2026-10-21)
+
+> El DM no tiene (y no quiere por ahora) un dominio propio. Todo lo de esta
+> seccion es **gratis** y **sin un plan pago**. Lo que se midio el 2026-10-21
+> con la app corriendo (no de manual): ver la tabla.
+
+### 12.1 Lo que se midio (con el juego de verdad, no de teoria)
+
+| | HTTP | **WebSocket (el POV)** | La URL | Cuenta | Costo |
+|---|---|---|---|---|---|
+| **tunnelmole** (`npx tunnelmole 5173`) | ✓ | **✗** (el nginx del servicio responde 404 al upgrade) | aleatoria por partida | ninguna | 0 |
+| **Cloudflare quick tunnel** (`cloudflared tunnel --url http://localhost:5173`) | ✓ | **✓** (WS abierto, verificado) | aleatoria por partida | ninguna | 0 |
+| **Tailscale Funnel** (`tailscale funnel --bg 5173`) | ✓ (proxy L4) | ✓ (proxy L4) | **FIJA** (`https://<maquina>.<tailnet>.ts.net`) | cuenta gratis (plan Personal) | 0 |
+
+**El WebSocket importa**: el POV del jugador (el token que se mueve, las
+tiradas) viaja por el WS. Con tunnelmole el socket no pasa ✗ → el jugador cae
+al **sondeo** (cada 250 ms a 2 s según el backoff ✓ → funciona, con retraso ✗).
+Con Cloudflare y con Tailscale el WS pasa ✓ → el juego va en vivo ✓.
+
+### 12.2 La elegirida
+
+| Si lo que queres es... | Usá | Por que |
+|---|---|---|
+| **Jugar ya, sin instalar ni crear cuentas** | **Cloudflare quick tunnel** | Un binario, sin cuenta, y el WS pasa ✓. La URL cambia por partida → se comparte el link de la partida en cada una. |
+| **Un link de Discord que no cambie nunca** (gratis) | **Tailscale Funnel** | Es lo unico gratis con **URL fija** ✓ → el atajo `/join` sirve para siempre. Pide una cuenta gratuita de Tailscale (Personal) y habilitar Funnel una vez. |
+| **Probar que el túnel anda, sin instalar nada** | `npx tunnelmole 5173` | Cero instalacion ✓. Sin WS ✗ → sirve para ver la app, no para la partida. |
+
+Y si algun dia se consigue un dominio propio: `cloudflared tunnel run mesa` con
+el túnel nombrado (pide cuenta de Cloudflare + el dominio) → **el mismo camino,
+el mismo codigo** ✓. Nada de lo que hay acá se pierde.
+
+### 12.3 Como se levanta (un comando)
+
+```bash
+npm run playtest
+```
+
+Eso hace: el build de produccion + el backend + el frontend de produccion +
+**el túnel** (el que este instalado: Tailscale si lo tenes, si no cloudflared,
+si no tunnelmole). Imprime la URL publica y la copia al portapapeles ✓.
+
+Para forzar uno: `ROLEITO_TUNEL=cloudflared npm run playtest` ✓
+(o `npm run tunnel` para levantar solo el túnel ✓).
+
+### 12.4 Lo que el DM hace despues (en el menu "Invitar")
+
+1. Pega la URL del túnel en el campo "URL publica" ✓.
+2. Copia el link que aparece (el que tiene el codigo del invite) ✓.
+3. Lo manda al grupo de Discord ✓.
+4. (Opcional) activa "Partida abierta" → el link fijo `https://<host>/join` ✓.
+   Con un túnel **efímero** ese link cambia por partida ✗ → el menu avisa ✓.
+
+### 12.5 Lo que hubo que arreglar para que el túnel sirviera
+
+**El host check de Vite (5.4+)** responde **403** a cualquier host que no sea
+localhost → con el túnel, el jugador recibía 403 en vez de la pantalla ✗. Por
+eso `apps/dm/vite.config.ts` tiene `allowedHosts` con los dominios de los
+túneles gratis (`.trycloudflare.com`, `.tunnelmole.net`, `.ts.net`) ✓. Cuando
+haya dominio propio, se agrega ahí (una linea) ✓.
+
+---
+
 ## 11. Decisiones (cerradas el 2026-10-21)
 
 1. **Link fijo** → dominio propio + túnel nombrado de Cloudflare ✓ (§0).

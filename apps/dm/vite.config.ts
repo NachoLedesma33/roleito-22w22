@@ -9,6 +9,23 @@ import path from 'path'
  * escucha en la red es el frontend, que reenvia. Por eso el tunel del
  * playtest apunta al frontend y no al backend (el plan del playtest remoto).
  */
+/**
+ * Los hostnames que el servidor acepta.
+ *
+ * Vite (5.4+) tiene un "host check" que responde **403** a cualquier host que
+ * no sea localhost: sin esto, el túnel del playtest remoto (que entra con el
+ * hostname del túnel, no con localhost) recibe 403 y el jugador no ve la
+ * pantalla ✗.
+ *
+ * Se listan los de los túneles gratis. Cuando tengas dominio propio, agregá
+ * acá el tuyo (una línea).
+ */
+const HOSTS_PERMITIDOS = [
+  '.trycloudflare.com', // Cloudflare quick tunnel (gratis, sin cuenta)
+  '.tunnelmole.net', // tunnelmole (gratis, open source, sin cuenta)
+  '.ts.net', // Tailscale Funnel (gratis, URL fija)
+];
+
 const apiProxy = {
   '/api': {
     target: 'http://localhost:8000',
@@ -27,6 +44,7 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    allowedHosts: HOSTS_PERMITIDOS,
     proxy: apiProxy,
   },
   // El build de produccion (`npm run build` + `npm run serve:prod`): sirve los
@@ -35,6 +53,7 @@ export default defineConfig({
   // bundlear y la primera carga por un tunel seria de minutos.
   preview: {
     port: 5173,
+    allowedHosts: HOSTS_PERMITIDOS,
     proxy: apiProxy,
   },
 })

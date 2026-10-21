@@ -77,6 +77,12 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
   }, [abierta, campaign, onCampaignChange]);
 
   const code = campaign?.invite_code ?? null;
+
+  // Un tunel efimero (Cloudflare quick, tunnelmole) cambia de URL en cada
+  // partida: el link "/join" NO es fijo ahi. Con un dominio propio (o
+  // Tailscale Funnel) si lo es.
+  const publica = urlPublica.trim().replace(/\/$/, '');
+  const hostEphemeral = /\.trycloudflare\.com|\.tunnelmole\.net/i.test(publica);
   const port = window.location.port ? `:${window.location.port}` : '';
   const path = code ? `/campaigns/join/${code}` : '';
   const urls: { url: string; hint: string }[] = [];
@@ -84,7 +90,6 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
     // El link que se manda es el que el DM pega como "URL publica": si juega
     // con un tunel (o abre la app desde el tunel), ese es el unico que
     // llega a los jugadores de otra casa o ciudad.
-    const publica = urlPublica.trim().replace(/\/$/, '');
     if (publica) {
       urls.push({
         url: `${publica}${path}`,
@@ -177,6 +182,17 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
                 {t('dm.inviteFixedLink', 'Link fijo: el mismo para todas las partidas')}
               </span>
             </button>
+          )}
+          {hostEphemeral && (
+            <p
+              className="text-[0.65rem] text-[var(--warning)]"
+              data-testid="invite-ephemeral-hint"
+            >
+              {t(
+                'dm.inviteEphemeral',
+                'Este tunel cambia de URL en cada partida: comparti el link de la partida (el de arriba), no el fijo.',
+              )}
+            </p>
           )}
           <label className="block text-[0.65rem] uppercase tracking-[0.2em] text-secondary mb-1">
             {t('dm.invitePublicLabel', 'URL publica (si usas un tunel)')}

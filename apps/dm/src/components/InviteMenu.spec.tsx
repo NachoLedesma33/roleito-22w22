@@ -38,6 +38,38 @@ describe('InviteMenu', () => {
     expect(urls.some((u) => u.includes('192.168.1.6'))).toBe(true)
   })
 
+  it('avisa cuando el tunel es efimero (la URL cambia cada partida)', async () => {
+    // Cloudflare quick y tunnelmole dan una URL aleatoria por partida: el
+    // link "/join" NO es fijo ahi, asi que hay que compartir el link de la
+    // partida (el que trae el codigo).
+    ips.mockResolvedValue({ ips: [] })
+    abrir()
+
+    await waitFor(() => expect(screen.getByTestId('invite-menu-content')).toBeTruthy())
+    expect(screen.queryByTestId('invite-ephemeral-hint')).toBeNull()
+
+    fireEvent.change(screen.getByLabelText('URL publica (si usas un tunel)'), {
+      target: { value: 'https://mesa-abc.trycloudflare.com' },
+    })
+
+    await waitFor(() => expect(screen.getByTestId('invite-ephemeral-hint')).toBeTruthy())
+  })
+
+  it('con una URL fija no avisa de nada', async () => {
+    ips.mockResolvedValue({ ips: [] })
+    abrir()
+
+    await waitFor(() => expect(screen.getByTestId('invite-menu-content')).toBeTruthy())
+    fireEvent.change(screen.getByLabelText('URL publica (si usas un tunel)'), {
+      target: { value: 'https://mesa.midominio.com' },
+    })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('invite-url').textContent).toContain('mesa.midominio.com')
+    })
+    expect(screen.queryByTestId('invite-ephemeral-hint')).toBeNull()
+  })
+
   it('con URL publica pegada, ese es el link que se ofrece', async () => {
     // El caso del playtest remoto: el DM expone la app por un tunel y
     // comparte ese link, no el de localhost.
