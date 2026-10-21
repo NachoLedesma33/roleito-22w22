@@ -102,6 +102,7 @@ class MockProvider(AIProvider):
         if "lore keeper" in system.lower() or "campaign context" in prompt.lower():
             return json.dumps({
                 "answer": "Based on the campaign context, this appears to be related to the dungeon exploration.",
+                "alternative_readings": ["La sala tambien se puede leer como un almacen si el DM lo decide."],
                 "entities_mentioned": ["Ardan", "Dungeon"],
                 "confidence": 0.7,
                 "related_topics": ["dungeon", "exploration"],

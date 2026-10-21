@@ -2706,3 +2706,46 @@ async def test_el_lore_devuelve_el_contexto_que_vio_la_ia(client, monkeypatch):
     # El contexto es el de ESTA campana y trae los datos reales.
     assert "Ardan" in data["context"], data["context"]
     assert "Camp Advisor" in data["context"] or "heroe" in data["context"], data["context"]
+
+
+@pytest.mark.asyncio
+async def test_el_advisor_conversa_y_propone_lecturas_alternativas(client, monkeypatch):
+    """J1b: el advisor es una conversacion y da lecturas alternativas.
+
+    - El hilo previo entra al contexto COMO DATO (para que una repregunta
+      entienda de que se habla).
+    - Las lecturas alternativas son las otras lecturas VALIDAS del mismo canon:
+      el advisor propone, no inventa dudas.
+    """
+    from uuid import uuid4
+
+    from infrastructure.ai.mock import MockProvider
+    import agent_routes
+
+    monkeypatch.setattr(agent_routes, "get_provider_for_agent", lambda *_args: MockProvider())
+
+    reg = (
+        await client.post(
+            "/api/auth/register", json={"name": f"DM Hilo {uuid4().hex[:6]}", "pin": "1234"}
+        )
+    ).json()
+    headers = {"Authorization": f"Bearer {reg['token']}"}
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Hilo"})).json()
+
+    res = await client.post(
+        f"/api/campaigns/{camp['id']}/agents/lore",
+        json={
+            "question": "y el de la otra sala?",
+            "history": [
+                {"question": "quien es Varek?", "answer": "el guardia de la boveda"},
+            ],
+        },
+        headers=headers,
+    )
+    assert res.status_code == 200, res.text
+    data = res.json()["data"]
+
+    # El hilo llego al contexto.
+    assert "el guardia de la boveda" in data["context"], data["context"]
+    # Y hay lecturas alternativas (el mock las trae).
+    assert data["alternative_readings"], data

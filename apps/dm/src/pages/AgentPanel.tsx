@@ -23,6 +23,8 @@ interface LoreResult {
   source_hint: string;
   /** Que vio la IA: el DM tiene que poder verificar (o desconfiar) la respuesta. */
   context: string;
+  /** Otras lecturas validas del mismo canon (vacio si hay una sola). */
+  alternative_readings: string[];
 }
 
 interface NarrationResult {
@@ -116,6 +118,9 @@ export default function AgentPanel() {
   const [sceneConfigDesc, setSceneConfigDesc] = useState('');
   const [sceneMood, setSceneMood] = useState('');
   const [result, setResult] = useState<AgentResponse | null>(null);
+  // El hilo del advisor: lo mantiene el panel y viaja al backend como dato
+  // del contexto (asi una repregunta entiende de que se habla).
+  const [loreTurns, setLoreTurns] = useState<{ question: string; answer: string }[]>([]);
   const [pipeline, setPipeline] = useState<PipelineResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -164,11 +169,14 @@ export default function AgentPanel() {
     setLoading(true);
     setError(null);
     try {
+      const asked = question.trim();
       const data = await apiPost<AgentResponse>(
         `/campaigns/${campaignId}/agents/lore`,
-        { question: question.trim() }
+        { question: asked, history: loreTurns }
       );
       setResult(data);
+      const answer = (data.data as LoreResult | undefined)?.answer ?? '';
+      if (answer) setLoreTurns([...loreTurns, { question: asked, answer }]);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'No se pudo');
     } finally {
@@ -354,6 +362,15 @@ export default function AgentPanel() {
           >
             {loading ? 'Consultando...' : 'Consultar al Agente de Lore'}
           </button>
+          {loreTurns.length > 0 && (
+            <button
+              onClick={() => setLoreTurns([])}
+              className="self-start px-3 py-2 rounded border border-[var(--bg-tertiary)] text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              data-testid="lore-new-thread"
+            >
+              Nueva conversacion
+            </button>
+          )}
         </div>
       )}
 
@@ -570,6 +587,16 @@ function LoreResultView({ data }: { data: LoreResult }) {
       {data.entities_mentioned.length > 0 && (
         <div className="text-xs text-[var(--text-secondary)]">
           Entities: {data.entities_mentioned.join(', ')}
+        </div>
+      )}
+      {data.alternative_readings && data.alternative_readings.length > 0 && (
+        <div className="text-xs" data-testid="lore-alternatives">
+          <p className="text-[var(--text-secondary)] mb-1">Otras lecturas del canon:</p>
+          <ul className="list-disc pl-4 space-y-0.5 text-[var(--text-secondary)]">
+            {data.alternative_readings.map((reading, i) => (
+              <li key={i}>{reading}</li>
+            ))}
+          </ul>
         </div>
       )}
       {data.context && (

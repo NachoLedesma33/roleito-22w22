@@ -38,6 +38,9 @@ class SessionProcessRequest(BaseModel):
 
 class LoreQueryRequest(BaseModel):
     question: str
+    # El hilo de la conversacion (preguntas y respuestas previas). El DM lo
+    # mantiene en el panel; el backend lo arma como dato del contexto.
+    history: list[dict[str, str]] = []
 
 
 class NarrateRequest(BaseModel):
@@ -193,6 +196,7 @@ async def query_lore(
 
     result = await agent.run(
         question=body.question,
+        history=body.history,
         campaign_context=f"{campaign.name}: {campaign.description or ''}",
         # Lista blanca: del personaje solo el nombre y la descripcion de la
         # ficha. Las notas del jugador (`player_notes`) no llegan al prompt
@@ -215,6 +219,8 @@ async def query_lore(
             # Que vio la IA: el DM necesita poder verificar (o desconfiar) de
             # la respuesta. Sin esto el advisor es una caja negra.
             "context": result.data.context if result.data else "",
+            # Otras lecturas validas del mismo canon (vacio si hay una sola).
+            "alternative_readings": result.data.alternative_readings if result.data else [],
         } if result.data else None,
         "error": result.error,
     }

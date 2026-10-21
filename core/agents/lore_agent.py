@@ -17,6 +17,7 @@ Return ONLY valid JSON. No markdown, no explanation.
 Output format:
 {
   "answer": "clear answer to the question",
+  "alternative_readings": ["another valid reading of the same canon, from another angle"],
   "entities_mentioned": ["entity_name1", "entity_name2"],
   "confidence": 0.0-1.0,
   "related_topics": ["related topic 1", "related topic 2"],
@@ -28,7 +29,8 @@ Rules:
 - If information is missing, say so clearly (confidence < 0.3)
 - Never invent lore that isn't in the context
 - Keep answers concise and relevant
-- Identify which characters/NPCs/locations are mentioned"""
+- Identify which characters/NPCs/locations are mentioned
+- **alternative_readings**: si el canon admite MAS DE UNA lectura (un motivo ambiguo, una regla que se puede leer de dos maneras, una consecuencia que depende de una decision del DM), listalas. No inventes lecturas alternativas donde hay una sola lectura: la lista puede ir vacia. Es un segundo arbitro, no un generador de dudas."""
 
 
 @dataclass
@@ -42,11 +44,36 @@ class LoreResult:
     # vio la IA para decidir si le cree: sin esto, la respuesta es una caja
     # negra (el advisor es un segundo arbitro, no un oraculo).
     context: str = ""
+    # Otras lecturas validas del mismo canon. Vacio cuando hay una sola
+    # lectura: el advisor propone, no inventa dudas.
+    alternative_readings: list[str] = field(default_factory=list)
+
+
+HISTORY_TURNS = 6
+
+
+def _format_history(history: list[dict[str, str]] | None) -> str:
+    """El hilo de la conversacion, como texto.
+
+    Recortado a las ultimas vueltas: el hilo viejo es lo primero que se
+    sacrifica cuando el contexto se llena.
+    """
+    if not history:
+        return ""
+    lines = []
+    for turn in history[-HISTORY_TURNS:]:
+        question = str(turn.get("question", "")).strip()
+        answer = str(turn.get("answer", "")).strip()
+        if not question and not answer:
+            continue
+        lines.append(f"Q: {question}\nA: {answer}")
+    if not lines:
+        return ""
+    return "Previous conversation (the DM asked, the agent answered):\n" + "\n\n".join(lines)
 
 
 class LoreAgent(BaseAgent):
     """Searches and summarizes campaign lore."""
-
     agent_id = "lore"
     version = "1.0"
     description = "Answers questions about campaign lore and history."
@@ -60,6 +87,7 @@ class LoreAgent(BaseAgent):
         npcs: list[dict[str, str]] | None = None,
         locations: list[dict[str, str]] | None = None,
         events: list[dict[str, str]] | None = None,
+        history: list[dict[str, str]] | None = None,
         **kwargs: Any,
     ) -> AgentResult:
         if not question.strip():
@@ -73,6 +101,13 @@ class LoreAgent(BaseAgent):
             events=events,
         )
         context_str = context.text or "No campaign context available."
+
+        # El hilo de la conversacion entra al contexto COMO DATO (para que una
+        # repregunta entienda de que se habla), y recortado: el hilo viejo
+        # es lo primero que se sacrifica.
+        history_text = _format_history(history)
+        if history_text:
+            context_str = f"{history_text}\n\n{context_str}"
 
         user_msg = f"Campaign Context:\n{wrap_data(context_str)}\n\nQuestion: {question}"
 
@@ -97,6 +132,7 @@ class LoreAgent(BaseAgent):
             related_topics=safe_str_list(data.get("related_topics")),
             source_hint=data.get("source_hint", ""),
             context=context,
+            alternative_readings=safe_str_list(data.get("alternative_readings")),
         )
 
         return self._ok(result)
