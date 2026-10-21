@@ -25,7 +25,11 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
   const [ips, setIps] = useState<string[]>([]);
   const [copied, setCopied] = useState<string | null>(null);
   /** La URL publica (el tunel), si el DM esta jugando desde una. */
-  const [urlPublica, setUrlPublica] = useState('');
+  // Arranca con el origen de la app: si el DM esta jugando por el tunel (o
+  // por su dominio), ESA es la URL que llega a los jugadores. Con el campo
+  // vacio el menu ofrecia el link de localhost (inutil para la mesa) y el
+  // boton de copiar no tenía nada que copiar.
+  const [urlPublica, setUrlPublica] = useState(() => window.location.origin);
   /** La partida abierta al publico: detras del link fijo `/join`. */
   const [abierta, setAbierta] = useState(false);
   const [guardando, setGuardando] = useState(false);
@@ -86,6 +90,9 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
   // Tailscale Funnel) si lo es.
   const publica = urlPublica.trim().replace(/\/$/, '');
   const hostEphemeral = /\.trycloudflare\.com|\.tunnelmole\.net/i.test(publica);
+  // El origen de la app: si el DM esta en localhost, ese link no le sirve a
+  // nadie de la mesa (localhost es la maquina de cada uno).
+  const esLocal = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/i.test(publica);
   const port = window.location.port ? `:${window.location.port}` : '';
   const path = code ? `/campaigns/join/${code}` : '';
   const urls: { url: string; hint: string }[] = [];
@@ -96,10 +103,11 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
     if (publica) {
       urls.push({
         url: `${publica}${path}`,
-        hint: t('dm.invitePublic', 'Link publico (tunel)'),
+        hint: esLocal
+          ? t('dm.inviteHere', 'Desde esta maquina')
+          : t('dm.invitePublic', 'Link publico (tunel)'),
       });
-    } else {
-      urls.push({
+    } else {      urls.push({
         url: `${window.location.origin}${path}`,
         hint: t('dm.inviteHere', 'Desde esta maquina'),
       });

@@ -86,14 +86,30 @@ describe('InviteMenu', () => {
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining('/join'))
   })
 
+  it('la URL publica arranca con el origen de la app (hay algo que copiar)', async () => {
+    // Si el DM esta jugando por el tunel, el origen ES la URL que llega a
+    // los jugadores: con el campo vacio el menu ofrecia el link de localhost
+    // (inutil para la mesa) y el boton de copiar no tenia nada que copiar.
+    ips.mockResolvedValue({ ips: [] })
+    abrir()
+
+    await waitFor(() => expect(screen.getByTestId('invite-menu-content')).toBeTruthy())
+    const campo = screen.getByLabelText('URL publica (si usas un tunel)')
+    expect((campo as HTMLInputElement).value).toBe(window.location.origin)
+
+    const boton = screen.getByTestId('invite-copy-public-url')
+    expect(boton.hasAttribute('disabled')).toBe(false)
+
+    fireEvent.click(boton)
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(window.location.origin))
+  })
+
   it('la URL publica tiene boton de copiar', async () => {
     ips.mockResolvedValue({ ips: [] })
     abrir()
 
     await waitFor(() => expect(screen.getByTestId('invite-menu-content')).toBeTruthy())
     const boton = screen.getByTestId('invite-copy-public-url')
-    // Sin URL pegada, el boton no hace nada.
-    expect(boton.hasAttribute('disabled')).toBe(true)
 
     fireEvent.change(screen.getByLabelText('URL publica (si usas un tunel)'), {
       target: { value: 'https://mesa.trycloudflare.com' },
@@ -112,6 +128,7 @@ describe('InviteMenu', () => {
     abrir()
 
     await waitFor(() => expect(screen.getByTestId('invite-menu-content')).toBeTruthy())
+    // El origen del test es localhost: no es efimero.
     expect(screen.queryByTestId('invite-ephemeral-hint')).toBeNull()
 
     fireEvent.change(screen.getByLabelText('URL publica (si usas un tunel)'), {
