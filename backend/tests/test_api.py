@@ -2749,3 +2749,50 @@ async def test_el_advisor_conversa_y_propone_lecturas_alternativas(client, monke
     assert "el guardia de la boveda" in data["context"], data["context"]
     # Y hay lecturas alternativas (el mock las trae).
     assert data["alternative_readings"], data
+
+
+@pytest.mark.asyncio
+async def test_el_advisor_ve_el_estado_vivo_de_la_campana(client, monkeypatch):
+    """El advisor tiene una foto de COMO ESTA la campana ahora.
+
+    El estado vivo lo arma el World State (determinista, sin llamar al
+    modelo): por eso es barato y se puede refrescar cuando el DM pregunta.
+    """
+    from uuid import uuid4
+
+    from infrastructure.ai.mock import MockProvider
+    import agent_routes
+
+    monkeypatch.setattr(agent_routes, "get_provider_for_agent", lambda *_args: MockProvider())
+
+    reg = (
+        await client.post(
+            "/api/auth/register", json={"name": f"DM Vivo {uuid4().hex[:6]}", "pin": "1234"}
+        )
+    ).json()
+    headers = {"Authorization": f"Bearer {reg['token']}"}
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Vivo"})).json()
+
+    await client.post(
+        f"/api/campaigns/{camp['id']}/characters",
+        json={"name": "Ardan", "type": "player", "description": "el heroe"},
+    )
+    await client.post(
+        f"/api/campaigns/{camp['id']}/quests",
+        json={"title": "Encuentra la llave", "description": "Una llave dorada"},
+    )
+
+    res = await client.post(
+        f"/api/campaigns/{camp['id']}/agents/lore",
+        json={"question": "como va la campana?"},
+        headers=headers,
+    )
+    assert res.status_code == 200, res.text
+    data = res.json()["data"]
+
+    # El estado vivo existe y travela al contexto del modelo.
+    assert data["live_state"], data
+    assert "Ardan" in data["live_state"], data["live_state"]
+    assert "Encuentra la llave" in data["live_state"], data["live_state"]
+    # Y el modelo lo vio (esta en el contexto que se le mando).
+    assert "Live campaign state" in data["context"], data["context"]

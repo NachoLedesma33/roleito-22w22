@@ -194,9 +194,16 @@ async def query_lore(
     provider = get_provider_for_agent("lore")
     agent = LoreAgent(provider)
 
+    # El estado vivo: determinista (lo arma el World State, no el modelo) y
+    # barato, asi que se calcula cuando el DM pregunta.
+    from core.agents.campaign_state import build_live_state
+
+    live_state = await build_live_state(db, campaign_id)
+
     result = await agent.run(
         question=body.question,
         history=body.history,
+        live_state=live_state,
         campaign_context=f"{campaign.name}: {campaign.description or ''}",
         # Lista blanca: del personaje solo el nombre y la descripcion de la
         # ficha. Las notas del jugador (`player_notes`) no llegan al prompt
@@ -221,6 +228,8 @@ async def query_lore(
             "context": result.data.context if result.data else "",
             # Otras lecturas validas del mismo canon (vacio si hay una sola).
             "alternative_readings": result.data.alternative_readings if result.data else [],
+            # Como esta la campana ahora mismo (lo que vio la IA del estado).
+            "live_state": live_state,
         } if result.data else None,
         "error": result.error,
     }

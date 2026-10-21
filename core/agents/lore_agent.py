@@ -88,6 +88,7 @@ class LoreAgent(BaseAgent):
         locations: list[dict[str, str]] | None = None,
         events: list[dict[str, str]] | None = None,
         history: list[dict[str, str]] | None = None,
+        live_state: str = "",
         **kwargs: Any,
     ) -> AgentResult:
         if not question.strip():
@@ -108,6 +109,11 @@ class LoreAgent(BaseAgent):
         history_text = _format_history(history)
         if history_text:
             context_str = f"{history_text}\n\n{context_str}"
+
+        # El estado vivo va al FINAL: es lo mas reciente y lo que menos puede
+        # recortar el presupuesto del contexto.
+        if live_state:
+            context_str = f"{context_str}\n\nLive campaign state (right now):\n{live_state}"
 
         user_msg = f"Campaign Context:\n{wrap_data(context_str)}\n\nQuestion: {question}"
 

@@ -25,6 +25,8 @@ interface LoreResult {
   context: string;
   /** Otras lecturas validas del mismo canon (vacio si hay una sola). */
   alternative_readings: string[];
+  /** Como esta la campana ahora mismo (lo que el advisor vio del estado). */
+  live_state: string;
 }
 
 interface NarrationResult {
@@ -588,6 +590,16 @@ function LoreResultView({ data }: { data: LoreResult }) {
         <div className="text-xs text-[var(--text-secondary)]">
           Entities: {data.entities_mentioned.join(', ')}
         </div>
+      )}
+      {data.live_state && (
+        <details className="text-xs text-[var(--text-secondary)]" data-testid="lore-live-state">
+          <summary className="cursor-pointer hover:text-[var(--text-primary)]">
+            Como esta la campana ahora
+          </summary>
+          <pre className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap rounded bg-[var(--bg-secondary)] p-2 font-mono text-[10px] leading-relaxed">
+            {data.live_state}
+          </pre>
+        </details>
       )}
       {data.alternative_readings && data.alternative_readings.length > 0 && (
         <div className="text-xs" data-testid="lore-alternatives">
