@@ -221,7 +221,7 @@ export default function AISettingsPanel({ onClose, campaignId }: AISettingsPanel
                   className={`text-[10px] px-1.5 py-0.5 rounded ${
                     hasRemoteKey
                       ? 'bg-emerald-900/50 text-emerald-400'
-                      : 'bg-zinc-800 text-zinc-500'
+                      : 'bg-zinc-800 text-secondary'
                   }`}
                 >
                   {hasRemoteKey ? 'Guardada en Vault' : 'No configurada'}

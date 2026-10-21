@@ -3077,7 +3077,7 @@ const startFogMode = useCallback(() => {
                   <li key={r.id} className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
                     <span className="truncate flex-1" title={t('dm.lightRequestTitle', '{{name}} pide luz', { name: r.character_name })}>{r.character_name}</span>
                     <button onClick={() => handleGrantLight(r)} className="px-1.5 py-0.5 rounded bg-emerald-600/80 text-white hover:bg-emerald-500 transition-colors" title={t('dm.grantTorch', 'Entregar antorcha')}>🔦</button>
-                    <button onClick={() => handleDenyLight(r)} className="px-1.5 py-0.5 rounded bg-gray-700 text-gray-400 hover:text-white transition-colors" title={t('dm.deny', 'Denegar')}>✕</button>
+                    <button onClick={() => handleDenyLight(r)} className="px-1.5 py-0.5 rounded bg-gray-700 text-secondary hover:text-primary transition-colors" title={t('dm.deny', 'Denegar')}>✕</button>
                   </li>
                 ))}
               </ul>

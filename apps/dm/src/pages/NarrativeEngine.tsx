@@ -217,7 +217,7 @@ function EventTypeBadge({ type }: { type: string }) {
     CHARACTER_HEALED: 'bg-green-900/50 text-green-400',
     CHARACTER_LEVEL_UP: 'bg-indigo-900/50 text-indigo-400',
     CHARACTER_JOINED: 'bg-blue-900/50 text-blue-400',
-    CHARACTER_LEFT: 'bg-gray-900/50 text-gray-400',
+    CHARACTER_LEFT: 'bg-gray-900/50 text-secondary',
     LOCATION_ENTERED: 'bg-cyan-900/50 text-cyan-400',
     LOCATION_EXITED: 'bg-cyan-900/50 text-cyan-400',
     LOCATION_DISCOVERED: 'bg-cyan-900/50 text-cyan-400',

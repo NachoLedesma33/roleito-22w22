@@ -4,7 +4,7 @@ import HudPanel from './HudPanel';
 import { api, type QuestInput, type QuestObjective, type QuestResponse } from '@/lib/api';
 
 const STATUS_COLORS: Record<string, string> = {
-  draft: 'bg-gray-700 text-gray-300',
+  draft: 'bg-gray-700 text-primary',
   active: 'bg-emerald-900/60 text-emerald-300',
   completed: 'bg-blue-900/60 text-blue-300',
   failed: 'bg-red-900/60 text-red-300',

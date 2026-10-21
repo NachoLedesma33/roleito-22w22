@@ -45,7 +45,7 @@ function SingleToast({ toast, onDismiss }: { toast: ToastRoll; onDismiss: (id: s
             🎲 {toast.rollerName}
           </span>
           {toast.label && (
-            <span className="text-[9px] text-gray-500 truncate max-w-[140px]">
+            <span className="text-[9px] text-secondary truncate max-w-[140px]">
               {toast.label}
             </span>
           )}
@@ -67,10 +67,10 @@ function SingleToast({ toast, onDismiss }: { toast: ToastRoll; onDismiss: (id: s
           ))}
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-[10px] text-gray-500 font-mono">
+          <span className="text-[10px] text-secondary font-mono">
             {toast.count}d{toast.diceType}
           </span>
-          <span className="text-[9px] text-gray-600">
+          <span className="text-[9px] text-secondary">
             {formatTime(toast.timestamp)}
           </span>
         </div>

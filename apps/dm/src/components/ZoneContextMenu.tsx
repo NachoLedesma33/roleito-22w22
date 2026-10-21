@@ -150,7 +150,7 @@ export default function ZoneContextMenu({
           manda sobre la propuesta de la IA (por eso `patch` la marca como
           tocada). */}
       <div className="px-3 py-2 space-y-2 border-t border-gray-800">
-        <label className="block text-[0.65rem] uppercase tracking-[0.2em] text-gray-400">
+        <label className="block text-[0.65rem] uppercase tracking-[0.2em] text-secondary">
           Nombre
           <input
             type="text"
@@ -161,7 +161,7 @@ export default function ZoneContextMenu({
             className={`${inputClass} mt-1`}
           />
         </label>
-        <label className="block text-[0.65rem] uppercase tracking-[0.2em] text-gray-400">
+        <label className="block text-[0.65rem] uppercase tracking-[0.2em] text-secondary">
           Relleno
           <span className="mt-1 flex items-center gap-2">
             <input
@@ -171,10 +171,10 @@ export default function ZoneContextMenu({
               aria-label="Color de relleno"
               className="h-7 w-10 cursor-pointer rounded border border-gray-600 bg-transparent"
             />
-            <span className="font-mono text-[0.65rem] text-gray-300">{meta.fillColor}</span>
+            <span className="font-mono text-[0.65rem] text-primary">{meta.fillColor}</span>
           </span>
         </label>
-        <label className="block text-[0.65rem] uppercase tracking-[0.2em] text-gray-400">
+        <label className="block text-[0.65rem] uppercase tracking-[0.2em] text-secondary">
           Opacidad: {Math.round((meta.fillOpacity ?? 0.3) * 100)}%
           <input
             type="range"
@@ -190,9 +190,9 @@ export default function ZoneContextMenu({
       {/* Triggers: cuando un token entra en la zona, se emite este evento en
           el bus de la campana. */}
       <div className="px-3 py-2 space-y-2 border-t border-gray-800">
-        <p className="text-[0.65rem] uppercase tracking-[0.2em] text-gray-400">Triggers</p>
+        <p className="text-[0.65rem] uppercase tracking-[0.2em] text-secondary">Triggers</p>
         {triggers.length === 0 ? (
-          <p className="text-[0.65rem] text-gray-400">Ninguno: entrar a la zona no dispara nada.</p>
+          <p className="text-[0.65rem] text-secondary">Ninguno: entrar a la zona no dispara nada.</p>
         ) : (
           triggers.map((trg) => (
             <div key={trg.id} className="flex items-center gap-2">
