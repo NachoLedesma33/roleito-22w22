@@ -2411,7 +2411,7 @@ G1. Image ingestion: normalize dimensions
 G2. Grid detection: auto-detect grid lines
 G3. Feature detection: wall/door/room detection (IMPLEMENTED, backend)
 G4. Semantic interpretation: DetectedMap → ShadowZone[] (normalización) — **PARCIAL 2026-10-21**: (a) las salas detectadas ya entran como ZONAS (`origin: 'ai'`), la misma estructura que dibuja el DM: antes eran items `room`, un tipo en paralelo que el runtime no consumia, asi que la deteccion con IA no llegaba a la niebla, la luz ni la LoS; (b) las PUERTAS detectadas son los PORTALES entre las dos zonas que tocan (abiertos, reflejados en ambas): sin esto una zona de la IA encierra al token, porque el borde bloquea y el unico modo de cruzarlo es un portal. **FALTA (replantado 2026-10-21): NO es agrupar los muros en cadenas. Las SALAS detectadas ya son las areas cerradas (la CV las calcula a partir de los muros; la IA las devuelve), asi que agrupar los muros duplicaria los poligonos. Lo que queda es la DEPRECIACION del item `wall` para la salida de la IA: hoy un muro detectado es un item de linea aparte Y el borde de su zona (la misma geometria dos veces: colision duplicada, el muro dibujado encima del perimetro). El trabajo real es (a) que la ZONA pueda llevar los flags que hoy lleva el muro (`lineOfSight`, `movement`, `soundOcclusion`, `height`, `thickness`) y (b) que el runtime de la zona los respete. Es un refactor de media pampa (types + los consumidores + los menus + los tests), NO un paso chico: conviene como fase propia, con el `wall` manual y el de la IA decididos a conscious. Ver `HYBRID-SHADOW-GEOMETRY.md` §4 (los derivados salen TODOS del poligono).
-G5. DM review: adjust detected zones (reusa tools del Modo Manual)
+G5. DM review: adjust detected zones (reusa tools del Modo Manual) — **HECHO 2026-10-21**: el menú de la zona edita su nombre, relleno y opacidad (las herramientas del Modo Manual), y editarla la marca `touchedByDm` (su edicion manda sobre la de la IA). La re-deteccion respeta ese flag: la zona que el DM toco se conserva y la deteccion nueva no propone otra encima.
 G6. Manual override: DM can redraw features (base del sistema, ya presente)
 G7. Scene Graph generation from approved zones
 ```
@@ -2420,9 +2420,9 @@ G7. Scene Graph generation from approved zones
 
 - [ ] DM uploads map image
 - [ ] Grid auto-detected
-- [ ] Walls/rooms proposed and normalized to ShadowZone[] with origin='ai'
+- [x] Walls/rooms proposed and normalized to ShadowZone[] with origin='ai'
 - [ ] DM can accept/modify each zone with manual tools (hybrid mode)
-- [ ] Edits by DM set touchedByDm=true and are not re-analyzed
+- [x] Edits by DM set touchedByDm=true and are not re-analyzed
 
 ---
 

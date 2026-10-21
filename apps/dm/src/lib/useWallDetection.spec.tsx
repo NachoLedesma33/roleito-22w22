@@ -78,6 +78,38 @@ function setup(initial: SceneItem[] = [], items: SceneItem[] = []) {
   return { result, graph, onChange, push }
 }
 
+function autoZone(id: string, points: number[] = [0, 0, 0.4, 0, 0.4, 0.4, 0, 0.4], touched = false): SceneItem {
+  return {
+    id,
+    name: id,
+    x: 0,
+    y: 0,
+    rotation: 0,
+    scale: 1,
+    width: 0,
+    height: 0,
+    zIndex: 0,
+    layer: SceneLayer.OVERLAY,
+    visible: true,
+    locked: false,
+    disableHit: false,
+    disableAutoZIndex: false,
+    attachmentIds: [],
+    disableAttachmentBehavior: [],
+    shape: { type: 'polygon', points, fill: '#334155' },
+    metadata: {
+      type: 'zone',
+      zoneType: 'polygon',
+      origin: 'ai',
+      touchedByDm: touched,
+      shadowOnly: false,
+      fillColor: '#334155',
+      fillOpacity: 0.35,
+      portals: [],
+    },
+  }
+}
+
 const WALLS_RETURNED = [autoItem('wall-auto-1'), autoItem('wall-auto-2'), autoItem('door-auto-1', 'door')]
 
 describe('useWallDetection', () => {
@@ -330,5 +362,35 @@ describe('useWallDetection', () => {
     // El set viejo se fue y lo dibujado a mano sigue.
     expect(ids).not.toContain('wall-auto-viejo')
     expect(ids).toContain('wall-mano-1')
+  })
+
+  it('la zona que el DM toco sobrevive a la re-deteccion', async () => {
+    // El DM edito la zona: su edicion manda sobre la de la IA.
+    const { result, graph } = setup([autoZone('zone-auto-1', undefined, true)])
+
+    await act(async () => {
+      await result.current.handleAutoDetect()
+    })
+
+    const ids = graph.getItems().map((i) => i.id)
+    expect(ids).toContain('zone-auto-1')
+  })
+
+  it('la deteccion nueva no propone una zona encima de la que toco el DM', async () => {
+    detectWalls.mockResolvedValue({
+      items: [autoZone('zone-auto-nueva'), autoItem('wall-auto-1')],
+      wall_count: 1,
+      door_count: 0,
+    })
+    const { result, graph } = setup([autoZone('zone-auto-1', undefined, true)])
+
+    await act(async () => {
+      await result.current.handleAutoDetect()
+    })
+
+    const ids = graph.getItems().map((i) => i.id)
+    expect(ids).toContain('zone-auto-1')
+    expect(ids).not.toContain('zone-auto-nueva')
+    expect(ids).toContain('wall-auto-1')
   })
 })

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import i18n from '@/lib/i18n';
-import { autoDetectedKind, isAutoDetectedItem } from '@/lib/autoDetected';
+import { autoDetectedKind, isAutoDetectedItem, isTouchedByDm, zonePoints, zonesOverlap } from '@/lib/autoDetected';
 import type { SceneItem } from '@core/domain/types';
 import type { SceneGraph } from '@core/scene/scene-graph';
 import type { ToastRoll } from '@/lib/toastQueue';
@@ -112,10 +112,29 @@ export function useWallDetection({
       // propuesta sin aprobar, asi que detectar sobre muros ya aprobados
       // acumulaba una segunda copia encima, y como la deteccion ahora es
       // determinista esa copia era exacta. Lo dibujado a mano no se toca.
+      // **Excepcion**: la zona que el DM toco manda (touchedByDm): se conserva
+      // y la deteccion nueva no propone otra encima.
+      const conservadas: SceneItem[] = [];
       for (const item of graphRef.getItems()) {
-        if (isAutoDetectedItem(item)) graphRef.removeItem(item.id);
+        if (!isAutoDetectedItem(item)) continue;
+        if (isTouchedByDm(item)) {
+          conservadas.push(item);
+          continue;
+        }
+        graphRef.removeItem(item.id);
       }
-      const items = ((result.items ?? []) as SceneItem[]).filter((item) => item && item.id);
+      const items = ((result.items ?? []) as SceneItem[]).filter((item) => {
+        if (!item || !item.id) return false;
+        // Una zona de la IA que pisa una zona que el DM toco: se descarta la
+        // propuesta (la del DM manda).
+        if (autoDetectedKind(item) !== 'zone') return true;
+        const pts = zonePoints(item);
+        if (!pts) return true;
+        return !conservadas.some((k) => {
+          const kp = zonePoints(k);
+          return kp ? zonesOverlap(pts, kp) : false;
+        });
+      });
       for (const item of items) {
         // Quedan pendientes de revision: el flag viaja con el item, asi que la
         // propuesta sobrevive a que el DM recargue la pagina.
@@ -211,7 +230,7 @@ export function useWallDetection({
             // La escena activa: el grafo local se actualiza ya, como en la
             // deteccion individual.
             for (const item of graphRef.getItems()) {
-              if (isAutoDetectedItem(item)) graphRef.removeItem(item.id);
+              if (isAutoDetectedItem(item) && !isTouchedByDm(item)) graphRef.removeItem(item.id);
             }
             for (const item of conFlag) graphRef.addItem(item);
             handleItemsChange(graphRef.getItems());
@@ -219,9 +238,10 @@ export function useWallDetection({
           } else {
             // Otra escena: se guarda por la API, con la propuesta pendiente.
             // Regenera el set automatico de esa escena (como la deteccion
-            // individual) y deja los nuevos pendientes de revision.
+            // individual) y deja los nuevos pendientes de revision. Lo que el
+            // DM toco se conserva.
             await api.scenes.saveItems(campaignId, target.id, [
-              ...existentes.filter((i) => !isAutoDetectedItem(i)),
+              ...existentes.filter((i) => !isAutoDetectedItem(i) || isTouchedByDm(i)),
               ...conFlag,
             ]);
           }

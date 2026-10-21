@@ -84,4 +84,26 @@ describe('ZoneContextMenu', () => {
     expect(patch.metadata.lineOfSight).toBe(false)
     expect(patch.metadata.movement).toBeUndefined()
   })
+
+  it('editar una zona de la IA la marca como tocada por el DM', () => {
+    // El flag `touchedByDm` es lo que hace que su edicion mande sobre la
+    // deteccion: la re-deteccion no le pisa encima.
+    const onUpdate = renderMenu(zona({ origin: 'ai', touchedByDm: false }))
+    fireEvent.change(screen.getByLabelText('Opacidad: 35%'), {
+      target: { value: '0.6' },
+    })
+
+    const patch = onUpdate.mock.calls[0][0]
+    expect(patch.metadata.fillOpacity).toBe(0.6)
+    expect(patch.metadata.touchedByDm).toBe(true)
+  })
+
+  it('el menu deja editar el nombre y el relleno', () => {
+    const onUpdate = renderMenu(zona())
+    fireEvent.change(screen.getByLabelText('Nombre de la zona'), {
+      target: { value: 'Galeria del Wyrm' },
+    })
+    expect(onUpdate).toHaveBeenCalledWith({ name: 'Galeria del Wyrm' })
+    expect(screen.getByLabelText('Color de relleno')).toBeTruthy()
+  })
 })

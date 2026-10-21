@@ -36,6 +36,18 @@ export default function ZoneContextMenu({
   const menuRef = useRef<HTMLDivElement>(null)
   const meta = item.metadata as ZoneMetadata
 
+  /**
+   * Editar una zona que propuso la IA la marca como tocada por el DM: su
+   * edicion manda sobre la deteccion (y la re-deteccion no le pisa encima).
+   */
+  const patch = (changes: Partial<ZoneMetadata>) => {
+    const tocado = meta.origin === 'ai' ? true : meta.touchedByDm
+    onUpdate({ metadata: { ...meta, ...changes, touchedByDm: tocado } })
+  }
+
+  const inputClass =
+    'w-full bg-[var(--bg-tertiary)] border border-[var(--bg-secondary)] rounded px-2 py-1 text-xs text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring'
+
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -85,7 +97,7 @@ export default function ZoneContextMenu({
         <input
           type="checkbox"
           checked={meta.shadowOnly === true}
-          onChange={(e) => onUpdate({ metadata: { ...meta, shadowOnly: e.target.checked } })}
+          onChange={(e) => patch({ shadowOnly: e.target.checked })}
         />
         Solo sombra (no frena ni tapa la vista)
       </label>
@@ -97,7 +109,7 @@ export default function ZoneContextMenu({
         <input
           type="checkbox"
           checked={meta.lineOfSight !== false}
-          onChange={(e) => onUpdate({ metadata: { ...meta, lineOfSight: e.target.checked } })}
+          onChange={(e) => patch({ lineOfSight: e.target.checked })}
         />
         Tapa la vista
       </label>
@@ -105,10 +117,51 @@ export default function ZoneContextMenu({
         <input
           type="checkbox"
           checked={meta.movement !== false}
-          onChange={(e) => onUpdate({ metadata: { ...meta, movement: e.target.checked } })}
+          onChange={(e) => patch({ movement: e.target.checked })}
         />
         Bloquea el movimiento
       </label>
+      {/* Las herramientas del Modo Manual sobre la zona: lo que el DM ajusto
+          manda sobre la propuesta de la IA (por eso `patch` la marca como
+          tocada). */}
+      <div className="px-3 py-2 space-y-2 border-t border-gray-800">
+        <label className="block text-[0.65rem] uppercase tracking-[0.2em] text-gray-400">
+          Nombre
+          <input
+            type="text"
+            value={item.name}
+            onChange={(e) => onUpdate({ name: e.target.value })}
+            placeholder="Nombre de la zona"
+            aria-label="Nombre de la zona"
+            className={`${inputClass} mt-1`}
+          />
+        </label>
+        <label className="block text-[0.65rem] uppercase tracking-[0.2em] text-gray-400">
+          Relleno
+          <span className="mt-1 flex items-center gap-2">
+            <input
+              type="color"
+              value={meta.fillColor}
+              onChange={(e) => patch({ fillColor: e.target.value })}
+              aria-label="Color de relleno"
+              className="h-7 w-10 cursor-pointer rounded border border-gray-600 bg-transparent"
+            />
+            <span className="font-mono text-[0.65rem] text-gray-300">{meta.fillColor}</span>
+          </span>
+        </label>
+        <label className="block text-[0.65rem] uppercase tracking-[0.2em] text-gray-400">
+          Opacidad: {Math.round((meta.fillOpacity ?? 0.3) * 100)}%
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.05}
+            value={meta.fillOpacity ?? 0.3}
+            onChange={(e) => patch({ fillOpacity: Number(e.target.value) })}
+            className="w-full mt-1"
+          />
+        </label>
+      </div>
       <button
         className="w-full px-3 py-1.5 text-left text-sm text-red-400 hover:bg-gray-700"
         onClick={() => { onDelete(); onClose() }}
