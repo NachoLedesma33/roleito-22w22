@@ -19,6 +19,7 @@ from core.narrative.entity_resolver import get_campaign_context, resolve_entitie
 from core.narrative.parser import parse_narrative
 from core.narrative.proposer import propose_events
 from core.agents.provider import get_ai_config, get_provider_for_agent
+from services.budget import campaign_budget
 
 router = APIRouter(tags=["narrative"])
 
@@ -56,6 +57,7 @@ async def parse_narrative_text(
     body: NarrativeParseRequest,
     db: AsyncSession = Depends(get_session),
     _auth: AuthSession = Depends(require_dm),
+    _budget: None = Depends(campaign_budget),
 ):
     """Parse DM narration text into structured event proposals.
 

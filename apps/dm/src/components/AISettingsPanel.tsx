@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import HudPanel from './HudPanel';
-import { api, AISettings, AIAuditEntry } from '@/lib/api';
+import { api, AISettings, AIAuditEntry, AIUsage } from '@/lib/api';
 
 interface AISettingsPanelProps {
   onClose: () => void;
@@ -62,12 +62,14 @@ export default function AISettingsPanel({ onClose }: AISettingsPanelProps) {
   const [keySaved, setKeySaved] = useState(false);
   const [audit, setAudit] = useState<AIAuditEntry[]>([]);
   const [showAudit, setShowAudit] = useState(false);
+  const [usage, setUsage] = useState<AIUsage | null>(null);
 
   useEffect(() => {
-    Promise.all([api.ai.getConfig(), api.vault.status()])
-      .then(([cfg, vs]) => {
+    Promise.all([api.ai.getConfig(), api.vault.status(), api.ai.usage()])
+      .then(([cfg, vs, ug]) => {
         setSettings(cfg);
         setVaultStatus(vs);
+        setUsage(ug);
       })
       .catch(() => setSaveError('No se pudo cargar la configuración'));
   }, []);
@@ -299,6 +301,30 @@ export default function AISettingsPanel({ onClose }: AISettingsPanelProps) {
             {saveError}
           </p>
         )}
+
+        <div>
+          <label className="block text-[10px] uppercase tracking-wide text-[var(--text-secondary)] mb-1">
+            Tope diario por campaña
+          </label>
+          <input
+            type="number"
+            min={0}
+            value={settings.daily_call_limit ?? 0}
+            onChange={(e) => update({ daily_call_limit: Math.max(0, Number(e.target.value) || 0) })}
+            className="w-full text-xs bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-2 py-1.5 text-[var(--text-primary)]"
+            data-testid="ai-daily-limit"
+          />
+          <p className="text-[10px] text-[var(--text-secondary)] mt-1">
+            Requests a la IA por día y campaña. 0 = sin tope. Protege tu API key
+            (no es un cobro al jugador).
+          </p>
+          {usage && (
+            <p className="text-[10px] text-[var(--text-secondary)] mt-0.5" data-testid="ai-usage">
+              Hoy: {usage.usage.calls} llamadas
+              {usage.limit > 0 && ` de ${usage.limit}`}
+            </p>
+          )}
+        </div>
 
         <div className="flex gap-2 pt-1">
           <button

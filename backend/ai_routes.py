@@ -24,16 +24,15 @@ from schemas import (  # noqa: E402
 
 router = APIRouter()
 
-CONFIG_PATH = config_path()
-
 DEFAULTS = AISettingsUpdate()
 
 
 def _load_settings() -> AISettingsUpdate:
-    if not CONFIG_PATH.exists():
+    path = config_path()
+    if not path.exists():
         return DEFAULTS.model_copy()
     try:
-        data = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+        data = json.loads(path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
         return DEFAULTS.model_copy()
     try:
@@ -43,8 +42,9 @@ def _load_settings() -> AISettingsUpdate:
 
 
 def _save_settings(settings: AISettingsUpdate) -> None:
-    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    CONFIG_PATH.write_text(
+    path = config_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
         json.dumps(settings.model_dump(), indent=2), encoding="utf-8"
     )
 
@@ -61,6 +61,25 @@ async def update_ai_config(data: AISettingsUpdate, _session: AuthSession = Depen
         data.model = current.model
     _save_settings(data)
     return data
+
+
+@router.get("/ai/usage")
+async def get_ai_usage(
+    campaign_id: str | None = None,
+    _session: AuthSession = Depends(require_dm),
+):
+    """El consumo de IA de hoy y el tope vigente.
+
+    Es el consumo del DM (su API key), no un cobro al jugador: el tope lo
+    pone el DM y 0 significa "sin tope".
+    """
+    from core.agents.budget import daily_limit, usage_today
+
+    return {
+        "usage": usage_today(campaign_id),
+        "limit": daily_limit(),
+        "campaign_id": campaign_id,
+    }
 
 
 @router.get("/ai/audit")

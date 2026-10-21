@@ -248,6 +248,7 @@ Eso es la base sana. La Parte A (más proveedores, más modelos) **no la rompe**
 - Timeout por llamada (60s ya) y reintentos acotados (3 ya) **con presupuesto**: los reintentos cuentan para el tope.
 - Un agente que falla (error del provider, JSON inválido, timeout) **no** reintenta con otro provider automáticamente: sería gasto no autorizado. El fallback lo decide el DM.
 - **Ojo con el nombre: esto NO es cobrarle al jugador.** Es un tope al consumo de IA del propio DM (su API key): lo que evita es que un bucle de agentes se coma la cuota sin que nadie lo note. El DM puede configurarlo alto o desactivarlo; el default es "sin tope". La monetización (cobrar al jugador) es otra cosa, y va aparte con candado: ver **M0**.
+- **HECHO (B4):** `core/agents/budget.py`: el tope sale de la config (`daily_call_limit`, 0 = sin tope) y el contador de hoy por campaña vive en `data/ai_budget.json`. La ruta declara de qué campaña es la llamada (`backend/services/budget.py`) y el corte se aplica **antes de salir a internet** (en `audited_call`, el punto único). **Los reintentos cuentan**: el provider remoto reporta cuántos requests HTTP hizo (`last_attempts`) y el tope los ve. `GET /ai/usage` y el panel de IA muestran el consumo.
 
 **C9 — Auditoría.**
 - Por llamada: agente, perfil, modelo, tokens (si el provider los reporta), latencia, resultado (ok/error), y **hash** del prompt (no el prompt). El prompt puede contener datos de la campaña: no va al log.
@@ -268,9 +269,9 @@ Cada línea es un test. Si un test no existe, la garantía no existe.
 | S3 | La salida del modelo no puede romper el render | `pytest`: un item con `shape.points` con `NaN`/`Infinity` → 422; con 10.000 puntos → 422; con `image` apuntando a `http://` → 422. |
 | S4 | Los datos del mundo van marcados como datos | `pytest`: un prompt con `<datos>` + texto con "ignorá las instrucciones" → el system dice que es material. (Test del *armado* del prompt, no del modelo.) **HECHO (B2)**: 7 tests, uno por agente + el parser de narrativa. |
 | S5 | Los datos del jugador no llegan al prompt del DM | `pytest`: el prompt del Lore/Recap/WorldState con un jugador conectado no incluye texto del jugador. **HECHO (B2)**: la ficha entra por lista blanca (`character_for_prompt`); las notas del jugador no entran. |
-| S6 | Hay presupuesto | `pytest`: al superar el tope diario, la llamada se rechaza antes de salir a internet. |
+| S6 | Hay presupuesto | `pytest`: al superar el tope diario, la llamada se rechaza antes de salir a internet. **HECHO (B4)**: el test verifica que el provider **no** recibió la llamada. |
 | S7 | La auditoría no guarda el prompt | `pytest`: el log tiene el hash, no el texto. **HECHO (B3b)**: test del log (hash presente, texto ausente) + test del endpoint + e2e del panel. |
-| S8 | Los reintentos no multiplican el gasto sin tope | `pytest`: un provider que siempre da 429 → el número de requests está acotado. |
+| S8 | Los reintentos no multiplican el gasto sin tope | `pytest`: un provider que siempre da 429 → el número de requests está acotado. **HECHO (B4)**: los reintentos se cuentan (`last_attempts`) y el tope ve los 3 requests. |
 | S9 | Un perfil nuevo no necesita código | `pytest`: dar de alta un perfil OpenAI-compatible y que funcione (server falso). |
 | S10 | La clave de un perfil va al vault, no al config | `pytest`: el perfil guarda `key_ref`; el archivo de config no tiene el secreto. |
 
@@ -281,7 +282,7 @@ Cada línea es un test. Si un test no existe, la garantía no existe.
 | **B1** | **HECHO 2026-10-20.** Los límites de la salida: en el `PUT /items` y en el import (números finitos, sin URLs remotas en `image`, topes de puntos/nombre/descripción/cantidad) y en la salida de los agentes (`core/agents/validation.py`: `safe_text`/`safe_list`/`safe_str_list`). | S3 verde. Los agentes que parsean JSON con validación pydantic (hoy parsean a mano). |
 | **B2** | **HECHO 2026-10-21.** El marcado de datos en los prompts (C1, C2): todo el texto de la campaña va entre `<datos>…</datos>` y el system declara que es material. Aplicado a los 6 agentes y al parser de narrativa. + el test de que el jugador no llega al prompt del DM (S4, S5): la ficha entra por lista blanca (nombre + descripción) y las notas del jugador no entran. | S4, S5 verdes. |
 | **B3** | Roles y secretos (C7) + auditoría (C9). **HECHO 2026-10-21**: B3a (roles y secretos: S1, S2 + el agujero de `/narrative/parse`, que no exigía rol DM) y B3b (auditoría: S7 — el log guarda el hash del prompt, nunca el texto). | S1, S2, S7 verdes. |
-| **B4** | Presupuesto (C8) + el reintento no multiplica el gasto (S8). | S6, S8 verdes. |
+| **B4** | **HECHO 2026-10-21.** Presupuesto (C8): tope diario de requests por campaña (`daily_call_limit`, 0 = sin tope) + el reintento no multiplica el gasto (S8: los reintentos se cuentan). | S6, S8 verdes. |
 | **B5** | Herramientas de dominio, si se piden: lista blanca + validado + auditado. **Cada herramienta con su test.** | Test por herramienta. Sin esta fase, el resto sigue valiendo: el LLM sigue sin poder hacer nada. |
 | **M0** | **Monetización, con candado.** La mecánica de cobrar al jugador por el uso de IA queda **implementada pero apagada** (una flag, default `false`), para que si algún día hay financiamiento se active sin rehacer el backend. No es lo mismo que B4 (el tope anti-derrumbe): B4 protege la API key del DM, M0 cobra al jugador. Mientras la flag esté apagada, ninguna ruta de cobro existe. | La flag apagada por default + el test de que, apagada, no se puede cobrar. |
 

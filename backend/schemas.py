@@ -704,6 +704,9 @@ class AISettingsUpdate(BaseModel):
     model: Optional[str] = None
     max_tokens: int = Field(default=512, ge=1, le=8192)
     temperature: float = Field(default=0.7, ge=0.0, le=2.0)
+    # Tope diario de requests a la IA por campaña (C8). 0 = sin tope.
+    # Protege la API key del DM: no es cobrarle al jugador.
+    daily_call_limit: int = Field(default=0, ge=0, le=100000)
 
 
 class AISettingsResponse(AISettingsUpdate):

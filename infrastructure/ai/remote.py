@@ -50,6 +50,9 @@ class RemoteProvider(AIProvider):
         self.base_url = (base_url or DEFAULT_REMOTE_BASE_URL).rstrip("/")
         self.api_key = api_key if api_key is not None else _get_vault_key()
         self.last_usage: dict | None = None
+        # Cuantos requests HTTP se hicieron de verdad (los reintentos cuentan):
+        # el presupuesto de la campana los ve.
+        self.last_attempts = 0
 
     async def complete(
         self,
@@ -80,6 +83,7 @@ class RemoteProvider(AIProvider):
 
         last_error: Exception | None = None
         for attempt in range(MAX_RETRIES):
+            self.last_attempts = attempt + 1
             try:
                 async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT) as client:
                     res = await client.post(

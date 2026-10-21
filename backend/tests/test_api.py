@@ -1919,6 +1919,39 @@ async def test_la_auditoria_devuelve_el_hash_y_no_el_prompt(client, monkeypatch)
 
 
 @pytest.mark.asyncio
+async def test_el_tope_diario_se_guarda_y_el_uso_se_ve(client, monkeypatch, tmp_path):
+    """El tope de uso del DM se configura y se puede consultar."""
+    from uuid import uuid4
+
+    # La config de IA en un archivo propio: el test no toca la del DM.
+    monkeypatch.setenv("ROLEITO_AI_CONFIG", str(tmp_path / "ai_config.json"))
+
+    reg = (
+        await client.post(
+            "/api/auth/register", json={"name": f"DM Tope {uuid4().hex[:6]}", "pin": "1234"}
+        )
+    ).json()
+    headers = {"Authorization": f"Bearer {reg['token']}"}
+
+    res = await client.put(
+        "/api/ai/config",
+        json={"provider": "mock", "daily_call_limit": 25},
+        headers=headers,
+    )
+    assert res.status_code == 200, res.text
+    assert res.json()["daily_call_limit"] == 25
+
+    got = await client.get("/api/ai/config", headers=headers)
+    assert got.json()["daily_call_limit"] == 25
+
+    usage = await client.get("/api/ai/usage", headers=headers)
+    assert usage.status_code == 200, usage.text
+    body = usage.json()
+    assert body["limit"] == 25
+    assert body["usage"]["calls"] >= 0
+
+
+@pytest.mark.asyncio
 async def test_orchestrator_le_pasa_el_contexto_real_de_la_campana(client, monkeypatch):
     """El orquestador coordina, pero sin DB sus sub-agentes responden al aire.
 

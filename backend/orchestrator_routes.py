@@ -14,6 +14,7 @@ from core.agents.orchestrator import OrchestratorAgent, TaskType
 from auth import require_dm, AuthSession
 from database import get_session
 from models import Campaign
+from services.budget import campaign_budget
 
 router = APIRouter(prefix="/orchestrator", tags=["orchestrator"])
 
@@ -43,6 +44,7 @@ async def execute_task(
     req: OrchestratorRequest,
     db: AsyncSession = Depends(get_session),
     _auth: AuthSession = Depends(require_dm),
+    _budget: None = Depends(campaign_budget),
 ):
     try:
         task_type = TaskType(req.task_type)

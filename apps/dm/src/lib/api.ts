@@ -19,6 +19,8 @@ export interface AISettings {
   model: string | null;
   max_tokens: number;
   temperature: number;
+  /** Tope diario de requests a la IA por campaña. 0 = sin tope. */
+  daily_call_limit: number;
 }
 
 export interface AITestResult {
@@ -33,6 +35,13 @@ export interface AITestResult {
     completion_tokens: number;
     total_tokens: number;
   } | null;
+}
+
+/** El consumo de IA de hoy y el tope vigente (protege la API key del DM). */
+export interface AIUsage {
+  usage: { calls: number; attempts: number; campaigns?: number };
+  limit: number;
+  campaign_id: string | null;
 }
 
 /** Una llamada a la IA en el log de auditoria. El prompt no se guarda: solo su hash. */
@@ -948,6 +957,8 @@ export const api = {
       }),
     audit: (limit?: number) =>
       request<{ entries: AIAuditEntry[] }>(`/ai/audit?limit=${limit ?? 50}`),
+    usage: (campaignId?: string) =>
+      request<AIUsage>(`/ai/usage${campaignId ? `?campaign_id=${campaignId}` : ''}`),
   },
 
   vault: {

@@ -19,6 +19,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from core.agents.budget import (
+    BudgetExceeded,
+    current_campaign,
+    ensure_within_budget,
+    record_usage,
+)
+
 AUDIT_PATH = Path(__file__).resolve().parents[2] / "data" / "ai_audit.log"
 
 MAX_BYTES = 2 * 1024 * 1024
@@ -41,6 +48,7 @@ def record_call(
     status: str = "ok",
     latency_ms: int = 0,
     usage: Any = None,
+    attempts: int = 1,
     error: str | None = None,
 ) -> None:
     """Una linea al log. Nunca rompe la llamada: si el log falla, la llamada sigue."""
@@ -53,6 +61,7 @@ def record_call(
         "latency_ms": latency_ms,
         "prompt_sha": prompt_hash(prompt, system),
         "prompt_chars": len(prompt),
+        "attempts": attempts,
     }
     if usage:
         entry["usage"] = usage
@@ -119,6 +128,24 @@ async def audited_call(
         # reportar los tokens de la llamada anterior.
         provider.last_usage = None
 
+    # El tope se aplica ANTES de salir a internet (C8): si la campaña ya
+    # alcanzo su tope, la llamada no se hace y no se gasta nada.
+    campaign = current_campaign()
+    if campaign:
+        try:
+            ensure_within_budget(campaign)
+        except BudgetExceeded as e:
+            record_call(
+                agent_id=agent_id,
+                provider=name,
+                model=model,
+                prompt=prompt,
+                system=system,
+                status="blocked",
+                error=str(e),
+            )
+            raise
+
     start = time.perf_counter()
     try:
         raw = await provider.complete(
@@ -129,6 +156,7 @@ async def audited_call(
             temperature=temperature,
         )
     except Exception as e:
+        attempts = getattr(provider, "last_attempts", 1) or 1
         record_call(
             agent_id=agent_id,
             provider=name,
@@ -137,10 +165,14 @@ async def audited_call(
             system=system,
             status="error",
             latency_ms=int((time.perf_counter() - start) * 1000),
+            attempts=attempts,
             error=str(e),
         )
+        if campaign:
+            record_usage(campaign, attempts=attempts)
         raise
 
+    attempts = getattr(provider, "last_attempts", 1) or 1
     record_call(
         agent_id=agent_id,
         provider=name,
@@ -149,6 +181,9 @@ async def audited_call(
         system=system,
         status="ok",
         latency_ms=int((time.perf_counter() - start) * 1000),
+        attempts=attempts,
         usage=getattr(provider, "last_usage", None),
     )
+    if campaign:
+        record_usage(campaign, attempts=attempts)
     return raw

@@ -478,6 +478,103 @@ def test_el_provider_lee_la_config_configurada(tmp_path, monkeypatch):
     assert provider.name == "local"
 
 
+# ── S6/S8: presupuesto y reintentos ──────────────────────────────────
+
+
+async def test_el_tope_diario_corta_la_llamada_antes_de_salir(tmp_path, monkeypatch):
+    """S6: al superar el tope, la llamada NO sale (no se gasta nada).
+
+    El tope es del DM (su API key), no un cobro al jugador.
+    """
+    from core.agents import budget
+    from core.agents.budget import BudgetExceeded, campaign_scope
+
+    monkeypatch.setattr(budget, "BUDGET_PATH", tmp_path / "ai_budget.json")
+
+    # El tope sale de la config (como en la app).
+    cfg = tmp_path / "ai_config.json"
+    cfg.write_text(
+        json.dumps({"provider": "mock", "daily_call_limit": 2}), encoding="utf-8"
+    )
+    monkeypatch.setenv("ROLEITO_AI_CONFIG", str(cfg))
+
+    provider = CapturingProvider({
+        "answer": "ok", "entities_mentioned": [], "confidence": 0.5,
+        "related_topics": [], "source_hint": "",
+    })
+    agent = LoreAgent(provider)
+
+    with campaign_scope("camp-1"):
+        # Tope de 2: la tercera llamada se rechaza.
+        budget.ensure_within_budget("camp-1")
+        budget.record_usage("camp-1", attempts=1)
+        budget.ensure_within_budget("camp-1")
+        budget.record_usage("camp-1", attempts=1)
+        with pytest.raises(BudgetExceeded):
+            budget.ensure_within_budget("camp-1")
+
+        # Y la llamada que pasa por el punto unico sale rechazada, sin pegarle
+        # al provider.
+        provider.prompt = ""
+        with pytest.raises(BudgetExceeded):
+            await agent.run(question="?")
+    assert provider.prompt == "", "la llamada no debio salir a internet"
+
+
+async def test_los_reintentos_cuentan_contra_el_tope(tmp_path, monkeypatch):
+    """S8: un provider que reintenta 3 veces son 3 requests, y el tope los ve.
+
+    Si los reintentos no contaran, el tope se esquivaria solo.
+    """
+    from core.agents import budget
+
+    monkeypatch.setattr(budget, "BUDGET_PATH", tmp_path / "ai_budget.json")
+
+    class RetryingProvider(AIProvider):
+        name = "retrying"
+
+        def __init__(self, attempts: int = 1):
+            self.attempts = attempts
+            self.last_attempts = 0
+
+        async def complete(self, prompt, *, system="", model=None, max_tokens=512, temperature=0.7):
+            # El provider remoto reporta cuantos requests HTTP hizo.
+            self.last_attempts = self.attempts
+            raise RuntimeError("429 Too Many Requests")
+
+    from core.agents.audit import audited_call
+    from core.agents.budget import campaign_scope
+
+    provider = RetryingProvider()
+    with campaign_scope("camp-2"):
+        with pytest.raises(RuntimeError):
+            await audited_call(agent_id="lore", provider=provider, prompt="hola")
+
+    usage = budget.usage_today("camp-2")
+    assert usage["calls"] == 1
+    assert usage["attempts"] == 1
+
+    # Con 3 reintentos, el contador ve los 3 requests.
+    provider2 = RetryingProvider(attempts=3)
+    with campaign_scope("camp-3"):
+        with pytest.raises(RuntimeError):
+            await audited_call(agent_id="lore", provider=provider2, prompt="hola")
+    assert budget.usage_today("camp-3")["attempts"] == 3
+
+
+def test_el_tope_viene_de_la_config_y_0_es_sin_tope(tmp_path, monkeypatch):
+    from core.agents import budget
+
+    cfg = tmp_path / "ai_config.json"
+    monkeypatch.setenv("ROLEITO_AI_CONFIG", str(cfg))
+
+    cfg.write_text(json.dumps({"provider": "mock"}), encoding="utf-8")
+    assert budget.daily_limit() == 0
+
+    cfg.write_text(json.dumps({"provider": "mock", "daily_call_limit": 50}), encoding="utf-8")
+    assert budget.daily_limit() == 50
+
+
 async def test_la_auditoria_guarda_el_hash_y_no_el_prompt(tmp_path, monkeypatch):
     """S7: el log de auditoria tiene la huella del prompt, no el prompt.
 

@@ -27,6 +27,7 @@ from core.agents.context_manager import character_for_prompt
 from core.agents.proposals import propose_session_events
 from core.world.engine import WorldStateEngine
 from auth import require_dm, AuthSession
+from services.budget import campaign_budget
 
 router = APIRouter(tags=["agents"])
 
@@ -74,6 +75,7 @@ async def process_session(
     body: SessionProcessRequest,
     db: AsyncSession = Depends(get_session),
     _auth: AuthSession = Depends(require_dm),
+    _budget: None = Depends(campaign_budget),
 ):
     """Process session notes into structured data."""
     campaign = (await db.execute(
@@ -161,6 +163,7 @@ async def query_lore(
     body: LoreQueryRequest,
     db: AsyncSession = Depends(get_session),
     _auth: AuthSession = Depends(require_dm),
+    _budget: None = Depends(campaign_budget),
 ):
     """Query campaign lore."""
     campaign = (await db.execute(
@@ -220,6 +223,7 @@ async def narrate(
     body: NarrateRequest,
     db: AsyncSession = Depends(get_session),
     _auth: AuthSession = Depends(require_dm),
+    _budget: None = Depends(campaign_budget),
 ):
     """Generate atmospheric narration for a scene."""
     campaign = (await db.execute(
@@ -257,6 +261,7 @@ async def recap_session(
     body: RecapRequest,
     db: AsyncSession = Depends(get_session),
     _auth: AuthSession = Depends(require_dm),
+    _budget: None = Depends(campaign_budget),
 ):
     """Generate a session recap.
 
@@ -326,6 +331,7 @@ async def ingest_notes(
     body: IngestRequest,
     db: AsyncSession = Depends(get_session),
     _auth: AuthSession = Depends(require_dm),
+    _budget: None = Depends(campaign_budget),
 ):
     """Normaliza texto externo (notas del DM, documentos) en una sesion cruda.
 
@@ -360,6 +366,7 @@ async def query_world_state(
     body: WorldStateRequest,
     db: AsyncSession = Depends(get_session),
     _auth: AuthSession = Depends(require_dm),
+    _budget: None = Depends(campaign_budget),
 ):
     """Responde con el estado ACTUAL de la campana (posiciones, misiones, NPCs).
 
@@ -429,6 +436,7 @@ async def design_scene(
     body: SceneRequest,
     db: AsyncSession = Depends(get_session),
     _auth: AuthSession = Depends(require_dm),
+    _budget: None = Depends(campaign_budget),
 ):
     """Propone la configuracion visual de una escena a partir de su descripcion.
 
