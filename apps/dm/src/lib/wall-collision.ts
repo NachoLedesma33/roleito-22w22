@@ -6,6 +6,7 @@
 
 import { PortalRef } from '@core/domain/types'
 import { isPendingReview } from './pendingReview'
+import { isShadowOnly } from './shadowZone'
 
 function pointSegmentDistance(
   px: number, py: number,
@@ -110,6 +111,8 @@ export function extractZonePolygons(items: ShadowItem[], mapW: number = 10, mapH
     if (item.metadata?.type !== 'zone') continue
     // Una zona propuesta y sin aprobar no es geometria: no encierra al token.
     if (isPendingReview(item)) continue
+    // Una zona fantasma es referencia: no frena (si proyecta sombra, no frena).
+    if (isShadowOnly(item)) continue
     const shape = item.shape
     if (shape?.type === 'polygon') {
       if (!shape.points || shape.points.length < 6) continue

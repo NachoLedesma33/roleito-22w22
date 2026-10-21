@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react'
-import { PortalRef } from '@core/domain/types'
+import { PortalRef, SceneItem, ZoneMetadata } from '@core/domain/types'
 import { PORTAL_COLORS } from './ZonePortal'
 
 interface ZoneContextMenuProps {
   x: number
   y: number
+  item: SceneItem
   portals: PortalRef[]
+  onUpdate: (patch: Partial<SceneItem>) => void
   onTogglePortal: (portalId: string) => void
   onDeletePortal: (portalId: string) => void
   onDelete: () => void
@@ -23,13 +25,16 @@ function nextAction(p: PortalRef): string {
 export default function ZoneContextMenu({
   x,
   y,
+  item,
   portals,
+  onUpdate,
   onTogglePortal,
   onDeletePortal,
   onDelete,
   onClose,
 }: ZoneContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null)
+  const meta = item.metadata as ZoneMetadata
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -76,6 +81,14 @@ export default function ZoneContextMenu({
           <div className="border-t border-gray-700 my-1" />
         </>
       )}
+      <label className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-700 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={meta.shadowOnly === true}
+          onChange={(e) => onUpdate({ metadata: { ...meta, shadowOnly: e.target.checked } })}
+        />
+        Solo sombra (no frena ni tapa la vista)
+      </label>
       <button
         className="w-full px-3 py-1.5 text-left text-sm text-red-400 hover:bg-gray-700"
         onClick={() => { onDelete(); onClose() }}

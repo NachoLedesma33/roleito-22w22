@@ -112,11 +112,13 @@ export default function DmContextMenus({
         />
       )}
 
-      {zoneMenu && (
+      {zoneMenu && getItem(zoneMenu.itemId) && (
         <ZoneContextMenu
           x={zoneMenu.x}
           y={zoneMenu.y}
+          item={getItem(zoneMenu.itemId)!}
           portals={getZonePortals(zoneMenu.itemId)}
+          onUpdate={(patch) => onUpdateItem(zoneMenu.itemId, patch)}
           onTogglePortal={onTogglePortal}
           onDeletePortal={onDeletePortal}
           onDelete={() => onDeleteItem(zoneMenu.itemId)}

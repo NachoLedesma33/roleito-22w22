@@ -97,4 +97,33 @@ describe('geometria pendiente de revision', () => {
     expect(extractZonePolygons([zona(true)])).toHaveLength(0)
     expect(extractZonePolygons([zona(false)])).toHaveLength(1)
   })
+
+  it('una zona fantasma no encierra al token ni tapa la vista', () => {
+    // `shadowOnly` es una zona de referencia: proyecta sombra pero no frena ni
+    // tapa la vista. El flag existia y no lo leia nadie.
+    const zona = (shadowOnly: boolean): ShadowItem =>
+      ({
+        id: 'z1',
+        visible: true,
+        metadata: { type: 'zone', shadowOnly },
+        shape: { type: 'polygon', points: [0.4, 0.4, 0.6, 0.4, 0.6, 0.6, 0.4, 0.6] },
+      }) as unknown as ShadowItem
+
+    expect(extractZonePolygons([zona(true)])).toHaveLength(0)
+    expect(extractZonePolygons([zona(false)])).toHaveLength(1)
+    // Una zona polygon ocluye con sus 4 aristas.
+    expect(buildLoSOccluders([zona(true)] as unknown as SceneItem[], 10, 10)).toHaveLength(0)
+    expect(buildLoSOccluders([zona(false)] as unknown as SceneItem[], 10, 10)).toHaveLength(4)
+  })
+
+  it('una zona fantasma SI proyecta sombra', () => {
+    const zona = {
+      id: 'z1',
+      visible: true,
+      metadata: { type: 'zone', shadowOnly: true },
+      shape: { type: 'polygon', points: [0.4, 0.4, 0.6, 0.4, 0.6, 0.6, 0.4, 0.6] },
+    }
+    // La luz es lo unico que le afecta: por eso se llama "solo sombra".
+    expect(buildOccluders([zona] as unknown as SceneItem[], 10, 10).length).toBeGreaterThan(0)
+  })
 })

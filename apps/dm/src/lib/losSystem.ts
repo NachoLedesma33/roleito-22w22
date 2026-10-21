@@ -6,6 +6,7 @@
 import { SceneItem, VisionConfig } from '@core/domain/types'
 import { Occluder } from './lightOcclusion'
 import { isPendingReview } from './pendingReview'
+import { isShadowOnly } from './shadowZone'
 import { computeVisibilityMask, masksUnion } from './losRaycast'
 
 export interface CharVisionState {
@@ -49,6 +50,8 @@ export function buildLoSOccluders(
         })
       }
     } else if (item.metadata.type === 'zone') {
+      // Una zona fantasma proyecta sombra pero no tapa la vista.
+      if (isShadowOnly(item)) continue
       if (item.shape?.type === 'rectangle') {
         const hw = item.width / 2
         const hh = item.height / 2
