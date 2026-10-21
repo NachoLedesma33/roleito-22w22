@@ -559,7 +559,11 @@ backend/
 - **Enfoque actual:** "100% manual + IA como acelerador". El target era "95%
   auto + 5% manual"; hoy se invierte: todo el sistema consume ShadowZones y la
   IA (esta fase) es un *boost* opcional para mapas texturizados
-- **Integración pendiente**: convertir `DetectedMap` → `ShadowZone[]`
-  (`origin: 'ai'`, `touchedByDm: false`) + DM review UI por zona
+- **Integración HECHA (2026-10-21)**: el `DetectedMap` ya se convierte a
+  `ShadowZone[]` (`origin: 'ai'`, `touchedByDm: false`) y la IA **no propone
+  muros sueltos**: el perímetro de la zona ES la pared (solo queda un item de
+  muro si ninguna zona lo cubre). La zona lleva los flags de su borde
+  (`lineOfSight`, `movement`, `soundOcclusion`, `height`, `thickness`) y el
+  runtime los respeta. La review UI por zona existe (el menú de la zona).
 - VLM-based detection is the future but costs money per detection
 - CV-only approach is free but limited to clean blueprints

@@ -148,10 +148,17 @@ geometría.
 
 1. El output del motor de IA se convierte a la misma estructura `ShadowZone`
    (`DetectedMap` → `ShadowZone[]`, coords normalizadas 0-1).
-2. Las paredes detectadas se agrupan en cadenas cerradas → se proponen como
-   `polygon` (habitaciones detectadas → zonas directas).
+2. Las paredes detectadas **no** se iteman: el perímetro de la zona ES la
+   pared. Solo queda un item de muro si no hay ninguna zona que lo cubra
+   (un tramo suelto fuera de toda sala). Antes la misma geometría vivía dos
+   veces —el item de muro y el borde de la zona—: colisión duplicada y el
+   muro dibujado encima del perímetro.
 3. Las puertas detectadas → `Portal` candidates entre zonas adyacentes.
-4. Las zonas de IA entran con `origin: 'ai'`, `touchedByDm: false`.
+4. Las zonas de IA entran con `origin: 'ai'`, `touchedByDm: false` y los
+   **flags de su borde**: `lineOfSight`, `movement`, `soundOcclusion`,
+   `height` y `thickness` (ausentes = muro sólido). Son los mismos flags que
+   tiene un muro: la zona es la pared, y el runtime (LoS, luz y colisión)
+   los respeta igual. El DM los edita desde el menú de la zona.
 5. El GM las revisa/edita con las mismas herramientas manuales (Modo Híbrido);
    al tocarlas pasan a `touchedByDm: true` y dejan de re-analizarse.
 

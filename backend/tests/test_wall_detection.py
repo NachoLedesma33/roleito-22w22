@@ -319,3 +319,77 @@ def test_las_puertas_detectadas_unen_las_zonas():
         assert abs(point["x"] - 0.5) < 0.06
 
     assert len(portal_ids) == 1, "el mismo portal en las dos zonas"
+
+
+def test_los_muros_que_son_el_borde_de_una_zona_no_se_iteman():
+    """La zona ES la pared: el muro no puede existir dos veces.
+
+    Antes la deteccion proponia el muro suelto Y la zona: la misma geometria
+    bloqueaba dos veces (colision duplicada) y el muro se dibujaba encima
+    del perimetro de la zona. Ahora el perimetro de la zona es la pared y el
+    item de muro solo aparece si NO hay zona que lo cubra.
+    """
+    from wall_detection import scene_items_from_detection
+    from wall_detection.types import DetectedMap, DetectedRoom, DetectedWall, Point
+
+    room = DetectedRoom(
+        id="r1",
+        polygon=[Point(0, 0), Point(100, 0), Point(100, 100), Point(0, 100)],
+        label="Sala del dragon",
+    )
+    # Un muro sobre el borde superior de la sala (y = 0): es su pared.
+    muro_del_borde = DetectedWall(
+        id="w1", points=[Point(0, 0), Point(100, 0)], thickness=12.0
+    )
+    # Un muro suelto en el medio de la sala: no es el borde de nada.
+    muro_suelto = DetectedWall(
+        id="w2", points=[Point(50, 50), Point(60, 50)], thickness=8.0
+    )
+    detection = DetectedMap(
+        width=100,
+        height=100,
+        rooms=[room],
+        walls=[muro_del_borde, muro_suelto],
+    )
+
+    items = scene_items_from_detection(detection)
+    muros = [i for i in items if i["metadata"]["type"] == "wall"]
+    zonas = [i for i in items if i["metadata"]["type"] == "zone"]
+
+    assert len(zonas) == 1
+    # El del borde no se itema (la zona ya es esa pared); el suelto si.
+    assert len(muros) == 1, [i["id"] for i in muros]
+    assert muros[0]["shape"]["points"] == [0.5, 0.5, 0.6, 0.5]
+
+
+def test_la_zona_de_la_ia_lleva_los_flags_de_su_borde():
+    """Los flags que tenia el muro suelto ahora los lleva la zona.
+
+    Son los que el runtime respeta (los de un muro) y los que el DM edita
+    desde el menu de la zona: sin esto, la deteccion con IA no podria
+    dejar de proponer muros sueltos.
+    """
+    from wall_detection import scene_items_from_detection
+    from wall_detection.types import DetectedMap, DetectedRoom, DetectedWall, Point
+
+    room = DetectedRoom(
+        id="r1",
+        polygon=[Point(0, 0), Point(100, 0), Point(100, 100), Point(0, 100)],
+        label="Sala del dragon",
+    )
+    muro = DetectedWall(id="w1", points=[Point(0, 0), Point(100, 0)], thickness=12.0)
+    detection = DetectedMap(width=100, height=100, rooms=[room], walls=[muro])
+
+    zona = [
+        i for i in scene_items_from_detection(detection) if i["metadata"]["type"] == "zone"
+    ][0]
+    meta = zona["metadata"]
+
+    assert meta["lineOfSight"] is True
+    assert meta["movement"] is True
+    assert meta["soundOcclusion"] == 0.8
+    assert meta["height"] == 8
+    assert meta["thickness"] == 12.0
+    # El id de la zona es el prefijo nuevo: el frontend lo usa para saber
+    # que es geometria automatica (y limpiarla al re-detectar).
+    assert zona["id"].startswith("zone-auto-")

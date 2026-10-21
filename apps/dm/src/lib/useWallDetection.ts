@@ -14,12 +14,35 @@ export interface DetectProposal {
   walls: number;
   doors: number;
   /**
-   * Las salas que encontró la detección.
+   * Las zonas que encontró la detección (las "salas").
    *
-   * Todavía no son entidades del grafo: se muestran para que el DM sepa que
-   * el detector también las vio (antes se descartaban en silencio).
+   * Son la geometria de verdad: el perimetro de la zona ES la pared. Los
+   * muros sueltos solo aparecen cuando no hay zona que los cubra.
    */
   rooms: { id: string; label: string; area: number }[];
+}
+
+/**
+ * Arma la propuesta a partir de los items propuestos.
+ *
+ * Los conteos salen de los ITEMS, no de las estadisticas del detector: lo
+ * que se propone es lo que hay en la escena. (El detector puede haber
+ * encontrado 5 paredes que en el grafo son el borde de 2 zonas: los items
+ * son 2 zonas, no 5 paredes + 2 zonas.)
+ */
+function proposalFromItems(
+  items: SceneItem[],
+  rooms?: DetectProposal['rooms'],
+): DetectProposal {
+  const zoneItems = items.filter((i) => autoDetectedKind(i) === 'zone');
+  return {
+    ids: items.map((i) => i.id),
+    walls: items.filter((i) => autoDetectedKind(i) === 'wall').length,
+    doors: items.filter((i) => autoDetectedKind(i) === 'door').length,
+    rooms:
+      rooms ??
+      zoneItems.map((i) => ({ id: i.id, label: i.name, area: 0 })),
+  };
 }
 
 export interface UseWallDetectionOptions {
@@ -100,12 +123,12 @@ export function useWallDetection({
       }
       handleItemsChange(graphRef.getItems());
       if (items.length > 0) {
-        setDetectProposal({
-          ids: items.map((item) => item.id),
-          walls: result.wall_count ?? items.length,
-          doors: result.door_count ?? 0,
-          rooms: (result.rooms ?? []).map((r) => ({ id: r.id, label: r.label, area: r.area })),
-        });
+        setDetectProposal(
+          proposalFromItems(
+            items,
+            (result.rooms ?? []).map((r) => ({ id: r.id, label: r.label, area: r.area })),
+          ),
+        );
         push({
           id: `detect-${Date.now()}`,
           rollerName: i18n.t('dmToast.rollerDetect', 'Detección'),
@@ -113,9 +136,8 @@ export function useWallDetection({
           count: 1,
           results: [items.length],
           total: items.length,
-          label: i18n.t('dmToast.detectProposed', '{{walls}} paredes + {{doors}} puertas propuestas — revisar', {
-            walls: result.wall_count ?? items.length,
-            doors: result.door_count ?? 0,
+          label: i18n.t('dmToast.detectProposed', '{{n}} elementos propuestos — revisar', {
+            n: items.length,
           }),
           timestamp: Date.now(),
         });
@@ -193,12 +215,7 @@ export function useWallDetection({
             }
             for (const item of conFlag) graphRef.addItem(item);
             handleItemsChange(graphRef.getItems());
-            setDetectProposal({
-              ids: conFlag.map((i) => i.id),
-              walls: conFlag.filter((i) => autoDetectedKind(i) === 'wall').length,
-              doors: conFlag.filter((i) => autoDetectedKind(i) === 'door').length,
-              rooms: [],
-            });
+            setDetectProposal(proposalFromItems(conFlag));
           } else {
             // Otra escena: se guarda por la API, con la propuesta pendiente.
             // Regenera el set automatico de esa escena (como la deteccion
@@ -264,13 +281,7 @@ export function useWallDetection({
     const pending = items.filter((item) => item.pendingReview);
     if (pending.length === 0) return;
     reopenedRef.current = true;
-    setDetectProposal({
-      ids: pending.map((item) => item.id),
-      walls: pending.filter((item) => autoDetectedKind(item) === 'wall').length,
-      doors: pending.filter((item) => autoDetectedKind(item) === 'door').length,
-      // Las salas no se guardan con el item: al reabrir no se saben.
-      rooms: [],
-    });
+    setDetectProposal(proposalFromItems(pending));
   }, [items, detectProposal, sceneId]);
 
   const handleDetectApprove = useCallback(() => {

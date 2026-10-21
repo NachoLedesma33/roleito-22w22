@@ -63,13 +63,37 @@ function sceneItems(
   authHeaders: { Authorization: string },
   campaignId: string,
   sceneId: string,
-): Promise<Array<{ id: string; pendingReview?: boolean; metadata?: { type: string } }>> {
+): Promise<
+  Array<{
+    id: string;
+    pendingReview?: boolean;
+    metadata?: { type: string; origin?: string };
+    shape?: { type: string; points?: number[] };
+  }>
+> {
   return request
     .get(`${API}/campaigns/${campaignId}/scenes/${sceneId}/items`, {
       headers: authHeaders,
     })
     .then((res) => res.json())
     .then((body) => body.items ?? []);
+}
+
+/** Distancia de un punto a un segmento (coords normalizadas 0-1). */
+function distToSegment(
+  px: number,
+  py: number,
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
+): number {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq < 1e-10) return Math.hypot(px - ax, py - ay);
+  const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lenSq));
+  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
 }
 
 const AUTO_PREFIXES = ['wall-auto-', 'door-auto-'];
@@ -186,6 +210,60 @@ test.describe('Auto wall detection', () => {
         { timeout: 15_000 },
       )
       .toBe(false);
+  });
+
+  test('D9: la deteccion no duplica la geometria (la zona ES la pared)', async ({
+    page,
+    request,
+    campaign,
+    authHeaders,
+  }) => {
+    await page.goto('/');
+    const png = await blueprintMapPng(page);
+    const sceneId = await createSceneWithMap(request, authHeaders, campaign.id, png);
+
+    await page.goto(`/campaigns/${campaign.id}`);
+    await page.locator('header select').selectOption(sceneId);
+    await expect(page.locator('canvas').first()).toBeVisible({ timeout: 15_000 });
+    await page.getByRole('button', { name: 'Construir' }).click();
+    await page.getByRole('button', { name: 'Detectar paredes' }).click();
+    await expect(page.getByTestId('detect-review')).toBeVisible({ timeout: 30_000 });
+    await page.getByTestId('detect-approve').click();
+
+    // El perimetro de la zona ES la pared. Si quedara un item de muro
+    // automatico encima del borde, la misma geometria bloquearia dos veces
+    // (colision duplicada) y el muro se dibujaria sobre el perimetro.
+    await expect
+      .poll(
+        async () => {
+          const items = await sceneItems(request, authHeaders, campaign.id, sceneId);
+          const zonas = items.filter(
+            (i) => i.metadata?.type === 'zone' && i.metadata?.origin === 'ai',
+          );
+          const muros = items.filter(
+            (i) => i.metadata?.type === 'wall' && i.id.startsWith('wall-auto-'),
+          );
+          for (const muro of muros) {
+            const pts = muro.shape?.points;
+            if (!pts || pts.length < 4) continue;
+            const mx = (pts[0] + pts[2]) / 2;
+            const my = (pts[1] + pts[3]) / 2;
+            for (const zona of zonas) {
+              const zp = zona.shape?.points;
+              if (!zp || zp.length < 6) continue;
+              for (let i = 0; i + 1 < zp.length; i += 2) {
+                const j = (i + 2) % zp.length;
+                if (distToSegment(mx, my, zp[i], zp[i + 1], zp[j], zp[j + 1]) <= 0.01) {
+                  return `muro ${muro.id} sobre el borde de ${zona.id}`;
+                }
+              }
+            }
+          }
+          return 'ok';
+        },
+        { timeout: 15_000 },
+      )
+      .toBe('ok');
   });
 
   test('D5: detectar dos veces regenera el set automático, no lo apila', async ({

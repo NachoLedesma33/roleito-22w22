@@ -2885,12 +2885,12 @@ const startFogMode = useCallback(() => {
             className="absolute bottom-16 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] shadow-xl text-xs whitespace-nowrap"
           >
             <span className="text-[var(--text-secondary)]">
-              {t('dm.detectReviewTitle', 'Revisar detección')}: {detectProposal.walls}+{detectProposal.doors}
-              {detectProposal.rooms.length > 0 && (
-                <span className="ml-2 text-[var(--text-secondary)]/70">
-                  {t('dm.detectRooms', '{n} salas', { n: detectProposal.rooms.length })}
-                </span>
-              )}
+              {t('dm.detectReviewTitle', 'Revisar detección')}:{' '}
+              {t('dm.detectReviewCounts', '{walls} muros · {doors} puertas · {rooms} salas', {
+                walls: detectProposal.walls,
+                doors: detectProposal.doors,
+                rooms: detectProposal.rooms.length,
+              })}
             </span>
             <button
               type="button"

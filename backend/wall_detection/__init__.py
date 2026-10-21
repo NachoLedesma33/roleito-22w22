@@ -60,6 +60,28 @@ def _zones_near(point, zones, tolerance: float) -> list:
     return scored
 
 
+def _wall_on_zone_border(wall, detection_result, zones, tolerance: float = 0.01) -> bool:
+    """El muro ya es el borde de una zona: no hay que itemarlo dos veces.
+
+    La zona ES la pared (HYBRID-SHADOW-GEOMETRY.md §4: los derivados salen
+    todos del poligono). Si el muro tambien fuera un item, la misma geometria
+    bloquearia dos veces (colision duplicada) y el muro se dibujaria encima
+    del perimetro de la zona.
+    """
+    if not zones or len(wall.points) < 2:
+        return False
+    mid = wall.points[len(wall.points) // 2]
+    mx = mid.x / detection_result.width
+    my = mid.y / detection_result.height
+    for _zone_id, points in zones:
+        for i in range(len(points)):
+            ax, ay = points[i]
+            bx, by = points[(i + 1) % len(points)]
+            if _point_segment_distance(mx, my, ax, ay, bx, by) <= tolerance:
+                return True
+    return False
+
+
 def scene_items_from_detection(detection_result: DetectedMap) -> list:
     """
     Convert DetectedMap to SceneItem dicts for the frontend.
@@ -69,7 +91,76 @@ def scene_items_from_detection(detection_result: DetectedMap) -> list:
     items = []
     base_time = int(time.time() * 1000)
 
+    # Las zonas (las salas detectadas) se arman PRIMERO: son las areas
+    # cerradas y su perimetro es la pared. Con ellas ya se sabe que muros
+    # estan representados y no hay que itemarlos otra vez.
+    zones = []  # (item_id, puntos normalizados)
+    wall_thickness = max((w.thickness for w in detection_result.walls), default=1.0)
+    for i, room in enumerate(detection_result.rooms):
+        # Una sala con menos de 3 vertices no es un poligono: no hay nada que
+        # dibujar.
+        if len(room.polygon) < 3:
+            continue
+        item_id = f"zone-auto-{base_time}-{i}-{random.randint(1000, 9999)}"
+
+        normalized_points = []
+        for p in room.polygon:
+            normalized_points.append(p.x / detection_result.width)
+            normalized_points.append(p.y / detection_result.height)
+
+        pts = [
+            (normalized_points[k], normalized_points[k + 1])
+            for k in range(0, len(normalized_points), 2)
+        ]
+        zones.append((item_id, pts))
+
+        items.append({
+            "id": item_id,
+            "name": room.label,
+            "type": "shape",
+            "shape": {
+                "type": "polygon",
+                "points": normalized_points,
+            },
+            "position": {"x": 0, "y": 0, "z": 0},
+            "rotation": 0,
+            "scale": 1,
+            "layer": 1,
+            "zIndex": 0,
+            "locked": False,
+            "visible": True,
+            "metadata": {
+                # La geometria de la IA entra como ZONA, la misma estructura
+                # que dibuja el DM a mano: asi una sala detectada alimenta la
+                # niebla, la luz y la LoS igual que una zona manual (antes
+                # eran items `room`, un tipo en paralelo que el runtime no
+                # consumia). `origin: ai` deja la traza de que la propuso
+                # la maquina y el DM la revisa con las mismas herramientas.
+                "type": "zone",
+                "zoneType": "polygon",
+                "origin": "ai",
+                "touchedByDm": False,
+                "shadowOnly": False,
+                "fillColor": "#334155",
+                "fillOpacity": 0.35,
+                "portals": [],
+                # Los flags del BORDE: son los que tenia el muro suelto que
+                # la IA proponia antes al lado de la zona. Ahora la pared es
+                # la zona (una sola geometria) y el DM los edita desde el
+                # menu de la zona.
+                "lineOfSight": True,
+                "movement": True,
+                "soundOcclusion": 0.8,
+                "height": 8,
+                "thickness": wall_thickness,
+            },
+        })
+
     for i, wall in enumerate(detection_result.walls):
+        # El borde de la zona ya es la pared: un item de muro al lado seria
+        # la misma geometria dos veces.
+        if _wall_on_zone_border(wall, detection_result, zones):
+            continue
         item_id = f"wall-auto-{base_time}-{i}-{random.randint(1000, 9999)}"
 
         normalized_points = []
@@ -135,60 +226,6 @@ def scene_items_from_detection(detection_result: DetectedMap) -> list:
                 "material": "wood",
                 "autoClose": False,
                 "confidence": door.confidence,
-            },
-        })
-
-    # Las zonas (las salas detectadas) se arman primero: los portales las
-    # necesitan para saber que dos zonas se tocan.
-    zones = []  # (item_id, puntos normalizados)
-    for i, room in enumerate(detection_result.rooms):
-        # Una sala con menos de 3 vertices no es un poligono: no hay nada que
-        # dibujar.
-        if len(room.polygon) < 3:
-            continue
-        item_id = f"room-auto-{base_time}-{i}-{random.randint(1000, 9999)}"
-
-        normalized_points = []
-        for p in room.polygon:
-            normalized_points.append(p.x / detection_result.width)
-            normalized_points.append(p.y / detection_result.height)
-
-        pts = [
-            (normalized_points[k], normalized_points[k + 1])
-            for k in range(0, len(normalized_points), 2)
-        ]
-        zones.append((item_id, pts))
-
-        items.append({
-            "id": item_id,
-            "name": room.label,
-            "type": "shape",
-            "shape": {
-                "type": "polygon",
-                "points": normalized_points,
-            },
-            "position": {"x": 0, "y": 0, "z": 0},
-            "rotation": 0,
-            "scale": 1,
-            "layer": 1,
-            "zIndex": 0,
-            "locked": False,
-            "visible": True,
-            "metadata": {
-                # La geometria de la IA entra como ZONA, la misma estructura
-                # que dibuja el DM a mano: asi una sala detectada alimenta la
-                # niebla, la luz y la LoS igual que una zona manual (antes
-                # eran items `room`, un tipo en paralelo que el runtime no
-                # consumia). `origin: ai` deja la traza de que la propuso
-                # la maquina y el DM la revisa con las mismas herramientas.
-                "type": "zone",
-                "zoneType": "polygon",
-                "origin": "ai",
-                "touchedByDm": False,
-                "shadowOnly": False,
-                "fillColor": "#334155",
-                "fillOpacity": 0.35,
-                "portals": [],
             },
         })
 
