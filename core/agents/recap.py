@@ -8,6 +8,7 @@ from typing import Any
 
 from core.agents.base import AgentResult, BaseAgent
 from core.agents.validation import safe_text, safe_str_list
+from core.agents.context_manager import system_with_rule, wrap_data
 
 RECAP_SYSTEM = """You are a tabletop RPG session recap writer. Given session history and notes, generate a compelling recap for players.
 
@@ -48,17 +49,21 @@ class RecapAgent(BaseAgent):
         campaign_context: str = "",
         **kwargs: Any,
     ) -> AgentResult:
-        user_msg = f"Session Notes:\n{session_notes or 'No notes available.'}"
+        # Todo lo que entra al prompt es material de la campana: va delimitado
+        # como dato (C1). El recap anterior es la salida de otro agente: va
+        # marcado igual.
+        data_parts = [f"Session Notes:\n{session_notes or 'No notes available.'}"]
         if session_summary:
-            user_msg += f"\n\nSession Summary:\n{session_summary}"
+            data_parts.append(f"Session Summary:\n{session_summary}")
         if previous_recap:
-            user_msg += f"\n\nPrevious Session Recap:\n{previous_recap}"
+            data_parts.append(f"Previous Session Recap:\n{previous_recap}")
         if campaign_context:
-            user_msg += f"\n\nCampaign Context:\n{campaign_context}"
+            data_parts.append(f"Campaign Context:\n{campaign_context}")
+        user_msg = wrap_data("\n\n".join(data_parts))
 
         raw = await self.provider.complete(
             user_msg,
-            system=RECAP_SYSTEM,
+            system=system_with_rule(RECAP_SYSTEM),
             max_tokens=1500,
             temperature=0.7,
         )

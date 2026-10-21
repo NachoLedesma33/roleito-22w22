@@ -8,6 +8,7 @@ from typing import Any
 
 from core.agents.base import AgentResult, BaseAgent
 from core.agents.validation import safe_text, safe_str_list
+from core.agents.context_manager import system_with_rule, wrap_data
 
 NARRATOR_SYSTEM = """You are a tabletop RPG narrator. Given scene context, generate atmospheric narration for the party.
 
@@ -67,11 +68,11 @@ class NarratorAgent(BaseAgent):
         if not context_parts:
             return self._error("No scene context provided")
 
-        user_msg = "\n".join(context_parts)
+        user_msg = wrap_data("\n".join(context_parts))
 
         raw = await self.provider.complete(
             user_msg,
-            system=NARRATOR_SYSTEM,
+            system=system_with_rule(NARRATOR_SYSTEM),
             max_tokens=1024,
             temperature=0.7,
         )

@@ -11,6 +11,7 @@ from typing import Any
 
 from core.agents.base import AgentResult, BaseAgent
 from core.agents.validation import safe_str_list
+from core.agents.context_manager import system_with_rule, wrap_data
 
 SCENE_SYSTEM = """You are a tabletop RPG scene designer. Given a narrative scene, produce a visual configuration.
 
@@ -61,11 +62,11 @@ class SceneAgent(BaseAgent):
         context_parts = [f"Scene: {scene_description}"]
         if mood:
             context_parts.append(f"Desired Mood: {mood}")
-        user_msg = "\n".join(context_parts)
+        user_msg = wrap_data("\n".join(context_parts))
 
         raw = await self.provider.complete(
             user_msg,
-            system=SCENE_SYSTEM,
+            system=system_with_rule(SCENE_SYSTEM),
             max_tokens=512,
             temperature=0.4,
         )

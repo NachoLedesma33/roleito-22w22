@@ -12,6 +12,7 @@ from core.agents.lore_agent import LoreAgent
 from core.agents.narrator import NarratorAgent
 from core.agents.recap import RecapAgent
 from core.agents.world_state import WorldStateAgent
+from core.agents.context_manager import character_for_prompt
 from core.agents.proposals import propose_session_events
 from core.agents.provider import get_provider_for_agent
 
@@ -95,8 +96,9 @@ class OrchestratorAgent:
             "campaign_context": f"{campaign.name}: {campaign.description or ''}",
             "characters": [
                 {
-                    "name": c.name,
-                    "description": c.description,
+                    # Lista blanca: nombre y descripcion de la ficha. Las notas
+                    # del jugador no entran al prompt del DM.
+                    **character_for_prompt(c),
                     # Donde esta: el agente de world state lo necesita asi.
                     "location": loc_name.get(c.current_location_id or "", "unknown"),
                 }
@@ -104,8 +106,7 @@ class OrchestratorAgent:
             ],
             "npcs": [
                 {
-                    "name": n.name,
-                    "description": n.description,
+                    **character_for_prompt(n),
                     "location": loc_name.get(n.current_location_id or "", "unknown"),
                 }
                 for n in npcs

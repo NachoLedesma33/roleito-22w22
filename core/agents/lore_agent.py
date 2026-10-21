@@ -8,7 +8,7 @@ from typing import Any
 
 from core.agents.base import AgentResult, BaseAgent
 from core.agents.validation import safe_text, safe_str_list
-from core.agents.context_manager import build_context
+from core.agents.context_manager import build_context, system_with_rule, wrap_data
 
 LORE_SYSTEM = """You are a tabletop RPG lore keeper. Given campaign context and a question, provide a helpful answer.
 
@@ -70,11 +70,11 @@ class LoreAgent(BaseAgent):
         )
         context_str = context.text or "No campaign context available."
 
-        user_msg = f"Campaign Context:\n{context_str}\n\nQuestion: {question}"
+        user_msg = f"Campaign Context:\n{wrap_data(context_str)}\n\nQuestion: {question}"
 
         raw = await self.provider.complete(
             user_msg,
-            system=LORE_SYSTEM,
+            system=system_with_rule(LORE_SYSTEM),
             max_tokens=1024,
             temperature=0.3,
         )

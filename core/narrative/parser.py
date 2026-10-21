@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from infrastructure.ai import AIProvider
+from core.agents.context_manager import system_with_rule, wrap_data
 
 EXTRACTION_SYSTEM = """You are a tabletop RPG event extractor. Given DM narration text, extract structured events.
 
@@ -73,18 +74,20 @@ async def parse_narrative(
     locations: list[str] | None = None,
 ) -> list[ExtractedEvent]:
     """Parse DM narration text into structured events using AI."""
-    user_msg = EXTRACTION_USER_TEMPLATE.format(
+    # La narracion puede traer texto que el DM leyo de la mesa (o que un
+    # jugador metio en un chat): va delimitado como dato (C1), no como orden.
+    user_msg = wrap_data(EXTRACTION_USER_TEMPLATE.format(
         text=text,
         campaign_name=campaign_name or "Unknown",
         scene_name=scene_name or "Unknown",
         characters=", ".join(characters) if characters else "none",
         npcs=", ".join(npcs) if npcs else "none",
         locations=", ".join(locations) if locations else "none",
-    )
+    ))
 
     raw = await provider.complete(
         user_msg,
-        system=EXTRACTION_SYSTEM,
+        system=system_with_rule(EXTRACTION_SYSTEM),
         max_tokens=2048,
         temperature=0.3,
     )

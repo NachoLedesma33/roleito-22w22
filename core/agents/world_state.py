@@ -12,6 +12,7 @@ from typing import Any
 
 from core.agents.base import AgentResult, BaseAgent
 from core.agents.validation import safe_text, safe_list, safe_str_list
+from core.agents.context_manager import system_with_rule, wrap_data
 
 WORLD_SYSTEM = """You are a tabletop RPG world state oracle. Given the current state of the campaign and a question, answer from the state only.
 
@@ -88,11 +89,11 @@ class WorldStateAgent(BaseAgent):
             ))
 
         state_str = "\n\n".join(state_parts) if state_parts else "No state available."
-        user_msg = f"Current State:\n{state_str}\n\nQuestion: {question}"
+        user_msg = f"Current State:\n{wrap_data(state_str)}\n\nQuestion: {question}"
 
         raw = await self.provider.complete(
             user_msg,
-            system=WORLD_SYSTEM,
+            system=system_with_rule(WORLD_SYSTEM),
             max_tokens=1024,
             temperature=0.2,
         )

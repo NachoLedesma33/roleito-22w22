@@ -23,6 +23,7 @@ from core.agents.ingestion import IngestionAgent
 from core.agents.scene_agent import SceneAgent
 from core.agents.world_state import WorldStateAgent
 from core.agents.provider import get_provider_for_agent
+from core.agents.context_manager import character_for_prompt
 from core.agents.proposals import propose_session_events
 from core.world.engine import WorldStateEngine
 from auth import require_dm, AuthSession
@@ -190,8 +191,11 @@ async def query_lore(
     result = await agent.run(
         question=body.question,
         campaign_context=f"{campaign.name}: {campaign.description or ''}",
-        characters=[{"name": c.name, "description": c.description} for c in chars],
-        npcs=[{"name": n.name, "description": n.description} for n in npcs],
+        # Lista blanca: del personaje solo el nombre y la descripcion de la
+        # ficha. Las notas del jugador (`player_notes`) no llegan al prompt
+        # del DM (son texto libre del jugador, no lore).
+        characters=[character_for_prompt(c) for c in chars],
+        npcs=[character_for_prompt(n) for n in npcs],
         locations=[{"name": l.name, "description": l.description} for l in locs],
         events=[{"type": e.type, "description": e.description} for e in events],
     )

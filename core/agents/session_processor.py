@@ -8,6 +8,7 @@ from typing import Any
 
 from core.agents.base import AgentResult, BaseAgent
 from core.agents.validation import safe_text, safe_list, safe_str_list
+from core.agents.context_manager import system_with_rule, wrap_data
 
 SESSION_SYSTEM = """You are a tabletop RPG session processor. Given raw session notes from a DM, extract structured data.
 
@@ -64,13 +65,14 @@ class SessionProcessor(BaseAgent):
         if not notes:
             notes = "No notes provided for this session."
 
-        user_msg = f"Session Notes:\n{notes}"
+        data_parts = [f"Session Notes:\n{notes}"]
         if campaign_context:
-            user_msg += f"\n\nCampaign Context:\n{campaign_context}"
+            data_parts.append(f"Campaign Context:\n{campaign_context}")
+        user_msg = wrap_data("\n\n".join(data_parts))
 
         raw = await self.provider.complete(
             user_msg,
-            system=SESSION_SYSTEM,
+            system=system_with_rule(SESSION_SYSTEM),
             max_tokens=2048,
             temperature=0.3,
         )
