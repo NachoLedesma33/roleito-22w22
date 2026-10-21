@@ -163,6 +163,11 @@ def main() -> int:
     ap.add_argument("--since", help="borra campañas creadas desde esta marca (YYYY-MM-DD HH:MM:SS)")
     ap.add_argument("--dry-run", action="store_true", help="muestra qué borraría, no borra")
     ap.add_argument("--report", action="store_true", help="inventario: qué es de test y qué no")
+    ap.add_argument(
+        "--pytest",
+        action="store_true",
+        help="borra tambien la basura que dejan los tests de backend (pytest)",
+    )
     args = ap.parse_args()
 
     if not DB_PATH.exists():
@@ -184,8 +189,29 @@ def main() -> int:
 
     cur.execute(f"SELECT id, name FROM campaigns WHERE {where}", params)
     campaigns = cur.fetchall()
+
+    if args.pytest:
+        campaigns += cur.execute(
+            "SELECT id, name FROM campaigns WHERE name LIKE 'Camp %' "
+            "OR name LIKE 'Campaña %' OR name LIKE 'E2E Campaign %'"
+        ).fetchall()
+        campaigns = list({c[0]: c for c in campaigns}.values())
     cur.execute("SELECT id, name FROM dms WHERE name LIKE 'E2E DM %'")
     dms = cur.fetchall()
+
+    if args.pytest:
+        # La basura que dejan los tests de BACKEND (pytest): DMs con nombre
+        # fijo o con el sufijo hexadecimal que usa el fixture.
+        dms += cur.execute(
+            "SELECT id, name FROM dms WHERE name IN ("
+            "'Gandalf', 'Bilbo', 'DM Orq 404', 'DM Snapshot', 'Probe Quest', "
+            "'Probe Q2', 'IPs probe', 'Observer %', 'Unl %', 'Reg %'"
+            ") OR name LIKE 'Test DM %' "
+            # "DM <palabra> <hex6>": el sufijo hexadecimal que usa el fixture.
+            "OR (name LIKE 'DM %' AND name GLOB "
+            "'*[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]')"
+        ).fetchall()
+        dms = list({d[0]: d for d in dms}.values())
 
     # Carpetas que sí vamos a borrar: las de las campañas de esta purga (su fila
     # ya las delató como test) + las huérfanas registradas por el fixture.
