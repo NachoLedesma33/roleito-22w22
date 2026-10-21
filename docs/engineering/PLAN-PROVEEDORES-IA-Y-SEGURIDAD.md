@@ -344,6 +344,7 @@ aprueba o rechaza (C4, la regla que ya respeta todo lo que propone un agente).
 |---|---|---|
 | **J1** | El panel de segunda opinión en el dashboard DM: pregunta → respuesta sobre la campaña. **Sin tools de escritura**: solo lee. El contexto ya se arma (`_campaign_data`: personajes, NPCs, lugares, misiones, últimos eventos); lo que falta es la superficie en la UI y el recorte del contexto con presupuesto. | `pytest`: la respuesta se arma **solo** con datos de ESA campaña (otra campaña = nada) + e2e del panel. |
 | **J2** | El advisor con tools: preguntar el mundo a demanda y proponer lecturas alternativas del canon. | Depende de B5. |
+| **J3** | **HECHO 2026-10-21.** El push del advisor: un **digest determinista** (`GET /campaigns/{cid}/agents/digest`) que cuenta lo que espera la decision del DM (propuestas de evento, canon en REVIEW) **sin llamar al modelo** — no gasta API key y por eso se puede preguntar cada 15s. El dashboard lo mira: badge en el boton del asistente + aviso cuando el numero **crece** (la primera lectura no avisa: no es un cambio). | `pytest`: el digest cuenta lo pendiente y baja cuando el DM autoriza (401 sin token / 403 con jugador por la lista de rutas de agente) + e2e del badge. |
 
 **Lo que NO va a ser**: un agente que llama al modelo en cada evento (quema la
 API key). El contexto se refresca **a pedido**; el "estado vivo" es un resumen

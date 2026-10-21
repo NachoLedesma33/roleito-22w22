@@ -25,6 +25,7 @@ from core.agents.world_state import WorldStateAgent
 from core.agents.provider import get_provider_for_agent
 from core.agents.context_manager import character_for_prompt
 from core.agents.proposals import propose_session_events
+from core.agents.pending import build_pending_digest
 from core.world.engine import WorldStateEngine
 from auth import require_dm, AuthSession
 from services.budget import campaign_budget
@@ -489,3 +490,21 @@ async def design_scene(
         } if result.data else None,
         "error": result.error,
     }
+
+
+@router.get("/campaigns/{campaign_id}/agents/digest")
+async def agents_digest(
+    campaign_id: str,
+    db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+):
+    """Lo que espera la decision del DM: propuestas de evento y canon en revision.
+
+    **Determinista**: lo cuenta el codigo, no el modelo. Por eso NO lleva
+    `campaign_budget` (el presupuesto protege la API key: aqui no hay llamada
+    al proveedor, asi que no hay nada que proteger).
+
+    Es el "push" del advisor: el DM se entera de que algo cambio sin que
+    nadie llame al modelo.
+    """
+    return await build_pending_digest(db, campaign_id)

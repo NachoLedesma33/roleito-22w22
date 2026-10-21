@@ -12,6 +12,10 @@ export interface DockAction {
   /** Variante de color para los paneles que no usan el acento (el asistente). */
   activeClassName?: string;
   testId?: string;
+  /** Pendientes que esperan al DM: se muestran como badge sobre el boton. */
+  badge?: number;
+  /** testid del badge, para los specs. */
+  badgeTestId?: string;
 }
 
 export interface DmDockProps {
@@ -61,15 +65,26 @@ export default function DmDock({ expanded, onExpand, groups }: DmDockProps) {
               {gi > 0 && <div className="w-px h-5 bg-[var(--bg-tertiary)] mx-1" />}
               {group.map((action) => {
                 const Icon = action.icon;
+                const badge = action.badge ?? 0;
                 return (
                   <button
                     key={action.key}
                     onClick={action.onClick}
-                    className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${action.active ? (action.activeClassName ?? ACTIVE) : IDLE}`}
+                    className={`relative w-10 h-10 flex items-center justify-center rounded-full transition-colors ${action.active ? (action.activeClassName ?? ACTIVE) : IDLE}`}
                     title={action.label}
+                    aria-label={badge ? `${action.label} (${badge})` : action.label}
                     data-testid={action.testId}
                   >
                     <Icon className="h-5 w-5" />
+                    {badge > 0 && (
+                      <span
+                        aria-hidden="true"
+                        data-testid={action.badgeTestId}
+                        className="absolute -right-0.5 -top-0.5 min-w-[16px] h-4 px-1 rounded-full bg-red-600 text-white text-[10px] leading-4 text-center"
+                      >
+                        {badge > 9 ? '9+' : badge}
+                      </span>
+                    )}
                   </button>
                 );
               })}

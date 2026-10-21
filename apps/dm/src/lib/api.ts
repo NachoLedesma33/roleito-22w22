@@ -1078,6 +1078,14 @@ export const api = {
         `/campaigns/${campaignId}/agents/narrate`,
         data,
       ),
+    /**
+     * Digest determinista: que espera la decision del DM (propuestas de
+     * evento, canon en revision). No llama al modelo: no gasta API key.
+     */
+    digest: (campaignId: string) =>
+      request<{ proposals: number; canon_review: number; pending: number }>(
+        `/campaigns/${campaignId}/agents/digest`,
+      ),
   },
 
   narrative: {

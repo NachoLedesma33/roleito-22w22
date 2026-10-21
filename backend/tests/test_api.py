@@ -1819,6 +1819,9 @@ AI_ROUTES = [
     ("get", "/api/ai/audit", None),
     ("put", "/api/ai/config", {"provider": "mock"}),
     ("post", "/api/ai/test", {"prompt": "x"}),
+    # El digest: no llama al modelo, pero es dato del DM (esta en el router
+    # de agentes y devuelve informacion de la campana).
+    ("get", "/api/campaigns/{cid}/agents/digest", None),
 ]
 
 # Las rutas que MUTAN el canon (o lo borran). El canon es del DM: sin rol,
@@ -2977,3 +2980,60 @@ async def test_la_tool_de_proponer_no_elige_sesion_ni_campana(client):
     # Y en la campana ajena no hay nada: el perimetro de datos se respeta.
     eventos_ajenos = (await client.get(f"/api/campaigns/{otra['id']}/events")).json()
     assert eventos_ajenos == []
+
+
+@pytest.mark.asyncio
+async def test_el_digest_cuenta_lo_que_espera_al_dm(client):
+    """J3: el digest es determinista y cuenta lo que el DM tiene que decidir.
+
+    No llama al modelo: por eso puede preguntarse cada 15s sin gastar API
+    key. Y es del DM: el rol lo fija la lista de rutas de agente (arriba).
+    """
+    from uuid import uuid4
+
+    reg = (
+        await client.post(
+            "/api/auth/register", json={"name": f"DM Digest {uuid4().hex[:6]}", "pin": "1234"}
+        )
+    ).json()
+    headers = {"Authorization": f"Bearer {reg['token']}"}
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Digest"})).json()
+    ses = (
+        await client.post(
+            f"/api/campaigns/{camp['id']}/sessions",
+            json={"number": 1, "date": "2026-10-21", "title": "S"},
+        )
+    ).json()
+
+    # Sin nada pendiente, el digest es cero.
+    digest = (
+        await client.get(f"/api/campaigns/{camp['id']}/agents/digest", headers=headers)
+    ).json()
+    assert digest == {"proposals": 0, "canon_review": 0, "pending": 0}
+
+    # Una propuesta (que nace PROPOSED, sin tocar el canon) cuenta.
+    await client.post(
+        f"/api/campaigns/{camp['id']}/sessions/{ses['id']}/events",
+        json={
+            "session_id": ses["id"],
+            "type": "DIALOGUE",
+            "actor_id": "npc-varek",
+            "description": "propuesta",
+        },
+    )
+    digest = (
+        await client.get(f"/api/campaigns/{camp['id']}/agents/digest", headers=headers)
+    ).json()
+    assert digest["proposals"] == 1
+    assert digest["pending"] == 1
+
+    # Autorizada, deja de esperar: el digest baja.
+    evs = (await client.get(f"/api/campaigns/{camp['id']}/events")).json()
+    res = await client.put(
+        f"/api/events/{evs[0]['id']}/approve", headers=headers
+    )
+    assert res.status_code == 200
+    digest = (
+        await client.get(f"/api/campaigns/{camp['id']}/agents/digest", headers=headers)
+    ).json()
+    assert digest["pending"] == 0

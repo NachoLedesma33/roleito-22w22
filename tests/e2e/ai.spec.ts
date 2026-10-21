@@ -237,4 +237,46 @@ test.describe('AI Provider Layer', () => {
     await input.fill('hola dictado');
     await expect(input).toHaveValue('hola dictado');
   });
+
+  test('AI10: el badge del asistente cuenta lo que espera la decision del DM', async ({
+    page,
+    campaign,
+    request,
+    authHeaders,
+    dmToken,
+  }) => {
+    // Una propuesta: nace PROPOSED, el canon no se toca (C4).
+    const ses = await request.post(`${API}/campaigns/${campaign.id}/sessions`, {
+      data: { number: 99, date: '2026-10-21', title: 'Sesion digest' },
+    });
+    const session = await ses.json();
+    const ev = await request.post(
+      `${API}/campaigns/${campaign.id}/sessions/${session.id}/events`,
+      {
+        data: {
+          session_id: session.id,
+          type: 'DIALOGUE',
+          actor_id: 'npc-varek',
+          description: 'propuesta para aprobar',
+        },
+      },
+    );
+    expect(ev.status()).toBe(200);
+
+    const digest = await (
+      await request.get(`${API}/campaigns/${campaign.id}/agents/digest`, { headers: authHeaders })
+    ).json();
+    expect(digest.pending).toBeGreaterThan(0);
+
+    await page.goto('/');
+    await page.evaluate((token) => {
+      sessionStorage.setItem('roleito:auth:token', token);
+    }, dmToken);
+    await page.goto(`/campaigns/${campaign.id}`);
+
+    // El badge del boton del asistente muestra el digest (sin llamar al modelo).
+    const badge = page.getByTestId('dm-assistant-badge');
+    await expect(badge).toBeVisible();
+    await expect(badge).toHaveText(String(digest.pending));
+  });
 });

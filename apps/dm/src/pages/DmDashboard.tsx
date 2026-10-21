@@ -56,6 +56,7 @@ import SceneSettingsHud from '@/components/SceneSettingsHud';
 import type { ContextMenuItem } from '@/components/ContextMenu';
 import ToastContainer from '@/components/ToastContainer';
 import { rollToToast, useToastQueue } from '@/lib/toastQueue';
+import { usePendingDigest } from '@/lib/usePendingDigest';
 import TopBar from '@/components/TopBar';
 import MinimizedBar from '@/components/MinimizedBar';
 import HudPanel from '@/components/HudPanel';
@@ -110,6 +111,22 @@ export default function DmDashboard() {
   const [tokenQuickEdit, setTokenQuickEdit] = useState<{ sceneCharId: string; x: number; y: number } | null>(null);
   const [lightRequests, setLightRequests] = useState<LightRequest[]>([]);
   const { toasts: toastQueue, push, pushMany, dismiss } = useToastQueue();
+  /**
+   * El advisor avisa sin llamar al modelo: el backend cuenta lo que espera
+   * la decision del DM (digest determinista). Cuando el numero crece, algo
+   * nuevo pide su atencion.
+   */
+  const { pending: pendingDigest } = usePendingDigest(campaignId, (n) => {
+    push({
+      id: `advisor-pending-${Date.now()}`,
+      rollerName: i18n.t('dmToast.rollerAdvisor', 'Asistente'),
+      diceType: 1, count: 1, results: [1], total: 1,
+      label: n === 1
+        ? i18n.t('dmToast.advisorPendingOne', '1 propuesta esperando tu aprobacion')
+        : i18n.t('dmToast.advisorPendingMany', '{{count}} propuestas esperando tu aprobacion', { count: n }),
+      timestamp: Date.now(),
+    });
+  });
   const [drawState, setDrawState] = useState<DrawState | null>(null);
   const [zoneDraft, setZoneDraft] = useState<ZoneDraft | null>(null);
   const [fogMode, setFogMode] = useState<{ mode: DmFogMode; radius: number } | null>(null);
@@ -2853,7 +2870,7 @@ const startFogMode = useCallback(() => {
             ],
             [
               { key: 'ai', label: t('dm.aiPanelTitle', 'Configuración de IA'), icon: Bot, onClick: () => setShowAIPanel(!showAIPanel), active: showAIPanel, testId: 'ai-panel-button' },
-              { key: 'assistant', label: t('dm.assistantTitle', 'Asistente del DM'), icon: MessageCircle, onClick: () => setShowAssistant(!showAssistant), active: showAssistant, activeClassName: 'bg-violet-700 text-white', testId: 'dm-assistant-button' },
+              { key: 'assistant', label: t('dm.assistantTitle', 'Asistente del DM'), icon: MessageCircle, onClick: () => setShowAssistant(!showAssistant), active: showAssistant, activeClassName: 'bg-violet-700 text-white', testId: 'dm-assistant-button', badge: pendingDigest, badgeTestId: 'dm-assistant-badge' },
               { key: 'quick-actions', label: t('dm.quickActionsTitle', 'Acciones rápidas'), icon: Zap, onClick: () => setShowQuickActions(!showQuickActions), active: showQuickActions },
               { key: 'session-log', label: t('dm.sessionLogTitle', 'Bitácora de sesión'), icon: BookOpen, onClick: () => setShowSessionLog(!showSessionLog), active: showSessionLog },
               { key: 'scene-notes', label: t('dm.sceneNotesTitle', 'Notas de la escena'), icon: StickyNote, onClick: () => setShowSceneNotes(!showSceneNotes), active: showSceneNotes },
