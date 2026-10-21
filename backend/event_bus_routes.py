@@ -1,11 +1,12 @@
 """Event Bus API — monitoring and manual event emission."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from core.events.bus import get_event_bus
+from auth import require_dm
 
-router = APIRouter(prefix="/event-bus", tags=["event-bus"])
+router = APIRouter(prefix="/event-bus", tags=["event-bus"], dependencies=[Depends(require_dm)])
 
 
 class EmitRequest(BaseModel):

@@ -1,4 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
+
+from auth import require_dm, AuthSession
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from database import get_session
@@ -33,6 +35,7 @@ async def create_character(
     campaign_id: str,
     data: CharacterCreate,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
 ):
     max_pv = data.max_pv if data.max_pv is not None else DEFAULT_MAX_PV
     max_pm = data.max_pm if data.max_pm is not None else DEFAULT_MAX_PM
@@ -138,6 +141,7 @@ async def delete_character(
     campaign_id: str,
     character_id: str,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
 ):
     result = await db.execute(
         select(Character).where(
@@ -162,6 +166,7 @@ async def create_npc(
     campaign_id: str,
     data: NPCCreate,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
 ):
     max_pv = data.max_pv if data.max_pv is not None else DEFAULT_MAX_PV
     max_pm = data.max_pm if data.max_pm is not None else DEFAULT_MAX_PM
@@ -227,6 +232,7 @@ async def update_npc(
     npc_id: str,
     data: NPCUpdate,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
 ):
     result = await db.execute(
         select(NPC).where(
@@ -256,6 +262,7 @@ async def delete_npc(
     campaign_id: str,
     npc_id: str,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
 ):
     result = await db.execute(
         select(NPC).where(

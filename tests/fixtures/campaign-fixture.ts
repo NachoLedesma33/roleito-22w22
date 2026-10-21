@@ -38,9 +38,29 @@ type Fixtures = {
 };
 
 export const test = base.extend<Fixtures>({
-  dmToken: async ({ request }, use) => {
-    const token = await getDmToken(request);
+  /**
+   * El contexto de API habla **como el DM**: la superficie de la campaña
+   * (personajes, misiones, escenas, cuaderno, ...) pide rol. Así los specs no
+   * tienen que acordarse de mandar el token en cada llamada.
+   *
+   * Los specs que prueban el "sin token" (401) usan un contexto anónimo
+   * aparte: `playwright.request.newContext()`.
+   */
+  request: async ({ playwright, dmToken }, use) => {
+    const ctx = await playwright.request.newContext({
+      extraHTTPHeaders: { Authorization: `Bearer ${dmToken}` },
+    });
+    await use(ctx);
+    await ctx.dispose();
+  },
+
+  dmToken: async ({ playwright }, use) => {
+    // No usa el fixture `request` (que ahora depende de `dmToken`): se
+    // wouldnte un contexto propio.
+    const req = await playwright.request.newContext();
+    const token = await getDmToken(req);
     await use(token);
+    await req.dispose();
   },
 
   authHeaders: async ({ dmToken }, use) => {

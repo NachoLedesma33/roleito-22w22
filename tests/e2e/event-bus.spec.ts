@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures/campaign-fixture';
 
 const API = 'http://localhost:8000/api';
 

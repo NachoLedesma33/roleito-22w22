@@ -4,6 +4,7 @@ from sqlalchemy import select
 from database import get_session
 from models import Campaign, Session
 from schemas import SessionCreate, SessionUpdate, SessionResponse
+from auth import require_dm, AuthSession
 
 router = APIRouter(tags=["sessions"])
 
@@ -16,6 +17,8 @@ async def create_session(
     campaign_id: str,
     data: SessionCreate,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     result = await db.execute(
         select(Campaign).where(Campaign.id == campaign_id)
@@ -109,6 +112,8 @@ async def update_session(
     session_id: str,
     data: SessionUpdate,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     result = await db.execute(
         select(Session).where(
@@ -134,6 +139,8 @@ async def delete_session(
     campaign_id: str,
     session_id: str,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     result = await db.execute(
         select(Session).where(
@@ -158,6 +165,8 @@ async def start_session(
     campaign_id: str,
     session_id: str,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     result = await db.execute(
         select(Session).where(
@@ -196,6 +205,8 @@ async def end_session(
     campaign_id: str,
     session_id: str,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     result = await db.execute(
         select(Session).where(

@@ -13,6 +13,7 @@ from models import (
     ProgressClock,
 )
 from schemas import CalendarState, CalendarUpdate, ProgressClockIn, ProgressClockOut, ProgressClockUpdate
+from auth import require_dm, AuthSession
 
 router = APIRouter(tags=["calendar"])
 
@@ -123,6 +124,8 @@ async def advance_calendar(
     campaign_id: str,
     data: CalendarUpdate,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     campaign = await _get_campaign(db, campaign_id)
     cal = await _ensure_calendar(db, campaign.id)
@@ -137,6 +140,8 @@ async def create_clock(
     campaign_id: str,
     data: ProgressClockIn,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     campaign = await _get_campaign(db, campaign_id)
     clock = ProgressClock(
@@ -158,6 +163,8 @@ async def update_clock(
     clock_id: str,
     data: ProgressClockUpdate,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     await _get_campaign(db, campaign_id)
     result = await db.execute(
@@ -185,6 +192,8 @@ async def delete_clock(
     campaign_id: str,
     clock_id: str,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     await _get_campaign(db, campaign_id)
     result = await db.execute(

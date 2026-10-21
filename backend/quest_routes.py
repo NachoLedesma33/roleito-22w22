@@ -8,6 +8,7 @@ from database import get_session
 from models import Campaign, Quest
 from schemas import ObjectiveItem, QuestIn, QuestOut
 from routes import broadcast_revision
+from auth import require_dm, AuthSession
 
 router = APIRouter(tags=["quests"])
 
@@ -59,6 +60,8 @@ async def create_quest(
     campaign_id: str,
     data: QuestIn,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     camp_r = await db.execute(select(Campaign).where(Campaign.id == campaign_id))
     if not camp_r.scalar_one_or_none():
@@ -86,6 +89,8 @@ async def update_quest(
     quest_id: str,
     data: QuestIn,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     quest = await _get_quest(db, campaign_id, quest_id)
     quest.title = data.title
@@ -105,6 +110,8 @@ async def delete_quest(
     campaign_id: str,
     quest_id: str,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     quest = await _get_quest(db, campaign_id, quest_id)
     await db.delete(quest)

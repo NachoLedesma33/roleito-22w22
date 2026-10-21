@@ -9,6 +9,7 @@ from models import Campaign, Handout
 from routes import broadcast_revision
 from schemas import HandoutIn, HandoutOut
 from services.assets import ASSETS_DIR
+from auth import require_dm, AuthSession
 
 router = APIRouter(tags=["handouts"])
 
@@ -54,6 +55,8 @@ async def create_handout(
     campaign_id: str,
     data: HandoutIn,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     camp_r = await db.execute(select(Campaign).where(Campaign.id == campaign_id))
     if not camp_r.scalar_one_or_none():
@@ -79,6 +82,8 @@ async def update_handout(
     handout_id: str,
     data: HandoutIn,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     handout = await _get_handout(db, campaign_id, handout_id)
     handout.title = data.title
@@ -96,6 +101,8 @@ async def delete_handout(
     campaign_id: str,
     handout_id: str,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     handout = await _get_handout(db, campaign_id, handout_id)
     await db.delete(handout)
@@ -110,6 +117,8 @@ async def upload_handout_image(
     handout_id: str,
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     handout = await _get_handout(db, campaign_id, handout_id)
 
@@ -134,6 +143,8 @@ async def clear_handout_image(
     campaign_id: str,
     handout_id: str,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     handout = await _get_handout(db, campaign_id, handout_id)
     handout.image_path = None

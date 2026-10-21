@@ -45,6 +45,7 @@ test.describe('World State', () => {
 
   test('WS3: World state includes characters', async ({ request }) => {
     await request.post(`${API}/campaigns/${campaignId}/characters`, {
+      headers: withAuth(dmToken),
       data: { name: 'TestHero', class_: 'Fighter', race: 'Human' },
     });
 
@@ -56,6 +57,7 @@ test.describe('World State', () => {
 
   test('WS4: World state includes NPCs', async ({ request }) => {
     await request.post(`${API}/campaigns/${campaignId}/npcs`, {
+      headers: withAuth(dmToken),
       data: { name: 'TestNPC', description: 'A test NPC' },
     });
 

@@ -59,15 +59,21 @@ test.describe('Vault Routes', () => {
     expect(body.deleted).toBe(false);
   });
 
-  test('VT4: vault sin auth devuelve 401', async ({ request }) => {
-    const res = await request.get(`${API}/vault/status`);
+  test('VT4: vault sin auth devuelve 401', async ({ playwright }) => {
+    // El fixture `request` habla como el DM: el "sin auth" va con un
+    // contexto anonimo aparte.
+    const anon = await playwright.request.newContext();
+    const res = await anon.get(`${API}/vault/status`);
     expect(res.status()).toBe(401);
+    await anon.dispose();
   });
 
-  test('VT5: store sin auth devuelve 401', async ({ request }) => {
-    const res = await request.post(`${API}/vault/store`, {
+  test('VT5: store sin auth devuelve 401', async ({ playwright }) => {
+    const anon = await playwright.request.newContext();
+    const res = await anon.post(`${API}/vault/store`, {
       data: { provider: 'x', api_key: 'y' },
     });
     expect(res.status()).toBe(401);
+    await anon.dispose();
   });
 });

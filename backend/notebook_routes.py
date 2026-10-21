@@ -4,8 +4,9 @@ from sqlalchemy import select
 from database import get_session
 from models import DMNotebook, DMNotebookVersion
 from schemas import DMNotebookCreate, DMNotebookUpdate, DMNotebookResponse, DMNotebookVersionResponse
+from auth import require_dm
 
-router = APIRouter(tags=["dm-notebooks"])
+router = APIRouter(tags=["dm-notebooks"], dependencies=[Depends(require_dm)])
 
 
 @router.get(

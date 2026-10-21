@@ -40,11 +40,15 @@ test.describe('Agent Routes', () => {
     expect(res.status()).toBe(404);
   });
 
-  test('AG3: lore sin auth devuelve 401', async ({ request, campaign }) => {
-    const res = await request.post(`${API}/campaigns/${campaign.id}/agents/lore`, {
+  test('AG3: lore sin auth devuelve 401', async ({ campaign, playwright }) => {
+    // El fixture `request` habla como el DM: el "sin auth" va con un
+    // contexto anonimo aparte.
+    const anon = await playwright.request.newContext();
+    const res = await anon.post(`${API}/campaigns/${campaign.id}/agents/lore`, {
       data: { question: 'test' },
     });
     expect(res.status()).toBe(401);
+    await anon.dispose();
   });
 
   test('AG4: recap genera recap, highlights y cliffhanger', async ({
@@ -181,11 +185,15 @@ test.describe('Agent Routes', () => {
     expect(res.status()).toBe(400);
   });
 
-  test('AG10: orchestrator sin auth devuelve 401', async ({ request, campaign }) => {
-    const res = await request.post(`${API}/orchestrator/${campaign.id}/execute`, {
+  test('AG10: orchestrator sin auth devuelve 401', async ({ campaign, playwright }) => {
+    // El fixture `request` habla como el DM: el "sin auth" va con un
+    // contexto anonimo aparte.
+    const anon = await playwright.request.newContext();
+    const res = await anon.post(`${API}/orchestrator/${campaign.id}/execute`, {
       data: { task_type: 'lore_query', query: 'test' },
     });
     expect(res.status()).toBe(401);
+    await anon.dispose();
   });
 
   test('AG11: ingest normaliza y segmenta las notas', async ({

@@ -17,8 +17,38 @@ async def _db():
     await init_db()
 
 
+@pytest.fixture(scope="session")
+async def _dm_token():
+    """El DM con el que hablan los tests.
+
+    La superficie de la campana (personajes, misiones, escenas, ...) pide rol
+    DM: los tests la usan TODA la vida, asi que el cliente la lleva puesta.
+    """
+    from uuid import uuid4
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        reg = await ac.post(
+            "/api/auth/register",
+            json={"name": f"Test DM {uuid4().hex[:6]}", "pin": "1234"},
+        )
+    return reg.json()["token"]
+
+
 @pytest.fixture
-async def client():
+async def client(_dm_token):
+    transport = ASGITransport(app=app)
+    async with AsyncClient(
+        transport=transport,
+        base_url="http://test",
+        headers={"Authorization": f"Bearer {_dm_token}"},
+    ) as ac:
+        yield ac
+
+
+@pytest.fixture
+async def anon_client():
+    """Un cliente SIN token: para probar que la superficie pide rol."""
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
@@ -1839,8 +1869,74 @@ CANON_ROUTES = [
 ]
 
 
+# La superficie del DM: las rutas que manages la campana (personajes, NPCs,
+# misiones, cuaderno, documentos, relojes, sesiones, subidas, marcadores, bus
+# de eventos y TTS). Con la dependencia a nivel de router, TODAS las del
+# router piden rol. La lista es explicita: no se confia en "ya lo revisamos".
+#
+# FUERA de la lista, a proposito: `PUT /campaigns/{cid}/characters/{id}` es la
+# ruta por la que el JUGADOR escribe sus propias notas (sin token). Queda
+# abierta en esta parte y se cierra en la parte 2 con la regla "DM o solo
+# notas".
+DM_SURFACE_ROUTES = [
+    ("post", "/api/campaigns/{cid}/characters", {"name": "Sera"}),
+    ("delete", "/api/campaigns/{cid}/characters/{id}", None),
+    ("post", "/api/campaigns/{cid}/npcs", {"name": "Varek"}),
+    ("delete", "/api/campaigns/{cid}/npcs/{id}", None),
+    ("post", "/api/campaigns/{cid}/quests", {"title": "El dragon"}),
+    ("delete", "/api/campaigns/{cid}/quests/{id}", None),
+    ("post", "/api/campaigns/{cid}/notebooks", {"title": "Pagina"}),
+    ("delete", "/api/campaigns/{cid}/notebooks/{id}", None),
+    ("post", "/api/campaigns/{cid}/handouts", {"title": "Documento"}),
+    ("delete", "/api/campaigns/{cid}/handouts/{id}", None),
+    ("post", "/api/campaigns/{cid}/clocks", {"label": "Medianoche"}),
+    ("delete", "/api/campaigns/{cid}/clocks/{id}", None),
+    ("post", "/api/campaigns/{cid}/sessions", {"number": 1, "date": "2026-10-21"}),
+    ("delete", "/api/campaigns/{cid}/sessions/{id}", None),
+    ("post", "/api/campaigns/{cid}/characters/{id}/portrait", None),
+    ("delete", "/api/markers/{id}", None),
+    ("post", "/api/event-bus/emit", {"type": "test"}),
+]
+
+
 @pytest.mark.asyncio
-async def test_ninguna_ruta_de_ia_acepta_a_un_jugador(client):
+async def test_la_superficie_de_la_campana_es_del_dm(anon_client):
+    """Sin token -> 401; con token de jugador -> 403.
+
+    Antes estas rutas no exigian rol: cualquiera que llegara al backend
+    (un jugador en la LAN, un script) reescribia la campana: personajes,
+    misiones, el cuaderno, los documentos, los snapshots de escena. Con el
+    playtest en LAN, eso es escribirle la partida a otro por debajo de la
+    mesa.
+    """
+    from uuid import uuid4
+
+    from auth import create_session
+
+    reg = (
+        await anon_client.post(
+            "/api/auth/register", json={"name": f"DM Surface {uuid4().hex[:6]}", "pin": "1234"}
+        )
+    ).json()
+    player = await create_session(reg["dm_id"], role="player")
+
+    camp = (await anon_client.post("/api/campaigns", json={"name": "Camp Surface"})).json()
+
+    for method, path, body in DM_SURFACE_ROUTES:
+        url = path.format(cid=camp["id"], id="cualquiera")
+        res = await anon_client.request(method, url, json=body)
+        assert res.status_code == 401, f"{method.upper()} {url} sin token: {res.status_code}"
+        res = await anon_client.request(
+            method,
+            url,
+            json=body,
+            headers={"Authorization": f"Bearer {player.token}"},
+        )
+        assert res.status_code == 403, f"{method.upper()} {url} con jugador: {res.status_code}"
+
+
+@pytest.mark.asyncio
+async def test_ninguna_ruta_de_ia_acepta_a_un_jugador(anon_client):
     """S1: sin token -> 401; con token de jugador -> 403.
 
     Una ruta de IA gasta la API key del DM y devuelve informacion de la
@@ -1851,7 +1947,7 @@ async def test_ninguna_ruta_de_ia_acepta_a_un_jugador(client):
     from auth import create_session
 
     reg = (
-        await client.post(
+        await anon_client.post(
             "/api/auth/register", json={"name": f"DM Roles {uuid4().hex[:6]}", "pin": "1234"}
         )
     ).json()
@@ -1859,13 +1955,13 @@ async def test_ninguna_ruta_de_ia_acepta_a_un_jugador(client):
     # cree: el test lo crea a proposito para verificar el 403.
     player = await create_session(reg["dm_id"], role="player")
 
-    camp = (await client.post("/api/campaigns", json={"name": "Camp Roles"})).json()
+    camp = (await anon_client.post("/api/campaigns", json={"name": "Camp Roles"})).json()
 
     for method, path, body in AI_ROUTES:
         url = path.format(cid=camp["id"])
-        res = await client.request(method, url, json=body)
+        res = await anon_client.request(method, url, json=body)
         assert res.status_code == 401, f"{method.upper()} {url} sin token: {res.status_code}"
-        res = await client.request(
+        res = await anon_client.request(
             method,
             url,
             json=body,
@@ -1875,7 +1971,7 @@ async def test_ninguna_ruta_de_ia_acepta_a_un_jugador(client):
 
 
 @pytest.mark.asyncio
-async def test_el_canon_solo_lo_muta_el_dm(client):
+async def test_el_canon_solo_lo_muta_el_dm(anon_client):
     """C4 en la API: sin token -> 401; con token de jugador -> 403.
 
     El canon es del DM. Antes estas rutas no exigian rol: cualquiera que
@@ -1888,19 +1984,19 @@ async def test_el_canon_solo_lo_muta_el_dm(client):
     from auth import create_session
 
     reg = (
-        await client.post(
+        await anon_client.post(
             "/api/auth/register", json={"name": f"DM Canon {uuid4().hex[:6]}", "pin": "1234"}
         )
     ).json()
     player = await create_session(reg["dm_id"], role="player")
 
-    camp = (await client.post("/api/campaigns", json={"name": "Camp Canon"})).json()
+    camp = (await anon_client.post("/api/campaigns", json={"name": "Camp Canon"})).json()
 
     for method, path, body in CANON_ROUTES:
         url = path.format(cid=camp["id"], eid="evt-inexistente")
-        res = await client.request(method, url, json=body)
+        res = await anon_client.request(method, url, json=body)
         assert res.status_code == 401, f"{method.upper()} {url} sin token: {res.status_code}"
-        res = await client.request(
+        res = await anon_client.request(
             method,
             url,
             json=body,

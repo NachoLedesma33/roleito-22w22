@@ -6,8 +6,9 @@ from database import get_session
 from models import Character, NPC
 from services.assets import save_campaign_file
 from services.vida import apply_npc_vida_response, apply_vida_response
+from auth import require_dm
 
-router = APIRouter(tags=["uploads"])
+router = APIRouter(tags=["uploads"], dependencies=[Depends(require_dm)])
 
 
 async def _get_character(db: AsyncSession, campaign_id: str, character_id: str) -> Character:

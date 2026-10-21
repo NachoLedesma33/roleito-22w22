@@ -4,8 +4,9 @@ from sqlalchemy import select
 from database import get_session
 from models import MapMarker
 from schemas import MapMarkerCreate, MapMarkerUpdate, MapMarkerResponse
+from auth import require_dm
 
-router = APIRouter(tags=["map-markers"])
+router = APIRouter(tags=["map-markers"], dependencies=[Depends(require_dm)])
 
 
 @router.get(
