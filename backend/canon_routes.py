@@ -4,8 +4,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from auth import require_dm, AuthSession
 from backend.database import get_session
 from core.canon.manager import CanonManager
+
 
 router = APIRouter(prefix="/canon", tags=["canon"])
 
@@ -67,7 +69,13 @@ async def get_canon(campaign_id: str, entry_id: str, db: AsyncSession = Depends(
 
 
 @router.put("/{campaign_id}/{entry_id}/approve", response_model=CanonEntryResponse)
-async def approve_canon(campaign_id: str, entry_id: str, req: ReviewRequest, db: AsyncSession = Depends(get_session)):
+async def approve_canon(
+    campaign_id: str,
+    entry_id: str,
+    req: ReviewRequest,
+    db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+):
     manager = CanonManager(db)
     entry = await manager.approve(entry_id, campaign_id, req.reviewed_by, req.notes)
     if not entry:
@@ -76,7 +84,13 @@ async def approve_canon(campaign_id: str, entry_id: str, req: ReviewRequest, db:
 
 
 @router.put("/{campaign_id}/{entry_id}/reject", response_model=CanonEntryResponse)
-async def reject_canon(campaign_id: str, entry_id: str, req: ReviewRequest, db: AsyncSession = Depends(get_session)):
+async def reject_canon(
+    campaign_id: str,
+    entry_id: str,
+    req: ReviewRequest,
+    db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+):
     manager = CanonManager(db)
     entry = await manager.reject(entry_id, campaign_id, req.reviewed_by, req.notes)
     if not entry:

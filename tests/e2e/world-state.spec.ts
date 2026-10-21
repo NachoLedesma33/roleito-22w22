@@ -1,11 +1,15 @@
 import { test, expect } from '@playwright/test';
+import { setupAuth, withAuth } from '../helpers/api-helpers';
 
 const API = 'http://localhost:8000/api';
 
 let campaignId = '';
+let dmToken = '';
 
 test.describe('World State', () => {
   test.beforeAll(async ({ request }) => {
+    // El rollback del estado es una accion del DM (C4): hace falta su token.
+    dmToken = await setupAuth(request);
     const res = await request.post(`${API}/campaigns`, {
       data: { name: 'WS Test Campaign', description: 'Testing world state' },
     });
@@ -106,7 +110,9 @@ test.describe('World State', () => {
   });
 
   test('WS10: Rollback to non-existent version returns 404', async ({ request }) => {
-    const res = await request.post(`${API}/world-state/${campaignId}/rollback/99999`);
+    const res = await request.post(`${API}/world-state/${campaignId}/rollback/99999`, {
+      headers: withAuth(dmToken),
+    });
     expect(res.status()).toBe(404);
   });
 });

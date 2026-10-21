@@ -228,6 +228,12 @@ Eso es la base sana. La Parte A (más proveedores, más modelos) **no la rompe**
 **C4 — La IA propone, el DM autoriza.**
 - Regla ya existente en el repo (`docs/EVENT-SYSTEM.md`: PROPOSED → REVIEW → APPROVED) y ya implementada para `process-session`. Se extiende a toda acción con efecto: **nada de lo que produce un agente se escribe sin que el DM lo apruebe**.
 - Un agente nunca borra ni sobrescribe: propone.
+- **HECHO (B5c):** la regla era de la UI, no del backend. Las rutas que **mutan el canon** (`PUT/DELETE /events/{id}`, `PUT /events/{id}/approve|reject`, `PUT /canon/{cid}/{eid}/approve|reject`) no exigian rol: cualquiera que llegara al backend —un jugador, un script— podia promover una propuesta a CANON sin que nadie lo autorizara. Ahora exigen `require_dm` (401 sin token, 403 con token de jugador). Suma `POST /world-state/{cid}/rollback/{v}`: el rollback del estado es una accion del DM (rebobina la verdad del mundo).
+- **Lo que sigue abierto, y a proposito** (el perimetro de esta fase es la **autorizacion**, no la confidencialidad: el lore de una campaña ya era legible sin token antes):
+  - las *lecturas* de la campaña (eventos, personajes, escenas, celdas, memoria);
+  - la *propuesta*: `POST /events` nace siempre `PROPOSED` (el status no viene del body), asi que un jugador puede proponer pero no autorizarse a si mismo;
+  - el **auto-canon de bajo impacto**: `POST /abilities/{id}/use` deja el evento `ability_used` en CANON sin revision (EVENT-SYSTEM.md §57) — es una accion del jugador, no una propuesta de la IA;
+  - `POST /campaigns/import`, que crea una campaña nueva desde un export (misma familia que `POST /campaigns`, que tampoco exigia rol).
 
 **C5 — Herramientas: lista blanca, sin FS, sin shell, sin red.**
 - Si algún día hay herramientas, son **acciones de dominio**, no primitives: `proponer_evento`, `consultar_estado` (y, cuando exista el camino de la deteccion, `proponer_item`). Cada una con:
@@ -282,6 +288,7 @@ Cada línea es un test. Si un test no existe, la garantía no existe.
 | S8 | Los reintentos no multiplican el gasto sin tope | `pytest`: un provider que siempre da 429 → el número de requests está acotado. **HECHO (B4)**: los reintentos se cuentan (`last_attempts`) y el tope ve los 3 requests. |
 | S9 | Un perfil nuevo no necesita código | `pytest`: dar de alta un perfil OpenAI-compatible y que funcione (server falso). |
 | S10 | La clave de un perfil va al vault, no al config | `pytest`: el perfil guarda `key_ref`; el archivo de config no tiene el secreto. |
+| S11 | El canon solo lo muta el DM | `pytest`: lista explicita de 7 rutas que promotes/rechazan/borran canon (y el rollback del estado) — sin token → 401; con token de jugador → 403. **HECHO (B5c)**: `CANON_ROUTES` en `backend/tests/test_api.py` (era C4 solo en la UI: las rutas no exigian rol). |
 
 ### 3.5 Fases
 
@@ -293,6 +300,7 @@ Cada línea es un test. Si un test no existe, la garantía no existe.
 | **B4** | **HECHO 2026-10-21.** Presupuesto (C8): tope diario de requests por campaña (`daily_call_limit`, 0 = sin tope) + el reintento no multiplica el gasto (S8: los reintentos se cuentan). | S6, S8 verdes. |
 | **B5** | **HECHO 2026-10-21.** Herramientas de dominio: `consultar_estado` (lee una parte puntual de la campana; solo lectura) y `proponer_evento` (nace **PROPOSED**, lo autoriza el DM con el mismo boton que usa el session processor). La sesion la resuelve el backend, no el modelo: asi no puede colgar un evento en la sesion de otra campana. El **perimetro**: la lista esta cerrada en el repo (el modelo elige, no escribe una tool), los argumentos se validan con pydantic (`extra=forbid`), no hay FS ni shell ni red ni SQL libre, y lo que escribe una tool son *propuestas* que autoriza el DM (C4). El bucle vive en el agente con un tope de iteraciones, y cada llamada queda auditada. | Test por herramienta + el test de que el modelo no puede tocar el codigo: la tool mas powerful es *leer la campana*. |
 | **M0** | **HECHO 2026-10-21.** Monetización, con candado: la flag `billing.enabled` (default `false`), los planes y los precios preseteables, el plan por campaña (`campaign.settings_json['billing_plan']`) y la cuota por día. **Apagada, no hay camino de cobro**: el checkout responde 501 diciendo que no hay proveedor de pagos conectado (es el único pedazo que falta). Distinto del presupuesto (C8), que protege la API key del DM. | La flag apagada por default + el test de que, apagada, no se puede cobrar. |
+| **B5c** | **HECHO 2026-10-21.** C4 en el backend: las rutas que mutan el canon exigen rol DM (S11). El agujero se encontro al auditar el perimetro de B5b — la regla "la IA propone, el DM autoriza" estaba solo en la UI, y `PUT /events/{id}/approve` respondia 200 sin token (cualquiera autorizaba la propuesta). Cerrado con `require_dm` en las 7 rutas que deciden canon o rebobinan el estado. | S11 verde: `test_el_canon_solo_lo_muta_el_dm` (401 sin token, 403 con jugador) + e2e de narrativa, canon y world-state mandando el token. |
 
 **B1–B4 no dependen de la Parte A**: se pueden hacer ya, con el provider único. **B5 depende de que el DM pida herramientas** (hoy nadie las pidió).
 

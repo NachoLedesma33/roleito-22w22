@@ -147,7 +147,9 @@ test.describe('Motor narrativo', () => {
     const body = await res.json();
     expect(body.events.length).toBeGreaterThan(0);
 
-    const approveRes = await request.put(`${API}/events/${body.events[0].event_id}/approve`);
+    const approveRes = await request.put(`${API}/events/${body.events[0].event_id}/approve`, {
+      headers: authHeaders,
+    });
     expect(approveRes.status()).toBe(200);
     const approved = await approveRes.json();
     expect(approved.status).toBe('CANON');
@@ -166,7 +168,9 @@ test.describe('Motor narrativo', () => {
     const body = await res.json();
     expect(body.events.length).toBeGreaterThan(0);
 
-    const rejectRes = await request.put(`${API}/events/${body.events[0].event_id}/reject`);
+    const rejectRes = await request.put(`${API}/events/${body.events[0].event_id}/reject`, {
+      headers: authHeaders,
+    });
     expect(rejectRes.status()).toBe(200);
     const rejected = await rejectRes.json();
     expect(rejected.status).toBe('REJECTED');

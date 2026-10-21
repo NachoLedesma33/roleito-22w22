@@ -1,12 +1,16 @@
 import { test, expect } from '@playwright/test';
+import { setupAuth, withAuth } from '../helpers/api-helpers';
 
 const API = 'http://localhost:8000/api';
 
 let campaignId = '';
 let entryId = '';
+let dmToken = '';
 
 test.describe('Canon Manager', () => {
   test.beforeAll(async ({ request }) => {
+    // Aprobar canon es del DM (C4): hace falta su token.
+    dmToken = await setupAuth(request);
     const res = await request.post(`${API}/campaigns`, {
       data: { name: 'Canon Test Campaign', description: 'Testing canon' },
     });
@@ -47,6 +51,7 @@ test.describe('Canon Manager', () => {
 
   test('CAN4: Approve canon entry changes status', async ({ request }) => {
     const res = await request.put(`${API}/canon/${campaignId}/${entryId}/approve`, {
+      headers: withAuth(dmToken),
       data: { reviewed_by: 'dm', notes: 'Confirmed' },
     });
     expect(res.status()).toBe(200);
@@ -61,6 +66,7 @@ test.describe('Canon Manager', () => {
     });
     const proposeData = await proposeRes.json();
     await request.put(`${API}/canon/${campaignId}/${proposeData.entry_id}/approve`, {
+      headers: withAuth(dmToken),
       data: { reviewed_by: 'dm' },
     });
 
@@ -80,6 +86,7 @@ test.describe('Canon Manager', () => {
     const proposeData = await proposeRes.json();
 
     const res = await request.put(`${API}/canon/${campaignId}/${proposeData.entry_id}/reject`, {
+      headers: withAuth(dmToken),
       data: { reviewed_by: 'dm', notes: 'Not canon' },
     });
     expect(res.status()).toBe(200);

@@ -1821,6 +1821,20 @@ AI_ROUTES = [
     ("post", "/api/ai/test", {"prompt": "x"}),
 ]
 
+# Las rutas que MUTAN el canon (o lo borran). El canon es del DM: sin rol,
+# cualquier cosa que llame al backend —un jugador, un script, el propio
+# servidor— puede promover una propuesta a CANON y el mundo cambia sin que
+# nadie lo autorice. La lista es explicita: no se confía en "ya lo revisamos".
+CANON_ROUTES = [
+    ("put", "/api/events/{eid}", {"status": "CANON"}),
+    ("put", "/api/events/{eid}/approve", None),
+    ("put", "/api/events/{eid}/reject", None),
+    ("delete", "/api/events/{eid}", None),
+    ("put", "/api/canon/{cid}/{eid}/approve", {"reviewed_by": "dm"}),
+    ("put", "/api/canon/{cid}/{eid}/reject", {"reviewed_by": "dm"}),
+    ("post", "/api/world-state/{cid}/rollback/1", None),
+]
+
 
 @pytest.mark.asyncio
 async def test_ninguna_ruta_de_ia_acepta_a_un_jugador(client):
@@ -1846,6 +1860,41 @@ async def test_ninguna_ruta_de_ia_acepta_a_un_jugador(client):
 
     for method, path, body in AI_ROUTES:
         url = path.format(cid=camp["id"])
+        res = await client.request(method, url, json=body)
+        assert res.status_code == 401, f"{method.upper()} {url} sin token: {res.status_code}"
+        res = await client.request(
+            method,
+            url,
+            json=body,
+            headers={"Authorization": f"Bearer {player.token}"},
+        )
+        assert res.status_code == 403, f"{method.upper()} {url} con jugador: {res.status_code}"
+
+
+@pytest.mark.asyncio
+async def test_el_canon_solo_lo_muta_el_dm(client):
+    """C4 en la API: sin token -> 401; con token de jugador -> 403.
+
+    El canon es del DM. Antes estas rutas no exigian rol: cualquiera que
+    llegara al backend podia promover una propuesta a CANON (y borrarla o
+    cambiarla) sin que nadie lo autorizara. La regla de "la IA propone, el DM
+    autoriza" era del mundo de la UI, no del backend.
+    """
+    from uuid import uuid4
+
+    from auth import create_session
+
+    reg = (
+        await client.post(
+            "/api/auth/register", json={"name": f"DM Canon {uuid4().hex[:6]}", "pin": "1234"}
+        )
+    ).json()
+    player = await create_session(reg["dm_id"], role="player")
+
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Canon"})).json()
+
+    for method, path, body in CANON_ROUTES:
+        url = path.format(cid=camp["id"], eid="evt-inexistente")
         res = await client.request(method, url, json=body)
         assert res.status_code == 401, f"{method.upper()} {url} sin token: {res.status_code}"
         res = await client.request(

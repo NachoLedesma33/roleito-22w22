@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from auth import require_dm, AuthSession
 from backend.database import get_session
 from core.world.engine import WorldStateEngine
 
@@ -55,7 +56,12 @@ async def get_snapshot(campaign_id: str, version: int, db: AsyncSession = Depend
 
 
 @router.post("/{campaign_id}/rollback/{target_version}", response_model=WorldStateResponse)
-async def rollback_to_version(campaign_id: str, target_version: int, db: AsyncSession = Depends(get_session)):
+async def rollback_to_version(
+    campaign_id: str,
+    target_version: int,
+    db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+):
     engine = WorldStateEngine(db)
     state = await engine.rollback(campaign_id, target_version)
     if not state:
