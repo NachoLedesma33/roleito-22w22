@@ -15,6 +15,7 @@ from sqlalchemy import select
 
 from database import get_session
 from models import Campaign, Session
+from auth import require_dm, AuthSession
 from core.narrative.entity_resolver import get_campaign_context, resolve_entities
 from core.narrative.parser import parse_narrative
 from core.narrative.proposer import propose_events
@@ -55,8 +56,13 @@ async def parse_narrative_text(
     campaign_id: str,
     body: NarrativeParseRequest,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
 ):
-    """Parse DM narration text into structured event proposals."""
+    """Parse DM narration text into structured event proposals.
+
+    Es una ruta de IA: llama al modelo con el contexto de la campana y gasta
+    la API key del DM. Exige rol DM (S1): un jugador no puede usarla.
+    """
     campaign = (await db.execute(
         select(Campaign).where(Campaign.id == campaign_id)
     )).scalar_one_or_none()
@@ -97,6 +103,8 @@ async def parse_narrative_text(
         characters=context["characters"],
         npcs=context["npcs"],
         locations=context["locations"],
+        # El modelo que eligio el DM, no el default del provider.
+        model=config.get("model"),
     )
 
     all_names = (

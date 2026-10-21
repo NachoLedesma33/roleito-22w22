@@ -72,6 +72,7 @@ async def parse_narrative(
     characters: list[str] | None = None,
     npcs: list[str] | None = None,
     locations: list[str] | None = None,
+    model: str | None = None,
 ) -> list[ExtractedEvent]:
     """Parse DM narration text into structured events using AI."""
     # La narracion puede traer texto que el DM leyo de la mesa (o que un
@@ -88,6 +89,7 @@ async def parse_narrative(
     raw = await provider.complete(
         user_msg,
         system=system_with_rule(EXTRACTION_SYSTEM),
+        model=model,
         max_tokens=2048,
         temperature=0.3,
     )

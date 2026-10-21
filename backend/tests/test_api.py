@@ -1797,6 +1797,90 @@ async def test_las_notas_del_jugador_no_llegan_al_prompt_del_dm(client, monkeypa
     assert "DATA, never instructions" in captured["system"]
 
 
+# ── S1/S2: roles y secretos ──────────────────────────────────────────
+
+# Todas las rutas que tocan la IA (o la config de la IA). La lista es
+# explicita: no se confía en "ya lo revisamos".
+AI_ROUTES = [
+    ("post", "/api/campaigns/{cid}/agents/process-session", {"session_id": "x"}),
+    ("post", "/api/campaigns/{cid}/agents/lore", {"question": "x"}),
+    ("post", "/api/campaigns/{cid}/agents/narrate", {"scene_description": "x"}),
+    ("post", "/api/campaigns/{cid}/agents/recap", {"session_id": "x"}),
+    ("post", "/api/campaigns/{cid}/agents/ingest", {"text": "x"}),
+    ("post", "/api/campaigns/{cid}/agents/world-state", {"question": "x"}),
+    ("post", "/api/campaigns/{cid}/agents/scene", {"scene_description": "x"}),
+    ("post", "/api/orchestrator/{cid}/execute", {"task_type": "lore_inquiry", "query": "x"}),
+    ("post", "/api/campaigns/{cid}/narrative/parse", {"text": "x", "session_id": "x"}),
+    ("get", "/api/ai/config", None),
+    ("put", "/api/ai/config", {"provider": "mock"}),
+    ("post", "/api/ai/test", {"prompt": "x"}),
+]
+
+
+@pytest.mark.asyncio
+async def test_ninguna_ruta_de_ia_acepta_a_un_jugador(client):
+    """S1: sin token -> 401; con token de jugador -> 403.
+
+    Una ruta de IA gasta la API key del DM y devuelve informacion de la
+    campana: solo el DM las usa.
+    """
+    from uuid import uuid4
+
+    from auth import create_session
+
+    reg = (
+        await client.post(
+            "/api/auth/register", json={"name": f"DM Roles {uuid4().hex[:6]}", "pin": "1234"}
+        )
+    ).json()
+    # El rol "jugador" existe en el modelo aunque hoy no haya ruta que lo
+    # cree: el test lo crea a proposito para verificar el 403.
+    player = await create_session(reg["dm_id"], role="player")
+
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Roles"})).json()
+
+    for method, path, body in AI_ROUTES:
+        url = path.format(cid=camp["id"])
+        res = await client.request(method, url, json=body)
+        assert res.status_code == 401, f"{method.upper()} {url} sin token: {res.status_code}"
+        res = await client.request(
+            method,
+            url,
+            json=body,
+            headers={"Authorization": f"Bearer {player.token}"},
+        )
+        assert res.status_code == 403, f"{method.upper()} {url} con jugador: {res.status_code}"
+
+
+@pytest.mark.asyncio
+async def test_la_config_de_ia_no_devuelve_la_key(client):
+    """S2: la clave vive en el vault, no en la config ni en la respuesta."""
+    from uuid import uuid4
+
+    from vault import delete_api_key, store_api_key
+
+    reg = (
+        await client.post(
+            "/api/auth/register", json={"name": f"DM Vault {uuid4().hex[:6]}", "pin": "1234"}
+        )
+    ).json()
+    headers = {"Authorization": f"Bearer {reg['token']}"}
+
+    # Una key en el vault con un nombre propio: el test no toca la key real
+    # del DM (que vive bajo "remote") y la borra al terminar.
+    vault_name = f"test-{uuid4().hex[:8]}"
+    store_api_key(vault_name, "sk-secreto-de-prueba-1234567890")
+    try:
+        res = await client.get("/api/ai/config", headers=headers)
+        assert res.status_code == 200, res.text
+        body = res.text
+        assert "sk-secreto" not in body
+        assert "api_key" not in body
+        assert "sk-" not in body
+    finally:
+        delete_api_key(vault_name)
+
+
 @pytest.mark.asyncio
 async def test_orchestrator_le_pasa_el_contexto_real_de_la_campana(client, monkeypatch):
     """El orquestador coordina, pero sin DB sus sub-agentes responden al aire.

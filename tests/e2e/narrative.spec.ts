@@ -19,10 +19,11 @@ async function createLocation(
 }
 
 test.describe('Motor narrativo', () => {
-  test('NE1: parse endpoint returns events from DM narration', async ({ request, campaign }) => {
+  test('NE1: parse endpoint returns events from DM narration', async ({ request, campaign, authHeaders }) => {
     const session = await createSession(request, campaign.id, { number: 1, title: 'Test Session' });
 
     const res = await request.post(`${API}/campaigns/${campaign.id}/narrative/parse`, {
+      headers: authHeaders,
       data: {
         text: 'Los aventureros entran a la bóveda. Ardan encuentra una llave dorada.',
         session_id: session.id,
@@ -37,10 +38,11 @@ test.describe('Motor narrativo', () => {
     expect(body.raw_count).toBeGreaterThan(0);
   });
 
-  test('NE2: parse with empty text returns empty events', async ({ request, campaign }) => {
+  test('NE2: parse with empty text returns empty events', async ({ request, campaign, authHeaders }) => {
     const session = await createSession(request, campaign.id, { number: 1, title: 'Test Session' });
 
     const res = await request.post(`${API}/campaigns/${campaign.id}/narrative/parse`, {
+      headers: authHeaders,
       data: {
         text: '',
         session_id: session.id,
@@ -51,11 +53,12 @@ test.describe('Motor narrativo', () => {
     expect(body.events).toEqual([]);
   });
 
-  test('NE3: parse resolves character names to IDs', async ({ request, campaign }) => {
+  test('NE3: parse resolves character names to IDs', async ({ request, campaign, authHeaders }) => {
     const session = await createSession(request, campaign.id, { number: 1, title: 'Test Session' });
     const char = await createCharacter(request, campaign.id, { name: 'Ardan' });
 
     const res = await request.post(`${API}/campaigns/${campaign.id}/narrative/parse`, {
+      headers: authHeaders,
       data: {
         text: 'Ardan abre la puerta de la bóveda.',
         session_id: session.id,
@@ -70,11 +73,12 @@ test.describe('Motor narrativo', () => {
     expect(hasActor).toBe(true);
   });
 
-  test('NE4: parse resolves NPC names', async ({ request, campaign }) => {
+  test('NE4: parse resolves NPC names', async ({ request, campaign, authHeaders }) => {
     const session = await createSession(request, campaign.id, { number: 1, title: 'Test Session' });
     const npc = await createNpc(request, campaign.id, { name: 'Guardia' });
 
     const res = await request.post(`${API}/campaigns/${campaign.id}/narrative/parse`, {
+      headers: authHeaders,
       data: {
         text: 'El Guardia detiene al grupo.',
         session_id: session.id,
@@ -89,11 +93,12 @@ test.describe('Motor narrativo', () => {
     expect(hasActor).toBe(true);
   });
 
-  test('NE5: parse resolves location names', async ({ request, campaign }) => {
+  test('NE5: parse resolves location names', async ({ request, campaign, authHeaders }) => {
     const session = await createSession(request, campaign.id, { number: 1, title: 'Test Session' });
     await createLocation(request, campaign.id, 'Bóveda');
 
     const res = await request.post(`${API}/campaigns/${campaign.id}/narrative/parse`, {
+      headers: authHeaders,
       data: {
         text: 'El grupo entra a la Bóveda.',
         session_id: session.id,
@@ -108,10 +113,11 @@ test.describe('Motor narrativo', () => {
     expect(hasLocation).toBe(true);
   });
 
-  test('NE6: events created by parse have PROPOSED status', async ({ request, campaign }) => {
+  test('NE6: events created by parse have PROPOSED status', async ({ request, campaign, authHeaders }) => {
     const session = await createSession(request, campaign.id, { number: 1, title: 'Test Session' });
 
     const res = await request.post(`${API}/campaigns/${campaign.id}/narrative/parse`, {
+      headers: authHeaders,
       data: {
         text: 'Ardan encuentra una espada.',
         session_id: session.id,
@@ -128,10 +134,11 @@ test.describe('Motor narrativo', () => {
     }
   });
 
-  test('NE7: proposed events can be approved', async ({ request, campaign }) => {
+  test('NE7: proposed events can be approved', async ({ request, campaign, authHeaders }) => {
     const session = await createSession(request, campaign.id, { number: 1, title: 'Test Session' });
 
     const res = await request.post(`${API}/campaigns/${campaign.id}/narrative/parse`, {
+      headers: authHeaders,
       data: {
         text: 'Ardan encuentra una espada.',
         session_id: session.id,
@@ -146,10 +153,11 @@ test.describe('Motor narrativo', () => {
     expect(approved.status).toBe('CANON');
   });
 
-  test('NE8: proposed events can be rejected', async ({ request, campaign }) => {
+  test('NE8: proposed events can be rejected', async ({ request, campaign, authHeaders }) => {
     const session = await createSession(request, campaign.id, { number: 1, title: 'Test Session' });
 
     const res = await request.post(`${API}/campaigns/${campaign.id}/narrative/parse`, {
+      headers: authHeaders,
       data: {
         text: 'Ardan encuentra una espada.',
         session_id: session.id,
@@ -164,8 +172,9 @@ test.describe('Motor narrativo', () => {
     expect(rejected.status).toBe('REJECTED');
   });
 
-  test('NE9: parse with nonexistent session returns 404', async ({ request, campaign }) => {
+  test('NE9: parse with nonexistent session returns 404', async ({ request, campaign, authHeaders }) => {
     const res = await request.post(`${API}/campaigns/${campaign.id}/narrative/parse`, {
+      headers: authHeaders,
       data: {
         text: 'Test narration.',
         session_id: 'nonexistent-session',

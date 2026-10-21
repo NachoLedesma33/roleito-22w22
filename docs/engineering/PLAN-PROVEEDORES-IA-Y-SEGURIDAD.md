@@ -240,6 +240,7 @@ Eso es la base sana. La Parte A (más proveedores, más modelos) **no la rompe**
 - La key: solo en el vault, solo en el backend, nunca en un response, nunca en un log, nunca en el prompt. `GET /ai/config` y `GET /ai/profiles` devuelven `key_ref` y "sí/no hay key", nunca la key.
 - `require_dm` en **todas** las rutas de agente, de orquestación y de config de IA. Test que lo verifique para cada ruta (una lista explícita, no "confiar en la revisión").
 - El jugador **no** puede pedirle a un agente que le cuente la campaña. Hoy las rutas lo tienen; el test lo fija.
+- **HECHO (B3a):** la lista explícita de rutas de IA quedó fijada por test (S1). Y se encontró un agujero real: `POST /campaigns/{id}/narrative/parse` **no exigía rol** (llama al modelo con el contexto de la campaña y gasta la API key del DM). Ahora exige DM, y el e2e de narrativa manda el token.
 
 **C8 — Presupuesto y disponibilidad.**
 - Tope de tokens por llamada (ya existe `max_tokens`), tope de tokens por sesión/día por campaña, contador visible en la UI.
@@ -260,8 +261,8 @@ Cada línea es un test. Si un test no existe, la garantía no existe.
 
 | # | Garantía | Test |
 |---|---|---|
-| S1 | Ninguna ruta de agente acepta un jugador | `pytest`: para cada ruta de `/agents/*`, `/orchestrator/*`, `/ai/*`: sin token → 401; con token de jugador → 403. |
-| S2 | El config de IA nunca devuelve la key | `pytest`: `GET /ai/config` y `GET /ai/profiles` → el body no contiene la key (ni su prefijo). |
+| S1 | Ninguna ruta de agente acepta un jugador | `pytest`: para cada ruta de `/agents/*`, `/orchestrator/*`, `/ai/*`: sin token → 401; con token de jugador → 403. **HECHO (B3a)**: lista explícita de 12 rutas. |
+| S2 | El config de IA nunca devuelve la key | `pytest`: `GET /ai/config` y `GET /ai/profiles` → el body no contiene la key (ni su prefijo). **HECHO (B3a)** para `/ai/config` (la key vive en el vault; el test la guarda con un nombre propio y la borra). `/ai/profiles` llega con A1. |
 | S3 | La salida del modelo no puede romper el render | `pytest`: un item con `shape.points` con `NaN`/`Infinity` → 422; con 10.000 puntos → 422; con `image` apuntando a `http://` → 422. |
 | S4 | Los datos del mundo van marcados como datos | `pytest`: un prompt con `<datos>` + texto con "ignorá las instrucciones" → el system dice que es material. (Test del *armado* del prompt, no del modelo.) **HECHO (B2)**: 7 tests, uno por agente + el parser de narrativa. |
 | S5 | Los datos del jugador no llegan al prompt del DM | `pytest`: el prompt del Lore/Recap/WorldState con un jugador conectado no incluye texto del jugador. **HECHO (B2)**: la ficha entra por lista blanca (`character_for_prompt`); las notas del jugador no entran. |
@@ -277,7 +278,7 @@ Cada línea es un test. Si un test no existe, la garantía no existe.
 |---|---|---|
 | **B1** | **HECHO 2026-10-20.** Los límites de la salida: en el `PUT /items` y en el import (números finitos, sin URLs remotas en `image`, topes de puntos/nombre/descripción/cantidad) y en la salida de los agentes (`core/agents/validation.py`: `safe_text`/`safe_list`/`safe_str_list`). | S3 verde. Los agentes que parsean JSON con validación pydantic (hoy parsean a mano). |
 | **B2** | **HECHO 2026-10-21.** El marcado de datos en los prompts (C1, C2): todo el texto de la campaña va entre `<datos>…</datos>` y el system declara que es material. Aplicado a los 6 agentes y al parser de narrativa. + el test de que el jugador no llega al prompt del DM (S4, S5): la ficha entra por lista blanca (nombre + descripción) y las notas del jugador no entran. | S4, S5 verdes. |
-| **B3** | Roles y secretos (C7) + auditoría (C9). | S1, S2, S7 verdes. |
+| **B3** | Roles y secretos (C7) + auditoría (C9). **B3a HECHO 2026-10-21** (roles y secretos: S1, S2 + el agujero de `/narrative/parse`). Falta B3b (auditoría: S7). | S1, S2, S7 verdes. |
 | **B4** | Presupuesto (C8) + el reintento no multiplica el gasto (S8). | S6, S8 verdes. |
 | **B5** | Herramientas de dominio, si se piden: lista blanca + validado + auditado. **Cada herramienta con su test.** | Test por herramienta. Sin esta fase, el resto sigue valiendo: el LLM sigue sin poder hacer nada. |
 | **M0** | **Monetización, con candado.** La mecánica de cobrar al jugador por el uso de IA queda **implementada pero apagada** (una flag, default `false`), para que si algún día hay financiamiento se active sin rehacer el backend. No es lo mismo que B4 (el tope anti-derrumbe): B4 protege la API key del DM, M0 cobra al jugador. Mientras la flag esté apagada, ninguna ruta de cobro existe. | La flag apagada por default + el test de que, apagada, no se puede cobrar. |
