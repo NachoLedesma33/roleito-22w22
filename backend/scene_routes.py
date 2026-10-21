@@ -16,7 +16,6 @@ import time
 import json
 from pathlib import Path
 
-from vault import get_api_key
 from routes import broadcast_positions, broadcast_revision
 
 router = APIRouter(tags=["scenes"])
@@ -282,26 +281,26 @@ async def detect_walls(
     from starlette.concurrency import run_in_threadpool
 
     use_ai = mode == "ai"
+    ai_provider = None
+    ai_model = None
+    detection_mode = None
     if use_ai:
-        ai_settings = _load_ai_settings()
-        provider = ai_settings.get("provider", "mock")
-        if provider == "local":
-            ai_base_url = ai_settings.get("local_base_url", "http://localhost:11434/v1")
-            ai_api_key = ""
-        elif provider == "remote":
-            ai_base_url = ai_settings.get("remote_base_url", "")
-            ai_api_key = get_api_key("remote") or ""
-        else:
-            raise HTTPException(status_code=400, detail="AI detection requires local or remote provider in IA settings")
-        ai_model = ai_settings.get("model") or (
-            "gemini-3.6-flash" if provider == "remote" else "moondream"
-        )
-        detection_mode = None
+        # La deteccion con IA usa el perfil "wall-detection" (o el default):
+        # el provider que ve la imagen sale de ahi, con su key y su modelo.
+        from core.agents.provider import get_model_for_agent, get_provider_for_agent
+
+        ai_provider = get_provider_for_agent("wall-detection")
+        if getattr(ai_provider, "name", "") == "mock":
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "La deteccion con IA necesita un perfil con vision "
+                    "(configuralo en el panel de IA)"
+                ),
+            )
+        ai_model = get_model_for_agent("wall-detection")
     else:
         detection_mode = DetectionMode.TEXTURED if mode == "textured" else DetectionMode.BLUEPRINT
-        ai_base_url = ""
-        ai_api_key = ""
-        ai_model = ""
 
     try:
         detection = await run_in_threadpool(
@@ -309,8 +308,7 @@ async def detect_walls(
             scene.background_path,
             detection_mode,
             use_ai=use_ai,
-            ai_base_url=ai_base_url,
-            ai_api_key=ai_api_key,
+            ai_provider=ai_provider,
             ai_model=ai_model,
             seed=seed,
         )

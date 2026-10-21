@@ -27,18 +27,32 @@ async def campaign_budget(
     from core.agents.provider import get_ai_config
 
     config = get_ai_config()
+    campaign = (await db.execute(
+        select(Campaign).where(Campaign.id == campaign_id)
+    )).scalar_one_or_none()
+    settings = campaign.settings_json if campaign else None
+
     if is_enabled(config):
-        campaign = (await db.execute(
-            select(Campaign).where(Campaign.id == campaign_id)
-        )).scalar_one_or_none()
         try:
-            check_quota(
-                config,
-                campaign_id,
-                campaign.settings_json if campaign else None,
-            )
+            check_quota(config, campaign_id, settings)
         except QuotaExceeded as e:
             raise HTTPException(status_code=402, detail=str(e))
+
+    # Una campaña marcada como sensible ("solo local") no puede mandar sus
+    # datos a un proveedor externo (C6).
+    if isinstance(settings, dict) and settings.get("local_only"):
+        from core.agents.profiles import is_external, profile_for_agent
+
+        _, profile = profile_for_agent("", config)
+        if is_external(profile):
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Esta campaña está marcada como 'solo local' y el perfil "
+                    "elegido manda el texto a un proveedor externo. "
+                    "Elegí un perfil local (Ollama)."
+                ),
+            )
 
     with campaign_scope(campaign_id):
         yield

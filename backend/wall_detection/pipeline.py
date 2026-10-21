@@ -34,9 +34,8 @@ def detect_map(
     min_wall_length: float = 10.0,
     max_dim: int = 1200,
     use_ai: bool = False,
-    ai_base_url: str = "",
-    ai_api_key: str = "",
-    ai_model: str = "gpt-4o",
+    ai_provider=None,
+    ai_model: str | None = None,
     seed: int = DEFAULT_SEED,
 ) -> DetectedMap:
     """Run full detection pipeline on an image.
@@ -65,13 +64,12 @@ def detect_map(
         mode = classify_image(img)
 
     ai_used = False
-    if use_ai and mode == DetectionMode.TEXTURED and ai_api_key:
+    if use_ai and ai_provider is not None and mode == DetectionMode.TEXTURED:
         try:
             from .ai_detector import detect_walls_ai_sync
             detection = detect_walls_ai_sync(
                 image_path,
-                base_url=ai_base_url or "https://api.openai.com/v1",
-                api_key=ai_api_key,
+                provider=ai_provider,
                 model=ai_model,
             )
             from .refine import refine_ai_detection

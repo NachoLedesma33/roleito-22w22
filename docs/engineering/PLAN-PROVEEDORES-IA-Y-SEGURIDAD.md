@@ -165,7 +165,7 @@ En `AISettingsPanel`:
 | **A1** | **HECHO 2026-10-21.** `AIProvider` con mensajes (`AIMessage`) + adapters parametrizados (`openai_compatible`, `anthropic`, `ollama`, `mock`) + perfiles en la config + CRUD de perfiles (`/ai/profiles`, `/ai/adapters`). La key sale del vault por `key_ref` y no aparece en ninguna respuesta. | `pytest`: un perfil apuntando a un server OpenAI-compatible falso responde; la key se lee del vault por `key_ref` y **no** aparece en `GET /ai/config`. |
 | **A2** | **HECHO 2026-10-21.** Descubrimiento de modelos (`/ai/models`: `{base}/models`, `{base}/v1/models`, `{base}/api/tags`) + fallback manual + UI ("Descubrir" en el perfil). Cache de 10 min; la lista no se persiste. | `pytest`: `/ai/models` devuelve los modelos del server falso; si el endpoint da 404, la respuesta trae `source: manual` y la UI ofrece escribir el id. |
 | **A3** | **HECHO 2026-10-21.** Adapter `anthropic` (el `system` va aparte, la key en `x-api-key`) + `ollama` como adapter (no providers). | `pytest`: un server Anthropic falso recibe `x-api-key` y `system` aparte, y devuelve el texto. |
-| **A4** | **HECHO 2026-10-21** (modelo por agente + multimodal en el contrato: un `AIMessage` puede llevar la imagen). **PENDIENTE**: la detección de paredes con IA sigue hablando por su cuenta con el endpoint OpenAI-compatible (no usa el contrato ni el perfil). | `pytest`: el Session Processor con override usa el perfil del override; el detector con IA manda la imagen como `image_base64`. |
+| **A4** | **HECHO 2026-10-21.** Modelo por agente + multimodal: un `AIMessage` puede llevar la imagen, y la detección de paredes con IA ya usa el contrato (manda la imagen como `image_base64` al perfil "wall-detection", con el tamaño acotado a 5 MB). | `pytest`: el Session Processor con override usa el perfil del override; el detector con IA manda la imagen como `image_base64`. |
 | **A5** | **HECHO 2026-10-21.** Migración de la config actual (`provider`/`remote_base_url`/`model` → un perfil) sin perder lo configurado (la migración corre al arrancar el backend). | `pytest`: una config vieja se migra a un perfil y el mock sigue andando. |
 
 ---
@@ -236,6 +236,7 @@ Eso es la base sana. La Parte A (más proveedores, más modelos) **no la rompe**
 - El backend es el único que habla con el proveedor. El LLM no navega.
 - `base_url` de un perfil es **config del DM**, nunca dato del jugador → no es SSRF desde la app. Aun así: validar que el base_url sea http(s) y avisar (no bloquear) si apunta a la red privada — el caso "local" es legítimo (Ollama) y el DM lo pidió.
 - Aviso por perfil: "este proveedor recibe el texto de tu campaña". Un perfil marcado `local_only` bloquea los remotos para campañas marcadas sensibles.
+- **HECHO (A1/C6):** el aviso está en el panel de IA (por perfil) y una campaña con `settings_json['local_only']` **no puede** llamar a un agente con un perfil externo (400 con el motivo). El candado vive en la dependencia de campaña, antes de la llamada.
 
 **C7 — Secretos y roles.**
 - La key: solo en el vault, solo en el backend, nunca en un response, nunca en un log, nunca en el prompt. `GET /ai/config` y `GET /ai/profiles` devuelven `key_ref` y "sí/no hay key", nunca la key.

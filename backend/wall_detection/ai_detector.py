@@ -1,9 +1,12 @@
 """AI-assisted wall detection using Vision Language Models.
 
-Sends the battle map image to a VLM (GPT-4o, Gemini, etc.) and parses
+Sends the battle map image to a VLM (GPT-4o, Gemini, Claude...) and parses
 the structured JSON response into DetectedMap.
 
-Supports any OpenAI-compatible vision endpoint.
+La imagen va como un MENSAJE con la imagen (el contrato de `AIProvider`): el
+mismo codigo sirve con un adapter OpenAI-compatible, con Anthropic o con
+Ollama. El tamaño de la imagen va acotado (C3): sin limite, una imagen de
+40 MB se manda a un API de pago.
 """
 
 import asyncio
@@ -11,9 +14,12 @@ import base64
 import json
 import logging
 import re
+import sys
 from pathlib import Path
 
-import httpx
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from infrastructure.ai.base import MAX_IMAGE_BYTES, simple_messages
 
 from .types import DetectedMap, DetectedWall, DetectedDoor, DetectedRoom, Point
 
@@ -201,9 +207,8 @@ def _build_detected_map(data: dict, img_w: int, img_h: int) -> DetectedMap:
 async def detect_walls_ai(
     image_path: str,
     *,
-    base_url: str = DEFAULT_BASE_URL,
-    api_key: str = "",
-    model: str = DEFAULT_MODEL,
+    provider,
+    model: str | None = None,
     max_tokens: int = 4096,
     temperature: float = 0.2,
 ) -> DetectedMap:
@@ -211,9 +216,10 @@ async def detect_walls_ai(
 
     Args:
         image_path: Path to the battle map image.
-        base_url: OpenAI-compatible API base URL.
-        api_key: API key for the provider.
-        model: Model ID (e.g. "gpt-4o", "gemini-2.0-flash").
+        provider: The `AIProvider` that sees the image (any adapter with
+            vision: OpenAI-compatible, Anthropic, Ollama).
+        model: Model ID (e.g. "gpt-4o", "gemini-2.0-flash"). If None, the
+            provider's default (the profile's model) is used.
         max_tokens: Max response tokens.
         temperature: Lower = more deterministic.
 
@@ -230,67 +236,47 @@ async def detect_walls_ai(
     img_b64 = _encode_image(image_path)
     mime = _get_mime(image_path)
 
-    url = f"{base_url.rstrip('/')}/chat/completions"
-    headers = {"Content-Type": "application/json"}
-    if api_key:
-        headers["Authorization"] = f"Bearer {api_key}"
-    payload = {
-        "model": model,
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": VISION_PROMPT},
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:{mime};base64,{img_b64}",
-                            "detail": "high",
-                        },
-                    },
-                ],
-            }
-        ],
-        "max_tokens": max_tokens,
-        "temperature": temperature,
-        "response_format": {"type": "json_object"},
-    }
+    # El tamaño va acotado (C3): una imagen de 40 MB a un API de pago.
+    raw_bytes = int(len(img_b64) * 3 / 4)
+    if raw_bytes > MAX_IMAGE_BYTES:
+        raise ValueError(
+            f"La imagen es muy grande para la IA: {raw_bytes // (1024 * 1024)} MB "
+            f"(max {MAX_IMAGE_BYTES // (1024 * 1024)} MB)"
+        )
 
-    async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT) as client:
-        last_raw = ""
-        for attempt in range(3):
-            res = None
-            for http_attempt in range(3):
-                res = await client.post(url, json=payload, headers=headers)
-                if res.status_code not in {429, 500, 502, 503, 504} or http_attempt == 2:
-                    break
-                await asyncio.sleep(1.5 * (2 ** http_attempt))
-            res.raise_for_status()
-            data = res.json()
-            last_raw = data["choices"][0]["message"]["content"]
-            try:
-                parsed = _parse_ai_response(last_raw)
-                return _build_detected_map(parsed, w, h)
-            except (ValueError, json.JSONDecodeError, KeyError, IndexError, TypeError):
-                if attempt == 2:
-                    raise
-                await asyncio.sleep(1.5)
+    messages = simple_messages("", VISION_PROMPT, img_b64, mime)
+
+    # El provider reintenta los errores de red; aca se reintenta cuando la
+    # respuesta del modelo no se puede parsear (JSON truncado, por ejemplo).
+    last_raw = ""
+    for attempt in range(3):
+        last_raw = await provider.complete(
+            messages,
+            model=model,
+            max_tokens=max_tokens,
+            temperature=temperature,
+        )
+        try:
+            parsed = _parse_ai_response(last_raw)
+            return _build_detected_map(parsed, w, h)
+        except (ValueError, json.JSONDecodeError, KeyError, IndexError, TypeError):
+            if attempt == 2:
+                raise
+            await asyncio.sleep(1.5)
 
 
 def detect_walls_ai_sync(
     image_path: str,
     *,
-    base_url: str = DEFAULT_BASE_URL,
-    api_key: str = "",
-    model: str = DEFAULT_MODEL,
+    provider,
+    model: str | None = None,
     max_tokens: int = 4096,
     temperature: float = 0.2,
 ) -> DetectedMap:
     """Synchronous wrapper for detect_walls_ai."""
     return asyncio.run(detect_walls_ai(
         image_path,
-        base_url=base_url,
-        api_key=api_key,
+        provider=provider,
         model=model,
         max_tokens=max_tokens,
         temperature=temperature,

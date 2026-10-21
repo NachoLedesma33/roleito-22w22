@@ -2584,3 +2584,72 @@ async def test_con_la_monetizacion_encendida_la_cuota_corta(client, monkeypatch,
         headers=headers,
     )
     assert res.status_code == 200, res.text
+
+
+@pytest.mark.asyncio
+async def test_una_campana_solo_local_no_puede_mandar_datos_a_un_externo(client, monkeypatch, tmp_path):
+    """C6: una campaña marcada como sensible no sale de la máquina."""
+    from uuid import uuid4
+
+    cfg = tmp_path / "ai_config.json"
+    cfg.write_text(
+        json.dumps({
+            "default_profile": "remoto",
+            "profiles": {
+                "remoto": {
+                    "adapter": "openai_compatible",
+                    "base_url": "https://api.ejemplo.com/v1",
+                    "model": "m",
+                },
+                "local": {"adapter": "ollama", "base_url": "http://localhost:11434"},
+            },
+        }),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("ROLEITO_AI_CONFIG", str(cfg))
+
+    reg = (
+        await client.post(
+            "/api/auth/register", json={"name": f"DM Local {uuid4().hex[:6]}", "pin": "1234"}
+        )
+    ).json()
+    headers = {"Authorization": f"Bearer {reg['token']}"}
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Sensible"})).json()
+
+    # Con el perfil remoto, la campaña sensible no puede llamar.
+    res = await client.put(
+        f"/api/campaigns/{camp['id']}",
+        json={"settings_json": {"local_only": True}},
+        headers=headers,
+    )
+    assert res.status_code == 200, res.text
+
+    res = await client.post(
+        f"/api/campaigns/{camp['id']}/agents/lore",
+        json={"question": "quien es Aria?"},
+        headers=headers,
+    )
+    assert res.status_code == 400, res.text
+    assert "solo local" in res.json()["detail"]
+
+    # Con un perfil que NO es externo, si: el candado no la frena.
+    cfg.write_text(
+        json.dumps({
+            "default_profile": "local",
+            "profiles": {
+                "remoto": {
+                    "adapter": "openai_compatible",
+                    "base_url": "https://api.ejemplo.com/v1",
+                    "model": "m",
+                },
+                "local": {"adapter": "mock"},
+            },
+        }),
+        encoding="utf-8",
+    )
+    res = await client.post(
+        f"/api/campaigns/{camp['id']}/agents/lore",
+        json={"question": "quien es Aria?"},
+        headers=headers,
+    )
+    assert res.status_code == 200, res.text

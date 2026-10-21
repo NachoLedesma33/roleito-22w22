@@ -159,6 +159,12 @@ def build_provider_for_profile(profile: dict) -> AIProvider:
     return provider
 
 
+def is_external(profile: dict) -> bool:
+    """El perfil manda los datos de la campana a un tercero."""
+    adapter = normalize_adapter(str(profile.get("adapter", "mock")))
+    return bool(ADAPTERS.get(adapter, {}).get("external", True))
+
+
 def public_profile(profile_id: str, profile: dict) -> dict:
     """El perfil como se ve desde la UI: **sin la key**, con si hay."""
     adapter = normalize_adapter(str(profile.get("adapter", "mock")))

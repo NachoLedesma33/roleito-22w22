@@ -7,7 +7,6 @@ and integration without calling real APIs.
 import json
 import os
 import tempfile
-from unittest.mock import patch, AsyncMock
 
 import cv2
 import numpy as np
@@ -139,32 +138,42 @@ def test_parse_thickness():
     assert _parse_thickness("unknown") == 10.0
 
 
+class _FakeVisionProvider:
+    """Un provider con vision que devuelve la respuesta del VLM."""
+
+    name = "fake-vision"
+    supports_vision = True
+
+    def __init__(self, content: str):
+        self.content = content
+        self.messages = None
+
+    async def complete(self, messages, *, model=None, max_tokens=512, temperature=0.7):
+        self.messages = messages
+        return self.content
+
+
 @pytest.mark.asyncio
 async def test_detect_walls_ai_mock():
     img = np.full((300, 400, 3), 255, np.uint8)
     cv2.line(img, (100, 50), (100, 250), 0, thickness=4)
     path = _save(img)
 
-    mock_response = AsyncMock()
-    mock_response.status_code = 200
-    mock_response.raise_for_status = lambda: None
-    mock_response.json = lambda: {
-        "choices": [{"message": {"content": MOCK_VLM_RESPONSE}}]
-    }
-
-    mock_client = AsyncMock()
-    mock_client.post = AsyncMock(return_value=mock_response)
-    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client.__aexit__ = AsyncMock(return_value=False)
-
-    with patch("wall_detection.ai_detector.httpx.AsyncClient", return_value=mock_client):
-        result = await detect_walls_ai(path, api_key="test-key")
+    provider = _FakeVisionProvider(MOCK_VLM_RESPONSE)
+    result = await detect_walls_ai(path, provider=provider)
 
     assert isinstance(result, DetectedMap)
     assert result.wall_count == 2
     assert result.door_count == 1
     assert result.room_count == 1
     assert result.mode == "ai"
+
+    # La imagen viaja como mensaje con imagen (no como un payload a mano).
+    assert provider.messages is not None
+    user_message = provider.messages[-1]
+    assert user_message.role == "user"
+    assert user_message.image_base64
+    assert user_message.image_mime
 
     os.unlink(path)
 

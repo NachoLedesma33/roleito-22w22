@@ -167,6 +167,21 @@ def test_to_dict_includes_walkable():
     assert "rooms" in d
 
 
+
+class _FakeProvider:
+    """Un provider que no hace nada: lo que importa es que exista."""
+
+    name = "fake"
+    supports_vision = True
+
+    async def complete(self, messages, *, model=None, max_tokens=512, temperature=0.7):
+        return "{}"
+
+
+def _fake_provider():
+    return _FakeProvider()
+
+
 def test_ia_no_se_usa_en_un_plano_y_el_flag_lo_dice():
     """Pedir IA con una imagen que se clasifica como blueprint cae al camino CV.
 
@@ -177,7 +192,7 @@ def test_ia_no_se_usa_en_un_plano_y_el_flag_lo_dice():
     cv2.line(img, (150, 30), (150, 270), 0, thickness=4)
     path = _save(img)
 
-    result = detect_map(path, use_ai=True, ai_api_key="test-key")
+    result = detect_map(path, use_ai=True, ai_provider=_fake_provider())
 
     assert result.ai_used is False
     assert result.wall_count >= 1
@@ -200,7 +215,7 @@ def test_ia_usada_cuando_corrio_el_camino_ia(monkeypatch):
     )
 
     result = detect_map(
-        path, mode=DetectionMode.TEXTURED, use_ai=True, ai_api_key="test-key"
+        path, mode=DetectionMode.TEXTURED, use_ai=True, ai_provider=_fake_provider()
     )
 
     assert result.ai_used is True
@@ -217,7 +232,7 @@ def test_ia_que_falla_cae_a_cv_y_el_flag_lo_dice():
 
     with patch("wall_detection.ai_detector.detect_walls_ai_sync", boom):
         result = detect_map(
-            path, mode=DetectionMode.TEXTURED, use_ai=True, ai_api_key="test-key"
+            path, mode=DetectionMode.TEXTURED, use_ai=True, ai_provider=_fake_provider()
         )
 
     assert result.ai_used is False
