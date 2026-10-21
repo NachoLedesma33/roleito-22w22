@@ -20,7 +20,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import ToastContainer from '@/components/ToastContainer';
 import { rollToToast, useToastQueue } from '@/lib/toastQueue';
 import { api, type Character, type DiceRollResponse, type Spell } from '@/lib/api';
-import { checkWallCollision, extractZonePolygons, extractPortals, crossZoneBorder, extractApprovedWallLines } from '@/lib/wall-collision';
+import { checkWallCollision, extractZonePolygons, extractPortals, crossZoneBorder, extractBlockingWallLines } from '@/lib/wall-collision';
 import { sceneWorldHeight, sceneWorldSize } from '@/lib/sceneWorld';
 import { usePlayerSync, type Choice } from '@/lib/usePlayerSync';
 import { type CharPos } from '@/lib/playerVision';
@@ -522,7 +522,7 @@ export default function PlayerView() {
     const normX = (x / mapW) + 0.5;
     const normZ = (z / mapH) + 0.5;
 
-    const walls = extractApprovedWallLines(currentData.items ?? []);
+    const walls = extractBlockingWallLines(currentData.items ?? []);
     if (checkWallCollision(normX, normZ, walls, 0.03)) return;
 
     const zones = extractZonePolygons(currentData.items ?? [], mapW, mapH);
@@ -804,7 +804,7 @@ export default function PlayerView() {
 
         const normX = (x / mapW) + 0.5;
         const normZ = (z / mapH) + 0.5;
-        const walls = extractApprovedWallLines(currentData.items ?? []);
+        const walls = extractBlockingWallLines(currentData.items ?? []);
         if (checkWallCollision(normX, normZ, walls, 0.03)) {
           return;
         }
