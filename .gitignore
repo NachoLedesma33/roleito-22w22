@@ -114,6 +114,7 @@ playwright-report/
 # AI provider config (local only)
 data/ai_config.json
 data/ai_config.e2e.bak.json
+data/ai_budget.json
 
 # Auth secrets (local only)
 data/pin_hash.txt

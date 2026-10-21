@@ -1,21 +1,48 @@
-from .base import AIProvider
-from .local import LocalProvider
+"""The factory: an adapter name -> a provider.
+
+Un adapter por FAMILIA de API, no uno por proveedor: agregar un proveedor
+OpenAI-compatible es configuracion (un perfil), no codigo.
+"""
+
+from .anthropic import AnthropicProvider
+from .base import AIProvider, AIMessage
+from .local import OllamaProvider
 from .mock import MockProvider
-from .remote import RemoteProvider
+from .remote import OpenAICompatibleProvider
+
+# Los nombres viejos siguen funcionando (config de antes, tests).
+LEGACY_ADAPTERS = {"remote": "openai_compatible", "local": "ollama"}
 
 
 def build_provider(
-    provider_name: str,
+    adapter: str,
     *,
-    local_base_url: str | None = None,
-    remote_base_url: str | None = None,
+    base_url: str | None = None,
     api_key: str | None = None,
+    key_ref: str | None = None,
 ) -> AIProvider:
-    if provider_name == "local":
-        return LocalProvider(local_base_url) if local_base_url else LocalProvider()
-    if provider_name == "remote":
-        return RemoteProvider(remote_base_url, api_key=api_key)
-    return MockProvider()
+    """El provider de un adapter. `key_ref` es el nombre de la clave en el
+    vault (el secreto nunca viaja en la config)."""
+    name = LEGACY_ADAPTERS.get(adapter, adapter)
+    if name == "mock":
+        return MockProvider()
+    if name == "anthropic":
+        return AnthropicProvider(base_url=base_url or "", api_key=api_key)
+    if name == "ollama":
+        return OllamaProvider(base_url=base_url or "")
+    if name == "openai_compatible":
+        return OpenAICompatibleProvider(
+            base_url=base_url or "", api_key=api_key, key_ref=key_ref
+        )
+    raise ValueError(f"Adapter desconocido: {adapter}")
 
 
-__all__ = ["AIProvider", "LocalProvider", "MockProvider", "RemoteProvider", "build_provider"]
+__all__ = [
+    "AIProvider",
+    "AIMessage",
+    "AnthropicProvider",
+    "MockProvider",
+    "OllamaProvider",
+    "OpenAICompatibleProvider",
+    "build_provider",
+]

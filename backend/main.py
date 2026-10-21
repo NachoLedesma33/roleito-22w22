@@ -53,6 +53,15 @@ async def lifespan(_app: FastAPI):
     logger.info("Starting Roleito API...")
     await init_db()
     register_default_handlers(get_event_bus())
+    # La config de IA vieja (provider/remote_base_url/model) se migra a un
+    # perfil: lo que el DM ya habia configurado no se pierde.
+    try:
+        from core.agents.provider import migrate_ai_config
+
+        if migrate_ai_config():
+            logger.info("Config de IA migrada a perfiles")
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"No se pudo migrar la config de IA: {e}")
     logger.info("Database initialized")
     yield
     logger.info("Shutting down Roleito API")

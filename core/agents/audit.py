@@ -19,6 +19,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from infrastructure.ai.base import simple_messages
+
 from core.agents.budget import (
     BudgetExceeded,
     current_campaign,
@@ -116,6 +118,8 @@ async def audited_call(
     model: str | None = None,
     max_tokens: int = 512,
     temperature: float = 0.7,
+    image_base64: str | None = None,
+    image_mime: str | None = None,
 ) -> str:
     """La llamada al modelo, auditada.
 
@@ -149,8 +153,7 @@ async def audited_call(
     start = time.perf_counter()
     try:
         raw = await provider.complete(
-            prompt,
-            system=system,
+            simple_messages(system, prompt, image_base64, image_mime),
             model=model,
             max_tokens=max_tokens,
             temperature=temperature,

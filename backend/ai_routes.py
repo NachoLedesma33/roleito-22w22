@@ -7,14 +7,19 @@ from fastapi import APIRouter, Depends, HTTPException
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from infrastructure.ai import build_provider  # noqa: E402
 from infrastructure.ai.remote import estimate_usage  # noqa: E402
 from core.agents.audit import audited_call  # noqa: E402
-from core.agents.provider import config_path  # noqa: E402
+from core.agents.provider import (  # noqa: E402
+    config_path,
+    get_ai_config as load_ai_config,
+    save_ai_config,
+)
 from auth import require_dm, AuthSession  # noqa: E402
-from vault import get_api_key  # noqa: E402
 
 from schemas import (  # noqa: E402
+    AIAgentModels,
+    AIProfileCreate,
+    AIProfileUpdate,
     AISettingsResponse,
     AISettingsUpdate,
     AITestRequest,
@@ -63,6 +68,169 @@ async def update_ai_config(data: AISettingsUpdate, _session: AuthSession = Depen
     return data
 
 
+@router.get("/ai/adapters")
+async def get_adapters(_session: AuthSession = Depends(require_dm)):
+    """El catalogo de adapters: que familia de API cubre cada uno."""
+    from core.agents.profiles import adapters_catalog
+
+    return {"adapters": adapters_catalog()}
+
+
+@router.get("/ai/profiles")
+async def list_profiles(_session: AuthSession = Depends(require_dm)):
+    """Los perfiles de proveedor. **Ninguna key**: solo el `key_ref` y si hay."""
+    from core.agents.profiles import all_profiles, public_profile
+
+    config = load_ai_config()
+    profiles = all_profiles(config)
+    return {
+        "profiles": [public_profile(pid, p) for pid, p in profiles.items()],
+        "default_profile": config.get("default_profile") or next(iter(profiles)),
+    }
+
+
+@router.post("/ai/profiles", status_code=201)
+async def create_profile(
+    body: AIProfileCreate,
+    _session: AuthSession = Depends(require_dm),
+):
+    """Un perfil nuevo: a quien le pregunto."""
+    from core.agents.profiles import normalize_adapter
+
+    adapter = normalize_adapter(body.adapter)
+    if adapter not in {"openai_compatible", "anthropic", "ollama", "mock"}:
+        raise HTTPException(status_code=422, detail=f"Adapter desconocido: {body.adapter}")
+
+    config = load_ai_config()
+    profiles = config.setdefault("profiles", {})
+    if body.id in profiles:
+        raise HTTPException(status_code=409, detail="Ya existe un perfil con ese nombre")
+    profiles[body.id] = {
+        "adapter": adapter,
+        "base_url": body.base_url,
+        "model": body.model,
+        "label": body.label or body.id,
+        "key_ref": body.key_ref or body.id,
+    }
+    if not config.get("default_profile"):
+        config["default_profile"] = body.id
+    save_ai_config(config)
+    return {"status": "created", "id": body.id}
+
+
+@router.put("/ai/profiles/{profile_id}")
+async def update_profile(
+    profile_id: str,
+    body: AIProfileUpdate,
+    _session: AuthSession = Depends(require_dm),
+):
+    """Edita un perfil. La key no pasa por aca: vive en el vault."""
+    from core.agents.profiles import normalize_adapter
+
+    config = load_ai_config()
+    profiles = config.setdefault("profiles", {})
+    if profile_id not in profiles:
+        raise HTTPException(status_code=404, detail="Perfil no encontrado")
+
+    updates = body.model_dump(exclude_unset=True)
+    if "adapter" in updates and updates["adapter"]:
+        updates["adapter"] = normalize_adapter(updates["adapter"])
+        if updates["adapter"] not in {"openai_compatible", "anthropic", "ollama", "mock"}:
+            raise HTTPException(status_code=422, detail=f"Adapter desconocido: {updates['adapter']}")
+    profiles[profile_id].update(updates)
+    save_ai_config(config)
+    return {"status": "updated", "id": profile_id}
+
+
+@router.delete("/ai/profiles/{profile_id}")
+async def delete_profile(profile_id: str, _session: AuthSession = Depends(require_dm)):
+    """Borra un perfil (la key del vault se borra aparte)."""
+    config = load_ai_config()
+    profiles = config.get("profiles", {})
+    if profile_id not in profiles:
+        raise HTTPException(status_code=404, detail="Perfil no encontrado")
+    profiles.pop(profile_id)
+    if config.get("default_profile") == profile_id:
+        config["default_profile"] = next(iter(profiles), None)
+    for agent_id, chosen in list((config.get("agents") or {}).items()):
+        if chosen == profile_id:
+            config["agents"].pop(agent_id, None)
+    save_ai_config(config)
+    return {"status": "deleted", "id": profile_id}
+
+
+@router.get("/ai/models")
+async def get_models(
+    profile: str | None = None,
+    _session: AuthSession = Depends(require_dm),
+):
+    """Los modelos que expone el provider.
+
+    `source: discovered` si el provider los expone; `manual` si no (el DM
+    escribe el id a mano). Nunca se rompe el flujo.
+    """
+    from core.agents.discovery import discover_models
+    from core.agents.profiles import all_profiles, profile_for_agent
+
+    config = load_ai_config()
+    profiles = all_profiles(config)
+    if profile:
+        chosen = profiles.get(profile)
+        if not chosen:
+            raise HTTPException(status_code=404, detail="Perfil no encontrado")
+    else:
+        _, chosen = profile_for_agent("", config)
+
+    models = await discover_models(chosen)
+    return {
+        "models": models,
+        "source": "discovered" if models else "manual",
+        "profile": profile,
+    }
+
+
+@router.get("/ai/agent-models")
+async def get_agent_models(_session: AuthSession = Depends(require_dm)):
+    """Que perfil usa cada agente."""
+    from core.agents.profiles import AGENT_IDS, all_profiles
+
+    config = load_ai_config()
+    profiles = all_profiles(config)
+    agents = config.get("agents") or {}
+    return {
+        "default_profile": config.get("default_profile") or next(iter(profiles)),
+        "agents": {agent_id: agents.get(agent_id) for agent_id in AGENT_IDS},
+    }
+
+
+@router.put("/ai/agent-models")
+async def set_agent_models(
+    body: AIAgentModels,
+    _session: AuthSession = Depends(require_dm),
+):
+    """Elige el perfil de cada agente (vacio = el default)."""
+    from core.agents.profiles import AGENT_IDS, all_profiles
+
+    config = load_ai_config()
+    profiles = all_profiles(config)
+    for agent_id, profile_id in body.agents.items():
+        if agent_id not in AGENT_IDS:
+            raise HTTPException(status_code=422, detail=f"Agente desconocido: {agent_id}")
+        if profile_id and profile_id not in profiles:
+            raise HTTPException(status_code=404, detail=f"Perfil no encontrado: {profile_id}")
+    config["agents"] = {
+        agent_id: profile_id
+        for agent_id, profile_id in body.agents.items()
+        if profile_id
+    }
+    if body.default_profile:
+        if body.default_profile not in profiles:
+            raise HTTPException(status_code=404, detail="Perfil no encontrado")
+        config["default_profile"] = body.default_profile
+    save_ai_config(config)
+    return {"status": "updated"}
+
+
 @router.get("/ai/usage")
 async def get_ai_usage(
     campaign_id: str | None = None,
@@ -96,14 +264,25 @@ async def get_ai_audit(limit: int = 50, _session: AuthSession = Depends(require_
 
 @router.post("/ai/test", response_model=AITestResponse)
 async def test_ai(data: AITestRequest, _session: AuthSession = Depends(require_dm)):
+    """Prueba la conexion de un perfil (o del default).
+
+    La key sale del vault por el `key_ref` del perfil: el backend la usa y
+    no la devuelve.
+    """
+    from core.agents.profiles import all_profiles, build_provider_for_profile, profile_for_agent
+
+    config = load_ai_config()
+    profiles = all_profiles(config)
+    if data.profile:
+        profile = profiles.get(data.profile)
+        if not profile:
+            raise HTTPException(status_code=404, detail="Perfil no encontrado")
+    else:
+        _, profile = profile_for_agent("", config)
+
+    provider = build_provider_for_profile(profile)
+    model = profile.get("model") or config.get("model")
     settings = _load_settings()
-    api_key = get_api_key("remote") if settings.provider == "remote" else None
-    provider = build_provider(
-        settings.provider,
-        local_base_url=settings.local_base_url,
-        remote_base_url=settings.remote_base_url,
-        api_key=api_key,
-    )
     start = time.perf_counter()
     try:
         # Tambien auditada: es una llamada que cuesta tokens.
@@ -111,7 +290,7 @@ async def test_ai(data: AITestRequest, _session: AuthSession = Depends(require_d
             agent_id="ai-test",
             provider=provider,
             prompt=data.prompt,
-            model=settings.model,
+            model=model,
             max_tokens=settings.max_tokens,
             temperature=settings.temperature,
         )
@@ -131,7 +310,7 @@ async def test_ai(data: AITestRequest, _session: AuthSession = Depends(require_d
     return AITestResponse(
         ok=True,
         provider=provider.name,
-        model=settings.model,
+        model=model,
         response=response,
         latency_ms=latency_ms,
         usage=usage,

@@ -37,6 +37,33 @@ export interface AITestResult {
   } | null;
 }
 
+/** Un perfil de proveedor. La key nunca viaja: solo el `key_ref`. */
+export interface AIProfile {
+  id: string;
+  adapter: string;
+  base_url: string;
+  model: string | null;
+  label: string;
+  key_ref: string | null;
+  has_key: boolean;
+  external: boolean;
+  supports_vision: boolean;
+}
+
+export interface AIAdapter {
+  id: string;
+  label: string;
+  covers: string;
+  vision: boolean;
+  external: boolean;
+}
+
+export interface AIModel {
+  id: string;
+  display_name: string;
+  context_length: number | null;
+}
+
 /** El consumo de IA de hoy y el tope vigente (protege la API key del DM). */
 export interface AIUsage {
   usage: { calls: number; attempts: number; campaigns?: number };
@@ -959,6 +986,36 @@ export const api = {
       request<{ entries: AIAuditEntry[] }>(`/ai/audit?limit=${limit ?? 50}`),
     usage: (campaignId?: string) =>
       request<AIUsage>(`/ai/usage${campaignId ? `?campaign_id=${campaignId}` : ''}`),
+    adapters: () => request<{ adapters: AIAdapter[] }>('/ai/adapters'),
+    profiles: () => request<{ profiles: AIProfile[]; default_profile: string }>('/ai/profiles'),
+    createProfile: (data: Partial<AIProfile>) =>
+      request<{ status: string; id: string }>('/ai/profiles', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    updateProfile: (id: string, data: Partial<AIProfile>) =>
+      request<{ status: string; id: string }>(`/ai/profiles/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    deleteProfile: (id: string) =>
+      request<{ status: string; id: string }>(`/ai/profiles/${id}`, { method: 'DELETE' }),
+    models: (profile?: string) =>
+      request<{ models: AIModel[]; source: 'discovered' | 'manual' }>(
+        `/ai/models${profile ? `?profile=${profile}` : ''}`,
+      ),
+    agentModels: () =>
+      request<{ default_profile: string; agents: Record<string, string | null> }>(
+        '/ai/agent-models',
+      ),
+    setAgentModels: (agents: Record<string, string>, defaultProfile?: string) =>
+      request<{ status: string }>('/ai/agent-models', {
+        method: 'PUT',
+        body: JSON.stringify({
+          agents,
+          ...(defaultProfile ? { default_profile: defaultProfile } : {}),
+        }),
+      }),
   },
 
   vault: {

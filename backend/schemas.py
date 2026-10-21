@@ -715,6 +715,43 @@ class AISettingsResponse(AISettingsUpdate):
 
 class AITestRequest(BaseModel):
     prompt: str = "Responde con OK si me estas leyendo."
+    profile: Optional[str] = None
+
+
+class AIProfileCreate(BaseModel):
+    id: str = Field(pattern=r"^[a-z0-9_-]{1,64}$")
+    adapter: str = "openai_compatible"
+    base_url: str = ""
+    model: Optional[str] = None
+    label: str = ""
+    key_ref: Optional[str] = None
+
+
+class AIProfileUpdate(BaseModel):
+    adapter: Optional[str] = None
+    base_url: Optional[str] = None
+    model: Optional[str] = None
+    label: Optional[str] = None
+    key_ref: Optional[str] = None
+
+
+class AIProfileResponse(BaseModel):
+    id: str
+    adapter: str
+    base_url: str
+    model: Optional[str] = None
+    label: str
+    key_ref: Optional[str] = None
+    has_key: bool = False
+    external: bool = True
+    supports_vision: bool = False
+
+
+class AIAgentModels(BaseModel):
+    """Que perfil usa cada agente (vacio = el default)."""
+
+    agents: dict[str, str] = Field(default_factory=dict)
+    default_profile: Optional[str] = None
 
 
 class TokenUsage(BaseModel):

@@ -46,13 +46,13 @@ class OrchestratorAgent:
         """`db` es la sesion de SQLAlchemy. Sin ella el orquestador coordina
         pero no ve la campana: los sub-agentes responden sin contexto.
         """
-        provider = get_provider_for_agent()
         self.db = db
-        self.session_processor = SessionProcessor(provider)
-        self.lore_agent = LoreAgent(provider)
-        self.narrator = NarratorAgent(provider)
-        self.recap_agent = RecapAgent(provider)
-        self.world_state_agent = WorldStateAgent(provider)
+        # Cada agente con SU perfil (el override si hay, si no el default).
+        self.session_processor = SessionProcessor(get_provider_for_agent("session-processor"))
+        self.lore_agent = LoreAgent(get_provider_for_agent("lore"))
+        self.narrator = NarratorAgent(get_provider_for_agent("narrator"))
+        self.recap_agent = RecapAgent(get_provider_for_agent("recap"))
+        self.world_state_agent = WorldStateAgent(get_provider_for_agent("world-state"))
 
     async def _campaign_data(self, campaign_id: str) -> dict:
         """Datos reales de la campana para los sub-agentes.

@@ -83,7 +83,7 @@ async def parse_narrative_text(
         return NarrativeParseResponse(events=[], warnings=[], raw_count=0)
 
     config = get_ai_config()
-    provider = get_provider_for_agent()
+    provider = get_provider_for_agent("narrative-parser")
 
     context = await get_campaign_context(db, campaign_id)
 

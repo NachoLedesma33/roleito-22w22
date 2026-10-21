@@ -1,3 +1,11 @@
+"""Adapter OpenAI-compatible: OpenAI, OpenRouter, Groq, Together, Fireworks,
+DeepSeek, opencode `serve`, LiteLLM, vLLM, LM Studio... cualquier proxy que
+hable `POST {base}/chat/completions`.
+
+Agregar un proveedor compatible es CONFIGURACION, no codigo: se crea un
+perfil con esta base y ya.
+"""
+
 import asyncio
 import logging
 import os
@@ -6,7 +14,7 @@ from pathlib import Path
 
 import httpx
 
-from .base import AIProvider
+from .base import AIProvider, AIMessage
 
 logger = logging.getLogger("roleito.ai.remote")
 
@@ -37,28 +45,64 @@ def _estimate_tokens(text: str) -> int:
     return max(1, int(len(text.split()) * 1.3))
 
 
-class RemoteProvider(AIProvider):
-    """OpenAI-compatible chat API (Groq, OpenRouter, OpenAI, LM Studio, etc.).
+class OpenAICompatibleProvider(AIProvider):
+    """OpenAI-compatible chat API.
 
-    API key priority: constructor arg > vault > REMOTE_API_KEY env var.
-    Includes automatic retry with exponential backoff on 429/5xx.
+    API key priority: constructor arg > vault (por `key_ref`) > REMOTE_API_KEY
+    env var. Includes automatic retry with exponential backoff on 429/5xx.
     """
 
-    name = "remote"
+    name = "openai_compatible"
+    supports_vision = True
 
-    def __init__(self, base_url: str = DEFAULT_REMOTE_BASE_URL, api_key: str | None = None):
+    def __init__(
+        self,
+        base_url: str = DEFAULT_REMOTE_BASE_URL,
+        api_key: str | None = None,
+        key_ref: str | None = None,
+    ):
         self.base_url = (base_url or DEFAULT_REMOTE_BASE_URL).rstrip("/")
-        self.api_key = api_key if api_key is not None else _get_vault_key()
+        if api_key is not None:
+            self.api_key = api_key
+        elif key_ref:
+            self.api_key = _get_vault_key(key_ref)
+        else:
+            self.api_key = _get_vault_key()
         self.last_usage: dict | None = None
         # Cuantos requests HTTP se hicieron de verdad (los reintentos cuentan):
         # el presupuesto de la campana los ve.
         self.last_attempts = 0
 
+    def _payload_messages(self, messages: list[AIMessage]) -> list[dict]:
+        """Los mensajes al formato de la API (con imagenes como `image_url`)."""
+        out: list[dict] = []
+        for m in messages:
+            if m.role == "system":
+                out.append({"role": "system", "content": m.text})
+                continue
+            if m.image_base64:
+                mime = m.image_mime or "image/png"
+                out.append({
+                    "role": m.role,
+                    "content": [
+                        {"type": "text", "text": m.text},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:{mime};base64,{m.image_base64}",
+                                "detail": "high",
+                            },
+                        },
+                    ],
+                })
+            else:
+                out.append({"role": m.role, "content": m.text})
+        return out
+
     async def complete(
         self,
-        prompt: str,
+        messages: list[AIMessage],
         *,
-        system: str = "",
         model: str | None = None,
         max_tokens: int = 512,
         temperature: float = 0.7,
@@ -68,14 +112,9 @@ class RemoteProvider(AIProvider):
                 "API key no configurada (guardala en Vault o define REMOTE_API_KEY en .env)"
             )
 
-        messages = []
-        if system:
-            messages.append({"role": "system", "content": system})
-        messages.append({"role": "user", "content": prompt})
-
         payload = {
-            "model": model or DEFAULT_REMOTE_MODEL,
-            "messages": messages,
+            "model": model or self.default_model or DEFAULT_REMOTE_MODEL,
+            "messages": self._payload_messages(messages),
             "max_tokens": max_tokens,
             "temperature": temperature,
         }

@@ -130,7 +130,9 @@ test.describe('AI Provider Layer', () => {
       .locator('[data-testid="ai-local-url"] input')
       .fill('http://localhost:9');
 
-    await page.getByRole('button', { name: 'Guardar' }).click();
+    // El panel tiene dos botones de guardado ("Guardar" de la config global y
+    // "Guardar perfil" de los perfiles): el locator va exacto.
+    await page.getByRole('button', { name: 'Guardar', exact: true }).click();
     await page.getByTestId('ai-test-button').click();
 
     // El connect a un puerto cerrado puede tardar hasta ~21s (timeout del OS
@@ -174,6 +176,38 @@ test.describe('AI Provider Layer', () => {
     await expect(list).toContainText('ai-test');
     // El prompt no se guarda: la lista no lo muestra.
     await expect(list).not.toContainText('frase-secreta-de-prueba');
+  });
+
+  test('AI9: se crea un perfil de proveedor desde el panel', async ({
+    page,
+    campaign,
+    request,
+    dmToken,
+    authHeaders,
+  }) => {
+    const scene = await createScene(request, campaign.id, 'Escena AI9');
+    await page.goto('/');
+    await page.evaluate((token) => {
+      sessionStorage.setItem('roleito:auth:token', token);
+    }, dmToken);
+    await page.goto(`/campaigns/${campaign.id}`);
+    await page.locator('header select').selectOption(scene.id);
+
+    await page.getByTestId('ai-panel-button').click();
+    const panel = page.getByTestId('ai-settings-panel');
+
+    await panel.getByTestId('ai-profile-new').click();
+    await panel.getByTestId('ai-profile-id').fill('mi-perfil');
+    await panel.getByTestId('ai-profile-url').fill('https://api.ejemplo.com/v1');
+    await panel.getByTestId('ai-profile-model').fill('mi-modelo');
+    await panel.getByTestId('ai-profile-save').click();
+
+    await expect(panel.getByTestId('ai-profile-mi-perfil')).toBeVisible();
+
+    // Y el perfil existe en la API (sin la key, que no se expone).
+    const res = await request.get(`${API}/ai/profiles`, { headers: authHeaders });
+    const body = await res.json();
+    expect(body.profiles.some((p: { id: string }) => p.id === 'mi-perfil')).toBe(true);
   });
 
   test('AI7: asistente con dictado por voz — sin micrófono no se rompe', async ({

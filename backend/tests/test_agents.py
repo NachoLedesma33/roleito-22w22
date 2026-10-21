@@ -30,7 +30,7 @@ from core.agents.validation import MAX_EVENTS, MAX_LIST, MAX_TEXT, safe_text
 class GarbageProvider(AIProvider):
     name = "garbage"
 
-    async def complete(self, prompt, *, system="", model=None, max_tokens=512, temperature=0.7):
+    async def complete(self, messages, *, model=None, max_tokens=512, temperature=0.7):
         return "this is not json {{"
 
 
@@ -39,7 +39,7 @@ class HugeProvider(AIProvider):
 
     name = "huge"
 
-    async def complete(self, prompt, *, system="", model=None, max_tokens=512, temperature=0.7):
+    async def complete(self, messages, *, model=None, max_tokens=512, temperature=0.7):
         return json.dumps({
             "summary": "x" * 200_000,
             "answer": "y" * 200_000,
@@ -351,9 +351,9 @@ class CapturingProvider(AIProvider):
         self.prompt = ""
         self.system = ""
 
-    async def complete(self, prompt, *, system="", model=None, max_tokens=512, temperature=0.7):
-        self.prompt = prompt
-        self.system = system
+    async def complete(self, messages, *, model=None, max_tokens=512, temperature=0.7):
+        self.system = "\n".join(m.text for m in messages if m.role == "system")
+        self.prompt = "\n".join(m.text for m in messages if m.role != "system")
         return json.dumps(self.payload)
 
 
@@ -475,7 +475,8 @@ def test_el_provider_lee_la_config_configurada(tmp_path, monkeypatch):
     )
     monkeypatch.setenv("ROLEITO_AI_CONFIG", str(cfg))
     provider = get_provider_for_agent()
-    assert provider.name == "local"
+    # "local" es el nombre viejo del adapter de Ollama.
+    assert provider.name == "ollama"
 
 
 # ── S6/S8: presupuesto y reintentos ──────────────────────────────────
@@ -537,7 +538,7 @@ async def test_los_reintentos_cuentan_contra_el_tope(tmp_path, monkeypatch):
             self.attempts = attempts
             self.last_attempts = 0
 
-        async def complete(self, prompt, *, system="", model=None, max_tokens=512, temperature=0.7):
+        async def complete(self, messages, *, model=None, max_tokens=512, temperature=0.7):
             # El provider remoto reporta cuantos requests HTTP hizo.
             self.last_attempts = self.attempts
             raise RuntimeError("429 Too Many Requests")
@@ -613,7 +614,7 @@ async def test_la_auditoria_registra_tambien_los_errores(tmp_path, monkeypatch):
     class FailingProvider(AIProvider):
         name = "failing"
 
-        async def complete(self, prompt, *, system="", model=None, max_tokens=512, temperature=0.7):
+        async def complete(self, messages, *, model=None, max_tokens=512, temperature=0.7):
             raise RuntimeError("el proveedor se cayo")
 
     agent = LoreAgent(FailingProvider())
@@ -623,3 +624,292 @@ async def test_la_auditoria_registra_tambien_los_errores(tmp_path, monkeypatch):
     entry = json.loads(log.read_text(encoding="utf-8").strip().splitlines()[-1])
     assert entry["status"] == "error"
     assert "se cayo" in entry["error"]
+
+
+# ── A1/A3: adapters y perfiles ────────────────────────────────────────
+
+
+class FakeAPI:
+    """Un server HTTP falso: recibe el payload y devuelve una respuesta.
+
+    Se levanta en un hilo real (no un mock de httpx): el test exercise el
+    payload, los headers y el path que se mandan de verdad.
+    """
+
+    def __init__(self, response: dict | None = None, base_suffix: str = "/v1"):
+        self.received: list[dict] = []
+        self.base_suffix = base_suffix
+        self.models_response: dict = {"data": []}
+        self.models_status = 200
+        self.response = response or {
+            "choices": [{"message": {"content": "hola desde el server falso"}}],
+            "usage": {"prompt_tokens": 3, "completion_tokens": 4, "total_tokens": 7},
+        }
+        self._server = None
+
+    def __enter__(self):
+        import threading
+        from http.server import BaseHTTPRequestHandler, HTTPServer
+
+        fake = self
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_POST(self):  # noqa: N802
+                length = int(self.headers.get("Content-Length", 0))
+                raw = self.rfile.read(length) if length else b"{}"
+                try:
+                    body = json.loads(raw)
+                except json.JSONDecodeError:
+                    body = {"_raw": raw.decode("utf-8", "replace")}
+                fake.received.append({
+                    "path": self.path,
+                    "headers": {k.lower(): v for k, v in self.headers.items()},
+                    "body": body,
+                })
+                payload = json.dumps(fake.response).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
+
+            def do_GET(self):  # noqa: N802
+                # El descubrimiento de modelos.
+                fake.received.append({
+                    "path": self.path,
+                    "headers": {k.lower(): v for k, v in self.headers.items()},
+                    "body": None,
+                })
+                payload = json.dumps(fake.models_response).encode()
+                self.send_response(fake.models_status)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
+
+            def log_message(self, *args):
+                pass
+
+        self._server = HTTPServer(("127.0.0.1", 0), Handler)
+        thread = threading.Thread(target=self._server.serve_forever, daemon=True)
+        thread.start()
+        self.base_url = f"http://127.0.0.1:{self._server.server_port}{self.base_suffix}"
+        return self
+
+    def __exit__(self, *exc):
+        if self._server:
+            self._server.shutdown()
+            self._server.server_close()
+
+
+async def test_un_perfil_openai_compatible_responde(monkeypatch):
+    """A1: un perfil es configuracion, no codigo.
+
+    La key sale del vault por `key_ref` y el modelo es el del perfil.
+    """
+    from core.agents.profiles import build_provider_for_profile
+    from infrastructure.ai.base import simple_messages
+
+    monkeypatch.setattr(
+        "vault.get_api_key",
+        lambda name: "la-key-del-vault" if name == "mi-perfil" else None,
+    )
+
+    with FakeAPI() as fake:
+        profile = {
+            "adapter": "openai_compatible",
+            "base_url": fake.base_url,
+            "key_ref": "mi-perfil",
+            "model": "mi-modelo",
+        }
+        provider = build_provider_for_profile(profile)
+        raw = await provider.complete(simple_messages("soy el system", "hola"))
+
+    assert "hola desde el server falso" in raw
+    sent = fake.received[0]
+    assert sent["path"] == "/v1/chat/completions"
+    assert sent["body"]["model"] == "mi-modelo"
+    # La key va en el header, desde el vault.
+    assert sent["headers"]["authorization"] == "Bearer la-key-del-vault"
+    # El system es codigo: va aparte, como mensaje system.
+    assert sent["body"]["messages"][0]["role"] == "system"
+    assert sent["body"]["messages"][0]["content"] == "soy el system"
+
+
+async def test_el_adapter_anthropic_manda_el_system_aparte(monkeypatch):
+    """A3: la API de Claude NO es OpenAI-compatible.
+
+    El system va aparte (no es un mensaje) y la key en `x-api-key`.
+    """
+    from core.agents.profiles import build_provider_for_profile
+    from infrastructure.ai.base import simple_messages
+
+    monkeypatch.setattr(
+        "vault.get_api_key",
+        lambda name: "sk-ant-falsa" if name == "claude" else None,
+    )
+
+    fake_response = {
+        "content": [{"type": "text", "text": "respuesta de claude"}],
+        "usage": {"input_tokens": 5, "output_tokens": 6},
+    }
+    with FakeAPI(fake_response, base_suffix="") as fake:
+        profile = {
+            "adapter": "anthropic",
+            "base_url": fake.base_url,
+            "key_ref": "claude",
+            "model": "claude-sonnet-4-5",
+        }
+        provider = build_provider_for_profile(profile)
+        raw = await provider.complete(simple_messages("soy el system", "hola"))
+
+    assert raw == "respuesta de claude"
+    sent = fake.received[0]
+    assert sent["path"] == "/v1/messages"
+    assert sent["headers"]["x-api-key"] == "sk-ant-falsa"
+    assert sent["headers"]["anthropic-version"]
+    # El system va en su propio campo, no como mensaje.
+    assert sent["body"]["system"] == "soy el system"
+    assert all(m["role"] == "user" for m in sent["body"]["messages"])
+
+
+async def test_el_adapter_ollama_usa_su_propio_endpoint(monkeypatch):
+    from core.agents.profiles import build_provider_for_profile
+    from infrastructure.ai.base import simple_messages
+
+    fake_response = {"message": {"content": "hola desde ollama"}}
+    with FakeAPI(fake_response, base_suffix="") as fake:
+        profile = {"adapter": "ollama", "base_url": fake.base_url, "model": "qwen2.5:7b"}
+        provider = build_provider_for_profile(profile)
+        raw = await provider.complete(simple_messages("system", "hola"))
+
+    assert raw == "hola desde ollama"
+    sent = fake.received[0]
+    assert sent["path"] == "/api/chat"
+    assert sent["body"]["model"] == "qwen2.5:7b"
+
+
+async def test_la_imagen_viaja_como_mensaje(monkeypatch):
+    """A4: el mismo provider, con o sin imagen."""
+    from core.agents.profiles import build_provider_for_profile
+    from infrastructure.ai.base import simple_messages
+
+    monkeypatch.setattr("vault.get_api_key", lambda name: "k")
+    with FakeAPI() as fake:
+        profile = {"adapter": "openai_compatible", "base_url": fake.base_url}
+        provider = build_provider_for_profile(profile)
+        await provider.complete(simple_messages("system", "mira", "BASE64", "image/png"))
+
+    content = fake.received[0]["body"]["messages"][-1]["content"]
+    assert isinstance(content, list)
+    assert content[0]["type"] == "text"
+    assert content[1]["type"] == "image_url"
+    assert content[1]["image_url"]["url"].startswith("data:image/png;base64,")
+
+
+def test_el_perfil_del_agente_manda_over_sobre_el_default():
+    """A4: cada agente puede tener su propio perfil."""
+    from core.agents.profiles import profile_for_agent
+
+    config = {
+        "default_profile": "barato",
+        "profiles": {
+            "barato": {"adapter": "ollama", "model": "chico"},
+            "caro": {"adapter": "anthropic", "model": "grande"},
+        },
+        "agents": {"recap": "caro"},
+    }
+    pid, profile = profile_for_agent("recap", config)
+    assert pid == "caro"
+    assert profile["model"] == "grande"
+
+    pid, profile = profile_for_agent("lore", config)
+    assert pid == "barato"
+
+
+def test_la_config_vieja_sigue_andando_como_un_perfil():
+    """A5 (puente): la config anterior (`provider`/`remote_base_url`) anda."""
+    from core.agents.profiles import all_profiles, profile_for_agent
+
+    config = {
+        "provider": "remote",
+        "remote_base_url": "https://api.groq.com/openai/v1",
+        "model": "llama-3.1-8b-instant",
+    }
+    profiles = all_profiles(config)
+    assert len(profiles) == 1
+    pid, profile = profile_for_agent("lore", config)
+    assert profile["adapter"] == "openai_compatible"
+    assert profile["base_url"] == "https://api.groq.com/openai/v1"
+    assert profile["model"] == "llama-3.1-8b-instant"
+
+
+def test_la_config_vieja_se_migra_a_un_perfil(tmp_path, monkeypatch):
+    """A5: lo que el DM ya habia configurado no se pierde."""
+    from core.agents.provider import get_ai_config, migrate_ai_config
+
+    cfg = tmp_path / "ai_config.json"
+    cfg.write_text(
+        json.dumps({
+            "provider": "remote",
+            "remote_base_url": "https://api.groq.com/openai/v1",
+            "model": "llama-3.1-8b-instant",
+            "max_tokens": 512,
+            "temperature": 0.7,
+        }),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("ROLEITO_AI_CONFIG", str(cfg))
+
+    assert migrate_ai_config() is True
+    migrated = get_ai_config()
+    assert migrated["default_profile"] == "default"
+    profile = migrated["profiles"]["default"]
+    assert profile["adapter"] == "openai_compatible"
+    assert profile["base_url"] == "https://api.groq.com/openai/v1"
+    assert profile["model"] == "llama-3.1-8b-instant"
+    # Lo global se conserva.
+    assert migrated["max_tokens"] == 512
+    # Y no se migra dos veces.
+    assert migrate_ai_config() is False
+
+
+def test_el_perfil_publico_no_devuelve_la_key(monkeypatch):
+    """S2: el perfil expone el `key_ref` y si hay key, nunca la key."""
+    from core.agents.profiles import public_profile
+
+    monkeypatch.setattr("vault.get_api_key", lambda name: "secreto" if name == "k" else None)
+    public = public_profile("p", {"adapter": "openai_compatible", "key_ref": "k", "base_url": "x"})
+    assert public["key_ref"] == "k"
+    assert public["has_key"] is True
+    assert "secreto" not in str(public)
+
+
+async def test_el_descubrimiento_de_modelos(monkeypatch):
+    """A2: el provider expone la lista de modelos y la pedimos."""
+    from core.agents.discovery import clear_cache, discover_models
+
+    clear_cache()
+    monkeypatch.setattr("vault.get_api_key", lambda name: "k")
+    with FakeAPI(base_suffix="/v1") as fake:
+        fake.models_response = {"data": [{"id": "modelo-a", "name": "Modelo A"}, {"id": "modelo-b"}]}
+        profile = {"adapter": "openai_compatible", "base_url": fake.base_url}
+        models = await discover_models(profile)
+
+    assert [m["id"] for m in models] == ["modelo-a", "modelo-b"]
+    assert models[0]["display_name"] == "Modelo A"
+    assert models[1]["display_name"] == "modelo-b"
+
+
+async def test_si_el_provider_no_expone_los_modelos_no_se_rompe(monkeypatch):
+    """A2: el fallback es manual (el DM escribe el id)."""
+    from core.agents.discovery import clear_cache, discover_models
+
+    clear_cache()
+    monkeypatch.setattr("vault.get_api_key", lambda name: "k")
+    with FakeAPI(base_suffix="/v1") as fake:
+        fake.models_status = 404
+        profile = {"adapter": "openai_compatible", "base_url": fake.base_url}
+        models = await discover_models(profile)
+
+    assert models == []

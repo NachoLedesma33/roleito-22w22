@@ -5,7 +5,6 @@ import os
 from pathlib import Path
 
 from infrastructure.ai import build_provider, AIProvider
-from vault import get_api_key
 
 DEFAULT_CONFIG: dict = {"provider": "mock"}
 
@@ -36,16 +35,56 @@ def get_ai_config() -> dict:
     return config if isinstance(config, dict) else dict(DEFAULT_CONFIG)
 
 
-def get_provider_for_agent() -> AIProvider:
-    """Load AI config and build provider with vault key support."""
+def save_ai_config(config: dict) -> None:
+    """Guarda la config de IA."""
+    path = config_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(config, indent=2), encoding="utf-8")
+
+
+def migrate_ai_config() -> bool:
+    """Migra la config vieja a perfiles. Devuelve True si migro algo.
+
+    La config anterior (`provider`/`remote_base_url`/`model`) era un unico
+    provider global. Ahora es un perfil. Migrarla es lo que hace que lo que
+    el DM ya habia configurado no se pierda.
+    """
+    from core.agents.profiles import legacy_profile
+
     config = get_ai_config()
+    if config.get("profiles"):
+        return False
+    legacy = legacy_profile(config)
+    if not legacy:
+        return False
 
-    provider_name = config.get("provider", "mock")
-    api_key = get_api_key("remote") if provider_name == "remote" else None
+    profile_id = "default"
+    migrated = dict(config)
+    migrated["profiles"] = {profile_id: legacy}
+    migrated["default_profile"] = profile_id
+    for key in ("provider", "local_base_url", "remote_base_url", "model"):
+        migrated.pop(key, None)
+    save_ai_config(migrated)
+    return True
 
-    return build_provider(
-        provider_name,
-        local_base_url=config.get("local_base_url"),
-        remote_base_url=config.get("remote_base_url"),
-        api_key=api_key,
-    )
+
+def get_provider_for_agent(agent_id: str = "") -> AIProvider:
+    """El provider del agente: su perfil (o el default) y la key del vault.
+
+    El perfil decide el adapter, la URL y el modelo. La key sale del vault
+    por el `key_ref` del perfil: el secreto nunca esta en la config.
+    """
+    from core.agents.profiles import build_provider_for_profile, profile_for_agent
+
+    config = get_ai_config()
+    _, profile = profile_for_agent(agent_id, config)
+    return build_provider_for_profile(profile)
+
+
+def get_model_for_agent(agent_id: str = "") -> str | None:
+    """El modelo del perfil del agente (o el default de la config)."""
+    from core.agents.profiles import profile_for_agent
+
+    config = get_ai_config()
+    _, profile = profile_for_agent(agent_id, config)
+    return profile.get("model") or config.get("model")

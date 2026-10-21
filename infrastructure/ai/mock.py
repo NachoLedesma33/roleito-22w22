@@ -2,7 +2,7 @@ import hashlib
 import json
 import re
 
-from .base import AIProvider
+from .base import AIProvider, AIMessage
 
 
 def _extract_names_from_prompt(prompt: str) -> dict[str, list[str]]:
@@ -34,16 +34,19 @@ class MockProvider(AIProvider):
     """Deterministic provider for dev and E2E tests. Never calls the network."""
 
     name = "mock"
+    supports_vision = False
 
     async def complete(
         self,
-        prompt: str,
+        messages: list[AIMessage],
         *,
-        system: str = "",
         model: str | None = None,
         max_tokens: int = 512,
         temperature: float = 0.7,
     ) -> str:
+        system = "\n".join(m.text for m in messages if m.role == "system")
+        prompt = "\n".join(m.text for m in messages if m.role != "system")
+
         if "event extractor" in system.lower():
             names = _extract_names_from_prompt(prompt)
             actors = names["characters"][:1] if names["characters"] else names["npcs"][:1] if names["npcs"] else []
@@ -107,7 +110,7 @@ class MockProvider(AIProvider):
 
         if "narrator" in system.lower():
             return json.dumps({
-                "narration": "The torchlight flickers against the damp stone walls, casting long shadows that dance like silent sentinels. A cold draft carries the scent of earth and something ancient.",
+                "narration": "The torchlight flickered against the damp stone walls, casting long shadows that danced like silent sentinels. A cold draft carried the scent of earth and something ancient.",
                 "mood": "mysterious",
                 "environmental_cues": ["flickering torchlight", "damp stone", "cold draft"],
                 "suggested_effects": ["fog", "flickering light", "ambient sounds"],

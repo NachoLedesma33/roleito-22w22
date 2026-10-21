@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import HudPanel from './HudPanel';
+import AIProfiles from './AIProfiles';
 import { api, AISettings, AIAuditEntry, AIUsage } from '@/lib/api';
 
 interface AISettingsPanelProps {
@@ -369,6 +370,10 @@ export default function AISettingsPanel({ onClose }: AISettingsPanelProps) {
             )}
           </div>
         )}
+
+        <div className="pt-1 border-t border-[var(--bg-tertiary)]">
+          <AIProfiles />
+        </div>
 
         <div className="pt-1 border-t border-[var(--bg-tertiary)]">
           <button

@@ -162,11 +162,11 @@ En `AISettingsPanel`:
 
 | Fase | Qué | Criterio de aceptación |
 |---|---|---|
-| **A1** | `AIProvider` con mensajes + adapter `openai_compatible` parametrizado + perfiles en la config + CRUD de perfiles. | `pytest`: un perfil apuntando a un server OpenAI-compatible falso (httpx mock) responde; la key se lee del vault por `key_ref` y **no** aparece en `GET /ai/config`. |
-| **A2** | Descubrimiento de modelos + fallback manual + UI. | `pytest`: `/ai/models` devuelve los modelos del server falso; si el endpoint da 404, la respuesta trae `source: manual` y la UI ofrece escribir el id. |
-| **A3** | Adapter `anthropic` + `ollama` como perfiles (no providers). | `pytest`: un server Anthropic falso recibe `x-api-key` y `system` aparte, y devuelve el texto. |
-| **A4** | Modelo por agente + multimodal (imágenes). | `pytest`: el Session Processor con override usa el perfil del override; el detector con IA manda la imagen como `image_base64`. |
-| **A5** | Migración de la config actual (`provider`/`remote_base_url`/`model` → un perfil) sin perder lo configurado. | `pytest`: una config vieja se migra a un perfil y el mock sigue andando. |
+| **A1** | **HECHO 2026-10-21.** `AIProvider` con mensajes (`AIMessage`) + adapters parametrizados (`openai_compatible`, `anthropic`, `ollama`, `mock`) + perfiles en la config + CRUD de perfiles (`/ai/profiles`, `/ai/adapters`). La key sale del vault por `key_ref` y no aparece en ninguna respuesta. | `pytest`: un perfil apuntando a un server OpenAI-compatible falso responde; la key se lee del vault por `key_ref` y **no** aparece en `GET /ai/config`. |
+| **A2** | **HECHO 2026-10-21.** Descubrimiento de modelos (`/ai/models`: `{base}/models`, `{base}/v1/models`, `{base}/api/tags`) + fallback manual + UI ("Descubrir" en el perfil). Cache de 10 min; la lista no se persiste. | `pytest`: `/ai/models` devuelve los modelos del server falso; si el endpoint da 404, la respuesta trae `source: manual` y la UI ofrece escribir el id. |
+| **A3** | **HECHO 2026-10-21.** Adapter `anthropic` (el `system` va aparte, la key en `x-api-key`) + `ollama` como adapter (no providers). | `pytest`: un server Anthropic falso recibe `x-api-key` y `system` aparte, y devuelve el texto. |
+| **A4** | **HECHO 2026-10-21** (modelo por agente + multimodal en el contrato: un `AIMessage` puede llevar la imagen). **PENDIENTE**: la detección de paredes con IA sigue hablando por su cuenta con el endpoint OpenAI-compatible (no usa el contrato ni el perfil). | `pytest`: el Session Processor con override usa el perfil del override; el detector con IA manda la imagen como `image_base64`. |
+| **A5** | **HECHO 2026-10-21.** Migración de la config actual (`provider`/`remote_base_url`/`model` → un perfil) sin perder lo configurado (la migración corre al arrancar el backend). | `pytest`: una config vieja se migra a un perfil y el mock sigue andando. |
 
 ---
 

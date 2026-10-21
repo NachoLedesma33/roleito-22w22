@@ -93,7 +93,7 @@ async def process_session(
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    provider = get_provider_for_agent()
+    provider = get_provider_for_agent("session-processor")
     agent = SessionProcessor(provider)
 
     # El flujo del producto (docs/AGENTS.md §104) es Ingestion -> Session
@@ -188,7 +188,7 @@ async def query_lore(
         select(Event).where(Event.campaign_id == campaign_id).order_by(Event.id.desc()).limit(20)
     )).scalars().all()
 
-    provider = get_provider_for_agent()
+    provider = get_provider_for_agent("lore")
     agent = LoreAgent(provider)
 
     result = await agent.run(
@@ -232,7 +232,7 @@ async def narrate(
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
 
-    provider = get_provider_for_agent()
+    provider = get_provider_for_agent("narrator")
     agent = NarratorAgent(provider)
 
     result = await agent.run(
@@ -296,7 +296,7 @@ async def recap_session(
         if prev_data:
             previous_recap = prev_data.get("recap", "")
 
-    provider = get_provider_for_agent()
+    provider = get_provider_for_agent("recap")
     agent = RecapAgent(provider)
 
     result = await agent.run(
@@ -344,7 +344,7 @@ async def ingest_notes(
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
 
-    agent = IngestionAgent(get_provider_for_agent())
+    agent = IngestionAgent(get_provider_for_agent("ingestion"))
     result = await agent.run(
         text=body.text,
         source=body.source,
@@ -400,7 +400,7 @@ async def query_world_state(
     locations = [{"name": l.name, "description": l.status} for l in state.locations.values()]
     quest_list = [{"title": q.title, "status": q.status} for q in quests]
 
-    agent = WorldStateAgent(get_provider_for_agent())
+    agent = WorldStateAgent(get_provider_for_agent("world-state"))
     result = await agent.run(
         question=body.question,
         characters=characters,
@@ -449,7 +449,7 @@ async def design_scene(
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
 
-    agent = SceneAgent(get_provider_for_agent())
+    agent = SceneAgent(get_provider_for_agent("scene"))
     result = await agent.run(
         scene_description=body.scene_description,
         mood=body.mood,

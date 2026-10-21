@@ -1687,7 +1687,7 @@ async def test_process_session_propone_eventos_para_aprobacion(client, monkeypat
     from infrastructure.ai.mock import MockProvider
     import agent_routes
 
-    monkeypatch.setattr(agent_routes, "get_provider_for_agent", lambda: MockProvider())
+    monkeypatch.setattr(agent_routes, "get_provider_for_agent", lambda *_args: MockProvider())
 
     reg = await client.post(
         "/api/auth/register", json={"name": f"DM Agentes {uuid4().hex[:6]}", "pin": "1234"}
@@ -1752,9 +1752,9 @@ async def test_las_notas_del_jugador_no_llegan_al_prompt_del_dm(client, monkeypa
     class CapturingProvider(AIProvider):
         name = "capturing"
 
-        async def complete(self, prompt, *, system="", model=None, max_tokens=512, temperature=0.7):
-            captured["prompt"] = prompt
-            captured["system"] = system
+        async def complete(self, messages, *, model=None, max_tokens=512, temperature=0.7):
+            captured["system"] = "\n".join(m.text for m in messages if m.role == "system")
+            captured["prompt"] = "\n".join(m.text for m in messages if m.role != "system")
             return json.dumps({
                 "answer": "ok",
                 "entities_mentioned": [],
@@ -1763,7 +1763,7 @@ async def test_las_notas_del_jugador_no_llegan_al_prompt_del_dm(client, monkeypa
                 "source_hint": "",
             })
 
-    monkeypatch.setattr(agent_routes, "get_provider_for_agent", lambda: CapturingProvider())
+    monkeypatch.setattr(agent_routes, "get_provider_for_agent", lambda *_args: CapturingProvider())
 
     reg = await client.post(
         "/api/auth/register", json={"name": f"DM Lore {uuid4().hex[:6]}", "pin": "1234"}
@@ -1890,7 +1890,7 @@ async def test_la_auditoria_devuelve_el_hash_y_no_el_prompt(client, monkeypatch)
     from infrastructure.ai.mock import MockProvider
     import agent_routes
 
-    monkeypatch.setattr(agent_routes, "get_provider_for_agent", lambda: MockProvider())
+    monkeypatch.setattr(agent_routes, "get_provider_for_agent", lambda *_args: MockProvider())
 
     reg = (
         await client.post(
@@ -1963,7 +1963,7 @@ async def test_orchestrator_le_pasa_el_contexto_real_de_la_campana(client, monke
     from infrastructure.ai.mock import MockProvider
 
     monkeypatch.setattr(
-        "core.agents.orchestrator.get_provider_for_agent", lambda: MockProvider()
+        "core.agents.orchestrator.get_provider_for_agent", lambda *_args: MockProvider()
     )
 
     camp = (
@@ -2125,9 +2125,9 @@ async def test_full_pipeline_deja_eventos_propuestos_para_aprobacion(client, mon
     from infrastructure.ai.mock import MockProvider
     import agent_routes
 
-    monkeypatch.setattr(agent_routes, "get_provider_for_agent", lambda: MockProvider())
+    monkeypatch.setattr(agent_routes, "get_provider_for_agent", lambda *_args: MockProvider())
     monkeypatch.setattr(
-        "core.agents.orchestrator.get_provider_for_agent", lambda: MockProvider()
+        "core.agents.orchestrator.get_provider_for_agent", lambda *_args: MockProvider()
     )
 
     reg = await client.post(
@@ -2259,7 +2259,7 @@ async def test_agentes_ingest_world_state_y_scene(client, monkeypatch):
     from infrastructure.ai.mock import MockProvider
     import agent_routes
 
-    monkeypatch.setattr(agent_routes, "get_provider_for_agent", lambda: MockProvider())
+    monkeypatch.setattr(agent_routes, "get_provider_for_agent", lambda *_args: MockProvider())
 
     reg = await client.post(
         "/api/auth/register", json={"name": f"DM Agentes {uuid4().hex[:6]}", "pin": "1234"}
@@ -2344,7 +2344,7 @@ async def test_recap_del_agente_queda_guardado_en_la_sesion(client, monkeypatch)
     from infrastructure.ai.mock import MockProvider
     import agent_routes
 
-    monkeypatch.setattr(agent_routes, "get_provider_for_agent", lambda: MockProvider())
+    monkeypatch.setattr(agent_routes, "get_provider_for_agent", lambda *_args: MockProvider())
 
     reg = await client.post(
         "/api/auth/register", json={"name": f"DM Recap {uuid4().hex[:6]}", "pin": "1234"}
@@ -2394,3 +2394,82 @@ async def test_recap_del_agente_queda_guardado_en_la_sesion(client, monkeypatch)
     sessions = (await client.get(f"/api/campaigns/{camp['id']}/sessions")).json()
     guardada2 = next(s for s in sessions if s["id"] == ses2["id"])
     assert guardada2["ai_recap"]["recap"]
+
+
+@pytest.mark.asyncio
+async def test_el_crud_de_perfiles_nunca_devuelve_la_key(client, monkeypatch, tmp_path):
+    """A1: los perfiles se dan de alta, se editan y se borran.
+
+    La key vive en el vault: la API devuelve el `key_ref` y si hay key, nunca
+    la key (S2).
+    """
+    from uuid import uuid4
+
+    monkeypatch.setenv("ROLEITO_AI_CONFIG", str(tmp_path / "ai_config.json"))
+    monkeypatch.setattr(
+        "vault.get_api_key", lambda name: "secreto-de-prueba" if name == "groq" else None
+    )
+
+    reg = (
+        await client.post(
+            "/api/auth/register", json={"name": f"DM Perfiles {uuid4().hex[:6]}", "pin": "1234"}
+        )
+    ).json()
+    headers = {"Authorization": f"Bearer {reg['token']}"}
+
+    # El catalogo de adapters.
+    adapters = (await client.get("/api/ai/adapters", headers=headers)).json()["adapters"]
+    assert {a["id"] for a in adapters} >= {"openai_compatible", "anthropic", "ollama", "mock"}
+
+    # Crear.
+    res = await client.post(
+        "/api/ai/profiles",
+        json={
+            "id": "groq",
+            "adapter": "openai_compatible",
+            "base_url": "https://api.groq.com/openai/v1",
+            "model": "llama-3.1-8b-instant",
+            "label": "Groq",
+        },
+        headers=headers,
+    )
+    assert res.status_code == 201, res.text
+
+    # Listar: con el key_ref y si hay key, pero sin la key.
+    res = await client.get("/api/ai/profiles", headers=headers)
+    assert res.status_code == 200, res.text
+    body = res.text
+    assert "secreto-de-prueba" not in body
+    profile = next(p for p in res.json()["profiles"] if p["id"] == "groq")
+    assert profile["key_ref"] == "groq"
+    assert profile["has_key"] is True
+    assert profile["external"] is True
+
+    # Editar.
+    res = await client.put(
+        "/api/ai/profiles/groq", json={"model": "llama-3.3-70b-versatile"}, headers=headers
+    )
+    assert res.status_code == 200, res.text
+    res = await client.get("/api/ai/profiles", headers=headers)
+    profile = next(p for p in res.json()["profiles"] if p["id"] == "groq")
+    assert profile["model"] == "llama-3.3-70b-versatile"
+
+    # El modelo por agente.
+    res = await client.put(
+        "/api/ai/agent-models", json={"agents": {"recap": "groq"}}, headers=headers
+    )
+    assert res.status_code == 200, res.text
+    res = await client.get("/api/ai/agent-models", headers=headers)
+    assert res.json()["agents"]["recap"] == "groq"
+
+    # Un perfil que no existe, no.
+    res = await client.put(
+        "/api/ai/agent-models", json={"agents": {"recap": "no-existe"}}, headers=headers
+    )
+    assert res.status_code == 404
+
+    # Borrar.
+    res = await client.delete("/api/ai/profiles/groq", headers=headers)
+    assert res.status_code == 200, res.text
+    res = await client.get("/api/ai/profiles", headers=headers)
+    assert all(p["id"] != "groq" for p in res.json()["profiles"])
