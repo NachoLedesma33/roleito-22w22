@@ -1939,6 +1939,36 @@ async def test_solo_una_partida_esta_abierta_al_publico(client, anon_client):
 
 
 @pytest.mark.asyncio
+async def test_los_assets_se_revalidan_sin_bajarlos_de_nuevo(client, anon_client):
+    """`/api/static` manda `Cache-Control: no-cache`.
+
+    El nombre del archivo no cambia cuando el DM sube otro (el mapa siempre
+    se llama `map.png`), asi que un cache largo serviria la version vieja.
+    Con `no-cache` el navegador revalida (ETag) y el backend responde 304:
+    no se baja el archivo otra vez, pero nunca se ve una version vieja.
+    """
+    import os
+
+    from services.assets import ASSETS_DIR
+
+    probe_dir = os.path.join(ASSETS_DIR, "_probe")
+    probe = os.path.join(probe_dir, "cache.txt")
+    os.makedirs(probe_dir, exist_ok=True)
+    try:
+        with open(probe, "w", encoding="utf-8") as fh:
+            fh.write("probe")
+
+        res = await anon_client.get("/api/static/_probe/cache.txt")
+        assert res.status_code == 200, res.text
+        assert res.headers.get("cache-control") == "no-cache"
+    finally:
+        if os.path.isfile(probe):
+            os.remove(probe)
+        if os.path.isdir(probe_dir):
+            os.rmdir(probe_dir)
+
+
+@pytest.mark.asyncio
 async def test_el_jugador_solo_puede_escribir_sus_notas(client, anon_client):
     """El `PUT` del personaje es la ruta publica del jugador: sus notas.
 

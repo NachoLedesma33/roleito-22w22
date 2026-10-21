@@ -79,6 +79,10 @@
     "logoutTitle": "¿Salir de 22w22?"
   },
   "dm": {
+    "wsLive": "En vivo",
+    "wsReconnecting": "Reconectando...",
+    "wsLiveTitle": "Conexion en vivo con los jugadores",
+    "wsReconnectingTitle": "Reconectando con los jugadores",
     "inviteFixedLink": "Link fijo: el mismo para todas las partidas",
     "invitePublicGame": "Partida abierta: cualquiera con el link entra",
     "activeScene": "Escena activa",

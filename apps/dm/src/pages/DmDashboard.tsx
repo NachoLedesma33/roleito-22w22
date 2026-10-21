@@ -57,6 +57,7 @@ import type { ContextMenuItem } from '@/components/ContextMenu';
 import ToastContainer from '@/components/ToastContainer';
 import { rollToToast, useToastQueue } from '@/lib/toastQueue';
 import InviteMenu from '@/components/InviteMenu';
+import { wsReconnectDelay } from '@/lib/wsBackoff';
 import { usePendingDigest } from '@/lib/usePendingDigest';
 import TopBar from '@/components/TopBar';
 import MinimizedBar from '@/components/MinimizedBar';
@@ -221,6 +222,8 @@ export default function DmDashboard() {
   sceneCharsRef.current = sceneChars;
   const lastLocalChangeRef = useRef(0);
   const wsOpenRef = useRef(false);
+  /** El WS del DM: si cae, el aviso de "reconectando" (el jugador lo ve). */
+  const [wsLive, setWsLive] = useState(true);
 
   useEffect(() => {
     if (!campaignId) return;
@@ -268,6 +271,10 @@ export default function DmDashboard() {
     let cancelled = false;
     let ws: WebSocket | null = null;
     let reconnectTimer: number;
+    // Backoff del reconexionado (1 s, 2 s, 4 s... hasta 15 s): con un
+    // intervalo fijo (1 s) una red inestable martillaba el tunel, abriendo y
+    // cerrando un socket cada segundo contra el peaje de Cloudflare.
+    let wsAttempt = 0;
     const wsUrl = '/api'.replace(/^http/, 'ws') + `/ws/campaigns/${campaignId}`;
 
     const connectWs = () => {
@@ -276,7 +283,10 @@ export default function DmDashboard() {
       const sock = new WebSocket(wsUrl);
       ws = sock;
       sock.onopen = () => {
-        if (!cancelled) wsOpenRef.current = true;
+        if (cancelled) return;
+        wsOpenRef.current = true;
+        setWsLive(true);
+        wsAttempt = 0;
       };
       sock.onmessage = async (ev) => {
         if (cancelled) return;
@@ -319,7 +329,9 @@ export default function DmDashboard() {
         if (cancelled) return;
         if (ws === sock) ws = null;
         wsOpenRef.current = false;
-        reconnectTimer = window.setTimeout(connectWs, 1000);
+        setWsLive(false);
+        reconnectTimer = window.setTimeout(connectWs, wsReconnectDelay(wsAttempt));
+        wsAttempt += 1;
       };
       sock.onerror = () => {
         if (ws === sock) sock.close();
@@ -1996,6 +2008,24 @@ const startFogMode = useCallback(() => {
             </select>
             <span className="text-xs text-[var(--text-secondary)] shrink-0">
               {sceneIndex}/{scenes.length}
+            </span>
+            <span
+              className="text-xs shrink-0 flex items-center gap-1.5"
+              data-testid="ws-status"
+              title={
+                wsLive
+                  ? t('dm.wsLiveTitle', 'Conexion en vivo con los jugadores')
+                  : t('dm.wsReconnectingTitle', 'Reconectando con los jugadores')
+              }
+            >
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  wsLive ? 'bg-[var(--success)]' : 'bg-[var(--warning)] animate-pulse'
+                }`}
+              />
+              <span className={wsLive ? 'text-[var(--success)]' : 'text-[var(--warning)]'}>
+                {wsLive ? t('dm.wsLive', 'En vivo') : t('dm.wsReconnecting', 'Reconectando...')}
+              </span>
             </span>
             <button
               onClick={async () => {

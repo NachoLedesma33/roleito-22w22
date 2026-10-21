@@ -79,6 +79,10 @@
     "logoutTitle": "Leave 22w22?"
   },
   "dm": {
+    "wsLive": "Live",
+    "wsReconnecting": "Reconnecting...",
+    "wsLiveTitle": "Live connection with the players",
+    "wsReconnectingTitle": "Reconnecting with the players",
     "inviteFixedLink": "Fixed link: the same for every game",
     "invitePublicGame": "Open game: anyone with the link can join",
     "activeScene": "Active scene",

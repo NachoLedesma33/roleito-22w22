@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 
 import type { Character, PlayerSceneToken } from '@/lib/api';
 import i18n from '@/lib/i18n';
 import type { SceneItem } from '@core/domain/types';
+import { wsReconnectDelay } from './wsBackoff';
 
 /**
  * Frecuencia del poll de revisiones. 16ms (~62/s) porque cada respuesta es un
@@ -301,9 +302,16 @@ const applySceneCharacters = useCallback((sceneId: string, incoming: unknown[]) 
       pollDelayMs = Math.min(pollDelayMs * 2, POLL_SLOW_MS);
     };
 
+    // El WS del jugador tiene su propio backoff (1 s, 2 s, 4 s... tope 15 s).
+    // Antes reconectaba atado al poll: como el poll llega hasta 2 s, una red
+    // inestable abria y cerraba un socket cada 2 s para siempre, sin parar.
+    let wsAttempt = 0;
+    let wsNextAttemptAt = 0;
+
     const tick = async () => {
       if (ws && ws.readyState === WebSocket.OPEN) return; // el WS cubre el sync
-      if (!ws || ws.readyState === WebSocket.CLOSED) connectWs();
+      const wsDead = !ws || ws.readyState === WebSocket.CLOSED;
+      if (wsDead && Date.now() >= wsNextAttemptAt) connectWs();
       await pollRevision();
       if (!cancelled && !(ws && ws.readyState === WebSocket.OPEN)) scheduleNextPoll();
     };
@@ -317,6 +325,8 @@ const applySceneCharacters = useCallback((sceneId: string, incoming: unknown[]) 
         if (cancelled) return;
         setLive(true);
         pollDelayMs = POLL_FAST_MS;
+        wsAttempt = 0;
+        wsNextAttemptAt = 0;
         void pollRevision();
       };
       sock.onmessage = (ev) => {
@@ -345,6 +355,9 @@ const applySceneCharacters = useCallback((sceneId: string, incoming: unknown[]) 
         if (cancelled) return;
         if (ws === sock) ws = null;
         setLive(false);
+        // El proximo intento espera: el socket se abrio y se cerro.
+        wsNextAttemptAt = Date.now() + wsReconnectDelay(wsAttempt);
+        wsAttempt += 1;
         scheduleNextPoll();
       };
     };

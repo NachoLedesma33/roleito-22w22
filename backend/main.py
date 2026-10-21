@@ -140,7 +140,22 @@ app.include_router(handout_router, prefix="/api")
 app.include_router(calendar_router, prefix="/api")
 
 os.makedirs(ASSETS_DIR, exist_ok=True)
-app.mount("/api/static", StaticFiles(directory=ASSETS_DIR), name="static")
+class AssetsStatic(StaticFiles):
+    """Los assets (mapas, imagenes, audio) se revalidan siempre.
+
+    El nombre del archivo NO cambia cuando el DM sube otro (el mapa se llama
+    `map.png` siempre), asi que un cache largo serviria la version vieja ✗.
+    Con `no-cache` el navegador manda el ETag y el backend responde 304: no se
+    baja el archivo otra vez, pero nunca se ve una version vieja ✓.
+    """
+
+    def file_response(self, *args, **kwargs):
+        response = super().file_response(*args, **kwargs)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
+app.mount("/api/static", AssetsStatic(directory=ASSETS_DIR), name="static")
 
 
 @app.get("/health")
