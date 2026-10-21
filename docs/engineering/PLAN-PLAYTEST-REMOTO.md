@@ -398,7 +398,22 @@ Y si algun dia se consigue un dominio propio: `cloudflared tunnel run mesa` con
 el túnel nombrado (pide cuenta de Cloudflare + el dominio) → **el mismo camino,
 el mismo codigo** ✓. Nada de lo que hay acá se pierde.
 
-### 12.3 Como se levanta (un comando)
+### 12.3 La app ya sabe la URL del tunel (no hay que pegarla)
+
+El menu "Invitar" ofrece el link que llega a los jugadores (el del tunel con
+el codigo) sin que el DM tenga que pegar la URL a mano:
+
+- El script del tunel deja la URL publica en `data/tunnel_url.txt` ✓ y el
+  backend la expone en `GET /api/network/public-url` (solo DM ✓).
+- El menu la pide al abrirse ✓. Si el DM esta jugando **por** el tunel, se
+  usa el origen de la app (que ES la URL del tunel ✓); si esta en local, se
+  usa la del tunel vivo ✓; y si no hay tunel, se recuerda la ultima URL
+  pegada a mano (localStorage ✓).
+
+Ojo: `data/tunnel_url.txt` es de esta maquina y **cambia en cada partida**
+(por eso esta en el `.gitignore` ✓).
+
+### 12.4 Como se levanta (un comando)
 
 ```bash
 npm run playtest
@@ -411,7 +426,7 @@ si no tunnelmole). Imprime la URL publica y la copia al portapapeles ✓.
 Para forzar uno: `ROLEITO_TUNEL=cloudflared npm run playtest` ✓
 (o `npm run tunnel` para levantar solo el túnel ✓).
 
-### 12.4 Lo que el DM hace despues (en el menu "Invitar")
+### 12.5 Lo que el DM hace despues (en el menu "Invitar")
 
 1. Pega la URL del túnel en el campo "URL publica" ✓.
 2. Copia el link que aparece (el que tiene el codigo del invite) ✓.
@@ -419,7 +434,7 @@ Para forzar uno: `ROLEITO_TUNEL=cloudflared npm run playtest` ✓
 4. (Opcional) activa "Partida abierta" → el link fijo `https://<host>/join` ✓.
    Con un túnel **efímero** ese link cambia por partida ✗ → el menu avisa ✓.
 
-### 12.5 Lo que hubo que arreglar para que el túnel sirviera
+### 12.6 Lo que hubo que arreglar para que el túnel sirviera
 
 **El host check de Vite (5.4+)** responde **403** a cualquier host que no sea
 localhost → con el túnel, el jugador recibía 403 en vez de la pantalla ✗. Por

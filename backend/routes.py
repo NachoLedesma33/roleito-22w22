@@ -40,8 +40,10 @@ from schemas import (
     CampaignExport,
     CampaignImport,
     PublicJoinRequest,
+    PublicUrlResponse,
 )
 import secrets
+from pathlib import Path
 import hashlib
 import json
 import os
@@ -365,6 +367,29 @@ async def set_public_join(
     await db.commit()
     await db.refresh(campaign)
     return campaign
+
+
+@campaigns_router.get("/network/public-url", response_model=PublicUrlResponse)
+async def network_public_url(
+    _auth: AuthSession = Depends(require_dm),
+):
+    """La URL publica del tunel (la que el DM tiene abierta).
+
+    El script del tunel (`npm run tunnel`) deja esa URL en
+    `data/tunnel_url.txt`: la app la lee por aca y asi el menu de
+    invitacion ofrece SOLO el link que llega a los jugadores (el del tunel),
+    sin que el DM tenga que pegarla a mano cada vez.
+
+    Si no hay tunel, no hay URL (el menu ofrece los links de la LAN).
+    """
+    archivo = Path(__file__).resolve().parent.parent / "data" / "tunnel_url.txt"
+    url = ""
+    try:
+        if archivo.exists():
+            url = archivo.read_text(encoding="utf-8").strip()
+    except OSError:
+        url = ""
+    return {"public_url": url or None}
 
 
 @campaigns_router.get("/campaigns/active-invite")

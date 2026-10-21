@@ -5,9 +5,10 @@ import type { Campaign } from '@/lib/api'
 import InviteMenu from './InviteMenu'
 
 const ips = vi.fn()
+const publicUrl = vi.fn()
 vi.mock('@/lib/api', () => ({
   api: {
-    network: { ips: () => ips() },
+    network: { ips: () => ips(), publicUrl: () => publicUrl() },
     campaigns: { generateInviteCode: vi.fn(), setPublicJoin: vi.fn() },
   },
 }))
@@ -23,6 +24,11 @@ afterEach(cleanup)
 const writeText = vi.fn().mockResolvedValue(undefined)
 beforeEach(() => {
   writeText.mockClear()
+  publicUrl.mockReset()
+  publicUrl.mockResolvedValue({ public_url: null })
+  // la URL recordada vive en localStorage: si no se limpia, un test
+  // ensucia al siguiente.
+  localStorage.clear()
   Object.defineProperty(navigator, 'clipboard', {
     value: { writeText },
     configurable: true,
@@ -102,6 +108,30 @@ describe('InviteMenu', () => {
 
     fireEvent.click(boton)
     await waitFor(() => expect(writeText).toHaveBeenCalledWith(window.location.origin))
+  })
+
+  it('si el DM juega en local, ofrece la URL del tunel que tiene abierta', async () => {
+    // El DM juega en localhost: localhost no le sirve a nadie de la mesa.
+    // El backend sabe que URL publica tiene el tunel (el script del tunel la
+    // deja en data/tunnel_url.txt) -> el menu la ofrece sola.
+    ips.mockResolvedValue({ ips: [] })
+    publicUrl.mockResolvedValue({ public_url: 'https://mesa.trycloudflare.com' })
+    abrir()
+
+    await waitFor(() => expect(screen.getByTestId('invite-menu-content')).toBeTruthy())
+    // (sin jest-dom: el valor se lee del input)
+    await waitFor(() =>
+      expect(
+        (screen.getByLabelText('URL publica (si usas un tunel)') as HTMLInputElement)
+          .value,
+      ).toBe('https://mesa.trycloudflare.com'),
+    )
+
+    // Y el link que ofrece es el del tunel con el codigo ✓.
+    const enlace = screen.getByTestId('invite-url')
+    expect(enlace.textContent).toContain(
+      'https://mesa.trycloudflare.com/campaigns/join/CODE123',
+    )
   })
 
   it('la URL publica tiene boton de copiar', async () => {

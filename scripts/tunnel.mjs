@@ -29,10 +29,41 @@
  */
 
 import { spawn, spawnSync } from 'node:child_process'
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { platform } from 'node:os'
 import { pathToFileURL } from 'node:url'
 
 export const PUERTO_WEB = 5173
+
+/** Donde se deja la URL publica del tunel, para que la app la sepa sola. */
+export const ARCHIVO_URL = join(
+  dirname(fileURLToPath(import.meta.url)),
+  '..',
+  'data',
+  'tunnel_url.txt',
+)
+
+/** Escribe la URL publica del tunel (la app la lee y la usa sola). */
+export function guardarUrlPublica(url) {
+  try {
+    mkdirSync(dirname(ARCHIVO_URL), { recursive: true })
+    writeFileSync(ARCHIVO_URL, url, 'utf8')
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** Borra la URL (el tunel se cerro: esa URL ya no lleva a nada). */
+export function borrarUrlPublica() {
+  try {
+    if (existsSync(ARCHIVO_URL)) rmSync(ARCHIVO_URL, { force: true })
+  } catch {
+    // nada que hacer
+  }
+}
 
 /**
  * ¿Está instalado el comando?
@@ -221,6 +252,9 @@ if (esCli) {
           url = hallada
           console.log(`\n  \x1b[32mTUNEL LISTO:\x1b[0m ${url}`)
           if (copiarAlPortapapeles(url)) console.log('  (copiado al portapapeles)')
+          if (guardarUrlPublica(url)) {
+            console.log('  (la app ya la sabe: menu "Invitar" -> URL publica)')
+          }
           if (!tunel.urlFija) {
             console.log(
               '  \x1b[33mOjo:\x1b[0m esta URL es efimera (cambia en cada partida):\n' +
@@ -241,10 +275,12 @@ if (esCli) {
   hijo.stdout.on('data', avisar)
   hijo.stderr.on('data', avisar)
   hijo.on('exit', (code) => {
+    borrarUrlPublica()
     console.log(`El tunel salio (codigo ${code})`)
     process.exit(code ?? 0)
   })
   process.on('SIGINT', () => {
+    borrarUrlPublica()
     hijo.kill()
     process.exit(0)
   })

@@ -1058,6 +1058,9 @@ export const api = {
   },
 
   network: {
+    /** La URL publica del tunel que tiene el DM abierta (o null). */
+    publicUrl: () =>
+      request<{ public_url: string | null }>('/network/public-url'),
     /**
      * Las IPs de la maquina del DM: para compartir el invite en la LAN.
      * El link se arma con `window.location.origin`, que en localhost no le

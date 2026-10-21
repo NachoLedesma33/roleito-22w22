@@ -12,6 +12,12 @@ class CampaignCreate(BaseModel):
     settings_json: dict = {}
 
 
+class PublicUrlResponse(BaseModel):
+    """La URL publica del tunel (si hay tunel)."""
+
+    public_url: Optional[str] = None
+
+
 class PublicJoinRequest(BaseModel):
     """Abrir (o cerrar) la partida al publico: detras del link fijo `/join`."""
 

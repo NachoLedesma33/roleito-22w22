@@ -1964,6 +1964,34 @@ async def test_los_assets_se_revalidan_sin_bajarlos_de_nuevo(client, anon_client
 
 
 @pytest.mark.asyncio
+async def test_el_backend_avisa_la_url_publica_del_tunel(client, anon_client):
+    """`GET /api/network/public-url`: la URL que el tunel dejo en data/.
+
+    El menu de invitacion la usa para ofrecer el link que llega a los
+    jugadores sin que el DM la pegue a mano. Sin tunel, no hay URL ✓.
+    """
+    from pathlib import Path
+
+    archivo = Path(__file__).resolve().parents[2] / "data" / "tunnel_url.txt"
+    existed = archivo.exists()
+    antes = archivo.read_text(encoding="utf-8") if existed else ""
+    try:
+        archivo.write_text("https://mesa.trycloudflare.com", encoding="utf-8")
+        res = await client.get("/api/network/public-url")
+        assert res.status_code == 200, res.text
+        assert res.json()["public_url"] == "https://mesa.trycloudflare.com"
+
+        # Sin token no se lee (es info del servidor del DM).
+        res_anon = await anon_client.get("/api/network/public-url")
+        assert res_anon.status_code == 401, res_anon.text
+    finally:
+        if existed:
+            archivo.write_text(antes, encoding="utf-8")
+        elif archivo.exists():
+            archivo.unlink()
+
+
+@pytest.mark.asyncio
 async def test_el_jugador_solo_puede_escribir_sus_notas(client, anon_client):
     """El `PUT` del personaje es la ruta publica del jugador: sus notas.
 

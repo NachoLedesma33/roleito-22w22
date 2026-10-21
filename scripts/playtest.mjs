@@ -17,6 +17,8 @@ import {
   elegirTunel,
   parseUrl,
   copiarAlPortapapeles,
+  guardarUrlPublica,
+  borrarUrlPublica,
   instrucciones,
   invocar,
 } from './tunnel.mjs'
@@ -64,6 +66,7 @@ for (const paso of pasos) {
   hijo.stdout.on('data', escribir)
   hijo.stderr.on('data', escribir)
   hijo.on('exit', (code) => {
+    borrarUrlPublica()
     console.log(`${prefijo}salio (codigo ${code})`)
   })
 }
@@ -96,6 +99,9 @@ if (!tunel) {
           url = hallada
           console.log(`\n  \x1b[32mTUNEL LISTO:\x1b[0m ${url}`)
           if (copiarAlPortapapeles(url)) console.log('  (copiado al portapapeles)')
+          if (guardarUrlPublica(url)) {
+            console.log('  (la app ya la sabe: menu "Invitar" -> URL publica)')
+          }
           if (tunel.urlFija) {
             console.log('  URL fija: el link /join de Discord no cambia nunca.')
           } else {

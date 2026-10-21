@@ -30,6 +30,39 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
   // vacio el menu ofrecia el link de localhost (inutil para la mesa) y el
   // boton de copiar no tenía nada que copiar.
   const [urlPublica, setUrlPublica] = useState(() => window.location.origin);
+
+  // Si el DM juega en LOCAL, el origen es localhost (no le sirve a nadie de
+  // la mesa): entonces se ofrece la URL del tunel que tiene abierta, que el
+  // backend conoce (el script del tunel la deja en `data/tunnel_url.txt`).
+  // Y si no hay tunel, se recuerda la ultima URL pegada a mano.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    const esLocal = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/i.test(
+      window.location.origin,
+    );
+    if (!esLocal) {
+      // El DM esta entrando por el tunel: su origen ES la URL publica.
+      setUrlPublica(window.location.origin);
+      return;
+    }
+    // Primero la ultima URL pegada a mano (para no esperar al backend), y
+    // despues la del tunel vivo, que gana: es la que sirve ahora.
+    const recordada = localStorage.getItem('roleito:invite:public-url');
+    if (recordada) setUrlPublica(recordada);
+    void api.network
+      .publicUrl()
+      .then((r) => {
+        if (cancelled || !r.public_url) return;
+        setUrlPublica(r.public_url);
+      })
+      .catch(() => {
+        // sin tunel y sin URL recordada: el menu ofrece los links de la LAN
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
   /** La partida abierta al publico: detras del link fijo `/join`. */
   const [abierta, setAbierta] = useState(false);
   const [guardando, setGuardando] = useState(false);
@@ -119,6 +152,16 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
       });
     }
   }
+
+  /** El DM puede pegar la URL a mano: se recuerda para la proxima. */
+  const recordarUrl = useCallback((url: string) => {
+    setUrlPublica(url);
+    try {
+      if (url) localStorage.setItem('roleito:invite:public-url', url);
+    } catch {
+      // sin localStorage: se usa solo en esta sesion
+    }
+  }, []);
 
   const copy = useCallback(
     async (url: string) => {
@@ -213,7 +256,7 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
               <input
                 type="text"
                 value={urlPublica}
-                onChange={(e) => setUrlPublica(e.target.value)}
+                onChange={(e) => recordarUrl(e.target.value)}
                 placeholder="https://mi-tunel.trycloudflare.com"
                 aria-label={t('dm.invitePublicLabel', 'URL publica (si usas un tunel)')}
                 className="w-full rounded bg-[var(--bg-tertiary)] border border-[var(--bg-secondary)] px-2 py-1 font-mono text-[0.65rem] text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
