@@ -98,6 +98,9 @@ graphify-out/
 .opencode/*
 !.opencode/skills/
 
+# Serena (MCP de navegación semántica): config y cache locales del agente.
+.serena/
+
 # Uploaded assets
 data/assets/
 data/roleito.db

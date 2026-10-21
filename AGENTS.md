@@ -73,6 +73,19 @@ Luego solo los relevantes a la tarea. `scripts/check-docs-consistency.py` valida
 - PlayerView: `POLL_MS = 16` (~62/s) — mantener polling barato
 - 500s históricos en `characters`/`rolls/recent`/`light-requests`: si reaparecen, investigar antes de asumir regression propia
 
+## Tooling del agente (MCP + plugins)
+| Herramienta | Dónde | Para qué |
+|---|---|---|
+| **Context7** | global (plugin + MCP) | Docs **al día** de librerías (React, Three.js, FastAPI, SQLAlchemy, Vite, Tailwind). Antes de asumir cómo es una API, consultá: hay docs que el training no tiene. |
+| **Playwright MCP** | global | El browser de verdad: dashboard del DM, vista del jugador, login, flujos. **Complementa** al e2e (que es el que queda en el CI): el MCP es para mirar, el e2e es para fijar. |
+| **GitHub MCP** | global, **solo lectura** | Issues, PRs y releases del repo. El header `X-MCP-Readonly` deja fuera las tools de escritura: no puede tocar el repo. |
+| **grep.app** | global | Buscar cómo está implementado algo de verdad en el código público de GitHub. |
+| **Serena** | global | Navegación **semántica** del código (símbolos, referencias) vía LSP. Contexto `oaicompat-agent`: solo 3 tools, así que el costo de contexto es bajo. |
+| **Superpowers** | proyecto (`opencode.json`) | Skills de método: `writing-plans`, `executing-plans`, `test-driven-development`, `verification-before-completion`, code review. |
+| **oh-my-opencode-slim** | proyecto (`opencode.json`) | Agentes extra (explorer, fixer, designer, oracle) + LSP + búsqueda AST. El preset `roleito` usa **los modelos que ya tenés** (`omniroute/*`, `gemini/*`), no los de OpenAI. El orquestador queda como un agente más: el agente principal sigue siendo `build`. |
+
+**Guarda de estilo (Superpowers vs. este proyecto):** las skills de Superpowers son un **método, no una orden**. Acá se trabaja por fases (un tema por commit + CI verde) y el DM define el alcance: usá `writing-plans` / `executing-plans` / `verification-before-completion` cuando apliquen, pero **no abras un ciclo de `brainstorming` por cada cambio** — el `AGENTS.md` y las fases mandan sobre las skills. (El propio Superpowers lo dice: *"User instructions take precedence over skills"*.)
+
 ## Skills
 | Skill | Cuándo usarla aquí |
 |-------|--------------------|
