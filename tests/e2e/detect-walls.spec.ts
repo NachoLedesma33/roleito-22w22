@@ -163,12 +163,15 @@ test.describe('Auto wall detection', () => {
     await expect(review).toBeHidden();
     await expect(page.getByText(/paredes confirmadas/)).toBeVisible({ timeout: 10_000 });
 
-    // Las salas detectadas quedan en el grafo como items room (el guardado va
-    // con debounce: se espera a que lleguen).
+    // Las salas detectadas quedan en el grafo como ZONAS de la IA (el mismo
+    // tipo que dibuja el DM a mano: asi alimentan la niebla, la luz y la LoS).
+    // El guardado va con debounce: se espera a que lleguen.
     await expect
       .poll(async () => {
         const items = await sceneItems(request, authHeaders, campaign.id, sceneId);
-        return items.filter((i) => i.metadata?.type === 'room').length;
+        return items.filter(
+          (i) => i.metadata?.type === 'zone' && (i.metadata as { origin?: string })?.origin === 'ai',
+        ).length;
       }, { timeout: 15_000 })
       .toBeGreaterThan(0);
 

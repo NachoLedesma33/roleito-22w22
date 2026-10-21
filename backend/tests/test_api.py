@@ -1656,14 +1656,17 @@ async def test_detect_walls_no_persiste_la_propuesta(client):
         assert body["rooms"][0]["label"]
         assert body["rooms"][0]["area"] > 0
         assert body["rooms"][0]["polygon"]
-        # Y las salas llegan como items del grafo (tipo room), no se tiran.
-        salas = [i for i in body["items"] if i["metadata"]["type"] == "room"]
+        # Y las salas llegan como items del grafo, no se tiran. Son ZONAS de la
+        # IA (el mismo tipo que dibuja el DM a mano): asi alimentan la niebla,
+        # la luz y la LoS igual que una zona manual.
+        salas = [i for i in body["items"] if i["metadata"]["type"] == "zone"]
         assert len(salas) == len(body["rooms"])
         assert salas[0]["shape"]["type"] == "polygon"
         assert salas[0]["shape"]["points"]
         # Los puntos van normalizados (0-1), como los de los muros.
         assert all(0 <= p <= 1 for p in salas[0]["shape"]["points"])
-        assert salas[0]["metadata"]["name"]
+        assert salas[0]["metadata"]["origin"] == "ai"
+        assert salas[0]["name"]
 
         # ...pero la escena sigue vacía: nadie la aprobó.
         items = (

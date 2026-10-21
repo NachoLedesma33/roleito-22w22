@@ -237,3 +237,38 @@ def test_ia_que_falla_cae_a_cv_y_el_flag_lo_dice():
 
     assert result.ai_used is False
     assert result.wall_count >= 1
+
+
+def test_las_salas_detectadas_entran_como_zonas_de_la_ia():
+    """La geometria de la IA se normaliza a ShadowZones.
+
+    Antes las salas detectadas eran items `room`: un tipo EN PARALELO que el
+    runtime no consumia (la niebla, la luz y la LoS solo leen items `zone`).
+    O sea: la deteccion con IA no llegaba a la niebla de guerra. Ahora una
+    sala detectada es una zona como la que dibuja el DM, con `origin: ai`
+    para que se sepa quien la propuso.
+    """
+    from wall_detection import scene_items_from_detection
+    from wall_detection.types import DetectedMap, DetectedRoom, Point
+
+    room = DetectedRoom(
+        id="r1",
+        polygon=[Point(0, 0), Point(10, 0), Point(10, 10), Point(0, 10)],
+        label="Sala del dragon",
+    )
+    detection = DetectedMap(width=100, height=100, rooms=[room])
+
+    items = scene_items_from_detection(detection)
+    zones = [i for i in items if i["metadata"]["type"] == "zone"]
+
+    assert len(zones) == 1, items
+    zone = zones[0]
+    assert zone["metadata"]["origin"] == "ai"
+    assert zone["metadata"]["touchedByDm"] is False
+    assert zone["metadata"]["zoneType"] == "polygon"
+    assert zone["metadata"]["shadowOnly"] is False
+    assert zone["metadata"]["portals"] == []
+    assert zone["shape"]["type"] == "polygon"
+    assert zone["name"] == "Sala del dragon"
+    # Los puntos normalizados (0-1) como el resto de la geometria.
+    assert zone["shape"]["points"] == [0.0, 0.0, 0.1, 0.0, 0.1, 0.1, 0.0, 0.1]

@@ -120,6 +120,7 @@ def scene_items_from_detection(detection_result: DetectedMap) -> list:
 
         items.append({
             "id": item_id,
+            "name": room.label,
             "type": "shape",
             "shape": {
                 "type": "polygon",
@@ -133,12 +134,20 @@ def scene_items_from_detection(detection_result: DetectedMap) -> list:
             "locked": False,
             "visible": True,
             "metadata": {
-                "type": "room",
-                "roomId": room.id,
-                # El nombre que dio el detector: semantico si la deteccion fue
-                # con IA, "Room N" si fue computer vision.
-                "name": room.label,
-                "description": "",
+                # La geometria de la IA entra como ZONA, la misma estructura
+                # que dibuja el DM a mano: asi una sala detectada alimenta la
+                # niebla, la luz y la LoS igual que una zona manual (antes
+                # eran items `room`, un tipo en paralelo que el runtime no
+                # consumia). `origin: ai` deja la traza de que la propuso
+                # la maquina y el DM la revisa con las mismas herramientas.
+                "type": "zone",
+                "zoneType": "polygon",
+                "origin": "ai",
+                "touchedByDm": False,
+                "shadowOnly": False,
+                "fillColor": "#334155",
+                "fillOpacity": 0.35,
+                "portals": [],
             },
         })
 
