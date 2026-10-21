@@ -79,6 +79,7 @@
     "logoutTitle": "¿Salir de 22w22?"
   },
   "dm": {
+    "inviteCopyUrl": "Copiar la URL publica",
     "inviteEphemeral": "Este tunel cambia de URL en cada partida: comparti el link de la partida (el de arriba), no el fijo.",
     "wsLive": "Conectado",
     "wsReconnecting": "Reconectando...",

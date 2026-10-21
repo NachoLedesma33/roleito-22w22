@@ -79,6 +79,7 @@
     "logoutTitle": "Leave 22w22?"
   },
   "dm": {
+    "inviteCopyUrl": "Copy the public URL",
     "inviteEphemeral": "This tunnel changes URL every session: share the game link (the one above), not the fixed one.",
     "wsLive": "Connected",
     "wsReconnecting": "Reconnecting...",

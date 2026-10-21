@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api, type Campaign } from '@/lib/api';
+import { Check, Copy } from 'lucide-react';
 import AnchoredMenu from '@/components/ui/AnchoredMenu';
 import { useAnchoredMenu } from '@/lib/useAnchoredMenu';
 
@@ -77,6 +78,8 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
   }, [abierta, campaign, onCampaignChange]);
 
   const code = campaign?.invite_code ?? null;
+  /** El link fijo: el mismo para todas las partidas (el atajo `/join`). */
+  const urlFija = `${window.location.origin}/join`;
 
   // Un tunel efimero (Cloudflare quick, tunnelmole) cambia de URL en cada
   // partida: el link "/join" NO es fijo ahi. Con un dominio propio (o
@@ -171,15 +174,17 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
           {abierta && (
             <button
               type="button"
-              onClick={() => copy(`${window.location.origin}/join`)}
+              onClick={() => copy(urlFija)}
               data-testid="invite-fixed-link"
               className="block w-full text-left px-2 py-1.5 rounded bg-[var(--bg-tertiary)] hover:bg-[var(--bg-secondary)]"
             >
               <span className="block font-mono text-xs text-[var(--text-primary)] truncate">
-                {`${window.location.origin}/join`}
+                {urlFija}
               </span>
               <span className="block text-[0.65rem] text-secondary">
-                {t('dm.inviteFixedLink', 'Link fijo: el mismo para todas las partidas')}
+                {copied === urlFija
+                  ? t('dm.inviteCopied', 'Copiado')
+                  : t('dm.inviteFixedLink', 'Link fijo: el mismo para todas las partidas')}
               </span>
             </button>
           )}
@@ -196,14 +201,27 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
           )}
           <label className="block text-[0.65rem] uppercase tracking-[0.2em] text-secondary mb-1">
             {t('dm.invitePublicLabel', 'URL publica (si usas un tunel)')}
-            <input
-              type="text"
-              value={urlPublica}
-              onChange={(e) => setUrlPublica(e.target.value)}
-              placeholder="https://mi-tunel.trycloudflare.com"
-              aria-label={t('dm.invitePublicLabel', 'URL publica (si usas un tunel)')}
-              className="mt-1 w-full rounded bg-[var(--bg-tertiary)] border border-[var(--bg-secondary)] px-2 py-1 font-mono text-[0.65rem] text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            />
+            <div className="mt-1 flex items-center gap-1">
+              <input
+                type="text"
+                value={urlPublica}
+                onChange={(e) => setUrlPublica(e.target.value)}
+                placeholder="https://mi-tunel.trycloudflare.com"
+                aria-label={t('dm.invitePublicLabel', 'URL publica (si usas un tunel)')}
+                className="w-full rounded bg-[var(--bg-tertiary)] border border-[var(--bg-secondary)] px-2 py-1 font-mono text-[0.65rem] text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              />
+              <button
+                type="button"
+                onClick={() => copy(publica)}
+                disabled={!publica}
+                data-testid="invite-copy-public-url"
+                title={t('dm.inviteCopyUrl', 'Copiar la URL publica')}
+                aria-label={t('dm.inviteCopyUrl', 'Copiar la URL publica')}
+                className="shrink-0 p-1.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] disabled:opacity-40 disabled:hover:text-[var(--text-secondary)]"
+              >
+                {copied === publica ? <Check size={14} /> : <Copy size={14} />}
+              </button>
+            </div>
           </label>
           {urls.length === 0 ? (
             <p className="text-xs text-[var(--text-secondary)]">

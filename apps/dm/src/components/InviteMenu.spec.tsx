@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi, afterEach } from 'vitest'
+import { describe, expect, it, vi, afterEach, beforeEach } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { Campaign } from '@/lib/api'
 import InviteMenu from './InviteMenu'
@@ -18,12 +18,29 @@ vi.mock('@/lib/i18n', () => ({
 
 afterEach(cleanup)
 
+// jsdom no tiene portapapeles: el menu avisa "Copiado" solo si la escritura
+// funciono, asi que hay que falsearlo para probar la confirmacion.
+const writeText = vi.fn().mockResolvedValue(undefined)
+beforeEach(() => {
+  writeText.mockClear()
+  Object.defineProperty(navigator, 'clipboard', {
+    value: { writeText },
+    configurable: true,
+  })
+})
+
 function camp(): Campaign {
   return { id: 'camp-1', name: 'Camp', invite_code: 'CODE123' } as unknown as Campaign
 }
 
-function abrir() {
-  render(<InviteMenu campaign={camp()} onCampaignChange={vi.fn()} />)
+function campPublico(): Campaign {
+  const c = { ...camp() } as unknown as Record<string, unknown>
+  c.settings_json = { public_join: true }
+  return c as unknown as Campaign
+}
+
+function abrir(c: Campaign = camp()) {
+  render(<InviteMenu campaign={c} onCampaignChange={vi.fn()} />)
   fireEvent.click(screen.getByTestId('invite-button'))
 }
 
@@ -38,10 +55,59 @@ describe('InviteMenu', () => {
     expect(urls.some((u) => u.includes('192.168.1.6'))).toBe(true)
   })
 
+  it('copia el link y confirma que se copio', async () => {
+    ips.mockResolvedValue({ ips: [] })
+    abrir()
+
+    await waitFor(() => expect(screen.getAllByTestId('invite-url').length).toBeGreaterThan(0))
+    const boton = screen.getAllByTestId('invite-url')[0]
+    expect(boton.textContent).toContain('/campaigns/join/CODE123')
+
+    fireEvent.click(boton)
+
+    await waitFor(() => expect(boton.textContent).toContain('Copiado'))
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining('/campaigns/join/CODE123'),
+    )
+  })
+
+  it('el link fijo tambien confirma que se copio', async () => {
+    ips.mockResolvedValue({ ips: [] })
+    abrir(campPublico())
+
+    await waitFor(() => expect(screen.getByTestId('invite-fixed-link')).toBeTruthy())
+    const boton = screen.getByTestId('invite-fixed-link')
+    expect(boton.textContent).toContain('/join')
+    expect(boton.textContent).not.toContain('Copiado')
+
+    fireEvent.click(boton)
+
+    await waitFor(() => expect(boton.textContent).toContain('Copiado'))
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('/join'))
+  })
+
+  it('la URL publica tiene boton de copiar', async () => {
+    ips.mockResolvedValue({ ips: [] })
+    abrir()
+
+    await waitFor(() => expect(screen.getByTestId('invite-menu-content')).toBeTruthy())
+    const boton = screen.getByTestId('invite-copy-public-url')
+    // Sin URL pegada, el boton no hace nada.
+    expect(boton.hasAttribute('disabled')).toBe(true)
+
+    fireEvent.change(screen.getByLabelText('URL publica (si usas un tunel)'), {
+      target: { value: 'https://mesa.trycloudflare.com' },
+    })
+
+    await waitFor(() => expect(boton.hasAttribute('disabled')).toBe(false))
+    fireEvent.click(boton)
+
+    await waitFor(() =>
+      expect(writeText).toHaveBeenCalledWith('https://mesa.trycloudflare.com'),
+    )
+  })
+
   it('avisa cuando el tunel es efimero (la URL cambia cada partida)', async () => {
-    // Cloudflare quick y tunnelmole dan una URL aleatoria por partida: el
-    // link "/join" NO es fijo ahi, asi que hay que compartir el link de la
-    // partida (el que trae el codigo).
     ips.mockResolvedValue({ ips: [] })
     abrir()
 
