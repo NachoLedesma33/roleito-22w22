@@ -9,6 +9,51 @@ hecha y se leverages está en §2.
 
 ---
 
+## 0. Las decisiones (DM, 2026-10-21)
+
+| Decisión | Qué significa |
+|---|---|
+| **Link fijo** | Un dominio propio (ej. `mesa.midominio.com`) con un **túnel nombrado**: el mismo URL para siempre. Se pega **una vez** en el grupo de Discord y los jugadores le hacen clic a ese link. |
+| **Todo local** | La app corre en la compu del DM (o en la de quien haga el fork). **Nada en la nube**: ni la campaña, ni la base, ni el backend. El túnel solo publica el frontend. |
+| **El DM siempre levanta el servidor** | Antes de la partida: un comando (que abre backend + estáticos + túnel). Los demás solo hacen clic en el link. |
+| **VPS: NO (por ahora)** | Ver §1.1: la VPS gana después, no antes. |
+
+### 1.1 ¿Es mejor una VPS que la compu del DM?
+
+**Respuesta corta: para el primer playtest, no.** Para el segundo, sí.
+
+| | **Local en la compu del DM** (lo elegido) | **VPS** (Hetzner CX22 ~€4/mes) |
+|---|---|---|
+| Costo | **€0** | ~€4/mes (o $4-12 en DigitalOcean) |
+| La campaña y la base | **En tu disco** ✓ (privacidad) | En el disco de la VPS → hay que **backupear** (la campaña es lo valioso ✗) |
+| Si el DM apaga la compu | El juego se cae ✗ (el túnel queda sin origen) | **Sigue andando** ✓ (el link funciona siempre) |
+| Si el DM viaja | Hay que levantaarlo en otro lado ✗ | Sigue ✓ |
+| Latencia del DM | 0 (local) ✓ | La del DM a la VPS (si el DM está en otro país, sus acciones tardan ✗) |
+| Latencia de los jugadores | El tráfico va al edge → al DM (doble salto) | Edge → VPS (un salto) ✓ marginalmente mejor |
+| HTTPS | Lo da el túnel ✓ | Caddy + Let's Encrypt (un componente más) |
+| El túnel | **Hace falta** ✓ | **No hace falta** (la VPS tiene IP pública) → menos una pieza que se puede caer |
+| Mantenimiento | Actualizar con `git pull` ✓ | Actualizar con `git pull` **en la VPS** (por SSH) ✗ |
+| Si algo se rompe | Lo arreglás en el momento, con la consola a mano ✓ | Tenés que entrar por SSH ✗ (y si la VPS se cae, no hay nadie) |
+
+**El veredicto**: la VPS es mejor **para la mesa que se juega todas las semanas** (la
+campaña siempre disponible, el DM puede apagar la compu, el link nunca cae). Para
+un **primer playtest** es gastar €4/mes ySUMAR mantenimiento (SSH, backups,
+actualizaciones) para resolver un problema que no tenés todavía: el de que el DM
+se quede sin compu.
+
+**El momento de migrar** (cuando se cumpla esto):
+1. Ya jugaste 2-3 partidas y el flujo del túnel te quedó corto.
+2. Las partidas son regulares (una por semana) → el link tiene que estar vivo siempre.
+3. El DM viaja o no puede garantizar la compu encendida.
+4. Hay backups automáticos de la campaña (la VPS + un snapshot diario).
+
+**Lo que NO cambia al migrar**: el túnel, el link, el proxy, la superficie con
+roles. La app es la misma; solo cambia dónde corre. Por eso el orden sano es
+**primero local (P0-P3) y después, si hace falta, la VPS** (que es un `docker
+compose up` en otro lado).
+
+---
+
 ## 1. Por qué el planteo LAN quedó atrás
 
 La primera versión del invite resolvía el caso "todos en la misma wifi" (§ el
@@ -87,8 +132,16 @@ pantalla del jugador se paga en la mesa.
 
 ## 5. La recomendación
 
-**Opción: Cloudflare Tunnel en modo *quick* para la primera partida, y *nombrado*
-cuando el playtest se acerque.**
+**Opción: Cloudflare Tunnel *nombrado* (el link fijo que se pega en Discord).**
+
+Se crea desde el dashboard de Cloudflare (Zero Trust → Networking →
+Tunnels → Create → "Published application"): se elige un subdominio del
+dominio propio y el origen `http://localhost:5173`. El plan free alcanza; el
+túnel sale por el 7844 (no hay que abrir puertos) ✓.
+
+Si todavía no hay dominio, el modo *quick* (`cloudflared tunnel --url
+http://localhost:5173`) sirve para una partida de prueba: da un
+`algo.trycloudflare.com` que cambia en cada corrida.
 
 ```bash
 # 1) el build de producción (OBLIGATORIO para remoto: ver §3)
@@ -220,8 +273,8 @@ sirve de `data/assets/` → hoy sin cache explícito ✗ → **pendiente**).
 
 | Fase | Qué | Terminado cuando | Riesgo |
 |---|---|---|---|
-| **P0** | Servir el **build de producción** + el proxy `/api` y `/ws` (script `serve:prod`) y exponerlo con `cloudflared` | Un jugador en otra red carga la pantalla del login en < 5 s | bajo |
-| **P1** | El **túnel con nombre** (dominio propio) + **regenerar el invite** al terminar la partida + cerrar el túnel | El link es el mismo para todas las partidas y caduca al terminar | bajo |
+| **P0** | Servir el **build de producción** + el proxy `/api` y `/ws` (script `serve:prod`) y exponerlo con `cloudflared`. Todo con **un comando** (`npm run playtest`: backend + estáticos + túnel) para que el DM no tenga que acordarse de tres cosas antes de la partida | Un jugador en otra red carga la pantalla del login en < 5 s | bajo |
+| **P1** | El **túnel con nombre** (dominio propio) + el atajo **`GET /join`** (el link fijo de Discord) + **regenerar el invite** al terminar la partida + cerrar el túnel | El link de Discord es el mismo para siempre y el código de la campaña se resuelve solo | bajo |
 | **P2** | **Watchdog del WS** con backoff + aviso de "reconectando" + cache de assets | El WS se recupera solo de un corte de red sin que el jugador note | medio |
 | **P3** | **Rate limit** en las rutas públicas + `Cloudflare Access` opcional (login) | Un scanner no puede martillear el backend | bajo |
 | **P4** | Medir la partida real: el tamaño de la primera carga, la latencia por acción, el uso de ancho de banda | Hay números del playtest en el doc | — |
@@ -232,10 +285,16 @@ sirve de `data/assets/` → hoy sin cache explícito ✗ → **pendiente**).
 
 1. `npm run build --workspace=apps/dm` y `npm run serve:prod`.
 2. `cloudflared tunnel --url http://localhost:5173` → copiar el URL.
-3. `POST /invite-code` (o el botón "🔗 Invitar") → copiar el link del **túnel**
-   (¡no el de la LAN! → el menú debe ofrecer el link del túnel; hoy ofrece el
-   de esta máquina y el de la LAN → **P1**: que el link que se copia sea el
-   del túnel, no el de localhost ✗✗ **esto es un bug del flujo actual**).
+3. El link que se pega en Discord es **el del túnel + el código de la
+   campaña**. Ojo: el dominio fija el **host**, pero el código del invite es
+   por campaña → el link completo cambia en cada campaña ✗. Para que el link
+   sea **de verdad fijo** hace falta un atajo en el backend: `GET /join` →
+   redirige al invite de la campaña activa (la más reciente con actividad, o
+   la que el DM marque como activa) → el link de Discord es siempre
+   `https://mesa.midominio.com/join` ✓ (**P1**).
+
+   El menú de invitación ya tiene el campo "URL publica (si usas un túnel)"
+   → con esa URL pegada, el link que ofrece y copia es el del túnel ✓.
 4. Mandar el link por WhatsApp al grupo.
 5. Cada jugador: entra, elige su personaje, tira un dado, pide luz, se mueve.
 6. El DM: ve las peticiones de luz, las tiradas y los movimientos.
@@ -262,13 +321,14 @@ tiene que ofrecer "el link público (túnel)".
 
 ---
 
-## 11. Decisiones que hay que tomar (del DM)
+## 11. Decisiones (cerradas el 2026-10-21)
 
-1. **¿Túnel con nombre (dominio propio) o link efímero por partida?** → El
-   efímero es cero fricción; el nombre es cómodo si se juega seguido.
-2. **¿Cloudflare Access (que los jugadores tengan que loguearse) o link
-   abierto?** → Link abierto: la fricción de un login para 4 jugadores en una
-   mesa es alta. El invite ya es un secreto.
-3. **¿Dónde vive la "mesa"?** → La máquina del DM (con `serve:prod` + el
-   túnel) es lo simple; una VPS es lo "siempre arriba" (costo: que alguien
-   la mantenga encendida).
+1. **Link fijo** → dominio propio + túnel nombrado de Cloudflare ✓ (§0).
+2. **Cloudflare Access o link abierto?** → **Link abierto**: la fricción de
+   un login para 4 jugadores en una mesa es alta, y el código del invite ya
+   es un secreto. Si un dia hace falta, se suma Access delante del túnel (el
+   link de Discord no cambia) ✓.
+3. **¿Dónde vive la mesa?** → **En la compu del DM** por ahora (§1.1). La
+   VPS es la migracion posterior, cuando las partidas sean regulares.
+4. **¿Que falta decidir?** → El **dominio**: hace falta uno (Cloudflare lo
+   hospeda en el plan free, pero el dominio se paga aparte: ~€8-15/año).
