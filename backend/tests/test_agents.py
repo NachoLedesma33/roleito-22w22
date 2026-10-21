@@ -4,6 +4,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from infrastructure.ai.base import AIProvider
@@ -451,3 +453,53 @@ def test_character_for_prompt_saca_las_notas_del_jugador():
     payload = character_for_prompt(fila)
     assert payload == {"name": "Aria", "description": "picaro"}
     assert "player_notes" not in payload
+
+
+async def test_la_auditoria_guarda_el_hash_y_no_el_prompt(tmp_path, monkeypatch):
+    """S7: el log de auditoria tiene la huella del prompt, no el prompt.
+
+    El prompt puede traer datos de la campana (nombres, notas, eventos): al
+    log solo llega su hash.
+    """
+    from core.agents import audit
+
+    log = tmp_path / "ai_audit.log"
+    monkeypatch.setattr(audit, "AUDIT_PATH", log)
+
+    provider = CapturingProvider({
+        "answer": "ok", "entities_mentioned": [], "confidence": 0.5,
+        "related_topics": [], "source_hint": "",
+    })
+    agent = LoreAgent(provider)
+    await agent.run(question="?", campaign_context="SECRETO-DE-CAMPANA")
+
+    texto = log.read_text(encoding="utf-8")
+    assert "SECRETO-DE-CAMPANA" not in texto
+
+    entry = json.loads(texto.strip().splitlines()[-1])
+    assert entry["agent"] == "lore"
+    assert entry["status"] == "ok"
+    assert len(entry["prompt_sha"]) == 16
+    assert entry["prompt_chars"] > 0
+    assert "SECRETO" not in json.dumps(entry)
+
+
+async def test_la_auditoria_registra_tambien_los_errores(tmp_path, monkeypatch):
+    from core.agents import audit
+
+    log = tmp_path / "ai_audit.log"
+    monkeypatch.setattr(audit, "AUDIT_PATH", log)
+
+    class FailingProvider(AIProvider):
+        name = "failing"
+
+        async def complete(self, prompt, *, system="", model=None, max_tokens=512, temperature=0.7):
+            raise RuntimeError("el proveedor se cayo")
+
+    agent = LoreAgent(FailingProvider())
+    with pytest.raises(RuntimeError):
+        await agent.run(question="?")
+
+    entry = json.loads(log.read_text(encoding="utf-8").strip().splitlines()[-1])
+    assert entry["status"] == "error"
+    assert "se cayo" in entry["error"]

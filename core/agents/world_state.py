@@ -91,7 +91,7 @@ class WorldStateAgent(BaseAgent):
         state_str = "\n\n".join(state_parts) if state_parts else "No state available."
         user_msg = f"Current State:\n{wrap_data(state_str)}\n\nQuestion: {question}"
 
-        raw = await self.provider.complete(
+        raw = await self._complete(
             user_msg,
             system=system_with_rule(WORLD_SYSTEM),
             max_tokens=1024,

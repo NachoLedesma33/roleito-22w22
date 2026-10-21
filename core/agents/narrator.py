@@ -70,7 +70,7 @@ class NarratorAgent(BaseAgent):
 
         user_msg = wrap_data("\n".join(context_parts))
 
-        raw = await self.provider.complete(
+        raw = await self._complete(
             user_msg,
             system=system_with_rule(NARRATOR_SYSTEM),
             max_tokens=1024,

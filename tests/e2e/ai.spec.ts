@@ -143,6 +143,39 @@ test.describe('AI Provider Layer', () => {
     expect((await cfg.json()).provider).toBe('local');
   });
 
+  test('AI8: la auditoría lista las llamadas sin filtrar el prompt', async ({
+    page,
+    campaign,
+    request,
+    dmToken,
+    authHeaders,
+  }) => {
+    // Una llamada al modelo: queda auditada.
+    const call = await request.post(`${API}/ai/test`, {
+      headers: authHeaders,
+      data: { prompt: 'frase-secreta-de-prueba' },
+    });
+    expect(call.status()).toBe(200);
+
+    const scene = await createScene(request, campaign.id, 'Escena AI8');
+    await page.goto('/');
+    await page.evaluate((token) => {
+      sessionStorage.setItem('roleito:auth:token', token);
+    }, dmToken);
+    await page.goto(`/campaigns/${campaign.id}`);
+    await page.locator('header select').selectOption(scene.id);
+
+    await page.getByTestId('ai-panel-button').click();
+    const panel = page.getByTestId('ai-settings-panel');
+    await panel.getByTestId('ai-audit-toggle').click();
+
+    const list = panel.getByTestId('ai-audit-list');
+    await expect(list).toBeVisible();
+    await expect(list).toContainText('ai-test');
+    // El prompt no se guarda: la lista no lo muestra.
+    await expect(list).not.toContainText('frase-secreta-de-prueba');
+  });
+
   test('AI7: asistente con dictado por voz — sin micrófono no se rompe', async ({
     page,
     campaign,

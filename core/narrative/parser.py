@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from infrastructure.ai import AIProvider
+from core.agents.audit import audited_call
 from core.agents.context_manager import system_with_rule, wrap_data
 
 EXTRACTION_SYSTEM = """You are a tabletop RPG event extractor. Given DM narration text, extract structured events.
@@ -86,8 +87,10 @@ async def parse_narrative(
         locations=", ".join(locations) if locations else "none",
     ))
 
-    raw = await provider.complete(
-        user_msg,
+    raw = await audited_call(
+        agent_id="narrative-parser",
+        provider=provider,
+        prompt=user_msg,
         system=system_with_rule(EXTRACTION_SYSTEM),
         model=model,
         max_tokens=2048,

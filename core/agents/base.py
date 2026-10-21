@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from infrastructure.ai import AIProvider
+from core.agents.audit import audited_call
 
 
 @dataclass
@@ -61,3 +62,17 @@ class BaseAgent(ABC):
             return json.loads(cleaned)
         except json.JSONDecodeError:
             return None
+
+    async def _complete(self, prompt: str, *, system: str = "", **kwargs) -> str:
+        """La llamada al modelo, auditada (C9).
+
+        El prompt no se guarda: solo su hash. La auditoria nunca rompe la
+        llamada: si el log falla, el agente sigue.
+        """
+        return await audited_call(
+            agent_id=self.agent_id,
+            provider=self.provider,
+            prompt=prompt,
+            system=system,
+            **kwargs,
+        )

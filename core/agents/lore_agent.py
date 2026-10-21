@@ -72,7 +72,7 @@ class LoreAgent(BaseAgent):
 
         user_msg = f"Campaign Context:\n{wrap_data(context_str)}\n\nQuestion: {question}"
 
-        raw = await self.provider.complete(
+        raw = await self._complete(
             user_msg,
             system=system_with_rule(LORE_SYSTEM),
             max_tokens=1024,

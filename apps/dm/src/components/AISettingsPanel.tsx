@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import HudPanel from './HudPanel';
-import { api, AISettings } from '@/lib/api';
+import { api, AISettings, AIAuditEntry } from '@/lib/api';
 
 interface AISettingsPanelProps {
   onClose: () => void;
@@ -60,6 +60,8 @@ export default function AISettingsPanel({ onClose }: AISettingsPanelProps) {
   const [vaultStatus, setVaultStatus] = useState<Record<string, boolean>>({});
   const [apiKey, setApiKey] = useState('');
   const [keySaved, setKeySaved] = useState(false);
+  const [audit, setAudit] = useState<AIAuditEntry[]>([]);
+  const [showAudit, setShowAudit] = useState(false);
 
   useEffect(() => {
     Promise.all([api.ai.getConfig(), api.vault.status()])
@@ -102,6 +104,18 @@ export default function AISettingsPanel({ onClose }: AISettingsPanelProps) {
       setVaultStatus({ ...vaultStatus, remote: false });
     } catch {
       setSaveError('Error al eliminar API key');
+    }
+  };
+
+  const handleAudit = async () => {
+    setShowAudit((v) => !v);
+    if (!showAudit) {
+      try {
+        const res = await api.ai.audit(25);
+        setAudit(res.entries);
+      } catch {
+        setSaveError('No se pudo leer la auditoría');
+      }
     }
   };
 
@@ -329,6 +343,41 @@ export default function AISettingsPanel({ onClose }: AISettingsPanelProps) {
             )}
           </div>
         )}
+
+        <div className="pt-1 border-t border-[var(--bg-tertiary)]">
+          <button
+            type="button"
+            onClick={handleAudit}
+            className="text-[10px] px-2 py-1 rounded border border-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+            data-testid="ai-audit-toggle"
+          >
+            {showAudit ? 'Ocultar auditoría' : 'Ver auditoría'}
+          </button>
+
+          {showAudit && (
+            <div className="mt-2 space-y-1" data-testid="ai-audit-list">
+              {audit.length === 0 && (
+                <p className="text-[10px] text-[var(--text-secondary)]">
+                  Sin llamadas registradas.
+                </p>
+              )}
+              {audit.map((e, i) => (
+                <div
+                  key={`${e.ts}-${i}`}
+                  className="text-[10px] font-mono text-[var(--text-secondary)] flex gap-1.5"
+                >
+                  <span className={e.status === 'ok' ? 'text-emerald-400/80' : 'text-red-400/80'}>
+                    {e.status}
+                  </span>
+                  <span className="text-[var(--text-primary)]">{e.agent}</span>
+                  <span>{e.model || e.provider}</span>
+                  <span>{e.latency_ms}ms</span>
+                  <span className="opacity-60">#{e.prompt_sha.slice(0, 8)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </HudPanel>
   );

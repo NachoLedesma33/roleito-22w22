@@ -61,7 +61,7 @@ class RecapAgent(BaseAgent):
             data_parts.append(f"Campaign Context:\n{campaign_context}")
         user_msg = wrap_data("\n\n".join(data_parts))
 
-        raw = await self.provider.complete(
+        raw = await self._complete(
             user_msg,
             system=system_with_rule(RECAP_SYSTEM),
             max_tokens=1500,

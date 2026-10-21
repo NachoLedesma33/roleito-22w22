@@ -1812,6 +1812,7 @@ AI_ROUTES = [
     ("post", "/api/orchestrator/{cid}/execute", {"task_type": "lore_inquiry", "query": "x"}),
     ("post", "/api/campaigns/{cid}/narrative/parse", {"text": "x", "session_id": "x"}),
     ("get", "/api/ai/config", None),
+    ("get", "/api/ai/audit", None),
     ("put", "/api/ai/config", {"provider": "mock"}),
     ("post", "/api/ai/test", {"prompt": "x"}),
 ]
@@ -1879,6 +1880,42 @@ async def test_la_config_de_ia_no_devuelve_la_key(client):
         assert "sk-" not in body
     finally:
         delete_api_key(vault_name)
+
+
+@pytest.mark.asyncio
+async def test_la_auditoria_devuelve_el_hash_y_no_el_prompt(client, monkeypatch):
+    """S7: el log de auditoria se puede consultar, pero no filtra el prompt."""
+    from uuid import uuid4
+
+    from infrastructure.ai.mock import MockProvider
+    import agent_routes
+
+    monkeypatch.setattr(agent_routes, "get_provider_for_agent", lambda: MockProvider())
+
+    reg = (
+        await client.post(
+            "/api/auth/register", json={"name": f"DM Audit {uuid4().hex[:6]}", "pin": "1234"}
+        )
+    ).json()
+    headers = {"Authorization": f"Bearer {reg['token']}"}
+
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Audit"})).json()
+    await client.post(
+        f"/api/campaigns/{camp['id']}/agents/lore",
+        json={"question": "quien es el guardián?"},
+        headers=headers,
+    )
+
+    res = await client.get("/api/ai/audit?limit=5", headers=headers)
+    assert res.status_code == 200, res.text
+    entries = res.json()["entries"]
+    assert entries
+    entry = entries[0]
+    assert entry["agent"] == "lore"
+    assert len(entry["prompt_sha"]) == 16
+    # El prompt no viaja: ni en el log ni en la respuesta.
+    assert "guardián" not in res.text
+    assert "prompt" not in entry or entry.get("prompt") is None
 
 
 @pytest.mark.asyncio

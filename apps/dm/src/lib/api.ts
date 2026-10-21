@@ -35,6 +35,20 @@ export interface AITestResult {
   } | null;
 }
 
+/** Una llamada a la IA en el log de auditoria. El prompt no se guarda: solo su hash. */
+export interface AIAuditEntry {
+  ts: string;
+  agent: string;
+  provider: string;
+  model: string | null;
+  status: string;
+  latency_ms: number;
+  prompt_sha: string;
+  prompt_chars: number;
+  usage?: Record<string, number>;
+  error?: string;
+}
+
 export interface NarrativeEvent {
   event_id: string;
   type: string;
@@ -932,6 +946,8 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(prompt ? { prompt } : {}),
       }),
+    audit: (limit?: number) =>
+      request<{ entries: AIAuditEntry[] }>(`/ai/audit?limit=${limit ?? 50}`),
   },
 
   vault: {
