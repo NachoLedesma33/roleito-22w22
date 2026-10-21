@@ -51,12 +51,13 @@ Al agregar, modificar o refactorizar **cualquier** código de este repo (feature
 ## Docs — Reading Order
 1. `docs/CONTEXT.md` (leer primero, siempre)
 2. `docs/PRODUCT.md`
-3. `docs/DM-DASHBOARD-VTT.md`
-4. `docs/HYBRID-SHADOW-GEOMETRY.md` (walls/vision/fog manual-first — canon actual)
-5. `docs/DOMAIN.md`
-6. `docs/ARCHITECTURE.md`
-7. `docs/DATABASE.md`
-8. `docs/EVENT-SYSTEM.md`
+3. `docs/DESIGN-SYSTEM.md` (UI/UX: alto contraste, theming, cero transparencias en paneles con texto)
+4. `docs/DM-DASHBOARD-VTT.md`
+5. `docs/HYBRID-SHADOW-GEOMETRY.md` (walls/vision/fog manual-first — canon actual)
+6. `docs/DOMAIN.md`
+7. `docs/ARCHITECTURE.md`
+8. `docs/DATABASE.md`
+9. `docs/EVENT-SYSTEM.md`
 Luego solo los relevantes a la tarea. `scripts/check-docs-consistency.py` valida docs vs código.
 
 **Docs de ingeniería (aplicar siempre, ver directiva arriba):**

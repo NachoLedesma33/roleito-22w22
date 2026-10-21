@@ -39,9 +39,9 @@ export default function MagitechButton({
       }}
       whileTap={{ scale: 0.97 }}
       className={cn(
-        'group relative w-full overflow-hidden rounded-lg border border-purple-500/50 bg-zinc-900/90',
-        'px-6 py-3 font-sans text-sm font-medium tracking-wide text-gray-100',
-        'transition-shadow duration-base hover:shadow-[0_0_15px_rgba(139,92,246,0.5)] hover:border-purple-400/60',
+        'group relative w-full overflow-hidden rounded-lg border border-accent-primary bg-surface-elevated',
+        'px-6 py-3 font-sans text-sm font-medium tracking-wide text-primary',
+        'transition-shadow duration-base hover:border-accent-secondary hover:shadow-[0_0_15px_var(--accent-primary)]',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
         'disabled:pointer-events-none disabled:opacity-50',
         className,
@@ -55,7 +55,7 @@ export default function MagitechButton({
       {unlocking && (
         <motion.span
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 rounded-lg border border-cyan-400"
+          className="pointer-events-none absolute inset-0 rounded-lg border border-accent-secondary"
           initial={{ opacity: 0.9, scale: 1 }}
           animate={{ opacity: 0, scale: 1.35 }}
           transition={{ duration: 0.9, ease: 'easeOut' }}

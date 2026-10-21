@@ -72,6 +72,16 @@
   --text-secondary: var(--ink-muted);
   --accent: var(--brand);
   --accent-hover: var(--brand-hover);
+
+  /* Sistema de diseño V2 (alto contraste y theming).
+     Son ALIAS de los tokens de arriba: cada tema los redefine solo y estos
+     siguen al tema, asi que un panel solidio se ve bien en los seis temas
+     sin volver a tocar el color. */
+  --bg-surface: var(--surface);          /* fondo sólido de paneles y HUDs */
+  --bg-surface-elevated: var(--surface-2); /* tarjetas internas e inputs */
+  --accent-primary: var(--brand);         /* violeta magitech */
+  --accent-secondary: var(--azure-500);   /* cian arcano */
+  --border-subtle: var(--border);         /* bordes separadores */
 }
 
 /* Tema: Vitela (claro) */

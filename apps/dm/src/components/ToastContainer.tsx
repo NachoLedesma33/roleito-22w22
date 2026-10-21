@@ -32,7 +32,7 @@ function SingleToast({ toast, onDismiss }: { toast: ToastRoll; onDismiss: (id: s
       className={`toast-slide ${exiting ? 'toast-slide-out' : 'toast-slide-in'} pointer-events-auto`}
     >
       <div
-        className={`relative bg-gray-900/95 backdrop-blur border rounded-lg shadow-xl px-3 py-2.5 max-w-xs ${
+        className={`relative bg-surface border border-subtle rounded-lg shadow-[0_10px_40px_rgba(0,0,0,0.8)] px-3 py-2.5 max-w-xs ${
           nat20
             ? 'border-emerald-500/60 ring-1 ring-emerald-500/30'
             : nat1

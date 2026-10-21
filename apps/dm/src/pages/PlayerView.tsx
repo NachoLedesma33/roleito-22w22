@@ -1334,7 +1334,7 @@ export default function PlayerView() {
         />
 
         {data.characters.length > 0 && (
-          <div className="absolute bottom-4 right-4 z-10 bg-[var(--surface)]/80 backdrop-blur border border-[var(--bg-tertiary)]/50 rounded-lg p-2 max-sm:bottom-auto max-sm:top-16 max-sm:right-2 max-sm:max-w-[140px]" data-testid="on-scene-list">
+          <div className="absolute bottom-4 right-4 z-10 bg-surface border border-subtle rounded-lg p-2 max-sm:bottom-auto max-sm:top-16 max-sm:right-2 max-sm:max-w-[140px]" data-testid="on-scene-list">
             <p className="text-[10px] text-[var(--text-secondary)] mb-1 px-1">{t('dm.onScene', 'En escena ({{n}})', { n: data.characters.length })}</p>
             <div className="space-y-0.5">
               {data.characters.map((c) => (
@@ -1371,7 +1371,7 @@ export default function PlayerView() {
                 aria-label={b.name}
                 title={b.name}
                 {...pad(b.k)}
-                className="w-12 h-12 touch-none rounded-lg bg-black/60 backdrop-blur border border-[var(--bg-tertiary)] text-[var(--text-primary)] text-lg flex items-center justify-center active:bg-[var(--accent)]/50 active:border-[var(--accent)] transition-colors"
+                className="w-12 h-12 touch-none rounded-lg bg-surface-elevated border border-subtle text-primary text-lg flex items-center justify-center active:bg-accent-primary active:border-accent-primary transition-colors"
               >
                 {b.label}
               </button>

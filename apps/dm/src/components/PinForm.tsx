@@ -85,7 +85,7 @@ export default function PinForm({
             testId="login-pin"
             unlocking={unlocking}
           />
-          <p id="pin-form-pin-hint" className="mt-2 text-center text-xs text-gray-400">
+          <p id="pin-form-pin-hint" className="mt-2 text-center text-xs text-secondary">
             {t('login.pinHint', '4 a 8 dígitos')}
           </p>
         </div>

@@ -95,7 +95,7 @@ export function Island({ open, onClose, onSelect, title, items, className }: Isl
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) onClose()
           }}
-          className={cn('fixed inset-0 z-50 flex flex-col bg-bg/80 backdrop-blur-sm', className)}
+          className={cn('fixed inset-0 z-50 flex flex-col bg-bg', className)}
         >
           <header className="flex items-center gap-3 border-b border-border p-4">
             <button
@@ -115,7 +115,7 @@ export function Island({ open, onClose, onSelect, title, items, className }: Isl
               }}
               placeholder="Buscar…"
               aria-label="Buscar"
-              className="ml-auto w-full max-w-xs rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-ink placeholder:text-ink-faint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="ml-auto w-full max-w-xs rounded-md border border-subtle bg-surface-elevated px-3 py-1.5 text-sm text-primary placeholder:text-secondary focus-visible:outline-none focus-visible:border-accent-primary focus-visible:ring-1 focus-visible:ring-accent-primary"
             />
           </header>
 

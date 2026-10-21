@@ -3097,7 +3097,7 @@ const startFogMode = useCallback(() => {
             </div>
           )}
           {lightRequests.length > 0 && (
-            <div onPointerDown={(e) => e.stopPropagation()} className="absolute top-3 right-3 z-10 bg-[var(--bg-primary)]/90 backdrop-blur border border-[var(--bg-tertiary)] rounded-lg p-2 w-60 max-h-48 overflow-y-auto shadow-lg">
+            <div onPointerDown={(e) => e.stopPropagation()} className="absolute top-3 right-3 z-10 bg-surface border border-subtle rounded-lg p-2 w-60 max-h-48 overflow-y-auto shadow-[0_10px_40px_rgba(0,0,0,0.8)]">
               <p className="text-xs font-medium text-[var(--text-primary)] mb-1.5 px-1">{t('dm.lightRequests', '🕯️ Peticiones de luz')}</p>
               <ul className="space-y-1.5">
                 {lightRequests.map((r) => (

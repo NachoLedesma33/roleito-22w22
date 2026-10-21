@@ -11,16 +11,24 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Montserrat', 'Inter', 'system-ui', 'sans-serif'],
-        display: ['"Playfair Display"', 'Georgia', 'serif'],
+        // Títulos: Cinzel (el sistema de diseño V2). Antes Playfair Display.
+        display: ['Cinzel', 'Georgia', 'serif'],
+        // Datos criticos (relojes, PV/PM) y campos de maquina.
+        mono: ['"Space Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
       },
       colors: {
         bg: 'var(--bg)',
         surface: {
-          DEFAULT: 'var(--surface)',
-          2: 'var(--surface-2)',
+          DEFAULT: 'var(--bg-surface)',
+          2: 'var(--bg-surface-elevated)',
+          elevated: 'var(--bg-surface-elevated)',
         },
         border: 'var(--border)',
+        subtle: 'var(--border-subtle)',
         ring: 'var(--ring)',
+        // Texto: alto contraste, siempre por token (nunca gris hardcodeado).
+        primary: 'var(--text-primary)',
+        secondary: 'var(--text-secondary)',
         // Paleta arcana: la energía cian/violeta y el bronce de la maquinaria.
         // Con clave de tono (500, 600) para que enganche con los tokens.
         arcana: {
@@ -42,6 +50,11 @@ export default {
         brand: {
           DEFAULT: 'var(--brand)',
           hover: 'var(--brand-hover)',
+        },
+        accent: {
+          primary: 'var(--accent-primary)',
+          secondary: 'var(--accent-secondary)',
+          hover: 'var(--accent-hover)',
         },
         'on-brand': 'var(--on-brand)',
         'on-danger': 'var(--on-danger)',

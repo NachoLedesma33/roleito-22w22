@@ -76,11 +76,11 @@ export default function MagitechField({
         data-testid={testId}
         spellCheck={spellCheck}
         className={cn(
-          'magitech-input w-full rounded-none border-0 border-b border-gray-600 bg-black/20',
-          'pb-2 pt-1 text-center font-mono text-white placeholder:text-gray-400',
-          'focus:border-cyan-400 focus:outline-none focus:ring-0',
-          'focus:shadow-[0_8px_20px_-10px_rgba(34,211,238,0.75)]',
-          pin && 'text-2xl tracking-[0.45em] text-transparent caret-cyan-400',
+          'magitech-input w-full rounded-none border-0 border-b border-subtle bg-surface-elevated',
+          'px-3 pb-2 pt-1 text-center font-mono text-primary placeholder:text-secondary',
+          'focus:border-accent-primary focus:outline-none focus:ring-1 focus:ring-accent-primary',
+          'focus:shadow-[0_10px_24px_-12px_var(--accent-secondary)]',
+          pin && 'text-2xl tracking-[0.45em] text-transparent caret-accent-secondary',
         )}
       />
 
@@ -93,7 +93,7 @@ export default function MagitechField({
                 key={i}
                 className={cn(
                   'h-2.5 w-2.5 rounded-full',
-                  filled ? 'bg-cyan-400' : 'border border-gray-600',
+                  filled ? 'bg-accent-secondary' : 'border border-subtle',
                 )}
                 initial={false}
                 animate={{
