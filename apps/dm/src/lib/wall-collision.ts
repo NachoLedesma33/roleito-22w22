@@ -40,14 +40,19 @@ export function checkWallCollision(
 }
 
 /**
- * Los segmentos de muro que ya afectan al juego.
+ * Los segmentos de muro que bloquean el movimiento.
  *
- * Un muro que salio de una deteccion y el DM todavia no aprobo
- * (`pendingReview`) NO bloquea: hasta que lo aprueba es una propuesta.
+ * Quedan afuera dos cosas:
+ *
+ * - Lo que salio de una deteccion y el DM todavia no aprobo (`pendingReview`):
+ *   hasta que lo aprueba es una propuesta, no geometria.
+ * - Los muros con `movement: false` (un hueco, una valla baja): el flag existe
+ *   en el metadata pero el runtime lo ignoraba, asi que un DM que lo apagaba
+ *   no hacia nada.
  */
-export function extractApprovedWallLines(
+export function extractBlockingWallLines(
   items: {
-    metadata?: { type?: string };
+    metadata?: { type?: string; movement?: boolean };
     shape?: { type?: string; points?: number[] };
     pendingReview?: boolean;
   }[],
@@ -57,6 +62,7 @@ export function extractApprovedWallLines(
       (item) =>
         item.metadata?.type === 'wall' &&
         item.shape?.type === 'line' &&
+        item.metadata?.movement !== false &&
         !isPendingReview(item),
     )
     .map((item) => {

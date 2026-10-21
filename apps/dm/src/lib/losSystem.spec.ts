@@ -44,6 +44,14 @@ describe('losSystem/buildLoSOccluders', () => {
     expect(occ.length).toBe(1)
   })
 
+  it('un muro con lineOfSight false no ocluye la vision', () => {
+    // El flag existia pero el runtime lo ignoraba: un DM que apagaba
+    // "tapa la vista" no hacia nada.
+    const item = makeWallItem(0, 0, 1, 0)
+    item.metadata = { ...(item.metadata as object), lineOfSight: false } as typeof item.metadata
+    expect(buildLoSOccluders([item], 10, 10)).toHaveLength(0)
+  })
+
   it('extracts zone edges', () => {
     const items = [makeZoneItem([0.3, 0.3, 0.7, 0.3, 0.7, 0.7, 0.3, 0.7])]
     const occ = buildLoSOccluders(items, 10, 10)

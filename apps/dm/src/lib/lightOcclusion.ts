@@ -40,6 +40,8 @@ export function buildOccluders(
     if (isPendingReview(item)) continue
 
     if (item.metadata.type === 'wall' && item.shape?.type === 'line' && item.shape.points.length >= 4) {
+      // `lineOfSight: false` = el muro no tapa nada (un hueco, un arco).
+      if ((item.metadata as { lineOfSight?: boolean }).lineOfSight === false) continue
       const p = item.shape.points
       out.push({
         a: [(p[0] - 0.5) * mapWidth, (p[1] - 0.5) * mapHeight],

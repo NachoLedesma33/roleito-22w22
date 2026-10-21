@@ -31,6 +31,9 @@ export function buildLoSOccluders(
     if (isPendingReview(item)) continue
 
     if (item.metadata.type === 'wall' && item.shape?.type === 'line' && item.shape.points.length >= 4) {
+      // `lineOfSight: false` = el muro no tapa la vista (un hueco, un arco).
+      // El flag existia pero el runtime lo ignoraba.
+      if ((item.metadata as { lineOfSight?: boolean }).lineOfSight === false) continue
       const p = item.shape.points
       occluders.push({
         a: [(p[0] - 0.5) * mapWidth, (p[1] - 0.5) * mapHeight],

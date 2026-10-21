@@ -3,8 +3,27 @@ import {
   extractZonePolygons,
   crossZoneBorder,
   insideAnyZone,
+  extractBlockingWallLines,
   type ShadowItem,
 } from './wall-collision'
+
+describe('extractBlockingWallLines', () => {
+  const muro = (movement?: boolean) => ({
+    metadata: { type: 'wall', ...(movement === undefined ? {} : { movement }) },
+    shape: { type: 'line', points: [0.2, 0.5, 0.8, 0.5] },
+  })
+
+  it('un muro normal bloquea', () => {
+    expect(extractBlockingWallLines([muro()])).toHaveLength(1)
+    expect(extractBlockingWallLines([muro(true)])).toHaveLength(1)
+  })
+
+  it('un muro con movement false no bloquea', () => {
+    // El flag existia en el metadata pero el runtime lo ignoraba: apagar
+    // "bloquea el movimiento" no hacia nada.
+    expect(extractBlockingWallLines([muro(false)])).toHaveLength(0)
+  })
+})
 
 function polygonZone(points: number[]): ShadowItem {
   return {

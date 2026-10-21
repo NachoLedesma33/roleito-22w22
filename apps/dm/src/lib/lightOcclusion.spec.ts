@@ -78,6 +78,13 @@ describe('buildOccluders', () => {
     expect(out[0].b[1]).toBeCloseTo(0, 5)
   })
 
+  it('un muro con lineOfSight false no ocluye la luz', () => {
+    // El flag existia pero el runtime lo ignoraba.
+    const item = wallItem([0.5, 0.5, 0.6, 0.5])
+    item.metadata = { ...(item.metadata as object), lineOfSight: false } as typeof item.metadata
+    expect(buildOccluders([item], mapW, mapH)).toHaveLength(0)
+  })
+
   it('puerta abierta no bloquea; cerrada si', () => {
     const closed = buildOccluders([doorItem([0.5, 0.2, 0.5, 0.8], 'closed')], mapW, mapH)
     expect(closed).toHaveLength(1)

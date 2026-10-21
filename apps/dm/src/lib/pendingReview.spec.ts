@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { SceneItem, SceneLayer, WallMetadata } from '@core/domain/types'
 import { approvedItems, isPendingReview } from './pendingReview'
-import { extractApprovedWallLines, extractZonePolygons, type ShadowItem } from './wall-collision'
+import { extractBlockingWallLines, extractZonePolygons, type ShadowItem } from './wall-collision'
 import { buildOccluders } from './lightOcclusion'
 import { buildLoSOccluders } from './losSystem'
 
@@ -72,8 +72,8 @@ function wall(pending: boolean): SceneItem {
 
 describe('geometria pendiente de revision', () => {
   it('un muro pendiente no bloquea el movimiento', () => {
-    expect(extractApprovedWallLines([wall(true)])).toHaveLength(0)
-    expect(extractApprovedWallLines([wall(false)])).toHaveLength(1)
+    expect(extractBlockingWallLines([wall(true)])).toHaveLength(0)
+    expect(extractBlockingWallLines([wall(false)])).toHaveLength(1)
   })
 
   it('un muro pendiente no ocluye la luz', () => {

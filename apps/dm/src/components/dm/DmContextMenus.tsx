@@ -3,7 +3,7 @@ import ContextMenu, { type ContextMenuItem } from '@/components/ContextMenu';
 import DoorContextMenu from '@/components/DoorContextMenu';
 import WallContextMenu from '@/components/WallContextMenu';
 import ZoneContextMenu from '@/components/ZoneContextMenu';
-import type { PortalRef } from '@core/domain/types';
+import type { PortalRef, SceneItem } from '@core/domain/types';
 
 /** Posición en viewport de un menú contextual, más el item al que pertenece. */
 export interface ItemMenuState {
@@ -36,7 +36,11 @@ export interface DmContextMenusProps {
    * la función y no el ref: este componente no debe saber de `graphRef`.
    */
   getZonePortals: (itemId: string) => PortalRef[];
+  /** El item del grafo, para los menus que lo editan (el del muro). */
+  getItem: (itemId: string) => SceneItem | undefined;
   onDeleteItem: (itemId: string) => void;
+  /** Edita un item del grafo (el Modo Hibrido: el DM afina lo que propuso la IA). */
+  onUpdateItem: (itemId: string, patch: Partial<SceneItem>) => void;
   onToggleDoor: (itemId: string) => void;
   onLockDoor: (itemId: string) => void;
   onUnlockDoor: (itemId: string) => void;
@@ -62,7 +66,9 @@ export default function DmContextMenus({
   fogMenu,
   onCloseFogMenu,
   getZonePortals,
+  getItem,
   onDeleteItem,
+  onUpdateItem,
   onToggleDoor,
   onLockDoor,
   onUnlockDoor,
@@ -95,10 +101,12 @@ export default function DmContextMenus({
         />
       )}
 
-      {wallMenu && (
+      {wallMenu && getItem(wallMenu.itemId) && (
         <WallContextMenu
           x={wallMenu.x}
           y={wallMenu.y}
+          item={getItem(wallMenu.itemId)!}
+          onUpdate={(patch) => onUpdateItem(wallMenu.itemId, patch)}
           onDelete={() => onDeleteItem(wallMenu.itemId)}
           onClose={onCloseWallMenu}
         />

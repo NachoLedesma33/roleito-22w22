@@ -207,6 +207,8 @@ function WallRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, 
   // tiene que ver de un vistazo que es una propuesta y no geometria aprobada.
   const pending = isPendingReview(item)
   const color = pending ? '#f59e0b' : (WALL_MATERIAL_COLORS[meta.material] ?? '#6b7280')
+  // La opacidad del metadata manda (antes era 0.12 fijo y el flag no hacia nada).
+  const baseOpacity = meta.opacity ?? 0.12
   const Y = getY(renderMode)
 
   const mapHeight = 10 * mapScale
@@ -238,7 +240,7 @@ function WallRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, 
         <meshStandardMaterial
           color={color}
           transparent
-          opacity={isSelected ? 0.3 : (pending ? 0.45 : 0.12)}
+          opacity={isSelected ? 0.3 : (pending ? Math.max(0.45, baseOpacity) : baseOpacity)}
           side={THREE.DoubleSide}
         />
       </mesh>

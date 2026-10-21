@@ -22,7 +22,7 @@ import DmCommandPalette from '@/components/dm/DmCommandPalette';
 import DmDock from '@/components/dm/DmDock';
 import AnchoredMenu from '@/components/ui/AnchoredMenu';
 import { useAnchoredMenu } from '@/lib/useAnchoredMenu';
-import { extractZonePolygons, checkWallCollision, extractApprovedWallLines } from '@/lib/wall-collision';
+import { extractZonePolygons, checkWallCollision, extractBlockingWallLines } from '@/lib/wall-collision';
 import { buildOccluders } from '@/lib/lightOcclusion';
 import { extractFogRegions } from '@/lib/fogMask';
 import { computeReachableCells } from '@/lib/movementRange';
@@ -957,8 +957,16 @@ const startFogMode = useCallback(() => {
       : []
   }, [graphRef])
 
-  const handleWallContextMenu = useCallback((itemId: string, clientX: number, clientY: number) => {
-    const item = graphRef.getItem(itemId)
+  /**
+   * Edita un item del grafo (el "Modo Hibrido": el DM afina lo que propuso la
+   * deteccion). El patch se aplica sobre el item y se guarda el grafo entero.
+   */
+  const handleUpdateItem = useCallback((itemId: string, patch: Partial<SceneItem>) => {
+    graphRef.updateItem(itemId, patch);
+    handleItemsChange(graphRef.getItems());
+  }, [graphRef, handleItemsChange]);
+
+  const handleWallContextMenu = useCallback((itemId: string, clientX: number, clientY: number) => {    const item = graphRef.getItem(itemId)
     if (item?.metadata.type === 'wall') {
       setSelectedItemId(itemId)
       setWallContextMenu({ x: clientX, y: clientY, itemId })
@@ -1450,7 +1458,7 @@ const startFogMode = useCallback(() => {
     const normX = (x / mapW) + 0.5;
     const normZ = (z / mapH) + 0.5;
 
-    const walls = extractApprovedWallLines(graphRef.getItems());
+    const walls = extractBlockingWallLines(graphRef.getItems());
 
     if (checkWallCollision(normX, normZ, walls, 0.03)) {
       push({
@@ -3374,7 +3382,9 @@ const startFogMode = useCallback(() => {
         fogMenu={fogContextMenu}
         onCloseFogMenu={() => setFogContextMenu(null)}
         getZonePortals={getZonePortals}
+        getItem={(itemId) => graphRef.getItem(itemId)}
         onDeleteItem={handleDeleteItem}
+        onUpdateItem={handleUpdateItem}
         onToggleDoor={toggleDoor}
         onLockDoor={lockDoor}
         onUnlockDoor={unlockDoor}
