@@ -221,3 +221,46 @@ h6 {
   display: none;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   Magitech — el halo que recorre el borde y el barrido de luz
+   El borde de la placa de acceso lleva un rayo de cian/violeta que gira
+   despacio (tipo "border beam"): es la energía de la máquina encendida.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+@property --magitech-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.magitech-beam {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  opacity: 0.55;
+  background: conic-gradient(
+    from var(--magitech-angle),
+    transparent 0deg,
+    color-mix(in srgb, var(--azure-500) 90%, transparent) 30deg,
+    color-mix(in srgb, var(--arcana-500) 90%, transparent) 75deg,
+    transparent 140deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: magitech-beam 6s linear infinite;
+}
+
+@keyframes magitech-beam {
+  to { --magitech-angle: 360deg; }
+}
+
+/* Barrido de luz al pasar por encima del boton. */
+@keyframes magitech-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+

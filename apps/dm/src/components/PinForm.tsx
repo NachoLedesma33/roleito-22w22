@@ -1,6 +1,8 @@
 import type { FormEvent, ReactNode } from 'react';
+import { motion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/Button';
+import MagitechField from '@/components/ui/MagitechField';
+import MagitechButton from '@/components/ui/MagitechButton';
 
 export interface PinFormProps {
   /** Nombre del perfil (no el id interno). */
@@ -17,15 +19,19 @@ export interface PinFormProps {
   /** Links secundarios: crear DM, cambiar PIN, volver. */
   footer?: ReactNode;
   testId?: string;
+  /** El acceso fue corroborado: el formulario se abre y se disuelve. */
+  unlocking?: boolean;
 }
-
-const inputClass =
-  'w-full text-center bg-surface-2 border border-border rounded-lg py-3 text-ink placeholder:text-ink-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors';
 
 /**
  * Formulario clásico nombre de perfil + PIN, sin lógica de auth ni cromo de
  * pantalla: solo la tarjeta. Se puede montar en el login actual o dentro de una
  * landing.
+ *
+ * Estilo "Magitech": la caja la pone la pantalla (`PinLogin`); acá van los
+ * campos sin marco, la linea que se enciende al enfocar y el boton de
+ * energia. Cuando `unlocking` prende, los campos se van hacia arriba y el
+ * boton emite el pulso de luz: el formulario se esta abriendo.
  */
 export default function PinForm({
   nameValue,
@@ -39,49 +45,47 @@ export default function PinForm({
   aside,
   footer,
   testId = 'pin-form',
+  unlocking = false,
 }: PinFormProps) {
   const { t } = useTranslation();
 
   return (
     <div className="space-y-5" data-testid={testId}>
-      <form onSubmit={onSubmit} className="space-y-5">
-        <div>
-          <label htmlFor="pin-form-name" className="sr-only">
-            {t('login.profileName', 'Nombre de perfil')}
-          </label>
-          <input
-            id="pin-form-name"
-            type="text"
-            value={nameValue}
-            onChange={(e) => onNameChange(e.target.value.trim())}
-            placeholder={t('login.profileName', 'Nombre de perfil')}
-            autoComplete="username"
-            spellCheck={false}
-            autoFocus
-            data-testid="login-dm-name"
-            className={`${inputClass} text-lg`}
-          />
-        </div>
+      <motion.form
+        onSubmit={onSubmit}
+        className="space-y-6"
+        animate={unlocking ? { opacity: 0 } : { opacity: 1 }}
+        transition={{ duration: 0.35 }}
+      >
+        <MagitechField
+          id="pin-form-name"
+          value={nameValue}
+          onChange={(v) => onNameChange(v.trim())}
+          label={t('login.profileName', 'Nombre de perfil')}
+          placeholder={t('login.profileName', 'Nombre de perfil')}
+          autoComplete="username"
+          autoFocus
+          spellCheck={false}
+          testId="login-dm-name"
+          unlocking={unlocking}
+        />
 
         <div>
-          <label htmlFor="pin-form-pin" className="sr-only">
-            {t('login.pinLabel', 'PIN de 4 a 8 dígitos')}
-          </label>
-          <input
+          <MagitechField
             id="pin-form-pin"
-            type="password"
+            value={pinValue}
+            onChange={(v) => onPinChange(v.replace(/\D/g, ''))}
+            label={t('login.pinLabel', 'PIN de 4 a 8 dígitos')}
+            pin
+            maxLength={8}
             inputMode="numeric"
             pattern="[0-9]*"
-            maxLength={8}
-            value={pinValue}
-            onChange={(e) => onPinChange(e.target.value.replace(/\D/g, ''))}
-            placeholder="····"
             autoComplete="current-password"
-            aria-describedby="pin-form-pin-hint"
-            data-testid="login-pin"
-            className={`${inputClass} text-3xl tracking-[0.5em]`}
+            describedBy="pin-form-pin-hint"
+            testId="login-pin"
+            unlocking={unlocking}
           />
-          <p id="pin-form-pin-hint" className="mt-1 text-center text-xs text-ink-muted">
+          <p id="pin-form-pin-hint" className="mt-2 text-center text-xs text-ink-muted">
             {t('login.pinHint', '4 a 8 dígitos')}
           </p>
         </div>
@@ -96,18 +100,24 @@ export default function PinForm({
           </p>
         )}
 
-        <Button
+        <MagitechButton
           type="submit"
           disabled={loading}
           data-testid="login-submit"
-          className="w-full"
+          unlocking={unlocking}
         >
           {loading ? '...' : submitLabel}
-        </Button>
-      </form>
+        </MagitechButton>
+      </motion.form>
 
-      {aside}
-      {footer}
+      <motion.div
+        className="space-y-4"
+        animate={unlocking ? { opacity: 0, y: -12 } : { opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.05 }}
+      >
+        {aside}
+        {footer}
+      </motion.div>
     </div>
   );
 }

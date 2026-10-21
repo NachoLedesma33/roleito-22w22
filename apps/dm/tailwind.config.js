@@ -21,6 +21,19 @@ export default {
         },
         border: 'var(--border)',
         ring: 'var(--ring)',
+        // Paleta arcana: la energía cian/violeta y el bronce de la maquinaria.
+        // Con clave de tono (500, 600) para que enganche con los tokens.
+        arcana: {
+          500: 'var(--arcana-500)',
+          600: 'var(--arcana-600)',
+        },
+        azure: { 500: 'var(--azure-500)' },
+        brass: { 500: 'var(--brass-500)' },
+        obsidian: {
+          950: 'var(--obsidian-950)',
+          900: 'var(--obsidian-900)',
+          800: 'var(--obsidian-800)',
+        },
         ink: {
           DEFAULT: 'var(--ink)',
           muted: 'var(--ink-muted)',
@@ -58,29 +71,8 @@ export default {
       transitionTimingFunction: {
         standard: 'var(--ease-standard)',
       },
-      keyframes: {
-        vortex: {
-          '0%': { transform: 'scale(1) rotate(0deg)', filter: 'blur(0px)', opacity: '1' },
-          '40%': {
-            transform: 'scale(0.85) rotate(90deg)',
-            filter: 'blur(2px)',
-            opacity: '1',
-          },
-          '70%': {
-            transform: 'scale(0.4) rotate(260deg)',
-            filter: 'blur(10px)',
-            opacity: '0.85',
-          },
-          '100%': {
-            transform: 'scale(0.05) rotate(760deg)',
-            filter: 'blur(28px)',
-            opacity: '0',
-          },
-        },
-      },
-      animation: {
-        vortex: 'vortex 0.85s cubic-bezier(0.55, 0, 0.85, 0.35) forwards',
-      },
+      keyframes: {},
+      animation: {},
     },
   },
   plugins: [animate],

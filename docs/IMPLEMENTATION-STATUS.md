@@ -457,6 +457,8 @@ Based on dependency analysis and documentation completeness:
 
 > Login profesional **completado**: perfil + PIN contra el back, con perfiles guardados en el navegador (localStorage) — la pantalla ya no llama a `GET /api/auth/dms` (endpoint removido).
 >
+> Login **Magitech** (2026-10-21): la pantalla de acceso se rediseñó con vidrio oscuro, borde de bronce con rayo de luz (`border beam`), campos sin caja con línea que se enciende al enfocar, dígitos del PIN que prenden uno por uno, botón de gradiente con efecto magnético y un **desbloqueo** (pulso de luz → los campos se van hacia arriba → la placa se disuelve en partículas y revela el portal de fondo). Piezas: `components/ui/MagitechField.tsx`, `components/ui/MagitechButton.tsx`, `components/LoginShell.tsx`, `components/PinForm.tsx`, `components/PinLogin.tsx`.
+>
 > Handouts a jugadores **completado** (fases 1 y 2) — ver sección 6.
 >
 > Real-time sync (WebSocket) completado en ambos sentidos (jugador + dashboard DM) — ver secciones 2 y 6.

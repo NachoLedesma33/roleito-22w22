@@ -1,25 +1,25 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/Button';
+import MagitechField from '@/components/ui/MagitechField';
+import MagitechButton from '@/components/ui/MagitechButton';
 import PinForm from './PinForm';
 
 type Mode = 'login' | 'register' | 'change';
 
-const inputClass =
-  'w-full text-center bg-surface-2 border border-border rounded-lg py-3 text-ink placeholder:text-ink-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors';
-
-const pinInputClass = `${inputClass} text-3xl tracking-[0.5em]`;
-
+/**
+ * Links secundarios: serif, minimos, con un halo cian al pasar por encima.
+ * Son la voz del mundo (el grimorio, la anotacion al margen), no un boton.
+ */
 const secondaryClass =
-  'w-full py-2 text-xs text-ink-muted hover:text-ink underline underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md';
+  'font-display text-sm tracking-wide text-ink-muted underline decoration-transparent underline-offset-4 transition-colors duration-base hover:text-azure-500 hover:decoration-azure-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm';
 
 /**
  * Pantalla de entrada. El login es nombre de perfil + PIN; a un costado, los
  * perfiles guardados para elegir si no te acordás del nombre. La parte visual
  * del formulario está en `PinForm`, que no depende de auth ni de la pantalla.
  */
-export default function PinLogin() {
+export default function PinLogin({ unlocking = false }: { unlocking?: boolean }) {
   const { t } = useTranslation();
   const { login, registerDm, changePin, profiles } = useAuth();
   const [mode, setMode] = useState<Mode>('login');
@@ -122,7 +122,9 @@ export default function PinLogin() {
     <div data-testid="login-saved-dms">
       {profiles.length > 0 ? (
         <>
-          <p className="text-xs text-ink-muted mb-2 text-center">{t('login.savedProfiles', 'Perfiles en esta máquina')}</p>
+          <p className="text-xs text-ink-muted mb-2 text-center font-mono uppercase tracking-[0.2em]">
+            {t('login.savedProfiles', 'Perfiles en esta máquina')}
+          </p>
           <div className="space-y-1.5">
             {profiles.map((profile) => (
               <button
@@ -130,9 +132,9 @@ export default function PinLogin() {
                 type="button"
                 onClick={() => { setDmName(profile.name); setError(''); }}
                 data-testid="login-saved-dm"
-                className="w-full px-3 py-2 rounded-lg bg-surface-2 hover:bg-surface border border-border text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="w-full px-3 py-2 rounded-lg bg-white/[0.03] border border-white/10 text-left transition-colors hover:border-azure-500 hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                <span className="block text-sm text-ink truncate">{profile.name}</span>
+                <span className="block font-mono text-sm text-ink truncate">{profile.name}</span>
               </button>
             ))}
           </div>
@@ -150,14 +152,23 @@ export default function PinLogin() {
       <div className="w-full max-w-sm">
         <div className="max-h-[calc(100dvh-4rem)] overflow-y-auto">
           <div className="text-center mb-6">
-            <h1 className="text-3xl font-bold text-ink [text-shadow:0_2px_12px_rgba(0,0,0,0.8)]">
+            <h1 className="font-display text-3xl tracking-[0.2em] text-ink [text-shadow:0_0_18px_rgba(76,194,255,0.35)]">
               {t('app.name')}
             </h1>
-            <div className="mt-3 mx-auto h-1 w-16 bg-brand" aria-hidden="true" />
+            <div
+              className="mt-3 mx-auto h-px w-24 bg-gradient-to-r from-transparent via-brass-500 to-transparent"
+              aria-hidden="true"
+            />
           </div>
-          <div className="bg-surface border border-border rounded-xl p-8 space-y-5 shadow-lg">
-            <p className="text-sm text-ink-muted text-center">{subtitle}</p>
-            {body}
+          {/* Vidrio oscuro: el video de marca se ve a traves del panel. */}
+          <div className="relative overflow-hidden rounded-2xl border border-[color-mix(in_srgb,var(--brass-500)_28%,transparent)] bg-[color-mix(in_srgb,var(--obsidian-900)_62%,transparent)] backdrop-blur-xl shadow-[0_0_70px_-30px_rgba(201,162,39,0.55)]">
+            <span className="magitech-beam" aria-hidden="true" />
+            <div className="relative p-8 space-y-5">
+              <p className="text-center font-mono text-xs uppercase tracking-[0.25em] text-ink-muted">
+                {subtitle}
+              </p>
+              {body}
+            </div>
           </div>
         </div>
       </div>
@@ -173,51 +184,45 @@ export default function PinLogin() {
   if (mode === 'register') {
     return shell(
       t('login.registerSubtitle', 'Creá tu DM (4-8 dígitos)'),
-      <form onSubmit={submitRegister} className="space-y-5">
-        <label className="sr-only" htmlFor="register-name">
-          {t('login.dmName', 'Nombre del DM')}
-        </label>
-        <input
+      <form onSubmit={submitRegister} className="space-y-6">
+        <MagitechField
           id="register-name"
-          type="text"
           value={dmName}
-          onChange={(e) => setDmName(e.target.value)}
+          onChange={setDmName}
+          label={t('login.dmName', 'Nombre del DM')}
           placeholder={t('login.dmName', 'Nombre del DM')}
           autoFocus
-          className={`${inputClass} text-lg`}
+          testId="register-name"
+          unlocking={unlocking}
         />
-        <label className="sr-only" htmlFor="register-pin">
-          {t('login.pin', 'PIN')}
-        </label>
-        <input
+        <MagitechField
           id="register-pin"
-          type="password"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          maxLength={8}
           value={pin}
-          onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-          placeholder="····"
-          className={pinInputClass}
-        />
-        <label className="sr-only" htmlFor="register-confirm">
-          {t('login.confirmPin', 'Confirmar PIN')}
-        </label>
-        <input
-          id="register-confirm"
-          type="password"
+          onChange={(v) => setPin(v.replace(/\D/g, ''))}
+          label={t('login.pin', 'PIN')}
+          pin
+          maxLength={8}
           inputMode="numeric"
           pattern="[0-9]*"
-          maxLength={8}
+          testId="register-pin"
+          unlocking={unlocking}
+        />
+        <MagitechField
+          id="register-confirm"
           value={confirmPin}
-          onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
-          placeholder={t('login.confirmPin', 'Confirmar PIN')}
-          className={pinInputClass}
+          onChange={(v) => setConfirmPin(v.replace(/\D/g, ''))}
+          label={t('login.confirmPin', 'Confirmar PIN')}
+          pin
+          maxLength={8}
+          inputMode="numeric"
+          pattern="[0-9]*"
+          testId="register-confirm"
+          unlocking={unlocking}
         />
         {errorMessage}
-        <Button type="submit" disabled={loading} className="w-full">
+        <MagitechButton type="submit" disabled={loading} data-testid="register-submit">
           {loading ? '...' : t('login.createButton', 'Crear DM')}
-        </Button>
+        </MagitechButton>
         <button type="button" onClick={() => switchTo('login')} className={secondaryClass}>
           ← {t('common.back')}
         </button>
@@ -228,54 +233,48 @@ export default function PinLogin() {
   if (mode === 'change') {
     return shell(
       t('login.changeSubtitle', 'Cambiar PIN — ingresá el actual y el nuevo'),
-      <form onSubmit={submitChange} className="space-y-5">
-        <label className="sr-only" htmlFor="change-current">
-          {t('login.currentPin', 'PIN actual (opcional)')}
-        </label>
-        <input
+      <form onSubmit={submitChange} className="space-y-6">
+        <MagitechField
           id="change-current"
-          type="password"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          maxLength={8}
           value={currentPin}
-          onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, ''))}
-          placeholder={t('login.currentPin', 'PIN actual (opcional)')}
+          onChange={(v) => setCurrentPin(v.replace(/\D/g, ''))}
+          label={t('login.currentPin', 'PIN actual (opcional)')}
+          pin
+          maxLength={8}
+          inputMode="numeric"
+          pattern="[0-9]*"
           autoFocus
-          className={pinInputClass}
+          testId="change-current"
+          unlocking={unlocking}
         />
-        <label className="sr-only" htmlFor="change-new">
-          {t('login.newPin', 'PIN nuevo')}
-        </label>
-        <input
+        <MagitechField
           id="change-new"
-          type="password"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          maxLength={8}
           value={pin}
-          onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-          placeholder={t('login.newPin', 'PIN nuevo')}
-          className={pinInputClass}
-        />
-        <label className="sr-only" htmlFor="change-confirm">
-          {t('login.confirmPin', 'Confirmar PIN')}
-        </label>
-        <input
-          id="change-confirm"
-          type="password"
+          onChange={(v) => setPin(v.replace(/\D/g, ''))}
+          label={t('login.newPin', 'PIN nuevo')}
+          pin
+          maxLength={8}
           inputMode="numeric"
           pattern="[0-9]*"
-          maxLength={8}
+          testId="change-new"
+          unlocking={unlocking}
+        />
+        <MagitechField
+          id="change-confirm"
           value={confirmPin}
-          onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
-          placeholder={t('login.confirmPin', 'Confirmar PIN')}
-          className={pinInputClass}
+          onChange={(v) => setConfirmPin(v.replace(/\D/g, ''))}
+          label={t('login.confirmPin', 'Confirmar PIN')}
+          pin
+          maxLength={8}
+          inputMode="numeric"
+          pattern="[0-9]*"
+          testId="change-confirm"
+          unlocking={unlocking}
         />
         {errorMessage}
-        <Button type="submit" disabled={loading} className="w-full">
+        <MagitechButton type="submit" disabled={loading} data-testid="change-submit">
           {loading ? '...' : t('login.changeButton', 'Cambiar PIN')}
-        </Button>
+        </MagitechButton>
         <button type="button" onClick={() => switchTo('login')} className={secondaryClass}>
           ← {t('common.back')}
         </button>
@@ -295,8 +294,9 @@ export default function PinLogin() {
       error={error}
       loading={loading}
       aside={savedDms}
+      unlocking={unlocking}
       footer={
-        <div className="space-y-1">
+        <div className="space-y-1 text-center">
           <button type="button" onClick={() => switchTo('register')} className={secondaryClass}>
             {t('login.createDm', 'Crear DM nuevo')}
           </button>
