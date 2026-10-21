@@ -1983,6 +1983,53 @@ async def test_el_snapshot_del_jugador_no_manda_geometria_pendiente(client):
 
 
 @pytest.mark.asyncio
+async def test_put_items_rechaza_lo_que_romperia_el_snapshot(client):
+    """Un NaN en un item rompe el snapshot del jugador: el JSON.parse del
+    navegador rechaza `NaN` (no es JSON valido) y se cae la vista entera. Una
+    URL absoluta en `image` haria que el navegador del DM cargue un host ajeno.
+    """
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Items"})).json()
+    scene = (
+        await client.post(f"/api/campaigns/{camp['id']}/scenes", json={"name": "Escena"})
+    ).json()
+
+    item = {
+        "id": "wall-1",
+        "name": "Muro",
+        "x": 0.0, "y": 0.0, "rotation": 0.0, "scale": 1.0,
+        "width": 0.0, "height": 0.0, "zIndex": 0, "layer": 1,
+        "visible": True, "locked": False,
+        "metadata": {"type": "wall"},
+        "shape": {"type": "line", "points": [0.2, 0.5, 0.8, 0.5]},
+    }
+
+    # Un item normal entra.
+    res = await client.put(
+        f"/api/campaigns/{camp['id']}/scenes/{scene['id']}/items",
+        json={"items": [item]},
+    )
+    assert res.status_code == 200, res.text
+
+    # Con un NaN, se rechaza (y no se guarda a medias).
+    res = await client.put(
+        f"/api/campaigns/{camp['id']}/scenes/{scene['id']}/items",
+        json={"items": [{**item, "x": float("nan")}]},
+    )
+    assert res.status_code == 422, res.text
+
+    # Y una URL externa en la imagen, tambien.
+    res = await client.put(
+        f"/api/campaigns/{camp['id']}/scenes/{scene['id']}/items",
+        json={"items": [{**item, "image": "https://ejemplo.com/x.png"}]},
+    )
+    assert res.status_code == 422, res.text
+
+    # Lo que se habia guardado sigue ahi: el rechazo no toco la escena.
+    got = (await client.get(f"/api/campaigns/{camp['id']}/scenes/{scene['id']}/items")).json()
+    assert len(got["items"]) == 1
+
+
+@pytest.mark.asyncio
 async def test_agentes_ingest_world_state_y_scene(client, monkeypatch):
     """Los tres agentes que faltaban expuestos por HTTP.
 

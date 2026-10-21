@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from core.agents.base import AgentResult, BaseAgent
+from core.agents.validation import safe_text, safe_list, safe_str_list
 
 WORLD_SYSTEM = """You are a tabletop RPG world state oracle. Given the current state of the campaign and a question, answer from the state only.
 
@@ -104,9 +105,9 @@ class WorldStateAgent(BaseAgent):
             return self._error("Failed to parse AI response")
 
         result = WorldStateResult(
-            answer=data.get("answer", ""),
-            positions=data.get("positions", []),
-            active_quests=data.get("active_quests", []),
+            answer=safe_text(data.get("answer")),
+            positions=safe_list(data.get("positions")),
+            active_quests=safe_str_list(data.get("active_quests")),
             confidence=data.get("confidence", 0.5),
         )
 

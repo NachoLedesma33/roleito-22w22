@@ -1,5 +1,6 @@
 """Tests for core AI agents with the deterministic mock provider (no network)."""
 
+import json
 import sys
 from pathlib import Path
 
@@ -20,6 +21,7 @@ from core.agents.context_manager import (
     build_context,
     filter_canon,
 )
+from core.agents.validation import MAX_EVENTS, MAX_LIST, MAX_TEXT, safe_text
 
 
 class GarbageProvider(AIProvider):
@@ -27,6 +29,25 @@ class GarbageProvider(AIProvider):
 
     async def complete(self, prompt, *, system="", model=None, max_tokens=512, temperature=0.7):
         return "this is not json {{"
+
+
+class HugeProvider(AIProvider):
+    """Un modelo que devuelve un texto enorme (o un array enorme)."""
+
+    name = "huge"
+
+    async def complete(self, prompt, *, system="", model=None, max_tokens=512, temperature=0.7):
+        return json.dumps({
+            "summary": "x" * 200_000,
+            "answer": "y" * 200_000,
+            "recap": "z" * 200_000,
+            "narration": "w" * 200_000,
+            "events": [{"type": "X", "description": "d" * 100_000}] * 500,
+            "highlights": ["h" * 50_000] * 500,
+            "entities": {},
+            "thread_hooks": [],
+            "character_changes": [],
+        })
 
 
 def _mock():
@@ -264,6 +285,46 @@ async def test_scene_empty_description_errors():
     agent = SceneAgent(_mock())
     res = await agent.run(scene_description="  ")
     assert res.status == "error"
+
+
+def test_safe_text_acota():
+    assert safe_text("hola") == "hola"
+    assert len(safe_text("x" * 100_000)) == MAX_TEXT
+    assert safe_text(None) == ""
+    assert safe_text(42) == ""
+
+
+async def test_la_salida_de_un_modelo_no_se_guarda_enorme():
+    """Un modelo puede devolver un texto de 1 MB: eso se terminaria guardando
+    en la DB o renderizando en el canvas. Los agentes lo acotan."""
+    processor = SessionProcessor(HugeProvider())
+    res = await processor.run(raw_notes="notas")
+    assert res.status == "success", res.error
+    assert len(res.data.summary) <= MAX_TEXT
+
+    lore = LoreAgent(HugeProvider())
+    res = await lore.run(question="?")
+    assert len(res.data.answer) <= MAX_TEXT
+
+    recapper = RecapAgent(HugeProvider())
+    res = await recapper.run(session_notes="notas")
+    assert len(res.data.recap) <= MAX_TEXT
+    assert len(res.data.highlights) <= MAX_TEXT
+
+    narrator = NarratorAgent(HugeProvider())
+    res = await narrator.run(scene_description="una cripta")
+    assert len(res.data.narration) <= MAX_TEXT
+
+
+async def test_las_listas_de_la_salida_tienen_techo():
+    """500 eventos de 100 KB cada uno son 50 MB: la lista tambien se acota."""
+    processor = SessionProcessor(HugeProvider())
+    res = await processor.run(raw_notes="notas")
+    assert len(res.data.events) <= MAX_EVENTS
+
+    recapper = RecapAgent(HugeProvider())
+    res = await recapper.run(session_notes="notas")
+    assert len(res.data.highlights) <= MAX_LIST
 
 
 async def test_scene_garbage_json_errors():

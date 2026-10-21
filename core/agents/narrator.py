@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from core.agents.base import AgentResult, BaseAgent
+from core.agents.validation import safe_text, safe_str_list
 
 NARRATOR_SYSTEM = """You are a tabletop RPG narrator. Given scene context, generate atmospheric narration for the party.
 
@@ -83,10 +84,10 @@ class NarratorAgent(BaseAgent):
             return self._error("Failed to parse AI response")
 
         result = NarrationResult(
-            narration=data.get("narration", ""),
+            narration=safe_text(data.get("narration")),
             mood=data.get("mood", "calm"),
-            environmental_cues=data.get("environmental_cues", []),
-            suggested_effects=data.get("suggested_effects", []),
+            environmental_cues=safe_str_list(data.get("environmental_cues")),
+            suggested_effects=safe_str_list(data.get("suggested_effects")),
         )
 
         return self._ok(result)

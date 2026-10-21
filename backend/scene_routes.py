@@ -9,6 +9,7 @@ from schemas import (
     SceneCharacterPosition, SceneCharacterResponse,
 )
 from services.assets import ASSETS_DIR
+from services.item_validation import ItemValidationError, assert_valid_scene_items
 import math
 import os
 import time
@@ -220,7 +221,16 @@ async def save_scene_items(
         raise HTTPException(status_code=404, detail="Scene not found")
 
     import json
-    scene.items_json = json.dumps(data.get("items", []))
+    items = data.get("items", [])
+    # Un NaN o una URL absoluta en un item rompe el snapshot del jugador (el
+    # JSON.parse del navegador los rechaza) o hace que el navegador del DM
+    # cargue un host ajeno. Se rechaza antes de guardar.
+    try:
+        assert_valid_scene_items(items)
+    except ItemValidationError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+    scene.items_json = json.dumps(items)
     await db.commit()
     await db.refresh(scene)
     await broadcast_revision(db, campaign_id)

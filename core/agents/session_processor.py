@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from core.agents.base import AgentResult, BaseAgent
+from core.agents.validation import safe_text, safe_list, safe_str_list
 
 SESSION_SYSTEM = """You are a tabletop RPG session processor. Given raw session notes from a DM, extract structured data.
 
@@ -82,11 +83,11 @@ class SessionProcessor(BaseAgent):
             return self._error("Failed to parse AI response")
 
         result = SessionProcessingResult(
-            summary=data.get("summary", ""),
-            events=data.get("events", []),
+            summary=safe_text(data.get("summary")),
+            events=safe_list(data.get("events")),
             entities=data.get("entities", {}),
-            thread_hooks=data.get("thread_hooks", []),
-            character_changes=data.get("character_changes", []),
+            thread_hooks=safe_str_list(data.get("thread_hooks")),
+            character_changes=safe_list(data.get("character_changes")),
         )
 
         return self._ok(result)

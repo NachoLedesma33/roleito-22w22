@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from core.agents.base import AgentResult, BaseAgent
+from core.agents.validation import safe_text, safe_str_list
 
 RECAP_SYSTEM = """You are a tabletop RPG session recap writer. Given session history and notes, generate a compelling recap for players.
 
@@ -70,8 +71,8 @@ class RecapAgent(BaseAgent):
             return self._error("Failed to parse AI response")
 
         result = RecapResult(
-            recap=data.get("recap", ""),
-            highlights=data.get("highlights", []),
+            recap=safe_text(data.get("recap")),
+            highlights=safe_str_list(data.get("highlights")),
             cliffhanger=data.get("cliffhanger", ""),
             next_session_hook=data.get("next_session_hook", ""),
         )

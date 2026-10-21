@@ -213,6 +213,7 @@ Eso es la base sana. La Parte A (más proveedores, más modelos) **no la rompe**
 - Números: finitos y dentro de rango (coordenadas normalizadas 0..1; el resto acotado). `NaN`/`Infinity` → se rechazan (el JSON los trae como `NaN`/`Infinity` en Python, que `json.dumps` escribe como `NaN` → **rompe el JSON del cliente**).
 - Sin URLs absolutas en campos de texto que el cliente vaya a cargar (`item.image` solo puede ser un asset local ya subido).
 - Longitud de la respuesta cruda antes de parsear (capa de transporte: 1 MB).
+- **HECHO (B1):** `backend/services/item_validation.py` (los items) y `core/agents/validation.py` (la salida de los agentes), aplicados en el `PUT /items`, en el import de campañas y en los 7 agentes. Lo que se evitó: un `NaN` en un item rompía el snapshot entero (el `JSON.parse` del navegador rechaza `NaN`) y una `image` con URL absoluta hacía que el navegador del DM cargara un host ajeno.
 
 **C4 — La IA propone, el DM autoriza.**
 - Regla ya existente en el repo (`docs/EVENT-SYSTEM.md`: PROPOSED → REVIEW → APPROVED) y ya implementada para `process-session`. Se extiende a toda acción con efecto: **nada de lo que produce un agente se escribe sin que el DM lo apruebe**.
@@ -270,7 +271,7 @@ Cada línea es un test. Si un test no existe, la garantía no existe.
 
 | Fase | Qué | Criterio |
 |---|---|---|
-| **B1** | Los límites de la salida (C3): longitudes, números finitos, sin URLs remotas en items, tope de puntos. | S3 verde. Los agentes que parsean JSON con validación `pydantic` (hoy parsean a mano). |
+| **B1** | **HECHO 2026-10-20.** Los límites de la salida: en el `PUT /items` y en el import (números finitos, sin URLs remotas en `image`, topes de puntos/nombre/descripción/cantidad) y en la salida de los agentes (`core/agents/validation.py`: `safe_text`/`safe_list`/`safe_str_list`). | S3 verde. Los agentes que parsean JSON con validación pydantic (hoy parsean a mano). |
 | **B2** | El marcado de datos en los prompts (C1, C2) + el test de que el jugador no llega al prompt del DM (S4, S5). | S4, S5 verdes. |
 | **B3** | Roles y secretos (C7) + auditoría (C9). | S1, S2, S7 verdes. |
 | **B4** | Presupuesto (C8) + el reintento no multiplica el gasto (S8). | S6, S8 verdes. |

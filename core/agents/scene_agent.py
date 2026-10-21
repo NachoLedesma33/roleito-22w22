@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from core.agents.base import AgentResult, BaseAgent
+from core.agents.validation import safe_str_list
 
 SCENE_SYSTEM = """You are a tabletop RPG scene designer. Given a narrative scene, produce a visual configuration.
 
@@ -80,7 +81,7 @@ class SceneAgent(BaseAgent):
             environment=data.get("environment", ""),
             lighting=data.get("lighting", "neutral"),
             atmosphere=data.get("atmosphere", {}),
-            structures=data.get("structures", []),
+            structures=safe_str_list(data.get("structures")),
             mood=data.get("mood", "calm"),
         )
 

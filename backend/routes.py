@@ -56,6 +56,7 @@ from services.assets import (
     import_asset_path,
     rewrite_campaign_prefix,
 )
+from services.item_validation import validate_scene_items
 
 
 def _parse_dt(value):
@@ -915,6 +916,22 @@ async def import_campaign(
 
     for s in data.scenes:
         old_id = s.get("id", "")
+        # Los items del bundle pasan por los mismos limites que el PUT: un NaN
+        # rompe el snapshot del jugador (el JSON.parse del navegador lo
+        # rechaza) y una URL absoluta hace que el navegador del DM cargue un
+        # host ajeno.
+        raw_items = s.get("items_json", "[]")
+        try:
+            parsed_items = json.loads(raw_items) if isinstance(raw_items, str) else (raw_items or [])
+        except (TypeError, ValueError):
+            parsed_items = []
+        item_errors = validate_scene_items(parsed_items)
+        if item_errors:
+            raise HTTPException(
+                status_code=422,
+                detail=f"la escena '{s.get('name', '?')}' tiene items invalidos: "
+                + "; ".join(item_errors[:5]),
+            )
         new_scene = Scene(
             campaign_id=campaign.id,
             name=s.get("name", "Escena importada"),

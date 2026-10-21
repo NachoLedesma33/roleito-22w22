@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from core.agents.base import AgentResult, BaseAgent
+from core.agents.validation import safe_text, safe_str_list
 from core.agents.context_manager import build_context
 
 LORE_SYSTEM = """You are a tabletop RPG lore keeper. Given campaign context and a question, provide a helpful answer.
@@ -86,10 +87,10 @@ class LoreAgent(BaseAgent):
             return self._error("Failed to parse AI response")
 
         result = LoreResult(
-            answer=data.get("answer", ""),
-            entities_mentioned=data.get("entities_mentioned", []),
+            answer=safe_text(data.get("answer")),
+            entities_mentioned=safe_str_list(data.get("entities_mentioned")),
             confidence=data.get("confidence", 0.5),
-            related_topics=data.get("related_topics", []),
+            related_topics=safe_str_list(data.get("related_topics")),
             source_hint=data.get("source_hint", ""),
         )
 
