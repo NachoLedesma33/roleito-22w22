@@ -21,6 +21,8 @@ interface LoreResult {
   confidence: number;
   related_topics: string[];
   source_hint: string;
+  /** Que vio la IA: el DM tiene que poder verificar (o desconfiar) la respuesta. */
+  context: string;
 }
 
 interface NarrationResult {
@@ -569,6 +571,16 @@ function LoreResultView({ data }: { data: LoreResult }) {
         <div className="text-xs text-[var(--text-secondary)]">
           Entities: {data.entities_mentioned.join(', ')}
         </div>
+      )}
+      {data.context && (
+        <details className="text-xs text-[var(--text-secondary)]" data-testid="lore-context">
+          <summary className="cursor-pointer hover:text-[var(--text-primary)]">
+            Qué vio la IA (contexto de la campaña)
+          </summary>
+          <pre className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap rounded bg-[var(--bg-secondary)] p-2 font-mono text-[10px] leading-relaxed">
+            {data.context}
+          </pre>
+        </details>
       )}
     </div>
   );

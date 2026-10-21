@@ -1069,7 +1069,7 @@ export const api = {
         { session_id: sessionId, previous_recap: previousRecap || '' },
       ),
     lore: (campaignId: string, question: string) =>
-      apiPost<{ agent_id: string; status: string; data: { answer: string; entities_mentioned: string[]; confidence: number; related_topics: string[]; source_hint: string } | null; error: string | null }>(
+      apiPost<{ agent_id: string; status: string; data: { answer: string; entities_mentioned: string[]; confidence: number; related_topics: string[]; source_hint: string; context: string } | null; error: string | null }>(
         `/campaigns/${campaignId}/agents/lore`,
         { question },
       ),

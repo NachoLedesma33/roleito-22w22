@@ -27,6 +27,9 @@ test.describe('Agent Routes', () => {
     expect(body.data.answer).toBeTruthy();
     expect(typeof body.data.confidence).toBe('number');
     expect(body.data.confidence).toBeGreaterThan(0);
+    // Y el contexto que vio la IA: el DM tiene que poder verificar la
+    // respuesta (el advisor es un segundo arbitro, no un oraculo).
+    expect(body.data.context).toContain('Varek');
   });
 
   test('AG2: lore sin campaign devuelve 404', async ({ request, authHeaders }) => {

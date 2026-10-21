@@ -2665,3 +2665,44 @@ async def test_una_campana_solo_local_no_puede_mandar_datos_a_un_externo(client,
         headers=headers,
     )
     assert res.status_code == 200, res.text
+
+
+@pytest.mark.asyncio
+async def test_el_lore_devuelve_el_contexto_que_vio_la_ia(client, monkeypatch):
+    """El advisor tiene que ser verificable: el DM ve QUE se le mando al modelo.
+
+    Sin esto la respuesta es una caja negra y no sirve como segundo arbitro.
+    """
+    from uuid import uuid4
+
+    from infrastructure.ai.mock import MockProvider
+    import agent_routes
+
+    monkeypatch.setattr(agent_routes, "get_provider_for_agent", lambda *_args: MockProvider())
+
+    reg = (
+        await client.post(
+            "/api/auth/register", json={"name": f"DM Advisor {uuid4().hex[:6]}", "pin": "1234"}
+        )
+    ).json()
+    headers = {"Authorization": f"Bearer {reg['token']}"}
+
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Advisor"})).json()
+    await client.post(
+        f"/api/campaigns/{camp['id']}/characters",
+        json={"name": "Ardan", "type": "player", "description": "El heroe de la boveda"},
+    )
+
+    res = await client.post(
+        f"/api/campaigns/{camp['id']}/agents/lore",
+        json={"question": "quien es Ardan?"},
+        headers=headers,
+    )
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["status"] == "success", body
+    data = body["data"]
+    assert data["answer"]
+    # El contexto es el de ESTA campana y trae los datos reales.
+    assert "Ardan" in data["context"], data["context"]
+    assert "Camp Advisor" in data["context"] or "heroe" in data["context"], data["context"]

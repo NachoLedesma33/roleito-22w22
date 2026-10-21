@@ -212,6 +212,9 @@ async def query_lore(
             "confidence": result.data.confidence if result.data else 0,
             "related_topics": result.data.related_topics if result.data else [],
             "source_hint": result.data.source_hint if result.data else "",
+            # Que vio la IA: el DM necesita poder verificar (o desconfiar) de
+            # la respuesta. Sin esto el advisor es una caja negra.
+            "context": result.data.context if result.data else "",
         } if result.data else None,
         "error": result.error,
     }

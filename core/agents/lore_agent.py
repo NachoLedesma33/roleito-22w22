@@ -38,6 +38,10 @@ class LoreResult:
     confidence: float
     related_topics: list[str]
     source_hint: str
+    # El contexto que se le mando al modelo. El DM tiene que poder ver QUE
+    # vio la IA para decidir si le cree: sin esto, la respuesta es una caja
+    # negra (el advisor es un segundo arbitro, no un oraculo).
+    context: str = ""
 
 
 class LoreAgent(BaseAgent):
@@ -79,9 +83,9 @@ class LoreAgent(BaseAgent):
             temperature=0.3,
         )
 
-        return self._parse_response(raw)
+        return self._parse_response(raw, context_str)
 
-    def _parse_response(self, raw: str) -> AgentResult:
+    def _parse_response(self, raw: str, context: str = "") -> AgentResult:
         data = self._parse_json_response(raw)
         if data is None:
             return self._error("Failed to parse AI response")
@@ -92,6 +96,7 @@ class LoreAgent(BaseAgent):
             confidence=data.get("confidence", 0.5),
             related_topics=safe_str_list(data.get("related_topics")),
             source_hint=data.get("source_hint", ""),
+            context=context,
         )
 
         return self._ok(result)
