@@ -27,6 +27,7 @@ Al agregar, modificar o refactorizar **cualquier** código de este repo (feature
 
 ## Commands
 - Dev frontend: `npm run dev` (= dev:dm, puerto 5173, proxy `/api -> localhost:8000`)
+- **Playtest en LAN**: `npm run dev:lan` (= vite `--host 0.0.0.0`; sin esto vite escucha solo en localhost y el link con la IP de la LAN no lo alcanza nadie). El backend **no** se expone: el trafico del jugador entra por el proxy del frontend (que ademas tiene `ws: true`, para el WebSocket del POV). Si el firewall de Windows bloquea el 5173, hay que permitirlo para redes privadas.
 - Dev backend: `npm run dev:backend` — embebe ruta Windows `..\venv\Scripts\python.exe`; en otro OS ajustar
 - Typecheck: `npm run typecheck` (`tsc --noEmit` apps/dm, strict)
 - Lint: `npm run lint` (eslint raíz; ignora backend, data, venv)
