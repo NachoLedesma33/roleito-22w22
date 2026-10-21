@@ -12,6 +12,7 @@ test.describe('Canon Manager', () => {
     // Aprobar canon es del DM (C4): hace falta su token.
     dmToken = await setupAuth(request);
     const res = await request.post(`${API}/campaigns`, {
+      headers: withAuth(dmToken),
       data: { name: 'Canon Test Campaign', description: 'Testing canon' },
     });
     const data = await res.json();

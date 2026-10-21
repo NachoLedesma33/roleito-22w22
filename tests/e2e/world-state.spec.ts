@@ -11,6 +11,7 @@ test.describe('World State', () => {
     // El rollback del estado es una accion del DM (C4): hace falta su token.
     dmToken = await setupAuth(request);
     const res = await request.post(`${API}/campaigns`, {
+      headers: withAuth(dmToken),
       data: { name: 'WS Test Campaign', description: 'Testing world state' },
     });
     const data = await res.json();
@@ -69,6 +70,7 @@ test.describe('World State', () => {
 
   test('WS5: World state includes locations', async ({ request }) => {
     await request.post(`${API}/campaigns/${campaignId}/locations`, {
+      headers: withAuth(dmToken),
       data: { name: 'TestVillage', type: 'town' },
     });
 
