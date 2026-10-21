@@ -52,6 +52,19 @@ test.describe('Campaign CRUD', () => {
   });
 });
 
+  test('C14: el menu de invitacion muestra el link de la mesa', async ({ page, campaign }) => {
+    await page.goto(`/campaigns/${campaign.id}`);
+    await page.getByTestId('invite-button').click();
+
+    // El menu muestra los links que el DM puede compartir: el de esta maquina
+    // y los de la red local (los jugadores de la mesa no pueden usar
+    // "localhost").
+    const menu = page.getByTestId('invite-menu');
+    await expect(menu).toBeVisible();
+    const urls = page.getByTestId('invite-url');
+    await expect(urls.first()).toContainText('/campaigns/join/');
+  });
+
 test.describe('Campaign Bulk Operations', () => {
   test('C5: bulk delete campaigns', async ({ page, request, dmToken }) => {
     const names = [`Bulk A ${Date.now()}`, `Bulk B ${Date.now()}`];
@@ -561,4 +574,5 @@ test.describe('Campaign Import', () => {
       headers: authHeaders,
     });
   });
+
 });

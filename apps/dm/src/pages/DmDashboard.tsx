@@ -56,6 +56,7 @@ import SceneSettingsHud from '@/components/SceneSettingsHud';
 import type { ContextMenuItem } from '@/components/ContextMenu';
 import ToastContainer from '@/components/ToastContainer';
 import { rollToToast, useToastQueue } from '@/lib/toastQueue';
+import InviteMenu from '@/components/InviteMenu';
 import { usePendingDigest } from '@/lib/usePendingDigest';
 import TopBar from '@/components/TopBar';
 import MinimizedBar from '@/components/MinimizedBar';
@@ -82,7 +83,6 @@ export default function DmDashboard() {
   const [showSceneNotes, setShowSceneNotes] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [showMapMenu, setShowMapMenu] = useState(false);
-  const [copiedInvite, setCopiedInvite] = useState(false);
   const [showDiceRoller, setShowDiceRoller] = useState(false);
   const [showInitiative, setShowInitiative] = useState(false);
   const [showQuests, setShowQuests] = useState(false);
@@ -1686,23 +1686,6 @@ const startFogMode = useCallback(() => {
     }
   }, [campaignId, activeScene, sceneChars]);
 
-  const handleInviteCode = useCallback(async () => {
-    if (!campaignId) return;
-    if (!campaign?.invite_code) {
-      const updated = await api.campaigns.generateInviteCode(campaignId);
-      setCampaign(updated);
-      const url = `${window.location.origin}/campaigns/join/${updated.invite_code}`;
-      navigator.clipboard.writeText(url);
-      setCopiedInvite(true);
-      setTimeout(() => setCopiedInvite(false), 2000);
-    } else {
-      const url = `${window.location.origin}/campaigns/join/${campaign.invite_code}`;
-      navigator.clipboard.writeText(url);
-      setCopiedInvite(true);
-      setTimeout(() => setCopiedInvite(false), 2000);
-    }
-  }, [campaignId, campaign]);
-
   const allEntities = [
     ...characters.map((c) => ({ ...c, type: 'character' as const, sub: `${c.race} ${c.class_}` })),
     ...npcs.map((n) => ({ ...n, type: 'npc' as const, sub: n.status })),
@@ -2056,17 +2039,7 @@ const startFogMode = useCallback(() => {
             <div className="w-px h-5 bg-[var(--bg-tertiary)] shrink-0" />
             
               
-        <button
-              onClick={handleInviteCode}
-              className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${
-                copiedInvite
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-              }`}
-              title={t('dm.copyInviteTitle', 'Copiar link de invitación para jugadores')}
-            >
-              {copiedInvite ? t('dm.copied', '¡Copiado!') : campaign?.invite_code ? t('dm.invite', '🔗 Invitar') : t('dm.getInvite', '🔗 Obtener invitación')}
-            </button>
+        <InviteMenu campaign={campaign} onCampaignChange={setCampaign} />
           </>
         }
       >

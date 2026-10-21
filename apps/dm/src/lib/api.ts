@@ -1043,8 +1043,16 @@ export const api = {
       apiPost<{ status: string; deleted: boolean }>('/vault/delete', { provider }),
   },
 
-  agents: {
+  network: {
     /**
+     * Las IPs de la maquina del DM: para compartir el invite en la LAN.
+     * El link se arma con `window.location.origin`, que en localhost no le
+     * sirve a nadie de la mesa.
+     */
+    ips: () => request<{ ips: string[] }>('/network/ips'),
+  },
+
+  agents: {    /**
      * El orquestador: el flujo completo del producto
      * (docs/AGENTS.md §104) — sesión -> world state -> recap.
      */

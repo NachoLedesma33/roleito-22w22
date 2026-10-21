@@ -46,6 +46,7 @@ import json
 import os
 import shutil
 import base64
+import socket
 import time
 from datetime import datetime
 
@@ -1144,6 +1145,29 @@ async def import_campaign(
     await db.commit()
     await db.refresh(campaign)
     return campaign
+
+
+@campaigns_router.get("/network/ips")
+async def network_ips(_auth: AuthSession = Depends(require_dm)):
+    """Las IPs de la maquina del DM: para compartir el invite en la LAN.
+
+    El invite se copia con `window.location.origin`: si el DM abrio la app en
+    localhost, los jugadores de la mesa no pueden entrar (localhost es la
+    maquina de cada uno). Con esta lista el DM ve las URLs que si les sirven
+    desde el celular o la laptop de al lado.
+    """
+    ips: set[str] = set()
+    try:
+        _host, _aliases, addrlist = socket.gethostbyname_ex(socket.gethostname())
+        ips.update(addrlist)
+    except (OSError, socket.gaierror):
+        pass
+    try:
+        for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
+            ips.add(info[4][0])
+    except (OSError, socket.gaierror):
+        pass
+    return {"ips": sorted(ip for ip in ips if not ip.startswith("127."))}
 
 
 @campaigns_router.post("/campaigns/{campaign_id}/invite-code", response_model=CampaignResponse)

@@ -1896,6 +1896,7 @@ DM_SURFACE_ROUTES = [
     ("post", "/api/campaigns/{cid}/characters/{id}/portrait", None),
     ("delete", "/api/markers/{id}", None),
     ("post", "/api/event-bus/emit", {"type": "test"}),
+    ("get", "/api/network/ips", None),
     # Parte 2: los routers MEZCLADOS. Las ESCRITURAS son del DM; las
     # lecturas y las del jugador (usar habilidad, pedir luz, mover el token,
     # las notas) quedan abiertas.
