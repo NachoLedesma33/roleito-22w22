@@ -27,14 +27,44 @@ from .preprocessing import DetectionMode, detect_grid
 from .pipeline import detect_map
 from .ai_detector import detect_walls_ai, detect_walls_ai_sync
 
+import math
+import random
+import time
+
+
+def _point_segment_distance(px, py, ax, ay, bx, by) -> float:
+    """Distancia de un punto a un segmento."""
+    dx, dy = bx - ax, by - ay
+    if dx == 0 and dy == 0:
+        return ((px - ax) ** 2 + (py - ay) ** 2) ** 0.5
+    t = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)))
+    cx, cy = ax + t * dx, ay + t * dy
+    return ((px - cx) ** 2 + (py - cy) ** 2) ** 0.5
+
+
+def _zones_near(point, zones, tolerance: float) -> list:
+    """Las zonas cuyo borde pasa cerca del punto, de mas cerca a mas lejos."""
+    scored = []
+    for zone_id, points in zones:
+        dist = min(
+            _point_segment_distance(
+                point[0], point[1],
+                points[i][0], points[i][1],
+                points[(i + 1) % len(points)][0], points[(i + 1) % len(points)][1],
+            )
+            for i in range(len(points))
+        )
+        if dist <= tolerance:
+            scored.append((dist, zone_id, points))
+    scored.sort(key=lambda s: s[0])
+    return scored
+
 
 def scene_items_from_detection(detection_result: DetectedMap) -> list:
     """
     Convert DetectedMap to SceneItem dicts for the frontend.
     Normalized coordinates (0-1).
     """
-    import time
-    import random
 
     items = []
     base_time = int(time.time() * 1000)
@@ -99,13 +129,18 @@ def scene_items_from_detection(detection_result: DetectedMap) -> list:
             "visible": True,
             "metadata": {
                 "type": "door",
-                "state": "closed",
+                # La puerta detectada es un paso abierto: el portal que une las
+                # dos zonas queda abierto tambien (mismo estado, misma verdad).
+                "state": "open",
                 "material": "wood",
                 "autoClose": False,
                 "confidence": door.confidence,
             },
         })
 
+    # Las zonas (las salas detectadas) se arman primero: los portales las
+    # necesitan para saber que dos zonas se tocan.
+    zones = []  # (item_id, puntos normalizados)
     for i, room in enumerate(detection_result.rooms):
         # Una sala con menos de 3 vertices no es un poligono: no hay nada que
         # dibujar.
@@ -117,6 +152,12 @@ def scene_items_from_detection(detection_result: DetectedMap) -> list:
         for p in room.polygon:
             normalized_points.append(p.x / detection_result.width)
             normalized_points.append(p.y / detection_result.height)
+
+        pts = [
+            (normalized_points[k], normalized_points[k + 1])
+            for k in range(0, len(normalized_points), 2)
+        ]
+        zones.append((item_id, pts))
 
         items.append({
             "id": item_id,
@@ -151,4 +192,67 @@ def scene_items_from_detection(detection_result: DetectedMap) -> list:
             },
         })
 
+    _attach_portals(items, zones, detection_result, base_time)
+
     return items
+
+
+def _attach_portals(items, zones, detection_result, base_time) -> None:
+    """Las puertas detectadas se vuelven PORTALES entre las zonas que tocan.
+
+    Sin esto, una zona de la IA encierra al token: el borde de la zona
+    bloquea el movimiento y el unico modo de cruzarlo es un portal abierto
+    (el modelo de `HYBRID-SHADOW-GEOMETRY.md` §7). Como los portales se
+    reflejan en las DOS zonas, el portal se mete en los dos metadatos.
+    """
+    if not zones:
+        return
+
+    by_id = {item["id"]: item for item in items}
+    max_dim = max(detection_result.width, detection_result.height) or 1
+
+    for i, door in enumerate(detection_result.doors):
+        center = (
+            door.position.x / detection_result.width,
+            door.position.y / detection_result.height,
+        )
+        near = _zones_near(center, zones, tolerance=0.06)
+        if len(near) < 2:
+            # Una puerta que solo toca una zona no une dos: no hay a que
+            # conectarla (y una zona con una sola puerta sigue encerrada:
+            # eso lo decide el DM, no la maquina).
+            continue
+
+        (_, zone_a_id, zone_a_pts) = near[0]
+        (_, zone_b_id, zone_b_pts) = near[1]
+        if zone_a_id == zone_b_id:
+            continue
+
+        portal_id = f"portal-auto-{base_time}-{i}-{random.randint(1000, 9999)}"
+        # El segmento del portal: el ancho de la puerta, sobre el borde.
+        half = (door.width / 2) / max_dim
+        ux = math.cos(door.rotation)
+        uz = math.sin(door.rotation)
+        local_edge = [
+            {"x": center[0] - ux * half, "y": center[1] - uz * half},
+            {"x": center[0] + ux * half, "y": center[1] + uz * half},
+        ]
+        portal = {
+            "id": portal_id,
+            "zoneA": zone_a_id,
+            "zoneB": zone_b_id,
+            # La puerta detectada es un paso: el token puede cruzarlo. El DM
+            # la puede cerrar desde la UI.
+            "state": "open",
+            "localEdge": local_edge,
+            "activatesOn": None,
+        }
+
+        for zone_id in (zone_a_id, zone_b_id):
+            zone_item = by_id.get(zone_id)
+            if not zone_item:
+                continue
+            zone_item["metadata"]["portals"] = [
+                *zone_item["metadata"].get("portals", []),
+                portal,
+            ]

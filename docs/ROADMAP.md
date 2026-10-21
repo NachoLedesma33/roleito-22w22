@@ -2410,7 +2410,7 @@ segunda fuente de geometría.
 G1. Image ingestion: normalize dimensions
 G2. Grid detection: auto-detect grid lines
 G3. Feature detection: wall/door/room detection (IMPLEMENTED, backend)
-G4. Semantic interpretation: DetectedMap → ShadowZone[] (normalización) — **PARCIAL 2026-10-21**: las salas detectadas ya entran como ZONAS (`origin: 'ai'`), la misma estructura que dibuja el DM: antes eran items `room`, un tipo en paralelo que el runtime no consumia, asi que la deteccion con IA no llegaba a la niebla, la luz ni la LoS. FALTA: los muros detectados (segmentos sueltos) agruparlos en cadenas cerradas para que sean los BORDES de las zonas y no items aparte
+G4. Semantic interpretation: DetectedMap → ShadowZone[] (normalización) — **PARCIAL 2026-10-21**: (a) las salas detectadas ya entran como ZONAS (`origin: 'ai'`), la misma estructura que dibuja el DM: antes eran items `room`, un tipo en paralelo que el runtime no consumia, asi que la deteccion con IA no llegaba a la niebla, la luz ni la LoS; (b) las PUERTAS detectadas son los PORTALES entre las dos zonas que tocan (abiertos, reflejados en ambas): sin esto una zona de la IA encierra al token, porque el borde bloquea y el unico modo de cruzarlo es un portal. FALTA: los muros detectados (segmentos sueltos) agruparlos en cadenas cerradas para que sean los BORDES de las zonas y no items aparte
 G5. DM review: adjust detected zones (reusa tools del Modo Manual)
 G6. Manual override: DM can redraw features (base del sistema, ya presente)
 G7. Scene Graph generation from approved zones

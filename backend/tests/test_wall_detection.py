@@ -272,3 +272,50 @@ def test_las_salas_detectadas_entran_como_zonas_de_la_ia():
     assert zone["name"] == "Sala del dragon"
     # Los puntos normalizados (0-1) como el resto de la geometria.
     assert zone["shape"]["points"] == [0.0, 0.0, 0.1, 0.0, 0.1, 0.1, 0.0, 0.1]
+
+
+def test_las_puertas_detectadas_unen_las_zonas():
+    """Sin portales, una zona de la IA encierra al token.
+
+    El borde de la zona bloquea el movimiento y el unico modo de cruzarlo es
+    un portal abierto (el modelo de `HYBRID-SHADOW-GEOMETRY.md` §7). Las
+    puertas detectadas son justamente esos portales: van en los metadatos de
+    las DOS zonas que tocan (el portal se refleja).
+    """
+    from wall_detection import scene_items_from_detection
+    from wall_detection.types import DetectedDoor, DetectedMap, DetectedRoom, Point
+
+    # Dos salas que se tocan por x=50.
+    room_a = DetectedRoom(
+        id="r1",
+        polygon=[Point(0, 0), Point(50, 0), Point(50, 50), Point(0, 50)],
+        label="Sala A",
+    )
+    room_b = DetectedRoom(
+        id="r2",
+        polygon=[Point(50, 0), Point(100, 0), Point(100, 50), Point(50, 50)],
+        label="Sala B",
+    )
+    door = DetectedDoor(id="d1", position=Point(50, 25), rotation=0.0, width=10)
+    detection = DetectedMap(width=100, height=100, rooms=[room_a, room_b], doors=[door])
+
+    items = scene_items_from_detection(detection)
+    zones = [i for i in items if i["metadata"]["type"] == "zone"]
+    assert len(zones) == 2
+
+    portal_ids = set()
+    for zone in zones:
+        portals = zone["metadata"]["portals"]
+        assert len(portals) == 1, portals
+        portal = portals[0]
+        assert portal["state"] == "open"
+        assert portal["zoneA"] != portal["zoneB"]
+        # El portal se refleja en las dos zonas.
+        portal_ids.add(portal["id"])
+        # El segmento esta en coords normalizadas, sobre el borde compartido.
+        for point in portal["localEdge"]:
+            assert 0 <= point["x"] <= 1
+            assert 0 <= point["y"] <= 1
+        assert abs(point["x"] - 0.5) < 0.06
+
+    assert len(portal_ids) == 1, "el mismo portal en las dos zonas"
