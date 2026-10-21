@@ -9,10 +9,9 @@ export interface MagitechButtonProps extends Omit<HTMLMotionProps<'button'>, 'ch
 }
 
 /**
- * Boton del acceso, en clave "Magitech": no es un bloque morado, es una
- * placa de bronce con energia arcana concentrandose. El cursor la atrae
- * apenas (efecto magnetico), al pasar por encima barre una luz y el halo
- * late.
+ * Boton del acceso: placa oscura con borde violeta sutil y un halo que
+ * aparece al pasar por encima. No es un bloque morado: es una pieza de
+ * maquinaria con energia contenida. El cursor lo atrae apenas (magnetico).
  */
 export default function MagitechButton({
   children,
@@ -40,8 +39,9 @@ export default function MagitechButton({
       }}
       whileTap={{ scale: 0.97 }}
       className={cn(
-        'group relative w-full overflow-hidden rounded-lg px-6 py-3 font-display text-sm uppercase tracking-[0.25em] text-obsidian-950',
-        'shadow-[0_0_28px_-6px_rgba(76,194,255,0.5)] transition-shadow duration-base hover:shadow-[0_0_44px_-4px_rgba(124,77,224,0.75)]',
+        'group relative w-full overflow-hidden rounded-lg border border-purple-500/50 bg-zinc-900/90',
+        'px-6 py-3 font-sans text-sm font-medium tracking-wide text-gray-100',
+        'transition-shadow duration-base hover:shadow-[0_0_15px_rgba(139,92,246,0.5)] hover:border-purple-400/60',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
         'disabled:pointer-events-none disabled:opacity-50',
         className,
@@ -50,20 +50,12 @@ export default function MagitechButton({
     >
       <span
         aria-hidden="true"
-        className="absolute inset-0 bg-[linear-gradient(110deg,var(--azure-500)_0%,var(--arcana-600)_45%,var(--brass-500)_100%)]"
-      />
-      <span
-        aria-hidden="true"
-        className="absolute inset-0 bg-[radial-gradient(70%_130%_at_50%_125%,rgba(255,255,255,0.5),transparent_60%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-      />
-      <span
-        aria-hidden="true"
-        className="absolute inset-0 -translate-x-full bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.35),transparent)] group-hover:animate-[magitech-sweep_1.1s_ease-out]"
+        className="absolute inset-0 -translate-x-full bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.12),transparent)] group-hover:animate-[magitech-sweep_1.1s_ease-out]"
       />
       {unlocking && (
         <motion.span
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 rounded-lg border border-azure-500"
+          className="pointer-events-none absolute inset-0 rounded-lg border border-cyan-400"
           initial={{ opacity: 0.9, scale: 1 }}
           animate={{ opacity: 0, scale: 1.35 }}
           transition={{ duration: 0.9, ease: 'easeOut' }}

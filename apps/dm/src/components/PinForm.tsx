@@ -50,10 +50,10 @@ export default function PinForm({
   const { t } = useTranslation();
 
   return (
-    <div className="space-y-5" data-testid={testId}>
+    <div className="flex flex-col gap-6" data-testid={testId}>
       <motion.form
         onSubmit={onSubmit}
-        className="space-y-6"
+        className="flex flex-col gap-6"
         animate={unlocking ? { opacity: 0 } : { opacity: 1 }}
         transition={{ duration: 0.35 }}
       >
@@ -85,7 +85,7 @@ export default function PinForm({
             testId="login-pin"
             unlocking={unlocking}
           />
-          <p id="pin-form-pin-hint" className="mt-2 text-center text-xs text-ink-muted">
+          <p id="pin-form-pin-hint" className="mt-2 text-center text-xs text-gray-400">
             {t('login.pinHint', '4 a 8 dígitos')}
           </p>
         </div>
@@ -111,7 +111,7 @@ export default function PinForm({
       </motion.form>
 
       <motion.div
-        className="space-y-4"
+        className="flex flex-col gap-4"
         animate={unlocking ? { opacity: 0, y: -12 } : { opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.05 }}
       >

@@ -264,3 +264,14 @@ h6 {
   to { transform: translateX(100%); }
 }
 
+/* Chrome pinta el campo con el autofill del navegador (fondo claro, amarillento)
+   y rompe la estetica oscura. Se lo saca: el campo conserva su fondo. */
+.magitech-input:-webkit-autofill,
+.magitech-input:-webkit-autofill:hover,
+.magitech-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #ffffff;
+  -webkit-box-shadow: 0 0 0 1000px var(--obsidian-900) inset;
+  box-shadow: 0 0 0 1000px var(--obsidian-900) inset;
+  transition: background-color 9999s ease-out 0s;
+}
+

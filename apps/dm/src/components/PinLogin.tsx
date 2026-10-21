@@ -12,7 +12,7 @@ type Mode = 'login' | 'register' | 'change';
  * Son la voz del mundo (el grimorio, la anotacion al margen), no un boton.
  */
 const secondaryClass =
-  'font-display text-sm tracking-wide text-ink-muted underline decoration-transparent underline-offset-4 transition-colors duration-base hover:text-azure-500 hover:decoration-azure-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm';
+  'font-display text-sm tracking-wide text-gray-300 underline decoration-transparent underline-offset-4 transition-colors duration-base hover:text-cyan-300 hover:decoration-cyan-400/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm';
 
 /**
  * Pantalla de entrada. El login es nombre de perfil + PIN; a un costado, los
@@ -122,7 +122,7 @@ export default function PinLogin({ unlocking = false }: { unlocking?: boolean })
     <div data-testid="login-saved-dms">
       {profiles.length > 0 ? (
         <>
-          <p className="text-xs text-ink-muted mb-2 text-center font-mono uppercase tracking-[0.2em]">
+          <p className="text-[0.65rem] text-gray-300 mb-3 text-center font-mono uppercase tracking-[0.25em]">
             {t('login.savedProfiles', 'Perfiles en esta máquina')}
           </p>
           <div className="space-y-1.5">
@@ -132,7 +132,7 @@ export default function PinLogin({ unlocking = false }: { unlocking?: boolean })
                 type="button"
                 onClick={() => { setDmName(profile.name); setError(''); }}
                 data-testid="login-saved-dm"
-                className="w-full px-3 py-2 rounded-lg bg-white/[0.03] border border-white/10 text-left transition-colors hover:border-azure-500 hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="w-full px-3 py-2 rounded-lg bg-white/[0.03] border border-white/10 text-left transition-colors hover:border-cyan-400/70 hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <span className="block font-mono text-sm text-ink truncate">{profile.name}</span>
               </button>
@@ -140,7 +140,7 @@ export default function PinLogin({ unlocking = false }: { unlocking?: boolean })
           </div>
         </>
       ) : (
-        <p className="text-xs text-ink-muted text-center">
+        <p className="text-xs text-gray-400 text-center">
           {t('login.noProfiles', 'No hay perfiles en esta máquina. Creá uno nuevo.')}
         </p>
       )}
@@ -152,7 +152,7 @@ export default function PinLogin({ unlocking = false }: { unlocking?: boolean })
       <div className="w-full max-w-sm">
         <div className="max-h-[calc(100dvh-4rem)] overflow-y-auto">
           <div className="text-center mb-6">
-            <h1 className="font-display text-3xl tracking-[0.2em] text-ink [text-shadow:0_0_18px_rgba(76,194,255,0.35)]">
+            <h1 className="font-display text-xl tracking-widest text-ink [text-shadow:0_0_18px_rgba(76,194,255,0.35)]">
               {t('app.name')}
             </h1>
             <div
@@ -163,8 +163,8 @@ export default function PinLogin({ unlocking = false }: { unlocking?: boolean })
           {/* Vidrio oscuro: el video de marca se ve a traves del panel. */}
           <div className="relative overflow-hidden rounded-2xl border border-[color-mix(in_srgb,var(--brass-500)_28%,transparent)] bg-[color-mix(in_srgb,var(--obsidian-900)_62%,transparent)] backdrop-blur-xl shadow-[0_0_70px_-30px_rgba(201,162,39,0.55)]">
             <span className="magitech-beam" aria-hidden="true" />
-            <div className="relative p-8 space-y-5">
-              <p className="text-center font-mono text-xs uppercase tracking-[0.25em] text-ink-muted">
+            <div className="relative flex flex-col gap-6 p-10">
+              <p className="text-center font-mono text-[0.65rem] uppercase tracking-[0.3em] text-gray-300">
                 {subtitle}
               </p>
               {body}
@@ -184,7 +184,7 @@ export default function PinLogin({ unlocking = false }: { unlocking?: boolean })
   if (mode === 'register') {
     return shell(
       t('login.registerSubtitle', 'Creá tu DM (4-8 dígitos)'),
-      <form onSubmit={submitRegister} className="space-y-6">
+      <form onSubmit={submitRegister} className="flex flex-col gap-6">
         <MagitechField
           id="register-name"
           value={dmName}
@@ -233,7 +233,7 @@ export default function PinLogin({ unlocking = false }: { unlocking?: boolean })
   if (mode === 'change') {
     return shell(
       t('login.changeSubtitle', 'Cambiar PIN — ingresá el actual y el nuevo'),
-      <form onSubmit={submitChange} className="space-y-6">
+      <form onSubmit={submitChange} className="flex flex-col gap-6">
         <MagitechField
           id="change-current"
           value={currentPin}
@@ -296,7 +296,7 @@ export default function PinLogin({ unlocking = false }: { unlocking?: boolean })
       aside={savedDms}
       unlocking={unlocking}
       footer={
-        <div className="space-y-1 text-center">
+        <div className="flex flex-wrap items-center justify-center gap-4">
           <button type="button" onClick={() => switchTo('register')} className={secondaryClass}>
             {t('login.createDm', 'Crear DM nuevo')}
           </button>
