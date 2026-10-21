@@ -167,9 +167,11 @@ JSON1 (JSON operations)
 ## 3.4 AI
 
 ```text
-Local LLM (Ollama, llama.cpp)
-Remote API (OpenAI-compatible)
-Provider abstraction layer
+Adapters por familia de API: openai_compatible | anthropic | ollama | mock
+Perfiles de proveedor (adapter + URL + modelo + key_ref al vault)
+Modelo por agente (override o default)
+Perimetro de seguridad: prompt marcado como dato, salida validada,
+propuestas que autoriza el DM, tope diario por campana, auditoria con hash
 ```
 
 ---
@@ -799,69 +801,121 @@ Composite indexes for common queries
 
 # 12. AI Integration
 
-## 12.1 Provider Abstraction
+> El detalle completo (y el por que de cada capa) vive en
+> `engineering/PLAN-PROVEEDORES-IA-Y-SEGURIDAD.md`. Acá está la forma, no el
+> contrato de seguridad.
+
+## 12.1 El contrato: mensajes, no texto
+
+El provider recibe **mensajes**, no un string suelto: asi el mismo codigo
+sirve para un modelo de texto y para uno con vision (la diferencia es un
+mensaje que lleva la imagen, no otro provider).
 
 ```python
-class AIProvider:
+@dataclass
+class AIMessage:
+    role: str                        # system | user | assistant
+    text: str = ""
+    image_base64: str | None = None   # data URL sin el prefijo
+    image_mime: str | None = None
+
+class AIProvider(ABC):
+    name: str
+    supports_vision: bool = False
+    default_model: str | None = None  # el modelo del perfil
+
+    @abstractmethod
     async def complete(
         self,
-        prompt: str,
-        system: str,
-        model: str,
-        max_tokens: int,
-        temperature: float
-    ) -> str:
-        raise NotImplementedError
-
-class LocalProvider(AIProvider):
-    """Ollama, llama.cpp"""
-    pass
-
-class RemoteProvider(AIProvider):
-    """OpenAI-compatible API"""
-    pass
-
-class MockProvider(AIProvider):
-    """Testing"""
-    pass
+        messages: list[AIMessage],
+        *,
+        model: str | None = None,
+        max_tokens: int = 512,
+        temperature: float = 0.7,
+    ) -> str: ...
 ```
 
----
+## 12.2 Los adapters (uno por FAMILIA de API)
 
-## 12.2 Provider Selection
+| Adapter | Cubre | Vision |
+|---|---|---|
+| `openai_compatible` | OpenAI, OpenRouter, Groq, Together, Fireworks, DeepSeek, **opencode `serve`**, LiteLLM, vLLM, LM Studio | si |
+| `anthropic` | Claude (Messages API: el `system` va aparte, la key en `x-api-key`) | si |
+| `ollama` | Modelos en la maquina (`/api/chat`) | si |
+| `mock` | Tests y desarrollo: nunca toca la red | no |
 
-```python
-class AIConfig:
-    providers = {
-        'local': LocalProvider(base_url='http://localhost:11434'),
-        'remote': RemoteProvider(api_key='...'),
-        'mock': MockProvider()
+**Un adapter por familia, no por proveedor**: agregar un proveedor
+OpenAI-compatible es *configuracion* (un perfil), no codigo.
+
+## 12.3 Los perfiles: a quien le pregunto
+
+Un perfil es "a quien le pregunto": el adapter, la URL, el modelo y el
+**nombre** de la clave en el vault (`key_ref`). El secreto nunca vive en la
+config ni vuelve en una respuesta.
+
+```jsonc
+// data/ai_config.json (gitignored)
+{
+  "default_profile": "openrouter-claude",
+  "profiles": {
+    "openrouter-claude": {
+      "adapter": "openai_compatible",
+      "base_url": "https://openrouter.ai/api/v1",
+      "key_ref": "openrouter",              // el nombre en el vault, NO la key
+      "model": "anthropic/claude-sonnet-4"
     }
-    
-    agent_models = {
-        'SESSION_PROCESSOR': 'local',
-        'LORE_EXTRACTOR': 'local',
-        'CANON_VALIDATOR': 'local',
-        'RECAP_GENERATOR': 'local',
-        'NARRATOR': 'local',
-        'SCENE_GENERATOR': 'remote',
-        'DM_ASSISTANT': 'remote',
-        'RETRIEVAL_AGENT': 'local',
-        'VALIDATION_AGENT': 'local',
-        'SECURITY_AGENT': 'local',
-    }
+  },
+  "agents": { "recap": "openrouter-claude" },   // override por agente
+  "max_tokens": 512,
+  "temperature": 0.7,
+  "daily_call_limit": 0                       // 0 = sin tope
+}
 ```
 
----
+- La key se resuelve en el backend por `key_ref` contra `backend/vault.py`
+  (ChaCha20 + HKDF con fingerprint de maquina) y **nunca** vuelve.
+- Un override por agente: el que no esta, usa el default.
+- `GET /ai/profiles` devuelve el `key_ref` y si hay key, nunca la key.
+- La config vieja (`provider`/`remote_base_url`/`model`) **se migra sola** a un
+  perfil al arrancar el backend.
 
-## 12.3 Token Budget
+## 12.4 El perimetro de seguridad (resumido)
 
-```python
-class TokenBudget:
-    fast = 4000
-    balanced = 10000
-    deep = 20000
-```
+Lo que el modelo **no** puede hacer, y por que:
+
+| | Capa | Donde |
+|---|---|---|
+| C1 | Lo que entra al prompt es **dato**, nunca instruccion: va entre `<datos>…</datos>` y el system lo declara | `core/agents/context_manager.py` |
+| C2 | El system prompt es codigo (constante del repo), nunca dato | `core/agents/*_SYSTEM` |
+| C3 | La salida se valida (longitudes, numeros finitos, sin URLs remotas, tope de puntos) | `core/agents/validation.py`, `backend/services/item_validation.py` |
+| C4 | La IA propone, el DM autoriza (PROPOSED / PENDING) | `core/agents/proposals.py`, `apps/dm/src/lib/pendingReview.ts` |
+| C6 | Aviso por perfil + candado `local_only` (una campana sensible no manda su texto a un proveedor externo) | `core/agents/profiles.py`, `backend/services/budget.py` |
+| C7 | Roles: toda ruta de agente exige rol DM; la key no vuelve nunca | `backend/agent_routes.py`, `backend/ai_routes.py` |
+| C8 | Presupuesto: tope diario por campana, **corta antes de gastar**, y los reintentos cuentan | `core/agents/budget.py` |
+| C9 | Auditoria por llamada: agente, provider, modelo, tokens, latencia, y el **hash** del prompt (el prompt no se guarda) | `core/agents/audit.py` |
+
+**Lo que sigue sin ser posible**: que el modelo escriba archivos, ejecute
+procesos, toque la red, vea la key o se autorice solo.
+
+## 12.5 El presupuesto
+
+Dos cosas distintas que se suelen confundir:
+
+- **Tope de uso (C8)**: un tope diario de requests **por campana**
+  (`daily_call_limit`, 0 = sin tope). Protege la API key del DM. El contador
+  vive en `data/ai_budget.json` y **los reintentos cuentan** (un provider que
+  reintenta 3 veces son 3 requests contra el tope).
+- **Monetizacion (M0)**: cobrarle al jugador. Esta **apagada por default**
+  (`billing.enabled = false`): los planes y los precios son preseteables, pero
+  con la flag apagada no hay ningun camino de cobro y el checkout responde 501.
+
+## 12.6 La auditoria
+
+Cada llamada deja una linea JSON en `data/ai_audit.log` (gitignored): el
+agente, el provider, el modelo, el estado, la latencia, los tokens (si el
+provider los reporta) y `prompt_sha`. **El prompt no se guarda**: puede
+contener datos de la campana; su hash alcanza para correlacionar llamadas
+iguales.
 
 ---
 
@@ -1103,9 +1157,32 @@ GET    /api/context/session/:id
 GET    /api/context/entity/:id
 GET    /api/context/search
 
-GET    /api/agents
-GET    /api/agents/:id
-POST   /api/agents/:id/run
+# Agentes (todas exigen rol DM)
+POST   /api/campaigns/:id/agents/process-session
+POST   /api/campaigns/:id/agents/lore
+POST   /api/campaigns/:id/agents/narrate
+POST   /api/campaigns/:id/agents/recap
+POST   /api/campaigns/:id/agents/ingest
+POST   /api/campaigns/:id/agents/world-state
+POST   /api/campaigns/:id/agents/scene
+POST   /api/orchestrator/:id/execute
+
+# Config de IA (perfiles, modelos, presupuesto, auditoria; sin claves)
+GET    /api/ai/config
+PUT    /api/ai/config
+GET    /api/ai/adapters
+GET    /api/ai/profiles
+POST   /api/ai/profiles
+PUT    /api/ai/profiles/:id
+DELETE /api/ai/profiles/:id
+GET    /api/ai/models
+GET    /api/ai/agent-models
+PUT    /api/ai/agent-models
+GET    /api/ai/usage
+GET    /api/ai/audit
+GET    /api/ai/billing
+PUT    /api/ai/billing
+POST   /api/ai/test
 
 GET    /api/health
 ```

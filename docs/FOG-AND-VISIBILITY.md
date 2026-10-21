@@ -1,4 +1,9 @@
 # Fog of War & Visibility System
+> **Este doc y el otro son las dos caras de lo mismo.** Acá va la
+> *implementacion* de la niebla y la visibilidad (estatica + dinamica, LoS, GPU
+> masking, esquema, endpoints, estado). El *control del DM* sobre el entorno
+> (concepto, comandos, reglas para el jugador) esta en `FOG-OF-WAR.md`.
+
 
 ## 1. Overview
 

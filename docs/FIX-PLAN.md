@@ -8,6 +8,10 @@
 > Es un plan de corrección que debe ejecutarse antes de continuar con
 > implementación significativa.
 >
+> **Estado: EJECUTADO (2026-10).** Es la auditoría de ese momento: los docs
+> se corrigieron después. Para el estado de hoy, `IMPLEMENTATION-STATUS.md`
+> es la fuente.
+>
 > Si la documentación base tiene inconsistencias, cada decisión de
 > implementación derivada pagará ese error multiplicado.
 

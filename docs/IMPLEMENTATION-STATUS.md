@@ -435,9 +435,9 @@ La directiva de ingeniería obligatoria (`ROLEITO_GUIA_MODULARIZACION_ARQUITECTU
 - Orden de borrado: los "hijos de hijos" (`character_abilities`, `scene_characters`, `combat_combatants`, `player_fog`, `map_markers`, `dm_notebook_versions`) van **primero**, mientras sus padres todavía existen; si borrás `scenes` antes, el subquery no matchea y quedan huérfanos. Verificar siempre con `PRAGMA foreign_key_check` (vacío = sano)
 
 ## Documentation Drift
-- `ARCHITECTURE.md` needs update to reflect current state
-- Some docs overlap (FOG-OF-WAR.md vs FOG-AND-VISIBILITY.md)
-- `3D-RENDERER.md` is a stub (118 bytes)
+- **Resuelto 2026-10-21**: `ARCHITECTURE.md` reescrito en su parte de IA (el contrato por mensajes, los 4 adapters, los perfiles con `key_ref`, el perimetro de seguridad, el presupuesto vs. la monetizacion y la auditoria) y en las rutas de agente (las reales: `/campaigns/:id/agents/*` y `/orchestrator/:id/execute`).
+- **Resuelto**: la superposicion de los dos docs de niebla. `FOG-OF-WAR.md` es el *control del DM* sobre el entorno; `FOG-AND-VISIBILITY.md` es la *implementacion* (estatica + dinamica, LoS, GPU masking, endpoints). Cada uno lo dice arriba y manda al otro.
+- **No era drift**: los docs viejos (`3D-RENDERER.md`, `CANON.md`, `MEMORY.md`, `AI-AGENTS.md`, `SCENE-ENGINE.md`, `RECAP-ENGINE.md`, `DM-CONTROL-DECK.md`, `NARRATIVE.md`) son **punteros deliberados** a los docs consolidados: cada uno dice donde esta el contenido. `docs/README.md` los lista como punteros (no como stubs a arreglar) y `FIX-PLAN.md` quedo marcado como ejecutado (era la auditoria de 2026-10, ya aplicada).
 
 ---
 

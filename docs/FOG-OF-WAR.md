@@ -1,4 +1,9 @@
 # DM Environment Control & Fog of War
+> **Este doc y el otro son las dos caras de lo mismo.** Acá va el
+> *control del DM* sobre el entorno y la visibilidad (concepto, comandos, reglas
+> para el jugador). La *implementacion* de la niebla (estatica + dinamica, LoS,
+> GPU masking, endpoints, estado) esta en `FOG-AND-VISIBILITY.md`.
+
 
 ## Core Concept
 

@@ -6,11 +6,13 @@ Este directorio contiene la especificación técnica y funcional del RPG World E
 
 1. `CONTEXT.md` — Contexto raíz, leer primero siempre
 2. `PRODUCT.md` — Visión y objetivos del producto
-3. `DOMAIN.md` — Contrato de dominio conceptual
-4. `ARCHITECTURE.md` — Arquitectura técnica
-5. `DATABASE.md` — Persistencia SQLite
-6. `EVENT-SYSTEM.md` — Pipeline central de eventos
-7. Luego leer solo los docs relevantes a la tarea
+3. `DM-DASHBOARD-VTT.md` — El tablero del DM
+4. `HYBRID-SHADOW-GEOMETRY.md` — Paredes, sombra y zona (el canon actual)
+5. `DOMAIN.md` — Contrato de dominio conceptual
+6. `ARCHITECTURE.md` — Arquitectura técnica
+7. `DATABASE.md` — Persistencia SQLite
+8. `EVENT-SYSTEM.md` — Pipeline central de eventos
+9. Luego leer solo los docs relevantes a la tarea
 
 ## Estado de la Documentación
 
@@ -37,7 +39,9 @@ Este directorio contiene la especificación técnica y funcional del RPG World E
 - `TESTING.md` ✅
 - `ROADMAP.md` ✅
 
-### Stubs (revisar en FIX-PLAN.md)
+### Punteros (docs consolidados: el contenido vive en el doc que"­apunta)
+> Los archivos viejos se conservan como punteros: cada uno dice dónde está
+> el contenido. No son deuda ni docs rotos.
 - `CANON.md` — stub, contenido movido a EVENT-SYSTEM.md §43-48
 - `MEMORY.md` — stub, contenido movido a CONTEXT-SYSTEM.md §16-19
 - `RECAP-ENGINE.md` — stub, contenido movido a SESSION-SYSTEM.md §62-70
@@ -47,7 +51,6 @@ Este directorio contiene la especificación técnica y funcional del RPG World E
 - `3D-RENDERER.md` — stub, contenido movido a RENDERER.md
 - `AI-AGENTS.md` — stub, contenido movido a AGENTS-SYSTEM.md
 - `CONTEXT-BUILDER.md` — stub, contenido movido a CONTEXT-SYSTEM.md
-- `PRODUCT.md` — stub mínimo
 
 ### No existen (planificados en §24)
 - `TTS.md`
@@ -69,6 +72,7 @@ La información específica de campaña se almacena en:
 /data/campaigns/
 ```
 
-## Fix Pendiente
+## Correcciones de docs
 
-Ver `FIX-PLAN.md` para el plan completo de corrección de inconsistencias entre docs.
+`FIX-PLAN.md` es la auditoría de 2026-10: **ya se ejecutó**. Para el estado
+de hoy de cada doc, `IMPLEMENTATION-STATUS.md` es la fuente.
