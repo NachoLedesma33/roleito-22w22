@@ -1251,8 +1251,25 @@ async def join_by_invite_code(
         "remember_explored": bool(getattr(active_scene, 'remember_explored', 0)) if active_scene else False,
         "characters": scene_chars,
         "player_characters": player_characters,
-        "items": json.loads(active_scene.items_json) if active_scene and active_scene.items_json else [],
+        # La geometria pendiente de revision no le llega al jugador: es una
+        # propuesta del DM, todavia no aprobada.
+        "items": _approved_items(active_scene) if active_scene else [],
     }
+
+
+def _approved_items(scene) -> list:
+    """Los items de la escena que ya afectan al juego (los aprobados).
+
+    Un item con `pendingReview` salio de una deteccion y el DM todavia no lo
+    aprobo: el jugador no lo ve ni lo choca.
+    """
+    try:
+        items = json.loads(scene.items_json) if scene.items_json else []
+    except (TypeError, ValueError):
+        return []
+    if not isinstance(items, list):
+        return []
+    return [i for i in items if not (isinstance(i, dict) and i.get("pendingReview") is True)]
 
 
 @campaigns_router.post("/campaigns/{campaign_id}/locations")

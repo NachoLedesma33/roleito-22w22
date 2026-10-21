@@ -5,6 +5,7 @@
  */
 
 import { PortalRef } from '@core/domain/types'
+import { isPendingReview } from './pendingReview'
 
 function pointSegmentDistance(
   px: number, py: number,
@@ -36,6 +37,32 @@ export function checkWallCollision(
     }
   }
   return false;
+}
+
+/**
+ * Los segmentos de muro que ya afectan al juego.
+ *
+ * Un muro que salio de una deteccion y el DM todavia no aprobo
+ * (`pendingReview`) NO bloquea: hasta que lo aprueba es una propuesta.
+ */
+export function extractApprovedWallLines(
+  items: {
+    metadata?: { type?: string };
+    shape?: { type?: string; points?: number[] };
+    pendingReview?: boolean;
+  }[],
+): [number, number, number, number][] {
+  return items
+    .filter(
+      (item) =>
+        item.metadata?.type === 'wall' &&
+        item.shape?.type === 'line' &&
+        !isPendingReview(item),
+    )
+    .map((item) => {
+      const pts = (item.shape as { points: number[] }).points;
+      return [pts[0], pts[1], pts[2], pts[3]] as [number, number, number, number];
+    });
 }
 
 export interface ZonePolygon {
@@ -75,6 +102,8 @@ export function extractZonePolygons(items: ShadowItem[], mapW: number = 10, mapH
   const zones: ZonePolygon[] = []
   for (const item of items) {
     if (item.metadata?.type !== 'zone') continue
+    // Una zona propuesta y sin aprobar no es geometria: no encierra al token.
+    if (isPendingReview(item)) continue
     const shape = item.shape
     if (shape?.type === 'polygon') {
       if (!shape.points || shape.points.length < 6) continue

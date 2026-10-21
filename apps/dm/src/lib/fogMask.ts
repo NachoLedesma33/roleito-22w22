@@ -1,4 +1,5 @@
 import { SceneItem, FogMetadata, SceneLayer, ShapePolygon, DmFogMode } from '@core/domain/types'
+import { isPendingReview } from './pendingReview'
 
 export type { DmFogMode }
 
@@ -100,6 +101,8 @@ export function buildDmFogGrid(items: SceneItem[], cols: number, rows: number): 
   const grid: DmFogGrid = Array.from({ length: rows }, () => Array<DmFogMode | null>(cols).fill(null))
   for (const item of items) {
     if (item.metadata.type !== 'fog') continue
+    // Una niebla propuesta y sin aprobar no tapa.
+    if (isPendingReview(item)) continue
     const shape = item.shape
     if (!shape || shape.type !== 'polygon' || shape.points.length < 2) continue
     const pts = shape.points
@@ -150,6 +153,7 @@ export function extractFogRegions(items: SceneItem[]): FogRegion[] {
   const regions: FogRegion[] = []
   for (const item of items) {
     if (item.metadata.type !== 'fog') continue
+    if (isPendingReview(item)) continue
     const shape = item.shape
     if (!shape || shape.type !== 'polygon') continue
     const radius = fogBrushRadius(item)

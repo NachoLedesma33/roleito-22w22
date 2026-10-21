@@ -1,4 +1,5 @@
 import { SceneItem } from '@core/domain/types'
+import { isPendingReview } from './pendingReview'
 
 export interface Occluder {
   a: [number, number]
@@ -34,6 +35,10 @@ export function buildOccluders(
 ): Occluder[] {
   const out: Occluder[] = []
   for (const item of items) {
+    // Una geometria propuesta y sin aprobar no tapa luz: hasta que el DM la
+    // aprueba es una propuesta, no un oclusor.
+    if (isPendingReview(item)) continue
+
     if (item.metadata.type === 'wall' && item.shape?.type === 'line' && item.shape.points.length >= 4) {
       const p = item.shape.points
       out.push({

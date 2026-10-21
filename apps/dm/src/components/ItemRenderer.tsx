@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { Billboard, Text } from '@react-three/drei'
 import * as THREE from 'three'
 import { SceneItem, ZoneMetadata, RoomMetadata, LightMetadata } from '@core/domain/types'
+import { isPendingReview } from '@/lib/pendingReview'
 import { PORTAL_COLORS } from './ZonePortal'
 import { normalizeLightConfig, lightGlowOpacity, hexToRgba, computeLightZones, animateLightIntensity } from '../lib/light'
 import { lightShapePoints } from '../lib/lightOcclusion'
@@ -202,7 +203,10 @@ function ImageSprite({ item, isSelected, onClick, onContextMenu }: { item: Scene
 function WallRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, imageAspect = 1, renderMode = DEFAULT_RENDER_MODE }: ItemRendererProps) {
   const shape = item.shape as import('@core/domain/types').ItemShape & { type: 'line'; points: number[] }
   const meta = item.metadata as import('@core/domain/types').WallMetadata
-  const color = WALL_MATERIAL_COLORS[meta.material] ?? '#6b7280'
+  // Un muro propuesto (pendingReview) se dibuja en ambar y mas opaco: el DM
+  // tiene que ver de un vistazo que es una propuesta y no geometria aprobada.
+  const pending = isPendingReview(item)
+  const color = pending ? '#f59e0b' : (WALL_MATERIAL_COLORS[meta.material] ?? '#6b7280')
   const Y = getY(renderMode)
 
   const mapHeight = 10 * mapScale
@@ -234,7 +238,7 @@ function WallRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, 
         <meshStandardMaterial
           color={color}
           transparent
-          opacity={isSelected ? 0.3 : 0.12}
+          opacity={isSelected ? 0.3 : (pending ? 0.45 : 0.12)}
           side={THREE.DoubleSide}
         />
       </mesh>
@@ -519,6 +523,9 @@ function RoomRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, 
   const mapHeight = 10 * mapScale
   const mapWidth = mapHeight * imageAspect
   const Y = getY(renderMode)
+  // Una sala propuesta se dibuja en ambar: es una propuesta, no una habitacion
+  // que el DM ya acepto.
+  const pending = isPendingReview(item)
 
   const room = useMemo(() => {
     const shape = item.shape as import('@core/domain/types').ShapePolygon
@@ -562,15 +569,15 @@ function RoomRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, 
   return (
     <group position={[item.x, 0, item.y]}>
       <mesh geometry={geometry} position={[0, Y.zoneFill, 0]} rotation={[-Math.PI / 2, 0, 0]} onClick={handleClick} onContextMenu={handleContextMenu}>
-        <meshBasicMaterial color="#6366f1" transparent opacity={0.07} side={THREE.DoubleSide} depthWrite={false} />
+        <meshBasicMaterial color={pending ? '#f59e0b' : '#6366f1'} transparent opacity={pending ? 0.14 : 0.07} side={THREE.DoubleSide} depthWrite={false} />
       </mesh>
       <lineSegments geometry={outlineGeo}>
-        <lineBasicMaterial color="#818cf8" transparent opacity={0.7} />
+        <lineBasicMaterial color={pending ? '#fbbf24' : '#818cf8'} transparent opacity={pending ? 0.9 : 0.7} />
       </lineSegments>
       <Text
         position={[center[0], Y.zoneOutline + 0.05, center[1]]}
         fontSize={0.2}
-        color="#c7d2fe"
+        color={pending ? '#fcd34d' : '#c7d2fe'}
         outlineWidth={0.02}
         outlineColor="black"
         anchorX="center"

@@ -1942,6 +1942,47 @@ async def test_full_pipeline_deja_eventos_propuestos_para_aprobacion(client, mon
 
 
 @pytest.mark.asyncio
+async def test_el_snapshot_del_jugador_no_manda_geometria_pendiente(client):
+    """La geometria pendiente de revision es propuesta del DM: no le llega al
+    jugador (hasta que el DM la aprueba)."""
+    reg = await client.post("/api/auth/register", json={"name": "DM Snapshot", "pin": "1234"})
+    headers = {"Authorization": f"Bearer {reg.json()['token']}"}
+
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Snapshot"})).json()
+    scene = (
+        await client.post(f"/api/campaigns/{camp['id']}/scenes", json={"name": "Escena"})
+    ).json()
+
+    muro = {
+        "id": "wall-pendiente",
+        "name": "muro",
+        "x": 0, "y": 0, "rotation": 0, "scale": 1, "width": 0, "height": 0,
+        "zIndex": 0, "layer": 1, "visible": True, "locked": False,
+        "disableHit": False, "disableAutoZIndex": False,
+        "attachmentIds": [], "disableAttachmentBehavior": [],
+        "pendingReview": True,
+        "metadata": {"type": "wall", "wallType": "solid", "material": "stone"},
+        "shape": {"type": "line", "points": [0.2, 0.5, 0.8, 0.5]},
+    }
+    aprobado = {**muro, "id": "wall-aprobado", "pendingReview": False}
+    res = await client.put(
+        f"/api/campaigns/{camp['id']}/scenes/{scene['id']}/items",
+        json={"items": [muro, aprobado]},
+    )
+    assert res.status_code == 200, res.text
+
+    # El snapshot del jugador (el endpoint de join) no lleva la pendiente.
+    invite = await client.post(
+        f"/api/campaigns/{camp['id']}/invite-code", headers=headers
+    )
+    code = invite.json()["invite_code"]
+    snap = (await client.get(f"/api/campaigns/invite/{code}")).json()
+    ids = [i["id"] for i in snap.get("items", [])]
+    assert "wall-pendiente" not in ids
+    assert "wall-aprobado" in ids
+
+
+@pytest.mark.asyncio
 async def test_agentes_ingest_world_state_y_scene(client, monkeypatch):
     """Los tres agentes que faltaban expuestos por HTTP.
 

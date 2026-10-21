@@ -22,7 +22,7 @@ import DmCommandPalette from '@/components/dm/DmCommandPalette';
 import DmDock from '@/components/dm/DmDock';
 import AnchoredMenu from '@/components/ui/AnchoredMenu';
 import { useAnchoredMenu } from '@/lib/useAnchoredMenu';
-import { extractZonePolygons, checkWallCollision } from '@/lib/wall-collision';
+import { extractZonePolygons, checkWallCollision, extractApprovedWallLines } from '@/lib/wall-collision';
 import { buildOccluders } from '@/lib/lightOcclusion';
 import { extractFogRegions } from '@/lib/fogMask';
 import { computeReachableCells } from '@/lib/movementRange';
@@ -1450,12 +1450,7 @@ const startFogMode = useCallback(() => {
     const normX = (x / mapW) + 0.5;
     const normZ = (z / mapH) + 0.5;
 
-    const walls = graphRef.getItems()
-      .filter((item) => item.metadata.type === 'wall' && item.shape?.type === 'line')
-      .map((item) => {
-        const pts = (item.shape as { type: 'line'; points: number[] }).points;
-        return [pts[0], pts[1], pts[2], pts[3]] as [number, number, number, number];
-      });
+    const walls = extractApprovedWallLines(graphRef.getItems());
 
     if (checkWallCollision(normX, normZ, walls, 0.03)) {
       push({

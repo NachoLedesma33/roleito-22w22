@@ -20,7 +20,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import ToastContainer from '@/components/ToastContainer';
 import { rollToToast, useToastQueue } from '@/lib/toastQueue';
 import { api, type Character, type DiceRollResponse, type Spell } from '@/lib/api';
-import { checkWallCollision, extractZonePolygons, extractPortals, crossZoneBorder } from '@/lib/wall-collision';
+import { checkWallCollision, extractZonePolygons, extractPortals, crossZoneBorder, extractApprovedWallLines } from '@/lib/wall-collision';
 import { sceneWorldHeight, sceneWorldSize } from '@/lib/sceneWorld';
 import { usePlayerSync, type Choice } from '@/lib/usePlayerSync';
 import { type CharPos } from '@/lib/playerVision';
@@ -522,12 +522,7 @@ export default function PlayerView() {
     const normX = (x / mapW) + 0.5;
     const normZ = (z / mapH) + 0.5;
 
-    const walls = (currentData.items ?? [])
-      .filter((item) => item.metadata?.type === 'wall' && item.shape?.type === 'line')
-      .map((item) => {
-        const pts = (item.shape as { points: number[] }).points;
-        return [pts[0], pts[1], pts[2], pts[3]] as [number, number, number, number];
-      });
+    const walls = extractApprovedWallLines(currentData.items ?? []);
     if (checkWallCollision(normX, normZ, walls, 0.03)) return;
 
     const zones = extractZonePolygons(currentData.items ?? [], mapW, mapH);
@@ -809,12 +804,7 @@ export default function PlayerView() {
 
         const normX = (x / mapW) + 0.5;
         const normZ = (z / mapH) + 0.5;
-        const walls = (currentData.items ?? [])
-          .filter((item) => item.metadata?.type === 'wall' && item.shape?.type === 'line')
-          .map((item) => {
-            const pts = (item.shape as { points: number[] }).points;
-            return [pts[0], pts[1], pts[2], pts[3]] as [number, number, number, number];
-          });
+        const walls = extractApprovedWallLines(currentData.items ?? []);
         if (checkWallCollision(normX, normZ, walls, 0.03)) {
           return;
         }

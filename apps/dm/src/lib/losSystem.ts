@@ -5,6 +5,7 @@
 
 import { SceneItem, VisionConfig } from '@core/domain/types'
 import { Occluder } from './lightOcclusion'
+import { isPendingReview } from './pendingReview'
 import { computeVisibilityMask, masksUnion } from './losRaycast'
 
 export interface CharVisionState {
@@ -26,6 +27,8 @@ export function buildLoSOccluders(
 
   for (const item of items) {
     if (!item.visible) continue
+    // Una geometria propuesta y sin aprobar no tapa vision.
+    if (isPendingReview(item)) continue
 
     if (item.metadata.type === 'wall' && item.shape?.type === 'line' && item.shape.points.length >= 4) {
       const p = item.shape.points

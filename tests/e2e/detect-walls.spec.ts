@@ -171,6 +171,18 @@ test.describe('Auto wall detection', () => {
         return items.filter((i) => i.metadata?.type === 'room').length;
       }, { timeout: 15_000 })
       .toBeGreaterThan(0);
+
+    // Aprobada: la geometria deja de estar pendiente (ahora bloquea de verdad).
+    // El guardado va con debounce: se espera a que salga.
+    await expect
+      .poll(
+        async () => {
+          const items = await sceneItems(request, authHeaders, campaign.id, sceneId);
+          return items.some((i) => i.pendingReview);
+        },
+        { timeout: 15_000 },
+      )
+      .toBe(false);
   });
 
   test('D5: detectar dos veces regenera el set automático, no lo apila', async ({
@@ -249,6 +261,11 @@ test.describe('Auto wall detection', () => {
     await page.locator('header select').selectOption(sceneId);
     await expect(page.getByTestId('detect-review')).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId('detect-review')).toContainText('Revisar detección');
+
+    // Y siguen PENDIENTES: la geometria no afecta al juego hasta que el DM la
+    // apruebe (no bloquea, no ocluye, no le llega al jugador).
+    const pendientes = await sceneItems(request, authHeaders, campaign.id, sceneId);
+    expect(pendientes.some((i) => i.pendingReview)).toBe(true);
   });
 
   test('D8: el batch deja la propuesta pendiente en cada escena', async ({
