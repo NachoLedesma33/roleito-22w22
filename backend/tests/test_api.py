@@ -7,12 +7,7 @@ from datetime import datetime, timedelta
 import pytest
 from sqlalchemy import text
 
-from database import async_session, init_db
-
-
-@pytest.fixture(scope="session", autouse=True)
-async def _db():
-    await init_db()
+from database import async_session
 
 
 @pytest.mark.asyncio

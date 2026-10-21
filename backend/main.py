@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from database import init_db
+from rate_limit import EXEMPT_PREFIXES, client_key, limiter_from_env
 from core.events.bus import get_event_bus
 from core.events.handlers import register_default_handlers
 from routes import campaigns_router
@@ -88,6 +89,32 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["X-TTS-Duration-Ms", "X-TTS-Provider"],
 )
+
+
+_limiter = limiter_from_env()
+
+
+@app.middleware("http")
+async def rate_limit_public(request: Request, call_next):
+    """Frena a los scanners en las rutas publicas (ver `rate_limit.py`).
+
+    Con el playtest remoto el backend queda detras de un tunel: la URL es
+    publica. El limite es por IP real y generoso (30 req/s por defecto):
+    frena a un scanner sin molestar a la mesa. El DM, que va por loopback,
+    nunca se frena.
+    """
+    path = request.url.path
+    if path.startswith("/api/") and not path.startswith(EXEMPT_PREFIXES):
+        key, via_proxy = client_key(
+            request.headers, request.client.host if request.client else None
+        )
+        if not _limiter.allow(key, via_proxy=via_proxy):
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Too many requests"},
+                headers={"Retry-After": "1"},
+            )
+    return await call_next(request)
 
 
 @app.exception_handler(Exception)

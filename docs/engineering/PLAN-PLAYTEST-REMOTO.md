@@ -222,10 +222,16 @@ jugador (otra ciudad)          maquina del DM
 | S5 | Un jugador descarga el código del invite y lo reusa | Se regenera al terminar la partida ✓ (S1) | bajo |
 | S6 | El túnel sirve el `.env` o el `data/` | El servidor estatico sirve **solo** `dist/` ✓ (el `data/` y el `.env` quedan fuera del bundle) | — |
 
-**Extra opcional pero recomendado**: un **rate limit** en el backend (por IP) para
-las rutas públicas (`/invite/*`, `/rolls/recent`): hoy no hay ninguno y el
-túnel es público. Un límite simple (p. ej. 10 req/s por IP para las rutas
-públicas) evita que un scannerastesore el backend.
+**Rate limit (HECHO)**: el backend tiene un token bucket por IP en las rutas
+`/api/*` (30 req/s, ráfaga de 60 → `backend/rate_limit.py`). Un scanner que
+manda cientos de requests por segundo se frena con un 429 ✓. El default es
+generoso a propósito: un jugador hace 1–5 req/s y el límite tiene que frenar
+al scanner, no molestar a la mesa. Con 5 jugadores en la misma casa (misma IP
+pública) se sube con `ROLEITO_RATE_LIMIT_RPS=60`.
+
+**Extra opcional pero recomendado (del lado del DM)**: `Cloudflare Access`
+delante del túnel (un login de email para entrar) → es configuración de la
+cuenta de Cloudflare, no del código.
 
 ---
 
@@ -296,8 +302,28 @@ Hay **una sola partida abierta a la vez**: al abrir una, las demás se cierran
 dominio propio + el `cloudflared tunnel run mesa` del lado del DM (depende de
 su cuenta de Cloudflare → no se puede hacer desde el repo) + regenerar el invite
 al terminar la partida (el botón "Obtener invitación" ya regenera ✓).
-| **P2** | **Watchdog del WS** con backoff + aviso de "reconectando" + cache de assets | El WS se recupera solo de un corte de red sin que el jugador note | medio |
-| **P3** | **Rate limit** en las rutas públicas + `Cloudflare Access` opcional (login) | Un scanner no puede martillear el backend | bajo |
+| **P2** ✅ | **Watchdog del WS** con backoff + aviso de "reconectando" + cache de assets | El WS se recupera solo de un corte de red sin que el jugador note | medio |
+| **P3** 🟡 | **Rate limit** en las rutas públicas + `Cloudflare Access` opcional (login) | Un scanner no puede martillear el backend | bajo |
+
+**P2 — HECHO**: el WS del DM reconectaba con un intervalo **fijo de 1 s** (una red
+mala lo martillaba contra el peaje del túnel) y el del jugador reconectaba atado
+al poll (cada 2 s, para siempre). Ahora los dos usan el mismo backoff (1 s, 2 s,
+4 s, 8 s, tope 15 s → `apps/dm/src/lib/wsBackoff.ts` ✓). El dashboard del DM
+muestra el estado ("En vivo" / "Reconectando...") ✓ (antes solo el jugador lo
+veía). Los assets (`/api/static`) se revalidan siempre (`Cache-Control:
+no-cache`): el nombre del archivo no cambia cuando el DM sube otro (el mapa
+siempre es `map.png`), así que un cache largo serviría la versión vieja ✗; con
+`no-cache` el navegador manda el ETag y el backend responde 304 (no se baja el
+archivo otra vez, pero nunca se ve una versión vieja ✓).
+
+**P3 — el rate limit HECHO, el `Cloudflare Access` es del lado del DM**: el
+backend ahora tiene un token bucket por IP en las rutas `/api/*` (30 req/s y
+60 de ráfaga por IP, ajustable con `ROLEITO_RATE_LIMIT_RPS` / `_BURST` ✓ →
+`backend/rate_limit.py`). La IP que se mira es la **real** (`CF-Connecting-IP` →
+`X-Forwarded-For` → socket), porque con el túnel todo llega como loopback. El
+DM (loopback sin proxy) nunca se frena ✓. **Lo que falta (cuenta del DM, no
+del repo)**: el `Cloudflare Access` delante del túnel (un login de email para
+entrar) → es configuración de la cuenta de Cloudflare, no del código.
 | **P4** | Medir la partida real: el tamaño de la primera carga, la latencia por acción, el uso de ancho de banda | Hay números del playtest en el doc | — |
 
 ---

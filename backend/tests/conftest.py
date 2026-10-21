@@ -41,6 +41,19 @@ def _app():
     return app
 
 
+@pytest.fixture(scope="session", autouse=True)
+async def _db():
+    """Crea las tablas de la base temporal (una vez por corrida).
+
+    Vive aca y no en un archivo de test: `ASGITransport` no corre el
+    lifespan de la app, asi que sin esto los archivos que no dependen del
+    fixture de otro archivo pegan contra una base sin tablas.
+    """
+    from database import init_db
+
+    await init_db()
+
+
 @pytest.fixture(scope="session")
 async def _dm_token():
     """El DM con el que hablan los tests.
