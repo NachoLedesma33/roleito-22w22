@@ -43,9 +43,11 @@ export const PUERTO_WEB = 5173
  * responden 0 solo si el comando existe ✓.
  */
 export function tieneComando(cmd) {
+  // `where.exe` a pelo (no con shell: true): con shell, node avisa (DEP0190)
+  // de que los argumentos no van escapados ✗.
   const probe =
     platform() === 'win32'
-      ? spawnSync('where', [cmd], { stdio: 'ignore', shell: true })
+      ? spawnSync('where.exe', [cmd], { stdio: 'ignore' })
       : spawnSync('sh', ['-c', `command -v ${cmd}`], { stdio: 'ignore' })
   return probe.status === 0
 }
