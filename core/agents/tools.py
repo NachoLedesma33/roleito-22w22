@@ -6,8 +6,10 @@
    escribe una. No hay forma de que invoque algo que no este aqui.
 2. No hay **FS, ni shell, ni red, ni SQL libre**. Las tools son funciones del
    repo con argumentos validados.
-3. Cada tool escribe **propuestas** (PROPOSED / PENDING), no estado: el DM
-   autoriza (la regla C4 del plan de seguridad).
+3. Cada tool escribe **propuestas** (PROPOSED), no estado: el DM autoriza
+   (la regla C4 del plan de seguridad). Hoy la unica que escribe es
+   `proponer_evento`: deja el evento PROPOSED en la DB y el DM lo aprueba
+   con el mismo boton que usa el session processor.
 4. Los argumentos se validan con **pydantic** y `extra="forbid"`: un campo que
    no existe se rechaza.
 5. Cada llamada queda **auditada** (agente, tool, hash de los argumentos) y
@@ -16,7 +18,14 @@
 Lo que el modelo NO puede hacer aca: tocar el codigo del front o del back,
 escribir archivos, ejecutar procesos o salir a la red. El modelo devuelve
 texto; el backend decide que se guarda. Eso no lo cambia B5: lo unico que
-agrega es que el modelo pueda **preguntar** por datos de la campana.
+agrega es que el modelo pueda **preguntar** por datos de la campana y
+**proponer** un evento que el DM autoriza.
+
+La geometria NO se propone todavia: el grafo de la escena lo escribe el
+frontend (PUT /items con el grafo entero), asi que una tool que escribiera
+items_json se perderia en el proximo guardado del DM. Proponer geometria
+necesita el camino de la deteccion (una PROPUESTA que el frontend mete en el
+grafo con `pendingReview`), no un write del backend.
 """
 
 from __future__ import annotations
@@ -25,7 +34,7 @@ import json
 from dataclasses import dataclass, field
 from typing import Any, Callable, Literal
 
-from pydantic import BaseModel, ConfigDict, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 MAX_TOOL_ITERATIONS = 3
 MAX_TOOL_RESULT_CHARS = 4000
@@ -120,6 +129,8 @@ async def run_tool(name: str, arguments: dict, ctx: ToolContext) -> str:
         result = await spec.handler(ctx, arguments or {})
     except ToolError:
         raise
+    except ValidationError as e:
+        raise ToolError(f"Argumentos invalidos para {name}: {e}") from e
     except Exception as e:  # noqa: BLE001
         raise ToolError(f"La tool {name} fallo: {e}") from e
 
@@ -228,5 +239,115 @@ register(
         parameters=ConsultarEstadoArgs.model_json_schema(),
         handler=_consultar_estado,
         writes=False,
+    )
+)
+
+
+class ProponerEventoArgs(BaseModel):
+    """Un evento propuesto. Nace PROPOSED: el DM lo autoriza (o lo rechaza).
+
+    NO lleva `session_id`: la sesion la resuelve la tool (la actual de la
+    campana). Si el modelo pudiera elegirla, podria colgar un evento de la
+    sesion de OTRA campana.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    description: str = Field(min_length=3, max_length=500)
+    type: str = Field(default="DIALOGUE", max_length=40, pattern=r"^[A-Z][A-Z0-9_]*$")
+    # Nombres, no ids: el resolver los busca DENTRO de la campana (los que no
+    # existen quedan como aviso, no como error).
+    actor: str = Field(default="", max_length=120)
+    target: str = Field(default="", max_length=120)
+    location: str = Field(default="", max_length=120)
+
+
+async def _proponer_evento(ctx: ToolContext, args: dict) -> str:
+    """Propone un evento. Queda PROPOSED: el DM lo autoriza.
+
+    Es el mismo camino que el session processor (`propose_session_events`): el
+    canon no lo escribe la IA, lo propone.
+    """
+    parsed = ProponerEventoArgs(**(args or {}))
+    db = ctx.db
+    if db is None:
+        raise ToolError("No hay base de datos para proponer el evento.")
+
+    session_id = await _current_session_id(db, ctx.campaign_id)
+    if not session_id:
+        raise ToolError(
+            "La campana no tiene sesiones: el DM tiene que crear una antes "
+            "de que el advisor proponga eventos."
+        )
+
+    from core.agents.proposals import propose_session_events
+
+    proposals, warnings = await propose_session_events(
+        db,
+        ctx.campaign_id,
+        session_id,
+        [
+            {
+                "type": parsed.type,
+                "description": parsed.description.strip(),
+                "actors": [parsed.actor] if parsed.actor else [],
+                "targets": [parsed.target] if parsed.target else [],
+                "location": parsed.location,
+            }
+        ],
+    )
+    if not proposals:
+        return "No se pudo proponer el evento: " + ("; ".join(warnings) or "sin detalle")
+    lines = [
+        f"Evento propuesto (PROPOSED, lo autoriza el DM): {p.description}"
+        for p in proposals
+    ]
+    lines += [f"Aviso: {w}" for w in warnings]
+    return "\n".join(lines)
+
+
+async def _current_session_id(db, campaign_id: str) -> str:
+    """La sesion donde colgar un evento propuesto: la actual de la campana.
+
+    La resuelve el backend, no el modelo: el modelo no conoce ids de sesion
+    y, si pudiera elegir, podria apuntar a otra campana.
+    """
+    from sqlalchemy import select
+
+    from backend.models import Campaign, Session
+
+    campaign = (await db.execute(
+        select(Campaign).where(Campaign.id == campaign_id)
+    )).scalar_one_or_none()
+    if campaign and campaign.current_session_id:
+        session = (await db.execute(
+            select(Session).where(
+                Session.id == campaign.current_session_id,
+                Session.campaign_id == campaign_id,
+            )
+        )).scalar_one_or_none()
+        if session:
+            return session.id
+
+    # Sin sesion activa: la ultima de la campana.
+    session = (await db.execute(
+        select(Session)
+        .where(Session.campaign_id == campaign_id)
+        .order_by(Session.number.desc())
+        .limit(1)
+    )).scalar_one_or_none()
+    return session.id if session else ""
+
+
+register(
+    ToolSpec(
+        name="proponer_evento",
+        description=(
+            "Propone un evento para la sesion (lo que paso, a quien, donde). "
+            "Nace PROPOSED: el DM lo autoriza. No escribe el canon."
+        ),
+        parameters=ProponerEventoArgs.model_json_schema(),
+        handler=_proponer_evento,
+        writes=True,
     )
 )

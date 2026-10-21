@@ -2837,3 +2837,94 @@ async def test_el_advisor_puede_consultar_una_tool_de_la_campana(client, monkeyp
     assert not body["data"]["answer"].startswith("{")
     # Y la tool leyo de ESTA campana.
     assert "Ardan" in body["data"]["context"], body["data"]["context"]
+
+
+@pytest.mark.asyncio
+async def test_una_tool_que_propone_deja_la_propuesta_para_el_dm(client):
+    """B5b: el advisor puede PROPONER, pero el DM autoriza.
+
+    El evento nace PROPOSED: no toca el canon hasta que el DM dice que si.
+    """
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Prop"})).json()
+    ses = (
+        await client.post(
+            f"/api/campaigns/{camp['id']}/sessions",
+            json={"number": 1, "date": "2026-10-21", "title": "Sesion 1"},
+        )
+    ).json()
+
+    from core.agents.tools import ToolContext, run_tool
+    from database import async_session
+
+    async with async_session() as db:
+        ctx = ToolContext(campaign_id=camp["id"], db=db)
+
+        out = await run_tool(
+            "proponer_evento",
+            {
+                "description": "El heroe abrio la boveda",
+                "type": "LOCATION_ENTERED",
+                "location": "El-Almacen",
+            },
+            ctx,
+        )
+        assert "PROPOSED" in out, out
+
+    events = (await client.get(f"/api/campaigns/{camp['id']}/events")).json()
+    assert len(events) == 1
+    assert events[0]["status"] == "PROPOSED"
+    # La sesion la resolvio el backend (la de la campana), no el modelo.
+    assert events[0]["session_id"] == ses["id"]
+
+
+@pytest.mark.asyncio
+async def test_la_tool_de_proponer_no_elige_sesion_ni_campana(client):
+    """El perimetro: la tool cuelga el evento en SU campana, siempre.
+
+    El modelo no puede pedir `session_id` (el campo no existe: `extra=forbid`),
+    asi que no puede colgar un evento en la sesion de otra campana.
+    """
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Prop"})).json()
+    otra = (await client.post("/api/campaigns", json={"name": "Camp Ajeno"})).json()
+    await client.post(
+        f"/api/campaigns/{camp['id']}/sessions",
+        json={"number": 1, "date": "2026-10-21", "title": "Sesion mia"},
+    )
+    ses_ajena = (
+        await client.post(
+            f"/api/campaigns/{otra['id']}/sessions",
+            json={"number": 1, "date": "2026-10-21", "title": "Sesion ajena"},
+        )
+    ).json()
+
+    from core.agents.tools import ToolContext, ToolError, run_tool
+    from database import async_session
+
+    async with async_session() as db:
+        ctx = ToolContext(campaign_id=camp["id"], db=db)
+
+        # Pedir la sesion ajena es un argumento invalido: la tool no lo acepta.
+        with pytest.raises(ToolError):
+            await run_tool(
+                "proponer_evento",
+                {
+                    "description": "El heroe abrio la boveda",
+                    "session_id": ses_ajena["id"],
+                },
+                ctx,
+            )
+
+        out = await run_tool(
+            "proponer_evento",
+            {"description": "El heroe abrio la boveda"},
+            ctx,
+        )
+        assert "PROPOSED" in out, out
+
+    events = (await client.get(f"/api/campaigns/{camp['id']}/events")).json()
+    assert len(events) == 1
+    assert events[0]["session_id"] != ses_ajena["id"]
+
+    # Y en la campana ajena no hay nada: el perimetro de datos se respeta.
+    eventos_ajenos = (await client.get(f"/api/campaigns/{otra['id']}/events")).json()
+    assert eventos_ajenos == []
