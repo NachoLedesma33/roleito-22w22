@@ -318,6 +318,35 @@ Cada línea es un test. Si un test no existe, la garantía no existe.
 
 ---
 
+## 5. El advisor de campaña (fase nueva, a pedido del DM — 2026-10-21)
+
+Lo que pidió el DM: un asistente **dentro** de la campaña que consuma su contexto y
+opere con libertad, pero libertad **acotada al perímetro de datos de esa
+campaña**. La acotación original (texto→texto, sin FS ni shell) protege **el
+código** y no se toca: lo que se mueve es la frontera de *datos*. Hoy el
+contexto que se le manda al modelo es la campaña; mañana además podrá
+**preguntarle** a la campaña.
+
+**Postura: segundo arbitro.** Está ahí, toma contexto y da una segunda lectura
+("con el canon que tenés, esto se puede leer de dos maneras"). No decide: el DM
+aprueba o rechaza (C4, la regla que ya respeta todo lo que propone un agente).
+
+| Fase | Qué | Criterio |
+|---|---|---|
+| **J1** | El panel de segunda opinión en el dashboard DM: pregunta → respuesta sobre la campaña. **Sin tools de escritura**: solo lee. El contexto ya se arma (`_campaign_data`: personajes, NPCs, lugares, misiones, últimos eventos); lo que falta es la superficie en la UI y el recorte del contexto con presupuesto. | `pytest`: la respuesta se arma **solo** con datos de ESA campaña (otra campaña = nada) + e2e del panel. |
+| **J2** | El advisor con tools: preguntar el mundo a demanda y proponer lecturas alternativas del canon. | Depende de B5. |
+
+**Lo que NO va a ser**: un agente que llama al modelo en cada evento (quema la
+API key). El contexto se refresca **a pedido**; el "estado vivo" es un resumen
+barato, no una llamada por evento.
+
+**La privacy perimeter**: el `campaign_id` de la sesión es la autoridad. Las
+consultas van scopeadas a esa campaña y a nada más — el motor de World State ya
+scopea (`core/world/engine.py`), y un `local_only` bloquea además los
+proveedores externos (C6).
+
+---
+
 ## 5. Riesgos
 
 | Riesgo | Mitigación |
