@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -330,5 +331,37 @@ class OrchestratorAgent:
             "status": agent_result.status,
             "data": agent_result.data if agent_result.status == "success" else None,
         }
+        if agent_result.status == "success":
+            await self._save_recap(session_id, agent_result.data)
 
         result.summary = f"Full pipeline completed: {len(result.agent_results)} agents"
+
+    async def _save_recap(self, session_id: str | None, recap) -> None:
+        """Guarda el recap en la sesion (el mismo formato que /agents/recap).
+
+        Antes el pipeline generaba el recap y lo perdia: el boton "Procesar y
+        resumir" no dejaba nada que el jugador pudiera ver en su sesion.
+        """
+        if not session_id or self.db is None or recap is None:
+            return
+
+        from sqlalchemy import select
+
+        from backend.models import Session
+
+        session = (await self.db.execute(
+            select(Session).where(Session.id == session_id)
+        )).scalar_one_or_none()
+        if not session:
+            return
+
+        session.ai_recap_json = json.dumps(
+            {
+                "recap": recap.recap,
+                "highlights": recap.highlights,
+                "cliffhanger": recap.cliffhanger,
+                "next_session_hook": recap.next_session_hook,
+            },
+            ensure_ascii=False,
+        )
+        await self.db.commit()

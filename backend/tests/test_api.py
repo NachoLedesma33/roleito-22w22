@@ -2159,6 +2159,15 @@ async def test_full_pipeline_deja_eventos_propuestos_para_aprobacion(client, mon
     assert all(e["status"] == "PROPOSED" for e in events)
     assert all(e["session_id"] == ses["id"] for e in events)
 
+    # Y el recap quedo GUARDADO en la sesion: antes el pipeline lo generaba y
+    # lo perdia, asi que el jugador no lo veia nunca.
+    ses_get = (await client.get(
+        f"/api/campaigns/{camp['id']}/sessions/{ses['id']}"
+    )).json()
+    assert ses_get["ai_recap"], ses_get
+    assert ses_get["ai_recap"]["recap"]
+    assert ses_get["ai_recap"]["highlights"]
+
 
 @pytest.mark.asyncio
 async def test_el_snapshot_del_jugador_no_manda_geometria_pendiente(client):
