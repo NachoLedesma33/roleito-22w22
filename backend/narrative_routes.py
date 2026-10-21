@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 
@@ -19,7 +18,7 @@ from auth import require_dm, AuthSession
 from core.narrative.entity_resolver import get_campaign_context, resolve_entities
 from core.narrative.parser import parse_narrative
 from core.narrative.proposer import propose_events
-from infrastructure.ai import build_provider
+from core.agents.provider import get_ai_config, get_provider_for_agent
 
 router = APIRouter(tags=["narrative"])
 
@@ -81,17 +80,8 @@ async def parse_narrative_text(
     if not body.text.strip():
         return NarrativeParseResponse(events=[], warnings=[], raw_count=0)
 
-    config_path = Path("data/ai_config.json")
-    if config_path.exists():
-        config = json.loads(config_path.read_text())
-    else:
-        config = {"provider": "mock"}
-
-    provider = build_provider(
-        config.get("provider", "mock"),
-        local_base_url=config.get("local_base_url"),
-        remote_base_url=config.get("remote_base_url"),
-    )
+    config = get_ai_config()
+    provider = get_provider_for_agent()
 
     context = await get_campaign_context(db, campaign_id)
 

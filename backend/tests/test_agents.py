@@ -455,6 +455,29 @@ def test_character_for_prompt_saca_las_notas_del_jugador():
     assert "player_notes" not in payload
 
 
+def test_la_config_de_ia_vive_en_la_raiz_del_repo():
+    """El backend corre desde `backend/`: un path relativo al CWD no encontraba
+    la config y los agentes usaban SIEMPRE el mock, aunque el DM hubiera
+    configurado Groq/OpenRouter/OpenAI en el panel."""
+    from core.agents.provider import config_path
+
+    repo = Path(__file__).resolve().parents[2]
+    assert config_path() == repo / "data" / "ai_config.json"
+
+
+def test_el_provider_lee_la_config_configurada(tmp_path, monkeypatch):
+    from core.agents.provider import get_provider_for_agent
+
+    cfg = tmp_path / "ai_config.json"
+    cfg.write_text(
+        json.dumps({"provider": "local", "local_base_url": "http://localhost:11434"}),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("ROLEITO_AI_CONFIG", str(cfg))
+    provider = get_provider_for_agent()
+    assert provider.name == "local"
+
+
 async def test_la_auditoria_guarda_el_hash_y_no_el_prompt(tmp_path, monkeypatch):
     """S7: el log de auditoria tiene la huella del prompt, no el prompt.
 

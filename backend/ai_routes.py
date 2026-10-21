@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from infrastructure.ai import build_provider  # noqa: E402
 from infrastructure.ai.remote import estimate_usage  # noqa: E402
 from core.agents.audit import audited_call  # noqa: E402
+from core.agents.provider import config_path  # noqa: E402
 from auth import require_dm, AuthSession  # noqa: E402
 from vault import get_api_key  # noqa: E402
 
@@ -23,7 +24,7 @@ from schemas import (  # noqa: E402
 
 router = APIRouter()
 
-CONFIG_PATH = Path(__file__).parent.parent / "data" / "ai_config.json"
+CONFIG_PATH = config_path()
 
 DEFAULTS = AISettingsUpdate()
 

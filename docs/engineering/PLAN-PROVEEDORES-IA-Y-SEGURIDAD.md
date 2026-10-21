@@ -42,6 +42,7 @@ No es una lista de deseos: es lo que hay.
 - `AISettingsUpdate` (`backend/schemas.py:700`): `provider: Literal["mock","local","remote"]`, `local_base_url`, `remote_base_url`, `model: Optional[str]`, `max_tokens`, `temperature`.
   **Un solo `model` para toda la app**; un solo `remote_base_url`.
 - Persistida en `data/ai_config.json` (gitignored, `backend/ai_routes.py:25`).
+  **OJO (arreglado 2026-10-21):** el panel la guardaba bien, pero los agentes la leian con un path **relativo al CWD** (`Path("data/ai_config.json")`). El backend corre desde `backend/`, asi que no encontraba el archivo: **los agentes usaban SIEMPRE el mock**, aunque el DM hubiera configurado Groq/OpenRouter/OpenAI. Ahora la ruta es absoluta (`core/agents/provider.py::config_path`) y hay test.
 - Claves: `backend/vault.py` — ChaCha20-Poly1305 + HKDF con fingerprint de máquina, en `data/vault.enc`. **Una clave por nombre de provider** (`store_api_key("remote", ...)`).
 
 ### 1.3 UI
