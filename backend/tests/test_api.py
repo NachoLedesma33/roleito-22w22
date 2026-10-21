@@ -1896,11 +1896,73 @@ DM_SURFACE_ROUTES = [
     ("post", "/api/campaigns/{cid}/characters/{id}/portrait", None),
     ("delete", "/api/markers/{id}", None),
     ("post", "/api/event-bus/emit", {"type": "test"}),
+    # Parte 2: los routers MEZCLADOS. Las ESCRITURAS son del DM; las
+    # lecturas y las del jugador (usar habilidad, pedir luz, mover el token,
+    # las notas) quedan abiertas.
+    ("post", "/api/campaigns", {"name": "X"}),
+    ("put", "/api/campaigns/{cid}", {"name": "X"}),
+    ("delete", "/api/campaigns/{cid}", None),
+    ("post", "/api/campaigns/import", {"campaign": {"name": "X"}}),
+    ("post", "/api/campaigns/{cid}/invite-code", None),
+    ("post", "/api/campaigns/{cid}/locations", {"name": "X"}),
+    ("post", "/api/campaigns/{cid}/scenes", {"name": "X"}),
+    ("put", "/api/campaigns/{cid}/scenes/{id}/items", {"items": []}),
+    ("delete", "/api/campaigns/{cid}/scenes/{id}", None),
+    ("post", "/api/campaigns/{cid}/scenes/{id}/detect-walls", {"mode": "blueprint"}),
+    ("delete", "/api/campaigns/{cid}/abilities/{id}", None),
+    ("post", "/api/campaigns/{cid}/abilities/{id}/icon", None),
+    ("post", "/api/campaigns/{cid}/players", {"name": "X"}),
+    ("delete", "/api/campaigns/{cid}/players/{id}", None),
+    ("post", "/api/campaigns/{cid}/maps", {"name": "X"}),
+    ("post", "/api/campaigns/{cid}/assets/upload", None),
+    ("delete", "/api/campaigns/{cid}/assets/{id}", None),
+    ("post", "/api/campaigns/{cid}/light-requests/{id}/resolve", None),
 ]
 
 
 @pytest.mark.asyncio
-async def test_la_superficie_de_la_campana_es_del_dm(anon_client):
+async def test_el_jugador_solo_puede_escribir_sus_notas(client, anon_client):
+    """El `PUT` del personaje es la ruta publica del jugador: sus notas.
+
+    Sin token solo puede tocar `player_notes`: cualquier otro campo del
+    personaje (estadisticas, conjuros, nombre) es del DM.
+    """
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Notas"})).json()
+    char = (
+        await client.post(
+            f"/api/campaigns/{camp['id']}/characters",
+            json={"name": "Aria", "max_pm": 6},
+        )
+    ).json()
+
+    # Sus notas: sin token, se guardan.
+    res = await anon_client.put(
+        f"/api/campaigns/{camp['id']}/characters/{char['id']}",
+        json={"player_notes": "el dragon es mi tio"},
+    )
+    assert res.status_code == 200, res.text
+    guardado = (
+        await client.get(f"/api/campaigns/{camp['id']}/characters/{char['id']}")
+    ).json()
+    assert guardado["player_notes"] == "el dragon es mi tio"
+
+    # Las estadisticas: sin token, no.
+    res = await anon_client.put(
+        f"/api/campaigns/{camp['id']}/characters/{char['id']}",
+        json={"max_pm": 99},
+    )
+    assert res.status_code == 403, res.text
+
+    # Con el token del DM, si.
+    res = await client.put(
+        f"/api/campaigns/{camp['id']}/characters/{char['id']}",
+        json={"max_pm": 99},
+    )
+    assert res.status_code == 200, res.text
+
+
+@pytest.mark.asyncio
+async def test_la_superficie_de_la_campana_es_del_dm(client, anon_client):
     """Sin token -> 401; con token de jugador -> 403.
 
     Antes estas rutas no exigian rol: cualquiera que llegara al backend
@@ -1920,7 +1982,7 @@ async def test_la_superficie_de_la_campana_es_del_dm(anon_client):
     ).json()
     player = await create_session(reg["dm_id"], role="player")
 
-    camp = (await anon_client.post("/api/campaigns", json={"name": "Camp Surface"})).json()
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Surface"})).json()
 
     for method, path, body in DM_SURFACE_ROUTES:
         url = path.format(cid=camp["id"], id="cualquiera")
@@ -1936,7 +1998,7 @@ async def test_la_superficie_de_la_campana_es_del_dm(anon_client):
 
 
 @pytest.mark.asyncio
-async def test_ninguna_ruta_de_ia_acepta_a_un_jugador(anon_client):
+async def test_ninguna_ruta_de_ia_acepta_a_un_jugador(client, anon_client):
     """S1: sin token -> 401; con token de jugador -> 403.
 
     Una ruta de IA gasta la API key del DM y devuelve informacion de la
@@ -1955,7 +2017,7 @@ async def test_ninguna_ruta_de_ia_acepta_a_un_jugador(anon_client):
     # cree: el test lo crea a proposito para verificar el 403.
     player = await create_session(reg["dm_id"], role="player")
 
-    camp = (await anon_client.post("/api/campaigns", json={"name": "Camp Roles"})).json()
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Roles"})).json()
 
     for method, path, body in AI_ROUTES:
         url = path.format(cid=camp["id"])
@@ -1971,7 +2033,7 @@ async def test_ninguna_ruta_de_ia_acepta_a_un_jugador(anon_client):
 
 
 @pytest.mark.asyncio
-async def test_el_canon_solo_lo_muta_el_dm(anon_client):
+async def test_el_canon_solo_lo_muta_el_dm(client, anon_client):
     """C4 en la API: sin token -> 401; con token de jugador -> 403.
 
     El canon es del DM. Antes estas rutas no exigian rol: cualquiera que
@@ -1990,7 +2052,7 @@ async def test_el_canon_solo_lo_muta_el_dm(anon_client):
     ).json()
     player = await create_session(reg["dm_id"], role="player")
 
-    camp = (await anon_client.post("/api/campaigns", json={"name": "Camp Canon"})).json()
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Canon"})).json()
 
     for method, path, body in CANON_ROUTES:
         url = path.format(cid=camp["id"], eid="evt-inexistente")

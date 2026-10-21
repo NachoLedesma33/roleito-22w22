@@ -57,6 +57,7 @@ from services.assets import (
     rewrite_campaign_prefix,
 )
 from services.item_validation import validate_scene_items
+from auth import require_dm, AuthSession
 
 
 def _parse_dt(value):
@@ -307,6 +308,8 @@ async def campaign_ws(
 async def create_campaign(
     data: CampaignCreate,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     campaign = Campaign(
         name=data.name,
@@ -344,6 +347,8 @@ async def update_campaign(
     campaign_id: str,
     data: CampaignUpdate,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     result = await db.execute(
         select(Campaign).where(Campaign.id == campaign_id)
@@ -368,6 +373,8 @@ async def update_campaign(
 async def delete_campaign(
     campaign_id: str,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     result = await db.execute(
         select(Campaign).where(Campaign.id == campaign_id)
@@ -443,6 +450,8 @@ async def delete_campaign(
 async def bulk_delete_campaigns(
     body: BulkDeleteRequest,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     deleted = []
     for cid in body.ids:
@@ -512,6 +521,8 @@ async def bulk_delete_campaigns(
 async def bulk_update_campaigns(
     body: BulkUpdateRequest,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     updated = []
     for cid in body.ids:
@@ -535,6 +546,8 @@ async def bulk_update_campaigns(
 async def bulk_export_campaigns(
     body: BulkExportRequest,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     exports = []
     for cid in body.ids:
@@ -721,6 +734,8 @@ async def export_campaign(
 async def import_campaign(
     data: CampaignImport,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     src = data.campaign
     campaign = Campaign(
@@ -1135,6 +1150,8 @@ async def import_campaign(
 async def generate_invite_code(
     campaign_id: str,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     result = await db.execute(
         select(Campaign).where(Campaign.id == campaign_id)
@@ -1294,6 +1311,8 @@ async def create_location(
     campaign_id: str,
     data: dict,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     campaign = (await db.execute(
         select(Campaign).where(Campaign.id == campaign_id)

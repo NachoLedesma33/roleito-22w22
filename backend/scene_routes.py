@@ -17,6 +17,7 @@ import json
 from pathlib import Path
 
 from routes import broadcast_positions, broadcast_revision
+from auth import require_dm, AuthSession
 
 router = APIRouter(tags=["scenes"])
 
@@ -67,6 +68,8 @@ async def create_scene(
     campaign_id: str,
     data: SceneCreate,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     result = await db.execute(
         select(Campaign).where(Campaign.id == campaign_id)
@@ -123,6 +126,8 @@ async def update_scene(
     scene_id: str,
     data: SceneUpdate,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     result = await db.execute(
         select(Scene).where(
@@ -149,6 +154,8 @@ async def sync_scene(
     campaign_id: str,
     scene_id: str,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     result = await db.execute(
         select(Scene).where(
@@ -177,6 +184,8 @@ async def delete_scene(
     campaign_id: str,
     scene_id: str,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     result = await db.execute(
         select(Scene).where(
@@ -208,6 +217,8 @@ async def save_scene_items(
     scene_id: str,
     data: dict,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     result = await db.execute(
         select(Scene).where(
@@ -264,6 +275,8 @@ async def detect_walls(
     mode: str = "blueprint",
     seed: int = 0,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     result = await db.execute(
         select(Scene).where(
@@ -353,6 +366,8 @@ async def detect_scene_grid(
     campaign_id: str,
     scene_id: str,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     """Detecta la grilla regular del fondo de la escena, en PIXELES.
 
@@ -397,6 +412,8 @@ async def upload_scene_background(
     scene_id: str,
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     result = await db.execute(
         select(Scene).where(
@@ -429,6 +446,8 @@ async def upload_scene_audio(
     scene_id: str,
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     result = await db.execute(
         select(Scene).where(
@@ -461,6 +480,8 @@ async def clear_scene_audio(
     campaign_id: str,
     scene_id: str,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     result = await db.execute(
         select(Scene).where(
@@ -484,6 +505,8 @@ async def classify_scene_endpoint(
     campaign_id: str,
     scene_id: str,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     result = await db.execute(
         select(Scene).where(
@@ -532,6 +555,8 @@ async def update_scene_characters(
     scene_id: str,
     characters: list[SceneCharacterPosition],
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     result = await db.execute(
         select(Scene).where(

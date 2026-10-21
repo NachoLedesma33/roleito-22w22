@@ -10,6 +10,7 @@ import uuid
 import json as _json
 
 from services.assets import ASSETS_DIR
+from auth import require_dm, AuthSession
 
 router = APIRouter(tags=["players", "maps", "assets", "light-requests"])
 
@@ -22,6 +23,8 @@ async def create_player(
     campaign_id: str,
     data: PlayerCreate,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     result = await db.execute(
         select(Campaign).where(Campaign.id == campaign_id)
@@ -77,6 +80,8 @@ async def update_player(
     player_id: str,
     data: PlayerUpdate,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     result = await db.execute(
         select(Player).where(
@@ -102,6 +107,8 @@ async def delete_player(
     campaign_id: str,
     player_id: str,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     result = await db.execute(
         select(Player).where(
@@ -158,6 +165,8 @@ async def put_player_fog(
     scene_id: str,
     data: PlayerFogUpdate,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     scene_r = await db.execute(
         select(Scene).where(
@@ -241,6 +250,8 @@ async def resolve_light_request(
     campaign_id: str,
     request_id: str,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     result = await db.execute(
         select(LightRequest).where(
@@ -266,6 +277,8 @@ async def create_map(
     campaign_id: str,
     data: MapCreate,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     campaign_r = await db.execute(
         select(Campaign).where(Campaign.id == campaign_id)
@@ -297,6 +310,8 @@ async def upload_map_image(
     map_id: str,
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     result = await db.execute(
         select(Map).where(
@@ -339,6 +354,8 @@ async def delete_map(
     campaign_id: str,
     map_id: str,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     result = await db.execute(
         select(Map).where(
@@ -370,6 +387,8 @@ async def upload_asset(
     entity_type: str | None = None,
     entity_id: str | None = None,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     campaign_r = await db.execute(
         select(Campaign).where(Campaign.id == campaign_id)
@@ -418,6 +437,8 @@ async def delete_asset(
     campaign_id: str,
     asset_id: str,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     result = await db.execute(
         select(Asset).where(

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional
 
-from auth import require_dm, AuthSession
+from auth import get_optional_session, require_dm, AuthSession
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from database import get_session
@@ -110,6 +111,7 @@ async def update_character(
     character_id: str,
     data: CharacterUpdate,
     db: AsyncSession = Depends(get_session),
+    session: Optional[AuthSession] = Depends(get_optional_session),
 ):
     result = await db.execute(
         select(Character).where(
@@ -122,6 +124,13 @@ async def update_character(
         raise HTTPException(status_code=404, detail="Character not found")
 
     updates = data.model_dump(exclude_unset=True)
+    # El DM edita el personaje entero. El JUGADOR (que va sin token) solo
+    # puede escribir SUS notas: cualquier otro campo es del DM.
+    es_dm = session is not None and session.role == "dm"
+    if not es_dm:
+        if set(updates) - {"player_notes"}:
+            raise HTTPException(status_code=403, detail="DM access required")
+        updates = {k: v for k, v in updates.items() if k == "player_notes"}
     if "class_name" in updates:
         char.class_ = updates.pop("class_name")
     spells = updates.pop("spells_json", None)

@@ -8,6 +8,7 @@ from models import Ability, Campaign, Character, CharacterAbility, Event
 from services.assets import remove_asset_file, save_campaign_file
 from services.vida import apply_vida_response, spell_payload
 from routes import broadcast_revision
+from auth import require_dm, AuthSession
 
 router = APIRouter(tags=["abilities"])
 
@@ -56,6 +57,8 @@ async def delete_campaign_ability(
     campaign_id: str,
     ability_id: str,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     """Borra la habilidad del catálogo, para todas las fichas que la saben.
 
@@ -84,6 +87,8 @@ async def set_ability_icon_preset(
     ability_id: str,
     slug: str,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     """Fija un icono de la paleta precargada (apps/dm/src/lib/abilityIcons.ts)."""
     ability = await _get_ability(db, campaign_id, ability_id)
@@ -98,6 +103,8 @@ async def upload_ability_icon(
     ability_id: str,
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     """Sube una imagen propia; se guarda como la del retrato, en
     data/assets/<campaña>/abilities/<habilidad>/icon.<ext>."""
@@ -123,6 +130,8 @@ async def clear_ability_icon(
     campaign_id: str,
     ability_id: str,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     """Quita el icono: la UI vuelve al fallback (primera letra del nombre)."""
     ability = await _get_ability(db, campaign_id, ability_id)
@@ -138,6 +147,8 @@ async def upload_ability_audio(
     ability_id: str,
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     """Sube un sonido de la habilidad; se guarda como el del icono, en
     data/assets/<campaña>/abilities/<habilidad>/audio.<ext>."""
@@ -163,6 +174,8 @@ async def clear_ability_audio(
     campaign_id: str,
     ability_id: str,
     db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
 ):
     """Quita el audio: el botón Usar vuelve a sonar solo con ambiente."""
     ability = await _get_ability(db, campaign_id, ability_id)

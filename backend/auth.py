@@ -215,3 +215,16 @@ async def require_dm(session: AuthSession = Depends(get_current_session)) -> Aut
     if session.role != "dm":
         raise HTTPException(status_code=403, detail="DM access required")
     return session
+
+
+async def get_optional_session(
+    token: Optional[str] = Depends(extract_token),
+) -> Optional[AuthSession]:
+    """La sesion si la hay; None si el request es anonimo.
+
+    Lo usa la superficie publica del jugador (las notas de su personaje): va
+    sin token, asi que no se puede exigir uno sin romperla.
+    """
+    if not token:
+        return None
+    return await get_session(token)
