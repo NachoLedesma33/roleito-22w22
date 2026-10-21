@@ -91,7 +91,7 @@ function pointInPolygon(x: number, z: number, poly: [number, number][]): boolean
 
 export interface ShadowItem {
   id?: string
-  metadata?: { type?: string; portals?: PortalRef[] }
+  metadata?: { type?: string; portals?: PortalRef[]; movement?: boolean }
   shape?: { type?: string; points?: number[] }
   x?: number
   y?: number
@@ -113,6 +113,9 @@ export function extractZonePolygons(items: ShadowItem[], mapW: number = 10, mapH
     if (isPendingReview(item)) continue
     // Una zona fantasma es referencia: no frena (si proyecta sombra, no frena).
     if (isShadowOnly(item)) continue
+    // `movement: false` = el borde de la zona no frena (un umbral, una valla
+    // baja). Mismo flag que el muro: la zona ES la pared.
+    if (item.metadata?.movement === false) continue
     const shape = item.shape
     if (shape?.type === 'polygon') {
       if (!shape.points || shape.points.length < 6) continue

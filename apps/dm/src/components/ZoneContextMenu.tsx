@@ -89,6 +89,26 @@ export default function ZoneContextMenu({
         />
         Solo sombra (no frena ni tapa la vista)
       </label>
+      {/* Los flags del BORDE de la zona: son los mismos que tiene un muro
+          (la zona ES la pared). Antes no existian: la deteccion con IA
+          dejaba el muro suelto al lado de la zona y la geometria vivia dos
+          veces. */}
+      <label className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-700 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={meta.lineOfSight !== false}
+          onChange={(e) => onUpdate({ metadata: { ...meta, lineOfSight: e.target.checked } })}
+        />
+        Tapa la vista
+      </label>
+      <label className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-700 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={meta.movement !== false}
+          onChange={(e) => onUpdate({ metadata: { ...meta, movement: e.target.checked } })}
+        />
+        Bloquea el movimiento
+      </label>
       <button
         className="w-full px-3 py-1.5 text-left text-sm text-red-400 hover:bg-gray-700"
         onClick={() => { onDelete(); onClose() }}

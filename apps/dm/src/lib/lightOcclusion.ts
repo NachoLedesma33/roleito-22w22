@@ -57,6 +57,10 @@ export function buildOccluders(
         b: [(p[2] - 0.5) * mapWidth, (p[3] - 0.5) * mapHeight],
       })
     } else if (item.metadata.type === 'zone') {
+      // `lineOfSight: false` = el borde de la zona no ocluye nada (mismo flag
+      // que el muro: la zona ES la pared). Una zona "solo sombra" SI ocluye
+      // la luz: proyectar sombra es justo lo que se le pidio.
+      if ((item.metadata as { lineOfSight?: boolean }).lineOfSight === false) continue
       if (item.shape?.type === 'rectangle') {
         const hw = item.width / 2
         const hh = item.height / 2

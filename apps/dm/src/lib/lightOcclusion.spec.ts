@@ -37,11 +37,11 @@ function doorItem(points: number[], state: 'open' | 'closed' | 'locked'): SceneI
   }
 }
 
-function zonePolygon(points: number[]): SceneItem {
+function zonePolygon(points: number[], lineOfSight?: boolean): SceneItem {
   return {
     ...baseItem('zone'),
     shape: { type: 'polygon', points, fill: '#fff', stroke: '#fff' },
-    metadata: { type: 'zone', zoneType: 'polygon', origin: 'manual', touchedByDm: true, shadowOnly: false, fillColor: '#fff', fillOpacity: 0.3, portals: [] },
+    metadata: { type: 'zone', zoneType: 'polygon', origin: 'manual', touchedByDm: true, shadowOnly: false, fillColor: '#fff', fillOpacity: 0.3, portals: [], ...(lineOfSight === undefined ? {} : { lineOfSight }) },
   }
 }
 
@@ -85,8 +85,14 @@ describe('buildOccluders', () => {
     expect(buildOccluders([item], mapW, mapH)).toHaveLength(0)
   })
 
-  it('puerta abierta no bloquea; cerrada si', () => {
-    const closed = buildOccluders([doorItem([0.5, 0.2, 0.5, 0.8], 'closed')], mapW, mapH)
+  it('una zona con lineOfSight false no ocluye la luz', () => {
+    // El borde de la zona ES la pared: mismo flag que el muro. La zona
+    // "solo sombra" SI ocluye la luz (proyectar sombra es lo que se le pidio).
+    const zone = zonePolygon([0.2, 0.2, 0.8, 0.2, 0.8, 0.8, 0.2, 0.8], false)
+    expect(buildOccluders([zone], mapW, mapH)).toHaveLength(0)
+  })
+
+  it('puerta abierta no bloquea; cerrada si', () => {    const closed = buildOccluders([doorItem([0.5, 0.2, 0.5, 0.8], 'closed')], mapW, mapH)
     expect(closed).toHaveLength(1)
     const open = buildOccluders([doorItem([0.5, 0.2, 0.5, 0.8], 'open')], mapW, mapH)
     expect(open).toHaveLength(0)

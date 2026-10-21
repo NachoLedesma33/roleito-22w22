@@ -25,9 +25,9 @@ describe('extractBlockingWallLines', () => {
   })
 })
 
-function polygonZone(points: number[]): ShadowItem {
+function polygonZone(points: number[], movement?: boolean): ShadowItem {
   return {
-    metadata: { type: 'zone' },
+    metadata: { type: 'zone', ...(movement === undefined ? {} : { movement }) },
     shape: { type: 'polygon', points },
   }
 }
@@ -80,6 +80,17 @@ describe('extractZonePolygons', () => {
   it('ignora polígonos de zona con menos de 3 puntos', () => {
     const zones = extractZonePolygons([polygonZone([0.4, 0.4, 0.6, 0.4])])
     expect(zones).toHaveLength(0)
+  })
+
+  it('una zona sin flags frena el movimiento (muro solido)', () => {
+    expect(extractZonePolygons([polygonZone(ZONE)])).toHaveLength(1)
+    expect(extractZonePolygons([polygonZone(ZONE, true)])).toHaveLength(1)
+  })
+
+  it('una zona con movement false no frena el movimiento', () => {
+    // El flag es el del muro: la zona ES la pared. Antes no existia en la
+    // zona, asi que "no frena" no se podia pedir.
+    expect(extractZonePolygons([polygonZone(ZONE, false)])).toHaveLength(0)
   })
 })
 

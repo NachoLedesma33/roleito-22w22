@@ -409,6 +409,25 @@ export interface ZoneMetadata {
   fillColor: string
   fillOpacity: number
   portals: PortalRef[]
+  /**
+   * Flags de oclusion del BORDE de la zona (la pared que la rodea).
+   *
+   * Ausentes = muro solido: es lo que asume el runtime y lo que hace una
+   * zona dibujada a mano. La zona es la unica geometria que puede llevar
+   * estos datos (HYBRID-SHADOW-GEOMETRY.md §4: los derivados salen todos del
+   * poligono), asi que la deteccion con IA no puede seguir proponiendo muros
+   * sueltos al lado de la zona.
+   */
+  /** El borde tapa la vista (line of sight y luz). */
+  lineOfSight?: boolean
+  /** El borde frena el movimiento. */
+  movement?: boolean
+  /** Atenuacion del sonido al cruzar el borde (0-1). */
+  soundOcclusion?: number
+  /** Altura de la pared del borde. */
+  height?: number
+  /** Grosor de la pared del borde. */
+  thickness?: number
 }
 
 /**

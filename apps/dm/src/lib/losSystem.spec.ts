@@ -22,7 +22,7 @@ function makeWallItem(x1: number, y1: number, x2: number, y2: number): SceneItem
   }
 }
 
-function makeZoneItem(points: number[]): SceneItem {
+function makeZoneItem(points: number[], lineOfSight?: boolean): SceneItem {
   return {
     id: 'zone-1',
     name: 'zone',
@@ -32,7 +32,7 @@ function makeZoneItem(points: number[]): SceneItem {
     visible: true, locked: false,
     disableHit: false, disableAutoZIndex: false,
     attachmentIds: [], disableAttachmentBehavior: [],
-    metadata: { type: 'zone', zoneType: 'polygon', origin: 'manual', touchedByDm: false, shadowOnly: false, fillColor: '#000', fillOpacity: 0.3, portals: [] },
+    metadata: { type: 'zone', zoneType: 'polygon', origin: 'manual', touchedByDm: false, shadowOnly: false, fillColor: '#000', fillOpacity: 0.3, portals: [], ...(lineOfSight === undefined ? {} : { lineOfSight }) },
     shape: { type: 'polygon', points, fill: '#000', stroke: '#000', strokeWidth: 1 },
   }
 }
@@ -56,6 +56,14 @@ describe('losSystem/buildLoSOccluders', () => {
     const items = [makeZoneItem([0.3, 0.3, 0.7, 0.3, 0.7, 0.7, 0.3, 0.7])]
     const occ = buildLoSOccluders(items, 10, 10)
     expect(occ.length).toBe(4)
+  })
+
+  it('una zona con lineOfSight false no ocluye la vision', () => {
+    // El borde de la zona ES la pared: el flag es el del muro. Antes la
+    // zona no lo tenia, asi que "esta zona no tapa la vista" no se podia
+    // pedir (solo el "solo sombra" de la zona entera).
+    const items = [makeZoneItem([0.3, 0.3, 0.7, 0.3, 0.7, 0.7, 0.3, 0.7], false)]
+    expect(buildLoSOccluders(items, 10, 10)).toHaveLength(0)
   })
 
   it('zone edges use mapWidth in X and mapHeight in Y (mapa apaisado)', () => {

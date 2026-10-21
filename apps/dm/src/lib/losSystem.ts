@@ -52,6 +52,9 @@ export function buildLoSOccluders(
     } else if (item.metadata.type === 'zone') {
       // Una zona fantasma proyecta sombra pero no tapa la vista.
       if (isShadowOnly(item)) continue
+      // `lineOfSight: false` = el borde de la zona no tapa la vista (un hueco,
+      // un arco). Mismo flag que el muro: la zona ES la pared.
+      if ((item.metadata as { lineOfSight?: boolean }).lineOfSight === false) continue
       if (item.shape?.type === 'rectangle') {
         const hw = item.width / 2
         const hh = item.height / 2
