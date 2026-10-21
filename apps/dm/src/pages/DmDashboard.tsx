@@ -2024,7 +2024,7 @@ const startFogMode = useCallback(() => {
                 }`}
               />
               <span className={wsLive ? 'text-[var(--success)]' : 'text-[var(--warning)]'}>
-                {wsLive ? t('dm.wsLive', 'En vivo') : t('dm.wsReconnecting', 'Reconectando...')}
+                {wsLive ? t('dm.wsLive', 'Conectado') : t('dm.wsReconnecting', 'Reconectando...')}
               </span>
             </span>
             <button

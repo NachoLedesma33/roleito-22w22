@@ -53,10 +53,10 @@ test.describe('Dashboard VTT Core', () => {
     await page.goto(`/campaigns/${campaign.id}`);
 
     // El WS del DM esta abierto (el backend local responde): el aviso dice
-    // "En vivo" y no "Reconectando".
+    // "Conectado" y no "Reconectando".
     const estado = page.getByTestId('ws-status');
     await expect(estado).toBeVisible({ timeout: 15_000 });
-    await expect(estado).toContainText('En vivo', { timeout: 15_000 });
+    await expect(estado).toContainText('Conectado', { timeout: 15_000 });
   });
 
   test('D0: el menú Construir cierra con click afuera y con Escape', async ({
