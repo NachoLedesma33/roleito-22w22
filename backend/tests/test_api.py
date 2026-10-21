@@ -1,4 +1,5 @@
 import asyncio
+import json
 import math
 import os
 from datetime import datetime, timedelta
@@ -2473,3 +2474,113 @@ async def test_el_crud_de_perfiles_nunca_devuelve_la_key(client, monkeypatch, tm
     assert res.status_code == 200, res.text
     res = await client.get("/api/ai/profiles", headers=headers)
     assert all(p["id"] != "groq" for p in res.json()["profiles"])
+
+
+# ── M0: la monetizacion, con candado ────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_la_monetizacion_esta_apagada_por_default(client, monkeypatch, tmp_path):
+    """M0: el candado. Apagada, no hay camino de cobro."""
+    from uuid import uuid4
+
+    monkeypatch.setenv("ROLEITO_AI_CONFIG", str(tmp_path / "ai_config.json"))
+    monkeypatch.setattr(
+        "core.agents.budget.BUDGET_PATH", tmp_path / "ai_budget.json"
+    )
+
+    reg = (
+        await client.post(
+            "/api/auth/register", json={"name": f"DM Cobro {uuid4().hex[:6]}", "pin": "1234"}
+        )
+    ).json()
+    headers = {"Authorization": f"Bearer {reg['token']}"}
+
+    res = await client.get("/api/ai/billing", headers=headers)
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["enabled"] is False
+    assert "free" in body["plans"]
+
+    # El checkout dice, claro, que no hay proveedor de pagos conectado.
+    res = await client.post(
+        "/api/ai/billing/checkout", json={"plan": "pro"}, headers=headers
+    )
+    assert res.status_code == 501
+    assert "apagada" in res.json()["detail"]
+
+    # Con la flag apagada, los planes se pueden dejar puestos igual: es
+    # configuracion, no un cobro.
+    res = await client.put(
+        "/api/ai/billing",
+        json={"enabled": True, "currency": "EUR", "plans": {"free": {"calls_per_day": 5, "label": "Free"}}},
+        headers=headers,
+    )
+    assert res.status_code == 200, res.text
+    res = await client.get("/api/ai/billing", headers=headers)
+    assert res.json()["enabled"] is True
+    assert res.json()["currency"] == "EUR"
+
+
+@pytest.mark.asyncio
+async def test_con_la_monetizacion_encendida_la_cuota_corta(client, monkeypatch, tmp_path):
+    """M0: encendida, la campana que se pasa de su plan no puede llamar."""
+    from uuid import uuid4
+
+    cfg = tmp_path / "ai_config.json"
+    cfg.write_text(
+        json.dumps({
+            "provider": "mock",
+            "billing": {
+                "enabled": True,
+                "plans": {
+                    "free": {"calls_per_day": 1, "label": "Free"},
+                    "pro": {"calls_per_day": 100, "label": "Pro"},
+                },
+            },
+        }),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("ROLEITO_AI_CONFIG", str(cfg))
+    monkeypatch.setattr(
+        "core.agents.budget.BUDGET_PATH", tmp_path / "ai_budget.json"
+    )
+
+    reg = (
+        await client.post(
+            "/api/auth/register", json={"name": f"DM Cuota {uuid4().hex[:6]}", "pin": "1234"}
+        )
+    ).json()
+    headers = {"Authorization": f"Bearer {reg['token']}"}
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Cuota"})).json()
+
+    # La primera llamada pasa.
+    res = await client.post(
+        f"/api/campaigns/{camp['id']}/agents/lore",
+        json={"question": "quien es Aria?"},
+        headers=headers,
+    )
+    assert res.status_code == 200, res.text
+
+    # La segunda no: la campana se paso de su plan (1 por dia).
+    res = await client.post(
+        f"/api/campaigns/{camp['id']}/agents/lore",
+        json={"question": "y ahora?"},
+        headers=headers,
+    )
+    assert res.status_code == 402, res.text
+    assert "plan" in res.json()["detail"]
+
+    # Si la campana sube de plan, vuelve a andar.
+    res = await client.put(
+        "/api/ai/billing/plan",
+        json={"campaign_id": camp["id"], "plan": "pro"},
+        headers=headers,
+    )
+    assert res.status_code == 200, res.text
+    res = await client.post(
+        f"/api/campaigns/{camp['id']}/agents/lore",
+        json={"question": "y ahora?"},
+        headers=headers,
+    )
+    assert res.status_code == 200, res.text

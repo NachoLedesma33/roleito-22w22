@@ -3328,7 +3328,7 @@ const startFogMode = useCallback(() => {
               onClose={() => setShowRecap(false)}
             />
           )}
-          {showAIPanel && <AISettingsPanel onClose={() => setShowAIPanel(false)} />}
+          {showAIPanel && <AISettingsPanel campaignId={campaignId} onClose={() => setShowAIPanel(false)} />}
           {showAssistant && campaignId && (
             <DMAssistant
               campaignId={campaignId}

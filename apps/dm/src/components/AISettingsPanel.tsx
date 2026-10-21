@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import HudPanel from './HudPanel';
 import AIProfiles from './AIProfiles';
-import { api, AISettings, AIAuditEntry, AIUsage } from '@/lib/api';
+import { api, AISettings, AIAuditEntry, AIUsage, AIBilling } from '@/lib/api';
 
 interface AISettingsPanelProps {
   onClose: () => void;
+  /** La campaña actual: el plan de la monetización es por campaña. */
+  campaignId?: string;
 }
 
 const PROVIDER_LABELS: Record<AISettings['provider'], string> = {
@@ -52,7 +54,7 @@ const LOCAL_MODELS = [
   { id: 'qwen2.5:7b', label: 'Qwen 2.5 7B' },
 ];
 
-export default function AISettingsPanel({ onClose }: AISettingsPanelProps) {
+export default function AISettingsPanel({ onClose, campaignId }: AISettingsPanelProps) {
   const [settings, setSettings] = useState<AISettings | null>(null);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -64,6 +66,7 @@ export default function AISettingsPanel({ onClose }: AISettingsPanelProps) {
   const [audit, setAudit] = useState<AIAuditEntry[]>([]);
   const [showAudit, setShowAudit] = useState(false);
   const [usage, setUsage] = useState<AIUsage | null>(null);
+  const [billing, setBilling] = useState<AIBilling | null>(null);
 
   useEffect(() => {
     Promise.all([api.ai.getConfig(), api.vault.status(), api.ai.usage()])
@@ -74,6 +77,13 @@ export default function AISettingsPanel({ onClose }: AISettingsPanelProps) {
       })
       .catch(() => setSaveError('No se pudo cargar la configuración'));
   }, []);
+
+  useEffect(() => {
+    api.ai
+      .billing(campaignId)
+      .then(setBilling)
+      .catch(() => setBilling(null));
+  }, [campaignId]);
 
   if (!settings) {
     return (
@@ -373,6 +383,36 @@ export default function AISettingsPanel({ onClose }: AISettingsPanelProps) {
 
         <div className="pt-1 border-t border-[var(--bg-tertiary)]">
           <AIProfiles />
+        </div>
+
+        <div className="pt-1 border-t border-[var(--bg-tertiary)]" data-testid="ai-billing">
+          <label className="flex items-center gap-2 text-[10px] uppercase tracking-wide text-[var(--text-secondary)]">
+            <input
+              type="checkbox"
+              checked={billing?.enabled ?? false}
+              onChange={async (e) => {
+                const enabled = e.target.checked;
+                try {
+                  await api.ai.setBilling({ enabled });
+                  setBilling(await api.ai.billing(campaignId));
+                } catch {
+                  setSaveError('No se pudo cambiar la monetización');
+                }
+              }}
+              data-testid="ai-billing-toggle"
+            />
+            Monetización
+          </label>
+          <p className="text-[10px] text-[var(--text-secondary)] mt-1">
+            Apagada por defecto. Encendida, cada campaña tiene un plan con un
+            límite de llamadas por día. El pago en sí no está conectado.
+          </p>
+          {billing?.enabled && (
+            <p className="text-[10px] text-[var(--text-secondary)] mt-0.5">
+              Hoy: {billing.usage?.calls ?? 0} llamadas
+              {billing.quota ? ` de ${billing.quota}` : ''}
+            </p>
+          )}
         </div>
 
         <div className="pt-1 border-t border-[var(--bg-tertiary)]">

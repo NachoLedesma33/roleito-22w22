@@ -754,6 +754,23 @@ class AIAgentModels(BaseModel):
     default_profile: Optional[str] = None
 
 
+class AIBillingUpdate(BaseModel):
+    """La monetizacion (M0). Apagada por default: es el candado."""
+
+    enabled: bool = False
+    currency: Optional[str] = None
+    plans: Optional[dict] = None
+
+
+class AIBillingPlan(BaseModel):
+    campaign_id: str
+    plan: str = "free"
+
+
+class AIBillingCheckout(BaseModel):
+    plan: str = "free"
+
+
 class TokenUsage(BaseModel):
     prompt_tokens: int = 0
     completion_tokens: int = 0

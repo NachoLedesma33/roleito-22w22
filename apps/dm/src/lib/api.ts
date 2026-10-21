@@ -64,6 +64,16 @@ export interface AIModel {
   context_length: number | null;
 }
 
+/** La monetizacion (M0): apagada por default (es el candado). */
+export interface AIBilling {
+  enabled: boolean;
+  currency: string;
+  plans: Record<string, { label?: string; calls_per_day?: number; price?: number }>;
+  plan: string | null;
+  quota: number | null;
+  usage: { calls: number; attempts: number } | null;
+}
+
 /** El consumo de IA de hoy y el tope vigente (protege la API key del DM). */
 export interface AIUsage {
   usage: { calls: number; attempts: number; campaigns?: number };
@@ -1015,6 +1025,13 @@ export const api = {
           agents,
           ...(defaultProfile ? { default_profile: defaultProfile } : {}),
         }),
+      }),
+    billing: (campaignId?: string) =>
+      request<AIBilling>(`/ai/billing${campaignId ? `?campaign_id=${campaignId}` : ''}`),
+    setBilling: (data: { enabled: boolean; currency?: string; plans?: Record<string, unknown> }) =>
+      request<{ status: string; enabled: boolean }>('/ai/billing', {
+        method: 'PUT',
+        body: JSON.stringify(data),
       }),
   },
 

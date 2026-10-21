@@ -4,6 +4,11 @@ import time
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from database import get_session
+from models import Campaign
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -18,6 +23,9 @@ from auth import require_dm, AuthSession  # noqa: E402
 
 from schemas import (  # noqa: E402
     AIAgentModels,
+    AIBillingCheckout,
+    AIBillingPlan,
+    AIBillingUpdate,
     AIProfileCreate,
     AIProfileUpdate,
     AISettingsResponse,
@@ -66,6 +74,120 @@ async def update_ai_config(data: AISettingsUpdate, _session: AuthSession = Depen
         data.model = current.model
     _save_settings(data)
     return data
+
+
+@router.get("/ai/billing")
+async def get_billing(
+    campaign_id: str | None = None,
+    db: AsyncSession = Depends(get_session),
+    _session: AuthSession = Depends(require_dm),
+):
+    """El estado de la monetizacion (M0).
+
+    Apagada por defecto: `enabled: false` y ningun camino de cobro existe.
+    """
+    from services.billing import billing_config, plan_of, plan_info, quota_of
+
+    config = load_ai_config()
+    billing = billing_config(config)
+
+    plan = None
+    if campaign_id:
+        campaign = (await db.execute(
+            select(Campaign).where(Campaign.id == campaign_id)
+        )).scalar_one_or_none()
+        plan = plan_of(config, campaign.settings_json if campaign else None)
+
+    usage = None
+    if campaign_id:
+        from core.agents.budget import usage_today
+
+        usage = usage_today(campaign_id)
+
+    return {
+        "enabled": billing["enabled"],
+        "currency": billing["currency"],
+        "plans": billing["plans"],
+        "plan": plan,
+        "quota": quota_of(config, plan) if plan else None,
+        "usage": usage,
+        "plan_info": plan_info(config, plan) if plan else None,
+    }
+
+
+@router.put("/ai/billing")
+async def update_billing(
+    body: AIBillingUpdate,
+    _session: AuthSession = Depends(require_dm),
+):
+    """Enciende o apaga la monetizacion y ajusta los precios.
+
+    Con `enabled: false` (el default) no cambia nada: es el candado.
+    """
+    config = load_ai_config()
+    billing = config.get("billing")
+    if not isinstance(billing, dict):
+        billing = {}
+    billing.update(body.model_dump(exclude_unset=True))
+    config["billing"] = billing
+    save_ai_config(config)
+    return {"status": "updated", "enabled": bool(billing.get("enabled"))}
+
+
+@router.put("/ai/billing/plan")
+async def update_billing_plan(
+    body: AIBillingPlan,
+    db: AsyncSession = Depends(get_session),
+    _session: AuthSession = Depends(require_dm),
+):
+    """El plan de una campana."""
+    from services.billing import billing_config
+
+    config = load_ai_config()
+    plans = billing_config(config)["plans"]
+    if body.plan not in plans:
+        raise HTTPException(status_code=404, detail="Plan no encontrado")
+
+    campaign = (await db.execute(
+        select(Campaign).where(Campaign.id == body.campaign_id)
+    )).scalar_one_or_none()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    settings = dict(campaign.settings_json or {})
+    settings["billing_plan"] = body.plan
+    campaign.settings_json = settings
+    await db.commit()
+    return {"status": "updated", "campaign_id": body.campaign_id, "plan": body.plan}
+
+
+@router.post("/ai/billing/checkout")
+async def billing_checkout(
+    body: AIBillingCheckout,
+    _session: AuthSession = Depends(require_dm),
+):
+    """El pago de verdad: NO hay proveedor de pagos conectado.
+
+    La mecanica esta (planes, precios, a quien se le cobra) pero el cobro
+    mismo es el pedazo que falta. Decirlo claro es mejor que fingir.
+    """
+    from services.billing import billing_config, is_enabled, plan_info
+
+    config = load_ai_config()
+    if not is_enabled(config):
+        raise HTTPException(
+            status_code=501,
+            detail="La monetizacion esta apagada (billing.enabled = false)",
+        )
+    info = plan_info(config, body.plan)
+    raise HTTPException(
+        status_code=501,
+        detail=(
+            "No hay proveedor de pagos conectado. "
+            f"El plan {info.get('label', body.plan)} cuesta "
+            f"{info.get('price', 0)} {billing_config(config)['currency']}."
+        ),
+    )
 
 
 @router.get("/ai/adapters")
