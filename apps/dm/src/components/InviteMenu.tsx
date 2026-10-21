@@ -25,6 +25,9 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
   const [copied, setCopied] = useState<string | null>(null);
   /** La URL publica (el tunel), si el DM esta jugando desde una. */
   const [urlPublica, setUrlPublica] = useState('');
+  /** La partida abierta al publico: detras del link fijo `/join`. */
+  const [abierta, setAbierta] = useState(false);
+  const [guardando, setGuardando] = useState(false);
 
   const menu = useAnchoredMenu({
     open,
@@ -52,6 +55,26 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
       cancelled = true;
     };
   }, [open, ips.length]);
+
+  // Los settings de la campaña dicen si la partida esta abierta al publico.
+  useEffect(() => {
+    const settings = (campaign?.settings_json ?? {}) as { public_join?: boolean };
+    setAbierta(settings.public_join === true);
+  }, [campaign?.settings_json]);
+
+  const toggleAbierta = useCallback(async () => {
+    if (!campaign) return;
+    setGuardando(true);
+    try {
+      const updated = await api.campaigns.setPublicJoin(campaign.id, !abierta);
+      setAbierta(!abierta);
+      onCampaignChange?.(updated);
+    } catch {
+      // si no se pudo guardar, el estado sigue como estaba
+    } finally {
+      setGuardando(false);
+    }
+  }, [abierta, campaign, onCampaignChange]);
 
   const code = campaign?.invite_code ?? null;
   const port = window.location.port ? `:${window.location.port}` : '';
@@ -130,6 +153,31 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
         minWidth={280}
       >
         <div className="px-3 py-2" data-testid="invite-menu-content">
+          <label className="flex items-center gap-2 text-[0.65rem] text-secondary">
+            <input
+              type="checkbox"
+              checked={abierta}
+              disabled={guardando}
+              onChange={toggleAbierta}
+              data-testid="invite-public-toggle"
+            />
+            {t('dm.invitePublicGame', 'Partida abierta: cualquiera con el link entra')}
+          </label>
+          {abierta && (
+            <button
+              type="button"
+              onClick={() => copy(`${window.location.origin}/join`)}
+              data-testid="invite-fixed-link"
+              className="block w-full text-left px-2 py-1.5 rounded bg-[var(--bg-tertiary)] hover:bg-[var(--bg-secondary)]"
+            >
+              <span className="block font-mono text-xs text-[var(--text-primary)] truncate">
+                {`${window.location.origin}/join`}
+              </span>
+              <span className="block text-[0.65rem] text-secondary">
+                {t('dm.inviteFixedLink', 'Link fijo: el mismo para todas las partidas')}
+              </span>
+            </button>
+          )}
           <label className="block text-[0.65rem] uppercase tracking-[0.2em] text-secondary mb-1">
             {t('dm.invitePublicLabel', 'URL publica (si usas un tunel)')}
             <input

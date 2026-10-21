@@ -52,6 +52,28 @@ test.describe('Campaign CRUD', () => {
   });
 });
 
+  test('C15: el link fijo /join lleva a la partida abierta', async ({
+    page,
+    request,
+    campaign,
+  }) => {
+    // El DM abre la partida al publico (el interruptor del menu de invitacion).
+    await request.post(`http://localhost:8000/api/campaigns/${campaign.id}/invite-code`);
+    await request.put(`http://localhost:8000/api/campaigns/${campaign.id}/public-join`, {
+      data: { enabled: true },
+    });
+
+    // El link que se pega en el Discord: el host no cambia, el codigo lo
+    // resuelve el backend.
+    await page.goto('/join');
+    await expect(page).toHaveURL(/\/campaigns\/join\//, { timeout: 15_000 });
+
+    // Se cierra: la partida publica es de la sesion, no queda abierta sola.
+    await request.put(`http://localhost:8000/api/campaigns/${campaign.id}/public-join`, {
+      data: { enabled: false },
+    });
+  });
+
   test('C14: el menu de invitacion muestra el link de la mesa', async ({ page, campaign }) => {
     await page.goto(`/campaigns/${campaign.id}`);
     await page.getByTestId('invite-button').click();

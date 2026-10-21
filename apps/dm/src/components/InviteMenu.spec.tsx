@@ -8,7 +8,7 @@ const ips = vi.fn()
 vi.mock('@/lib/api', () => ({
   api: {
     network: { ips: () => ips() },
-    campaigns: { generateInviteCode: vi.fn() },
+    campaigns: { generateInviteCode: vi.fn(), setPublicJoin: vi.fn() },
   },
 }))
 

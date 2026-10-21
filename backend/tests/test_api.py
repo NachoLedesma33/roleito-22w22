@@ -1883,6 +1883,62 @@ DM_SURFACE_ROUTES = [
 
 
 @pytest.mark.asyncio
+async def test_el_link_fijo_resuelve_la_partida_abierta(client, anon_client):
+    """GET /campaigns/active-invite: detras del link fijo `/join`.
+
+    El host del link no cambia nunca (se pega una vez en el Discord de la
+    mesa); el codigo de la campaña cambia, y eso es lo que mantiene el invite
+    como secreto. Si el DM no abrio la partida al publico, 404.
+    """
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Publico"})).json()
+    con_codigo = (
+        await client.post(f"/api/campaigns/{camp['id']}/invite-code")
+    ).json()
+    code = con_codigo["invite_code"]
+    assert code
+
+    # Sin abrir la partida: el link fijo no es una puerta abierta.
+    res = await anon_client.get("/api/campaigns/active-invite")
+    assert res.status_code == 404, res.text
+
+    # Abierta al publico: responde el codigo (el jugador entra sin token).
+    await client.put(
+        f"/api/campaigns/{camp['id']}/public-join",
+        json={"enabled": True},
+    )
+    res = await anon_client.get("/api/campaigns/active-invite")
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["invite_code"] == code
+    assert body["campaign_id"] == camp["id"]
+
+
+@pytest.mark.asyncio
+async def test_solo_una_partida_esta_abierta_al_publico(client, anon_client):
+    """El link fijo `/join` resuelve UNA mesa: al abrir una, las otras se cierran."""
+    camp_a = (await client.post("/api/campaigns", json={"name": "Mesa A"})).json()
+    camp_b = (await client.post("/api/campaigns", json={"name": "Mesa B"})).json()
+    for camp in (camp_a, camp_b):
+        await client.post(f"/api/campaigns/{camp['id']}/invite-code")
+
+    await client.put(f"/api/campaigns/{camp_a['id']}/public-join", json={"enabled": True})
+    res = await anon_client.get("/api/campaigns/active-invite")
+    assert res.status_code == 200, res.text
+    assert res.json()["campaign_id"] == camp_a["id"]
+
+    # Abrir la otra cierra la primera: hay una sola mesa abierta.
+    await client.put(f"/api/campaigns/{camp_b['id']}/public-join", json={"enabled": True})
+    res = await anon_client.get("/api/campaigns/active-invite")
+    assert res.status_code == 200, res.text
+    assert res.json()["campaign_id"] == camp_b["id"]
+
+    # Cerrarla: el link fijo deja de resolver.
+    await client.put(f"/api/campaigns/{camp_b['id']}/public-join", json={"enabled": False})
+    res = await anon_client.get("/api/campaigns/active-invite")
+    assert res.status_code == 404, res.text
+
+
+@pytest.mark.asyncio
 async def test_el_jugador_solo_puede_escribir_sus_notas(client, anon_client):
     """El `PUT` del personaje es la ruta publica del jugador: sus notas.
 

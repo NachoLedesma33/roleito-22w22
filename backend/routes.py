@@ -39,6 +39,7 @@ from schemas import (
     CampaignResponse,
     CampaignExport,
     CampaignImport,
+    PublicJoinRequest,
 )
 import secrets
 import hashlib
@@ -327,6 +328,74 @@ async def create_campaign(
 async def list_campaigns(db: AsyncSession = Depends(get_session)):
     result = await db.execute(select(Campaign).order_by(Campaign.updated_at.desc()))
     return result.scalars().all()
+
+
+@campaigns_router.put("/campaigns/{campaign_id}/public-join", response_model=CampaignResponse)
+async def set_public_join(
+    campaign_id: str,
+    data: PublicJoinRequest,
+    db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+
+):
+    """Abre (o cierra) la partida al publico: detras del link fijo `/join`.
+
+    Hay UNA sola partida abierta a la vez: al abrir una, las demas se cierran.
+    Sin esa regla el link fijo resolveria a la que se abrio ultimo, que no
+    siempre es la que se esta jugando.
+    """
+    result = await db.execute(select(Campaign).where(Campaign.id == campaign_id))
+    campaign = result.scalar_one_or_none()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    settings = dict(campaign.settings_json or {})
+    settings["public_join"] = bool(data.enabled)
+    campaign.settings_json = settings
+
+    if data.enabled:
+        # Las demas se cierran: una mesa abierta a la vez.
+        otras = await db.execute(select(Campaign).where(Campaign.id != campaign_id))
+        for otra in otras.scalars().all():
+            otras_settings = dict(otra.settings_json or {})
+            if otras_settings.get("public_join"):
+                otras_settings["public_join"] = False
+                otra.settings_json = otras_settings
+
+    await db.commit()
+    await db.refresh(campaign)
+    return campaign
+
+
+@campaigns_router.get("/campaigns/active-invite")
+async def active_invite(db: AsyncSession = Depends(get_session)):
+    """El codigo de la campaña que esta ABIERTA al público.
+
+    Es lo que hay detras del link fijo del playtest remoto
+    (`https://<tu-dominio>/join`): el host no cambia nunca, asi que el link se
+    pega una vez en el Discord de la mesa, pero el codigo de la campaña cambia
+    (es lo que mantiene el invite como secreto).
+
+    Solo responde si el DM abrio la partida al público (`public_join` en los
+    settings de la campaña). Si no hay ninguna abierta, 404: el link fijo no
+    es una puerta abierta.
+    """
+    # La mas tocada ultimamente: el DM abre la partida justo antes de jugar, asi
+    # que esa es la que esta en juego.
+    result = await db.execute(
+        select(Campaign).order_by(Campaign.updated_at.desc()).limit(50)
+    )
+    for campaign in result.scalars().all():
+        settings = campaign.settings_json or {}
+        if not isinstance(settings, dict):
+            continue
+        if settings.get("public_join") and campaign.invite_code:
+            return {
+                "invite_code": campaign.invite_code,
+                "campaign_id": campaign.id,
+                "campaign_name": campaign.name,
+            }
+    raise HTTPException(status_code=404, detail="No hay ninguna partida abierta")
 
 
 @campaigns_router.get("/campaigns/{campaign_id}", response_model=CampaignResponse)

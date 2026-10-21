@@ -12,6 +12,12 @@ class CampaignCreate(BaseModel):
     settings_json: dict = {}
 
 
+class PublicJoinRequest(BaseModel):
+    """Abrir (o cerrar) la partida al publico: detras del link fijo `/join`."""
+
+    enabled: bool = False
+
+
 class CampaignUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None

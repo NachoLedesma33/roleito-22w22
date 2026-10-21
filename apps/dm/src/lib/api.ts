@@ -618,6 +618,20 @@ export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
 
 export const api = {
   campaigns: {
+    /**
+     * Abre (o cierra) la partida al público: lo que está detrás del link fijo
+     * `/join`. El backend deja una sola partida abierta a la vez.
+     */
+    setPublicJoin: (id: string, enabled: boolean) =>
+      request<Campaign>(`/campaigns/${id}/public-join`, {
+        method: 'PUT',
+        body: JSON.stringify({ enabled }),
+      }),
+    /** La campaña abierta al público: detras del link fijo `/join`. */
+    activeInvite: () =>
+      request<{ invite_code: string; campaign_id: string; campaign_name: string }>(
+        '/campaigns/active-invite',
+      ),
     list: () => request<Campaign[]>('/campaigns'),
     get: (id: string) => request<Campaign>(`/campaigns/${id}`),
     create: (data: { name: string; description?: string }) =>

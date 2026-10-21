@@ -215,7 +215,7 @@ jugador (otra ciudad)          maquina del DM
 
 | # | Riesgo | Mitigación | Costo |
 |---|---|---|---|
-| S1 | Alguien que se entera del link entra a la campaña y ve el lore | El link se manda por un canal privado (WhatsApp de la mesa) y **se regenera al terminar la partida** (`POST /invite-code` genera uno nuevo ✓) | bajo |
+| S1 | Alguien que se entera del link entra a la campaña y ve el lore | El link se manda por un canal privado (WhatsApp de la mesa) y **se regenera al terminar la partida** (`POST /invite-code` genera uno nuevo ✓). **Con el link fijo (`/join`) esto cambia**: el código es resoluble por cualquiera que llegue al dominio → el resguardo es el interruptor **"Partida abierta"** (cerrado por defecto ✓ → `GET /campaigns/active-invite` responde 404 y el link no abre nada ✓) y que el dominio viva en un canal privado | bajo |
 | S2 | El túnel queda abierto y alguien lo encuentra por el azar | **Cerrar el túnel al terminar** (`Ctrl+C`) + un `cloudflared` con **Access** (login) si se quiere una capa más | bajo |
 | S3 | Abuso de la URL pública (scanners que pegan en `/api/*`) | El proxy solo expone `/api` y el WS; los 401/403 ya responden ✓. Opcional: `Cloudflare Access` delante del túnel (un login para entrar) | bajo |
 | S4 | El **DM** expone su sesión por el link | El token del DM va en el `sessionStorage` de **su** navegador, no viaja por el link ✓ (el link es solo el código del invite) | — |
@@ -273,8 +273,29 @@ sirve de `data/assets/` → hoy sin cache explícito ✗ → **pendiente**).
 
 | Fase | Qué | Terminado cuando | Riesgo |
 |---|---|---|---|
-| **P0** | Servir el **build de producción** + el proxy `/api` y `/ws` (script `serve:prod`) y exponerlo con `cloudflared`. Todo con **un comando** (`npm run playtest`: backend + estáticos + túnel) para que el DM no tenga que acordarse de tres cosas antes de la partida | Un jugador en otra red carga la pantalla del login en < 5 s | bajo |
-| **P1** | El **túnel con nombre** (dominio propio) + el atajo **`GET /join`** (el link fijo de Discord) + **regenerar el invite** al terminar la partida + cerrar el túnel | El link de Discord es el mismo para siempre y el código de la campaña se resuelve solo | bajo |
+| **P0** ✅ | Servir el **build de producción** + el proxy `/api` y `/ws` (script `serve:prod`) y exponerlo con `cloudflared`. Todo con **un comando** (`npm run playtest`: backend + estáticos + túnel) para que el DM no tenga que acordarse de tres cosas antes de la partida | Un jugador en otra red carga la pantalla del login en < 5 s | bajo |
+| **P1** 🟡 | El **túnel con nombre** (dominio propio) + el atajo **`GET /join`** (el link fijo de Discord) + **regenerar el invite** al terminar la partida + cerrar el túnel | El link de Discord es el mismo para siempre y el código de la campaña se resuelve solo | bajo |
+
+**P0 — HECHO** (`7da0fc5`): `npm run build:prod` + `npm run serve:prod` (`vite
+preview` con el **mismo** proxy que el dev server: `/api` con `ws: true` → el
+backend sigue sin exponerse ✓) + `npm run playtest` (un comando: build, backend,
+frontend de producción y el recordatorio del túnel ✓). Medido: el bundle
+principal pesa **598 KB gzip** (+ 11 KB de CSS) → ~5 s de primera carga a 1 Mbps
+✓. **Ojo**: `npm run perf:budget` está en ROJO desde antes de este trabajo
+(1360 KB gz contra el presupuesto de 600 KB, por el three.js del dashboard) →
+verificado que **no** es regresión de estos cambios; queda para P4.
+
+**P1 — el link fijo ya está (falta el dominio)**: `GET /campaigns/active-invite`
+resuelve la campaña **abierta al público** y la ruta `/join` redirige al invite
+de esa campaña ✓ (backend + `apps/dm/src/pages/JoinRedirect.tsx` + el
+interruptor "Partida abierta" en el menú de invitación ✓). El link que se pega
+en Discord es **siempre** `https://mesa.midominio.com/join` ✓: el host no
+cambia nunca y el **código sí** (es lo que mantiene el invite como secreto ✓).
+Hay **una sola partida abierta a la vez**: al abrir una, las demás se cierran
+(`PUT /campaigns/{id}/public-join` ✓). **Lo que falta para cerrar P1**: el
+dominio propio + el `cloudflared tunnel run mesa` del lado del DM (depende de
+su cuenta de Cloudflare → no se puede hacer desde el repo) + regenerar el invite
+al terminar la partida (el botón "Obtener invitación" ya regenera ✓).
 | **P2** | **Watchdog del WS** con backoff + aviso de "reconectando" + cache de assets | El WS se recupera solo de un corte de red sin que el jugador note | medio |
 | **P3** | **Rate limit** en las rutas públicas + `Cloudflare Access` opcional (login) | Un scanner no puede martillear el backend | bajo |
 | **P4** | Medir la partida real: el tamaño de la primera carga, la latencia por acción, el uso de ancho de banda | Hay números del playtest en el doc | — |
@@ -285,13 +306,10 @@ sirve de `data/assets/` → hoy sin cache explícito ✗ → **pendiente**).
 
 1. `npm run build --workspace=apps/dm` y `npm run serve:prod`.
 2. `cloudflared tunnel --url http://localhost:5173` → copiar el URL.
-3. El link que se pega en Discord es **el del túnel + el código de la
-   campaña**. Ojo: el dominio fija el **host**, pero el código del invite es
-   por campaña → el link completo cambia en cada campaña ✗. Para que el link
-   sea **de verdad fijo** hace falta un atajo en el backend: `GET /join` →
-   redirige al invite de la campaña activa (la más reciente con actividad, o
-   la que el DM marque como activa) → el link de Discord es siempre
-   `https://mesa.midominio.com/join` ✓ (**P1**).
+3. El link que se pega en Discord es **siempre** `https://mesa.midominio.com/join`
+   ✓ (el atajo ya existe: `/join` → `GET /campaigns/active-invite` → el invite
+   de la campaña abierta ✓). Antes de la partida el DM abre la partida en el
+   menú "Invitar" (interruptor **"Partida abierta"** ✓) y copia ese link.
 
    El menú de invitación ya tiene el campo "URL publica (si usas un túnel)"
    → con esa URL pegada, el link que ofrece y copia es el del túnel ✓.

@@ -79,6 +79,8 @@
     "logoutTitle": "¿Salir de 22w22?"
   },
   "dm": {
+    "inviteFixedLink": "Link fijo: el mismo para todas las partidas",
+    "invitePublicGame": "Partida abierta: cualquiera con el link entra",
     "activeScene": "Escena activa",
     "activeShort": "activa",
     "aiPanel": "🤖 Configuración de IA",
@@ -684,5 +686,9 @@
     "textSmall": "Pequeño",
     "theme": "Tema",
     "title": "Ajustes"
+  },
+  "join": {
+    "opening": "Abriendo la partida...",
+    "noOpenGame": "No hay ninguna partida abierta. Preguntale al DM."
   }
 }

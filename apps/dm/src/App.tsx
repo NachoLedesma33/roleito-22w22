@@ -26,6 +26,7 @@ import SceneList from '@/pages/SceneList';
 import SceneDetail from '@/pages/SceneDetail';
 import DmDashboard from '@/pages/DmDashboard';
 import PlayerView from '@/pages/PlayerView';
+import JoinRedirect from './pages/JoinRedirect';
 import NarrativeEngine from '@/pages/NarrativeEngine';
 import AgentPanel from '@/pages/AgentPanel';
 import TTSPanel from '@/pages/TTSPanel';
@@ -72,6 +73,8 @@ function App() {
       <Routes>
         {/* Player View — public, uses invite code as auth */}
         <Route path="/campaigns/join/:code" element={<PlayerView />} />
+        {/* El link fijo del playtest remoto: redirige a la partida abierta */}
+        <Route path="/join" element={<JoinRedirect />} />
 
         {/* Public entry: landing pre-login + PIN login */}
         <Route path="/" element={<HomeRoute />} />
