@@ -12,11 +12,19 @@ carga los conftest antes de los tests.
 """
 
 import os
+import sys
 import tempfile
 from pathlib import Path
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+
+# El repo raiz: `core` (los eventos, el mundo, los agentes) vive ahi, no en
+# `backend/`. `main.py` tambien lo agrega, pero los tests que importan `core`
+# lo necesitan antes (al collection).
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 
 _TEST_DB_DIR = Path(tempfile.gettempdir()) / "roleito-pytest"
 _TEST_DB = _TEST_DB_DIR / "roleito.db"

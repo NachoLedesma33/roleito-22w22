@@ -113,6 +113,39 @@ async def test_moverse_dentro_de_la_zona_no_repite_el_trigger(client):
 
 
 @pytest.mark.asyncio
+async def test_salir_y_volver_a_entrar_vuelve_a_disparar(client):
+    """Entrar dispara; quedarse adentro no; salir y volver a entrar, si."""
+    from core.events.bus import get_event_bus
+
+    bus = get_event_bus()
+    bus.clear_history()
+    camp, scene, char = await _escena_con_zona(
+        client, [{"id": "trg-1", "eventType": "trap.triggered", "enabled": True}]
+    )
+
+    # Entra.
+    await client.patch(
+        f"/api/campaigns/{camp['id']}/scenes/{scene['id']}/move",
+        json={"character_id": char["id"], "x": -2.0, "z": -2.0},
+    )
+    assert len(bus.get_history("trap.triggered")) == 1
+
+    # Sale de la zona (al otro lado del cuadrante).
+    await client.patch(
+        f"/api/campaigns/{camp['id']}/scenes/{scene['id']}/move",
+        json={"character_id": char["id"], "x": 2.0, "z": 2.0},
+    )
+    assert len(bus.get_history("trap.triggered")) == 1
+
+    # Vuelve a entrar: vuelve a disparar.
+    await client.patch(
+        f"/api/campaigns/{camp['id']}/scenes/{scene['id']}/move",
+        json={"character_id": char["id"], "x": -2.0, "z": -2.0},
+    )
+    assert len(bus.get_history("trap.triggered")) == 2
+
+
+@pytest.mark.asyncio
 async def test_un_trigger_apagado_no_dispara(client):
     from core.events.bus import get_event_bus
 
