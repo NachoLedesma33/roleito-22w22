@@ -315,6 +315,8 @@
     "viewSheet": "View character sheet"
   },
   "dmToast": {
+    "advisorPendingMany": "{{count}} proposals waiting for your approval",
+    "advisorPendingOne": "1 proposal waiting for your approval",
     "blockedByWall": "Blocked by wall",
     "detectApproved": "{{n}} walls confirmed",
     "detectBatch": "{{n}} scenes detected — review the proposal in each one",
@@ -340,6 +342,7 @@
     "rollerLight": "Light",
     "rollerPortal": "Portal",
     "rollerSync": "Sync",
+    "rollerAdvisor": "Advisor",
     "rollerSystem": "System",
     "rollerWall": "Wall",
     "rollerZoneFog": "Zone fog",

@@ -122,8 +122,8 @@ export default function DmDashboard() {
       rollerName: i18n.t('dmToast.rollerAdvisor', 'Asistente'),
       diceType: 1, count: 1, results: [1], total: 1,
       label: n === 1
-        ? i18n.t('dmToast.advisorPendingOne', '1 propuesta esperando tu aprobacion')
-        : i18n.t('dmToast.advisorPendingMany', '{{count}} propuestas esperando tu aprobacion', { count: n }),
+        ? i18n.t('dmToast.advisorPendingOne', '1 propuesta esperando tu aprobación')
+        : i18n.t('dmToast.advisorPendingMany', '{{count}} propuestas esperando tu aprobación', { count: n }),
       timestamp: Date.now(),
     });
   });

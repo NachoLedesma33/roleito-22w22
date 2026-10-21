@@ -315,6 +315,8 @@
     "viewSheet": "Ver ficha de personaje"
   },
   "dmToast": {
+    "advisorPendingMany": "{{count}} propuestas esperando tu aprobación",
+    "advisorPendingOne": "1 propuesta esperando tu aprobación",
     "blockedByWall": "Bloqueado por pared",
     "detectApproved": "{{n}} paredes confirmadas",
     "detectBatch": "{{n}} escenas detectadas — revisá la propuesta de cada una",
@@ -339,6 +341,7 @@
     "rollerLight": "Luz",
     "rollerPortal": "Portal",
     "rollerSync": "Sincronización",
+    "rollerAdvisor": "Asistente",
     "rollerSystem": "Sistema",
     "rollerWall": "Pared",
     "rollerZoneFog": "Niebla de zona",
