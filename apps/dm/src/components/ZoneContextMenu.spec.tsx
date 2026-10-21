@@ -106,4 +106,26 @@ describe('ZoneContextMenu', () => {
     expect(onUpdate).toHaveBeenCalledWith({ name: 'Galeria del Wyrm' })
     expect(screen.getByLabelText('Color de relleno')).toBeTruthy()
   })
+
+  it('agrega un trigger a la zona', () => {
+    // El trigger vive en el metadata de la zona: cuando un token entra en
+    // ella, se emite ese evento en el bus de la campana.
+    const onUpdate = renderMenu(zona())
+    fireEvent.click(screen.getByText('Agregar'))
+
+    const patch = onUpdate.mock.calls[0][0]
+    expect(patch.metadata.triggers).toHaveLength(1)
+    expect(patch.metadata.triggers[0].eventType).toBe('trap.triggered')
+    expect(patch.metadata.triggers[0].enabled).toBe(true)
+  })
+
+  it('quitar un trigger lo saca del metadata', () => {
+    const onUpdate = renderMenu(
+      zona({ triggers: [{ id: 'trg-1', eventType: 'trap.triggered', enabled: true }] }),
+    )
+    fireEvent.click(screen.getByLabelText('Quitar trap.triggered'))
+
+    const patch = onUpdate.mock.calls[0][0]
+    expect(patch.metadata.triggers).toHaveLength(0)
+  })
 })

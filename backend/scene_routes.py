@@ -10,11 +10,15 @@ from schemas import (
 )
 from services.assets import ASSETS_DIR
 from services.item_validation import ItemValidationError, assert_valid_scene_items
+from triggers import fire_zone_triggers
+import logging
 import math
 import os
 import time
 import json
 from pathlib import Path
+
+logger = logging.getLogger("roleito.scenes")
 
 from routes import broadcast_positions, broadcast_revision
 from auth import require_dm, AuthSession
@@ -715,6 +719,12 @@ async def player_move_character(
     sc.last_move_at = now
 
     await db.commit()
+    # Los triggers de zona: si el token entro en una zona con trigger, se
+    # dispara su evento en el bus de la campana (el DM lo ve en el monitor).
+    try:
+        await fire_zone_triggers(db, scene, sc.entity_id, prev_x, prev_z, sc.x, sc.z)
+    except Exception:  # pragma: no cover - un trigger roto no rompe el movimiento
+        logger.exception("No se pudieron disparar los triggers de zona")
     # Sin `db.refresh()`: el engine usa `expire_on_commit=False`, asi que los
     # atributos que acabamos de escribir siguen cargados y son los que devuelve la
     # respuesta. El refresh era un SELECT de mas por movimiento (medido: 14 ms).

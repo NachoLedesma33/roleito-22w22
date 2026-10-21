@@ -15,6 +15,11 @@ import os
 import tempfile
 from pathlib import Path
 
+import pytest
+from httpx import ASGITransport, AsyncClient
+
+from main import app
+
 _TEST_DB_DIR = Path(tempfile.gettempdir()) / "roleito-pytest"
 _TEST_DB = _TEST_DB_DIR / "roleito.db"
 
@@ -24,3 +29,40 @@ if _TEST_DB.exists():
 
 os.environ["ROLEITO_DB_PATH"] = str(_TEST_DB)
 os.environ["ROLEITO_SKIP_SEEDS"] = "1"
+
+
+@pytest.fixture(scope="session")
+async def _dm_token():
+    """El DM con el que hablan los tests.
+
+    La superficie de la campana (personajes, misiones, escenas, ...) pide rol
+    DM: los tests la usan TODA la vida, asi que el cliente la lleva puesta.
+    """
+    from uuid import uuid4
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        reg = await ac.post(
+            "/api/auth/register",
+            json={"name": f"Test DM {uuid4().hex[:6]}", "pin": "1234"},
+        )
+    return reg.json()["token"]
+
+
+@pytest.fixture
+async def client(_dm_token):
+    transport = ASGITransport(app=app)
+    async with AsyncClient(
+        transport=transport,
+        base_url="http://test",
+        headers={"Authorization": f"Bearer {_dm_token}"},
+    ) as ac:
+        yield ac
+
+
+@pytest.fixture
+async def anon_client():
+    """Un cliente SIN token: para probar que la superficie pide rol."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        yield ac

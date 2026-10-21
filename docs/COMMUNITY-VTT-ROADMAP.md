@@ -33,7 +33,7 @@ Tavern), listas "esenciales" de r/FoundryVTT. Fecha: 2026-09-25.
 |---|---|---|---|
 | Dice So Nice / Dice Tray | 55 / 42 | dice roller ✅ existe; 3D dice = cosmético | baja |
 | Sequencer (animaciones) | 33 | FX de escena (Phase 15) | media |
-| Monk's Active Tile Triggers | 32 | triggers zona→evento (event system ✅, falta UI) | media-baja |
+| Monk's Active Tile Triggers | 32 | triggers zona→evento: **HECHO 2026-10-21** (el trigger vive en el metadata de la zona; al entrar un token se emite el evento en el bus de la campana) | media-baja |
 | FXMaster (weather/ambient) | 29 | Phase 15 ATMOSPHERE | media |
 | Token Magic FX (estados/efectos en token) | 21 | status markers en token | **alta (barato, visual)** |
 | Carousel Combat Tracker | 20 | **initiative tracker** | **máxima** |

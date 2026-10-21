@@ -400,6 +400,22 @@ export interface PortalRef {
   activatesOn: { id: string } | null
 }
 
+/**
+ * Un trigger de zona: cuando un token **entra** en la zona, se emite este
+ * evento en el bus de la campana (el DM lo ve en el monitor y lo que este
+ * enganchado reacciona).
+ *
+ * Vive en el metadata de la zona (no en una tabla aparte): asi la zona y su
+ * trigger se guardan y se revisan con las mismas herramientas.
+ */
+export interface ZoneTrigger {
+  id: string
+  eventType: string
+  /** Datos extra que viajan con el evento. */
+  payload?: Record<string, unknown>
+  enabled: boolean
+}
+
 export interface ZoneMetadata {
   type: 'zone'
   zoneType: 'rectangle' | 'polygon'
@@ -409,6 +425,8 @@ export interface ZoneMetadata {
   fillColor: string
   fillOpacity: number
   portals: PortalRef[]
+  /** Triggers que dispara la zona cuando un token entra en ella. */
+  triggers?: ZoneTrigger[]
   /**
    * Flags de oclusion del BORDE de la zona (la pared que la rodea).
    *

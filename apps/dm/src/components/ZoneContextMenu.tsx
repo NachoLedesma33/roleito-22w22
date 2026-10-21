@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react'
-import { PortalRef, SceneItem, ZoneMetadata } from '@core/domain/types'
+import { useEffect, useRef, useState } from 'react'
+import { PortalRef, SceneItem, ZoneMetadata, ZoneTrigger } from '@core/domain/types'
 import { PORTAL_COLORS } from './ZonePortal'
 
 interface ZoneContextMenuProps {
@@ -13,6 +13,19 @@ interface ZoneContextMenuProps {
   onDelete: () => void
   onClose: () => void
 }
+
+/**
+ * Los triggers que la DM puede colgar a una zona. No es una lista cerrada:
+ * el campo es el tipo de evento del bus, asi que un DM puede escribir el
+ * que quiera. Estos son los atajos.
+ */
+const TRIGGER_TYPES = [
+  { type: 'trap.triggered', label: 'Trampa' },
+  { type: 'encounter.started', label: 'Encuentro' },
+  { type: 'door.closed', label: 'La puerta se cierra' },
+  { type: 'zone.entered', label: 'Entrada a la zona' },
+  { type: 'lore.revealed', label: 'Se revela un secreto' },
+]
 
 function nextAction(p: PortalRef): string {
   switch (p.state) {
@@ -43,6 +56,18 @@ export default function ZoneContextMenu({
   const patch = (changes: Partial<ZoneMetadata>) => {
     const tocado = meta.origin === 'ai' ? true : meta.touchedByDm
     onUpdate({ metadata: { ...meta, ...changes, touchedByDm: tocado } })
+  }
+
+  const [nuevoTrigger, setNuevoTrigger] = useState(TRIGGER_TYPES[0].type)
+  const triggers = meta.triggers ?? []
+
+  const setTriggers = (next: ZoneTrigger[]) => patch({ triggers: next })
+
+  const agregarTrigger = () => {
+    setTriggers([
+      ...triggers,
+      { id: `trg-${Date.now()}`, eventType: nuevoTrigger, enabled: true },
+    ])
   }
 
   const inputClass =
@@ -161,6 +186,61 @@ export default function ZoneContextMenu({
             className="w-full mt-1"
           />
         </label>
+      </div>
+      {/* Triggers: cuando un token entra en la zona, se emite este evento en
+          el bus de la campana. */}
+      <div className="px-3 py-2 space-y-2 border-t border-gray-800">
+        <p className="text-[0.65rem] uppercase tracking-[0.2em] text-gray-400">Triggers</p>
+        {triggers.length === 0 ? (
+          <p className="text-[0.65rem] text-gray-400">Ninguno: entrar a la zona no dispara nada.</p>
+        ) : (
+          triggers.map((trg) => (
+            <div key={trg.id} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={trg.enabled}
+                aria-label={`Activar ${trg.eventType}`}
+                onChange={(e) =>
+                  setTriggers(
+                    triggers.map((t) => (t.id === trg.id ? { ...t, enabled: e.target.checked } : t)),
+                  )
+                }
+              />
+              <span className="font-mono text-[0.65rem] text-gray-200 flex-1 truncate">
+                {trg.eventType}
+              </span>
+              <button
+                type="button"
+                aria-label={`Quitar ${trg.eventType}`}
+                onClick={() => setTriggers(triggers.filter((t) => t.id !== trg.id))}
+                className="text-[0.65rem] text-red-400 hover:text-red-300"
+              >
+                ✕
+              </button>
+            </div>
+          ))
+        )}
+        <div className="flex items-center gap-1">
+          <select
+            value={nuevoTrigger}
+            aria-label="Tipo de trigger"
+            onChange={(e) => setNuevoTrigger(e.target.value)}
+            className="flex-1 rounded bg-[var(--bg-tertiary)] border border-[var(--bg-secondary)] px-1 py-1 text-[0.65rem] text-[var(--text-primary)]"
+          >
+            {TRIGGER_TYPES.map((t) => (
+              <option key={t.type} value={t.type}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={agregarTrigger}
+            className="rounded bg-[var(--bg-tertiary)] px-2 py-1 text-[0.65rem] text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]"
+          >
+            Agregar
+          </button>
+        </div>
       </div>
       <button
         className="w-full px-3 py-1.5 text-left text-sm text-red-400 hover:bg-gray-700"
