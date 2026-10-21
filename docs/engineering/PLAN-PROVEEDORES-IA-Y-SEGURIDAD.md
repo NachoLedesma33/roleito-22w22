@@ -1,7 +1,13 @@
 # Plan: proveedores de IA configurables + seguridad de los agentes
 
-> Estado: **en curso** (2026-10-20). B1 (límites a la salida) y B2 (marcado de
-> datos en los prompts) están HECHOS. Nació de una pregunta del DM: "que se pueda
+> Estado: **cerrado salvo B5** (2026-10-21). Hechos: B1 (límites a la salida),
+> B2 (marcado de datos en los prompts), B3 (roles, secretos y auditoría), B4
+> (presupuesto por campaña), A1–A5 (perfiles de proveedor, adapters, modelo
+> por agente, discovery, migración) y M0 (monetización con candado, apagada).
+> Falta **B5** (herramientas de dominio), que es "solo si el DM las pide": no
+> las pidió nadie.
+>
+> Nació de una pregunta del DM: "que se pueda
 > agregar APIs de OpenCode, OpenRouter, Claude o cualquier proveedor y elegir
 > los modelos disponibles según la API", y de la preocupación que viene
 > detrás: "que estas IAs no puedan tocar el código fuente ni escribir scripts
