@@ -152,7 +152,7 @@ export default function PlayerView() {
   const choiceRef = useRef<Choice>(null);
   const sceneIdRef = useRef<string | null>(null);
   const wasdTargetRef = useRef<{ x: number; z: number; rotation: number } | null>(null);
-  const lastRollTsRef = useRef<number>(0);
+  const lastRollTsRef = useRef<number>(Date.now());
   // Sync con el DM: join inicial, WebSocket y poll de revisions. Los refs se
   // crean acá porque el loop de movimiento también los usa.
   const {

@@ -205,7 +205,11 @@ export default function DmDashboard() {
   } | null>(null);
   const [bgCSS, setBgCSS] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
-  const lastRollTsRef = useRef<number>(0);
+  // La marca de la ultima tirada vista. Arranca en AHORA (no en 0): con 0 el
+  // primer poll traia TODAS las tiradas guardadas y el DM veia, al entrar a
+  // la campana, un aluvion de toasts de partidas anteriores. El historial
+  // completo esta en el panel de dados ("historia"), que es donde va ✓.
+  const lastRollTsRef = useRef<number>(Date.now());
   const serverPosRef = useRef<Map<string, { x: number; z: number; rotation: number }>>(new Map());
   const serverPosAtRef = useRef<Map<string, number>>(new Map());
   const serverLmatRef = useRef<Map<string, number>>(new Map());
