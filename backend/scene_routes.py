@@ -25,6 +25,10 @@ from auth import require_dm, AuthSession
 
 router = APIRouter(tags=["scenes"])
 
+# Prioridad DM: si el DM movio un token hace poco, se ignoran los moves
+# del jugador sobre ese mismo token (condicion de carrera).
+_LAST_DM_MOVE: dict = {}
+
 
 def _sc_response(sc: SceneCharacter) -> SceneCharacterResponse:
     try:
@@ -649,6 +653,7 @@ class PlayerMoveRequest(BaseModel):
     x: float
     z: float
     rotation: float = 0.0
+    source: str = "player"
 
 
 @router.patch("/campaigns/{campaign_id}/scenes/{scene_id}/move")
@@ -678,6 +683,21 @@ async def player_move_character(
     sc = sc_r.scalar_one_or_none()
     if not sc:
         raise HTTPException(status_code=404, detail="Character not on this scene")
+
+    move_key = (campaign_id, scene_id, data.character_id)
+    now = time.time()
+    if data.source == "dm":
+        _LAST_DM_MOVE[move_key] = now
+    elif data.source == "player":
+        last_dm = _LAST_DM_MOVE.get(move_key)
+        if last_dm is not None and (now - last_dm) < 0.5:
+            # El DM se movio hace menos de 500 ms: se ignora el move del jugador.
+            return {
+                "x": sc.x,
+                "z": sc.z,
+                "rotation": sc.rotation or 0.0,
+                "ignored": True,
+            }
 
     prev_x = sc.x
     prev_z = sc.z

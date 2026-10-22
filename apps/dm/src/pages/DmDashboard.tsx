@@ -1515,6 +1515,7 @@ const startFogMode = useCallback(() => {
         character_id: sc.entity_id,
         x, z,
         rotation: sc.rotation ?? 0,
+        source: 'dm',
       });
     } catch {
       // best-effort
@@ -1559,6 +1560,7 @@ const startFogMode = useCallback(() => {
           character_id: sc.entity_id,
           x, z,
           rotation: sc.rotation ?? 0,
+          source: 'dm',
         });
       } catch {
         // best-effort

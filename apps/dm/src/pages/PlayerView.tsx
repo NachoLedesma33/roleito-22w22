@@ -592,6 +592,7 @@ export default function PlayerView() {
       character_id: cur.id,
       x, z,
       rotation: target.rotation,
+      source: 'player',
     }).catch(() => {});
   };
 
@@ -764,6 +765,7 @@ export default function PlayerView() {
           x: target.x,
           z: target.z,
           rotation: target.rotation,
+          source: 'player',
         });
       } catch {
         /* la posicion se reenvia en el proximo tick */

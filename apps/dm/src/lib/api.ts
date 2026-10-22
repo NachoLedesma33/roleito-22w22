@@ -985,7 +985,7 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify(characters),
       }),
-    moveCharacter: (campaignId: string, sceneId: string, data: { character_id: string; x: number; z: number; rotation: number }) =>
+    moveCharacter: (campaignId: string, sceneId: string, data: { character_id: string; x: number; z: number; rotation: number; source?: string }) =>
       request<SceneCharacter>(`/campaigns/${campaignId}/scenes/${sceneId}/move`, {
         method: 'PATCH',
         body: JSON.stringify(data),
