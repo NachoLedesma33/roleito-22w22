@@ -694,6 +694,13 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
   useFrame((state) => {
     // La luz pegada sigue al token EN VIVO (la posicion interpolada), no a
     // la del estado de React (que llega cada ~2 s).
+    if (!attachedCone) {
+      const target = coneTargetRef.current
+      if (target) {
+        target.position.set(Math.cos(dirRad), 0, -Math.sin(dirRad))
+        target.updateMatrixWorld()
+      }
+    }
     if (attached && meta.attachedTo) {
       const live = livePositions?.current?.get(meta.attachedTo)
       if (live && groupRef.current) {
