@@ -617,7 +617,23 @@ function ZonePortalMarkers({ nodes }: { nodes: { points: THREE.Vector3[]; color:
   )
 }
 
+/**
+ * El halo (el "circulo de luz" que ve el DM) va por DEBAJO de la niebla (40 < 50)
+ * en el POV del DM. En el POV del jugador no: alla la niebla es opaca sobre el
+ * mapa, asi que un halo debajo queda tapado y el jugador no ve su luz ✗. Solo ve
+ * el agujero de la mascara de percepcion, que se recalcula cada 80 ms -> la luz
+ * "se quedaba atras".
+ *
+ * En el POV del jugador el halo va POR ENCIMA de la niebla (51): el jugador ve
+ * el mismo circulo que el DM, y ese halo sigue al token en el mismo frame
+ * (0 ms de desfase) ✓.
+ */
+const HALO_ORDER_DM = 40
+const HALO_ORDER_PLAYER = 51
+
 function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, positionOverride, rotationOverride, occluders, livePositions, readOnly = false, renderMode = DEFAULT_RENDER_MODE }: ItemRendererProps) {
+  const haloOrder = readOnly ? HALO_ORDER_PLAYER : HALO_ORDER_DM
+
   const meta = item.metadata as LightMetadata
   const source = normalizeLightConfig(meta.source)
   const mapHeight = 10 * mapScale
@@ -768,7 +784,7 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
   const halo = (() => {
     if (occludedGeometry) {
       return (
-        <mesh geometry={occludedGeometry} position={[0, y, 0]} renderOrder={40}>
+        <mesh geometry={occludedGeometry} position={[0, y, 0]} renderOrder={haloOrder}>
           <meshBasicMaterial
             ref={haloMatRef}
             map={glowTexture}
@@ -782,7 +798,7 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
     }
     if (source.mode === 'directional' && sectorGeometry) {
       return (
-        <mesh geometry={sectorGeometry} position={[0, y, 0]} renderOrder={40}>
+        <mesh geometry={sectorGeometry} position={[0, y, 0]} renderOrder={haloOrder}>
           <meshBasicMaterial
             ref={haloMatRef}
             map={glowTexture}
@@ -795,7 +811,7 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
       )
     }
     return (
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, y, 0]} renderOrder={40}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, y, 0]} renderOrder={haloOrder}>
         <circleGeometry args={[ringRadius, 32]} />
         <meshBasicMaterial
           ref={haloMatRef}
@@ -826,7 +842,7 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
           En el POV del jugador (readOnly) NO se renderiza: alla la luz ya
           entra por la mascara de percepcion (FogOverlay) y el pointLight
           real solo competia con la niebla y quemaba GPU/RAM al pedo. */}
-      {!readOnly && (source.mode === 'directional' ? (
+      {source.mode === 'directional' ? (
         <>
           <spotLight
             ref={realLightRef as React.RefObject<THREE.SpotLight>}
@@ -849,7 +865,7 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
           decay={2}
           intensity={2.4 * source.intensity}
         />
-      ))}
+      )}
       {halo}
       {!readOnly && source.mode !== 'directional' && (
         <LineLoopPoints radius={ringRadius} position={Y.lightRing} />

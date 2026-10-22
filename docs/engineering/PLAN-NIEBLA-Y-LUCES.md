@@ -153,6 +153,37 @@ worker, no el hilo principal ✓ -> la UI no se bloquea ✓). Si en una maquina
 lenta eso se nota, el ajuste fino es el paso siguiente (la luz del jugador
 resuelta EN EL CLIENTE, sin pasar por el worker ✗).
 
+### 2.4 La luz en el POV del jugador: el halo tapado por la niebla
+
+Medido en el navegador (misma maquina, misma sesion):
+
+| | POV del DM | POV del jugador |
+|---|---|---|
+| FPS (pestana visible) | 59-60 | 58-60 |
+| Hilo principal | 95% idle | 95% idle |
+| Heap | - | **333 MB -> 92 MB** |
+
+O sea: **no era un problema de rendering**. Las tres causas reales:
+
+1. **El halo de la luz estaba POR DEBAJO de la niebla** (`renderOrder` 40 < 50).
+   En el POV del jugador la niebla es opaca sobre el mapa, asi que el halo
+   (el "circulo de luz" que ve el DM) quedaba tapado: el jugador solo veia el
+   agujero de la mascara de percepcion, que se recalcula cada 80 ms -> la luz
+   "se quedaba atras" ✗.
+   Ahora en el POV del jugador el halo va por ENCIMA de la niebla (`renderOrder`
+   51): el jugador ve el mismo circulo que el DM, y ese halo sigue al token en
+   el **mismo frame** (0 ms de desfase) ✓.
+
+2. **La niebla se repintaba desde cero**: `paintPerception` creaba un canvas
+   nuevo y un `ImageData` nuevo (~1,5 MB) en cada repintado, y la mascara
+   llegaba varias veces por segundo -> decenas de MB/s de basura ✗. Ahora el
+   canvas y el `ImageData` se reusan ✓.
+
+3. **La mascara viajaba por COPIA** (`postMessage` sin lista de transferencia):
+   1,5 MB por mensaje ✗. Ahora viaja por transferencia (zero-copy) ✓.
+
+Gates: lint 0 errores / typecheck limpio / vitest 297 / e2e player-view 16/16.
+
 ## 3. Lo que YA esta hecho (no hay que rehacerlo)
 
 - La posicion viva de los tokens (`useVisualInterpolation` ✓) y la de las

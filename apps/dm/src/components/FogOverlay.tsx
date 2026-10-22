@@ -133,12 +133,13 @@ function paintPerception(canvas: HTMLCanvasElement, color: string, mask: Percept
   const ctx = canvas.getContext('2d')
   if (!ctx || mask.cols <= 0 || mask.rows <= 0) return
 
-  const src = document.createElement('canvas')
-  src.width = mask.cols
-  src.height = mask.rows
+  // El canvas intermedio y el ImageData se REUSAN: antes se creaban nuevos en
+  // cada repintado (la mascara llega varias veces por segundo) y eso generaba
+  // decenas de MB por segundo de basura: el POv del jugador se comia la RAM.
+  const src = reuseScratch(mask.cols, mask.rows)
   const sctx = src.getContext('2d')
   if (!sctx) return
-  const img = sctx.createImageData(mask.cols, mask.rows)
+  const img = reuseImageData(mask.cols, mask.rows)
   for (let i = 0; i < mask.data.length; i++) {
     const v = mask.data[i]
     const a = v < 0 ? 0 : v > 1 ? 255 : Math.round(v * 255)
@@ -158,6 +159,28 @@ function paintPerception(canvas: HTMLCanvasElement, color: string, mask: Percept
   ctx.imageSmoothingEnabled = true
   ctx.drawImage(src, 0, 0, w, h)
   ctx.globalCompositeOperation = 'source-over'
+}
+
+/** Canvas intermedio reutilizado entre repintados (uno solo alcanza). */
+let scratchCanvas: HTMLCanvasElement | null = null
+
+function reuseScratch(cols: number, rows: number): HTMLCanvasElement {
+  if (!scratchCanvas) scratchCanvas = document.createElement('canvas')
+  if (scratchCanvas.width !== cols) scratchCanvas.width = cols
+  if (scratchCanvas.height !== rows) scratchCanvas.height = rows
+  return scratchCanvas
+}
+
+/** ImageData reutilizado: `createImageData` aloca ~1,5 MB por repintado. */
+let scratchImage: ImageData | null = null
+
+function reuseImageData(cols: number, rows: number): ImageData {
+  const ctx = reuseScratch(cols, rows).getContext('2d')
+  if (!ctx) throw new Error('sin contexto 2d')
+  if (!scratchImage || scratchImage.width !== cols || scratchImage.height !== rows) {
+    scratchImage = ctx.createImageData(cols, rows)
+  }
+  return scratchImage
 }
 
 interface FogOverlayProps {

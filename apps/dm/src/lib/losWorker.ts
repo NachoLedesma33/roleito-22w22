@@ -107,8 +107,12 @@ self.onmessage = (e: MessageEvent) => {
   }
 
   const result: LosResult = { kind: 'los', jobId: job.jobId, mask, explored }
-  // Sin lista de transferencia: el buffer de un Float32Array es ArrayBufferLike y
-// `self` tipa como Window en este proyecto. Copiar ~60KB cada 250ms (y solo
-// cuando el personaje se movió) no es el cuello de botella.
-  self.postMessage(result)
+  // Los buffers viajan por TRANSFERENCIA, no por copia: la mascara puede pesar
+  // 1,5 MB y copiarla varias veces por segundo generaba decenas de MB/s de
+  // basura (el POV del jugador se comia la RAM). El worker crea la mascara y el
+  // array de "explorado" nuevos en cada trabajo, asi que no los necesita mas.
+  const transfers: ArrayBuffer[] = []
+  if (mask) transfers.push(mask.data.buffer as ArrayBuffer)
+  if (explored) transfers.push(explored.buffer as ArrayBuffer)
+  ;(self as unknown as Worker).postMessage(result, transfers)
 }
