@@ -1,37 +1,46 @@
-import { useState } from 'react';
+import { Suspense, lazy, useState } from 'react';
 import { Navigate, Routes, Route, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import LoginShell from '@/components/LoginShell';
 import ProfileIntro from '@/components/ProfileIntro';
-import Landing from '@/pages/Landing';
-import Layout from '@/components/Layout';
-import CampaignList from '@/pages/CampaignList';
-import CampaignForm from '@/pages/CampaignForm';
-import CampaignDetail from '@/pages/CampaignDetail';
-import CharacterList from '@/pages/CharacterList';
-import CharacterForm from '@/pages/CharacterForm';
-import CharacterDetail from '@/pages/CharacterDetail';
-import NPCList from '@/pages/NPCList';
-import NPCForm from '@/pages/NPCForm';
-import NPCDetail from '@/pages/NPCDetail';
-import SessionList from '@/pages/SessionList';
-import SessionForm from '@/pages/SessionForm';
-import SessionDetail from '@/pages/SessionDetail';
-import EventList from '@/pages/EventList';
-import EventDetail from '@/pages/EventDetail';
-import PlayerList from '@/pages/PlayerList';
-import MapList from '@/pages/MapList';
-import AssetList from '@/pages/AssetList';
-import SceneList from '@/pages/SceneList';
-import SceneDetail from '@/pages/SceneDetail';
-import DmDashboard from '@/pages/DmDashboard';
-import PlayerView from '@/pages/PlayerView';
-import JoinRedirect from './pages/JoinRedirect';
-import NarrativeEngine from '@/pages/NarrativeEngine';
-import AgentPanel from '@/pages/AgentPanel';
-import TTSPanel from '@/pages/TTSPanel';
-import WorldStateView from '@/pages/WorldStateView';
-import MemoryView from '@/pages/MemoryView';
+
+/**
+ * Cada pagina se carga cuando se la necesita (lazy).
+ *
+ * Antes todas entraban en el bundle principal: el POV del jugador descargaba
+ * el dashboard del DM y 25 pantallas de administracion que no usa. Con la
+ * emulacion movil de Lighthouse eso se castiga (Performance bajo) y por el
+ * tunel la primera carga del jugador tardaba una eternidad.
+ */
+const Landing = lazy(() => import('@/pages/Landing'));
+const Layout = lazy(() => import('@/components/Layout'));
+const CampaignList = lazy(() => import('@/pages/CampaignList'));
+const CampaignForm = lazy(() => import('@/pages/CampaignForm'));
+const CampaignDetail = lazy(() => import('@/pages/CampaignDetail'));
+const CharacterList = lazy(() => import('@/pages/CharacterList'));
+const CharacterForm = lazy(() => import('@/pages/CharacterForm'));
+const CharacterDetail = lazy(() => import('@/pages/CharacterDetail'));
+const NPCList = lazy(() => import('@/pages/NPCList'));
+const NPCForm = lazy(() => import('@/pages/NPCForm'));
+const NPCDetail = lazy(() => import('@/pages/NPCDetail'));
+const SessionList = lazy(() => import('@/pages/SessionList'));
+const SessionForm = lazy(() => import('@/pages/SessionForm'));
+const SessionDetail = lazy(() => import('@/pages/SessionDetail'));
+const EventList = lazy(() => import('@/pages/EventList'));
+const EventDetail = lazy(() => import('@/pages/EventDetail'));
+const PlayerList = lazy(() => import('@/pages/PlayerList'));
+const MapList = lazy(() => import('@/pages/MapList'));
+const AssetList = lazy(() => import('@/pages/AssetList'));
+const SceneList = lazy(() => import('@/pages/SceneList'));
+const SceneDetail = lazy(() => import('@/pages/SceneDetail'));
+const DmDashboard = lazy(() => import('@/pages/DmDashboard'));
+const PlayerView = lazy(() => import('@/pages/PlayerView'));
+const JoinRedirect = lazy(() => import('./pages/JoinRedirect'));
+const NarrativeEngine = lazy(() => import('@/pages/NarrativeEngine'));
+const AgentPanel = lazy(() => import('@/pages/AgentPanel'));
+const TTSPanel = lazy(() => import('@/pages/TTSPanel'));
+const WorldStateView = lazy(() => import('@/pages/WorldStateView'));
+const MemoryView = lazy(() => import('@/pages/MemoryView'));
 
 function Splash() {
   return (
@@ -70,6 +79,7 @@ function LoginRoute() {
 function App() {
   return (
     <AuthProvider>
+      <Suspense fallback={<Splash />}>
       <Routes>
         {/* Player View — public, uses invite code as auth */}
         <Route path="/campaigns/join/:code" element={<PlayerView />} />
@@ -116,6 +126,7 @@ function App() {
           </Route>
         </Route>
       </Routes>
+      </Suspense>
     </AuthProvider>
   );
 }

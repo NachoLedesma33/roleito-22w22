@@ -8,10 +8,24 @@
     <link rel="apple-touch-icon" href="/favicon22w22.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Las fuentes NO bloquean el pintado: se piden en paralelo y se aplican
+         cuando llegan. Con `rel=stylesheet` el navegador espera a Google
+         (un dominio externo, lento para un jugador en otro pais) antes de
+         pintar nada: el FCP se iba ahi y Lighthouse lo castiga fuerte.
+         `display=swap` ya venia: el texto se ve con la tipografia de respaldo
+         mientras tanto, sin un salto de layout feo. -->
     <link
       href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Montserrat:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
       rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
     />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Montserrat:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
   </head>
   <body>
     <div id="root"></div>

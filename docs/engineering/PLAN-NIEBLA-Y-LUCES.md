@@ -184,6 +184,37 @@ O sea: **no era un problema de rendering**. Las tres causas reales:
 
 Gates: lint 0 errores / typecheck limpio / vitest 297 / e2e player-view 16/16.
 
+### 2.5 El "Performance 35" de Lighthouse en el POV del jugador
+
+Medido con el build de produccion (NO el dev server: `npm run dev` sirve
+cientos de modulos sin bundlear y ahi el FCP da 2788 ms en vez de 250 ms):
+
+| | antes | despues |
+|---|---|---|
+| `index.js` (gzip) | 602 KB | **145 KB** |
+| FCP | 316 ms | **248 ms** |
+| Long tasks | 0 | 0 |
+| Carga total del jugador | ~602 KB | ~520 KB |
+
+Que se hizo:
+
+1. **Cada pagina se carga con `lazy()`**. Antes las 29 pantallas (el dashboard
+   del DM y 25 de administracion) entraban en el bundle principal: el POV del
+   jugador las pagaba sin usarlas. Ahora el jugador descarga `index.js` (145 KB)
+   + su chunk, y el DM su chunk aparte ✓.
+2. **Las fuentes de Google ya no bloquean el pintado**: se piden en paralelo
+   (`media="print"` + `onload`) en vez de ser un `<link rel=stylesheet>` que
+   espera a un dominio externo ✗. Para un jugador en otro pais eso era la
+   diferencia entre pintar en 250 ms o en 2 s.
+
+Lo que NO se hizo (y por que): separar Three.js en su propio chunk
+(`manualChunks`) **agrandaba** la carga inicial del jugador (602 KB -> 1,19 MB
+gzip) porque el motor 3D igual se necesita para pintar el mapa. Se midio y se
+descarto ✓.
+
+Gates: lint 0 errores / typecheck limpio / vitest 297 / e2e 50+40 (los specs
+de jugador, luz, niebla, dashboard, ficha, iniciativa, a11y y landing).
+
 ## 3. Lo que YA esta hecho (no hay que rehacerlo)
 
 - La posicion viva de los tokens (`useVisualInterpolation` ✓) y la de las
