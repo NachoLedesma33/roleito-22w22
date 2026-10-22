@@ -1395,7 +1395,7 @@ export default function PlayerView() {
                 <img
                   src={staticUrl(myChar.portrait_path)!}
                   alt={myChar.name}
-                  className="w-full h-24 rounded-lg object-cover border border-[var(--bg-tertiary)]"
+                  className="w-full h-24 rounded-lg object-cover object-[center_25%] border border-[var(--bg-tertiary)]"
                 />
               ) : (
                 <div className="w-full h-24 rounded-lg bg-[var(--accent)]/20 border border-[var(--accent)]/40 flex items-center justify-center text-xl font-bold text-white">
@@ -1405,7 +1405,7 @@ export default function PlayerView() {
               <div className="flex items-center gap-2.5">
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-[var(--text-primary)] truncate">{myChar.name}</p>
-                  <p className="text-[10px] text-[var(--text-secondary)] truncate">
+                  <p className="text-[11px] text-[var(--text-secondary)] truncate">
                     {[myChar.race, myChar.class_].filter(Boolean).join(' · ') || '\u00A0'}
                   </p>
                 </div>
@@ -1494,11 +1494,11 @@ export default function PlayerView() {
                     <div className="grid grid-cols-3 gap-1 text-center">
                       <div className="bg-[var(--bg-tertiary)]/50 rounded py-1">
                         <p className="font-bold text-red-400">{myChar.max_pv}</p>
-                        <p className="text-[9px] text-[var(--text-secondary)]">{t('pv.pvMax', 'PV máx.')}</p>
+                        <p className="text-[10px] text-[var(--text-secondary)]">{t('pv.pvMax', 'PV máx.')}</p>
                       </div>
                       <div className="bg-[var(--bg-tertiary)]/50 rounded py-1">
                         <p className="font-bold text-blue-400">{myChar.max_pm}</p>
-                        <p className="text-[9px] text-[var(--text-secondary)]">{t('pv.pmMax', 'PM máx.')}</p>
+                        <p className="text-[10px] text-[var(--text-secondary)]">{t('pv.pmMax', 'PM máx.')}</p>
                       </div>
                       <div className="bg-[var(--bg-tertiary)]/50 rounded py-1">
                         <p className="font-bold text-green-400">{myChar.defense}</p>

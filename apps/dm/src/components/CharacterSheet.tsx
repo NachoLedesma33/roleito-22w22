@@ -424,7 +424,7 @@ export default function CharacterSheet({
             title="Hacé clic para subir retrato"
           >
             {pUrl ? (
-              <img src={pUrl} alt={entity.name} className="w-full h-full object-cover" />
+              <img src={pUrl} alt={entity.name} className="w-full h-full object-cover object-[center_25%]" />
             ) : (
               <div className="w-full h-full bg-[var(--bg-tertiary)] flex items-center justify-center text-3xl font-bold text-[var(--accent)]">
                 {entity.name.charAt(0)}
@@ -434,7 +434,7 @@ export default function CharacterSheet({
           <div className="flex items-start gap-3">
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold truncate">{entity.name}</p>
-            <p className="text-[10px] text-[var(--text-secondary)]">
+            <p className="text-[11px] text-[var(--text-secondary)]">
               {entityType === 'character'
                 ? `${(entity as Character).race} ${(entity as Character).class_}`
                 : `PNJ · ${entity.status === 'alive' ? 'Vivo' : entity.status === 'dead' ? 'Muerto' : entity.status}`}
@@ -487,15 +487,15 @@ export default function CharacterSheet({
         {/* Derived Stats */}
         <div className="grid grid-cols-3 gap-1.5">
           <div className="text-center bg-[var(--bg-tertiary)]/50 rounded py-1">
-            <p className="text-[9px] text-[var(--text-secondary)]">PV máx.</p>
+            <p className="text-[10px] text-[var(--text-secondary)]">PV máx.</p>
             <p className="text-xs font-bold text-red-400">{entity.max_pv}</p>
           </div>
           <div className="text-center bg-[var(--bg-tertiary)]/50 rounded py-1">
-            <p className="text-[9px] text-[var(--text-secondary)]">PM máx.</p>
+            <p className="text-[10px] text-[var(--text-secondary)]">PM máx.</p>
             <p className="text-xs font-bold text-blue-400">{entity.max_pm}</p>
           </div>
           <div className="text-center bg-[var(--bg-tertiary)]/50 rounded py-1">
-            <p className="text-[9px] text-[var(--text-secondary)]">Defensa</p>
+            <p className="text-[10px] text-[var(--text-secondary)]">Defensa</p>
             <p className="text-xs font-bold text-green-400">{entity.defense}</p>
           </div>
         </div>

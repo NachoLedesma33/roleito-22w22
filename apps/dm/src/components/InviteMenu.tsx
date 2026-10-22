@@ -140,10 +140,20 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
     // - los de la LAN: sirven para los que estan en la misma red ✓
     // El de "esta maquina" (localhost) NO se muestra: localhost es la
     // maquina de cada uno, no le sirve a nadie de la mesa ✗.
-    if (publica && !esLocal) {
+    if (publica) {
+      // El link del tunel (o del dominio) SIEMPRE se ofrece: es el que llega a
+      // los jugadores de otra casa. Si el DM escribio localhost a proposito
+      // (pruebas locales), se ofrece igual: es su decision.
       urls.push({
         url: `${publica}${path}`,
-        hint: t('dm.invitePublic', 'Link publico (tunel)'),
+        hint: esLocal
+          ? t('dm.inviteHere', 'Desde esta maquina')
+          : t('dm.invitePublic', 'Link publico (tunel)'),
+      });
+    } else {
+      urls.push({
+        url: `${window.location.origin}${path}`,
+        hint: t('dm.inviteHere', 'Desde esta maquina'),
       });
     }
     for (const ip of ips) {
@@ -229,7 +239,7 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
             />
             {t('dm.invitePublicGame', 'Partida abierta: cualquiera con el link entra')}
           </label>
-          {abierta && !esLocal && (
+          {abierta && (
             <button
               type="button"
               onClick={() => copy(urlFija)}

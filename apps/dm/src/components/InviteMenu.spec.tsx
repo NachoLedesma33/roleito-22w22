@@ -51,17 +51,23 @@ function abrir(c: Campaign = camp()) {
 }
 
 describe('InviteMenu', () => {
-  it('ofrece el link del tunel y los de la LAN, pero NO el de localhost', async () => {
-    // localhost es la maquina de cada uno: no le sirve a nadie de la mesa, no
-    // se muestra (si se comparte, el jugador cae en la landing del DM).
+  it('ofrece el link del tunel y los de la LAN', async () => {
+    // El link que se comparte es el del tunel (con el codigo) y el de la LAN
+    // (para los que estan en la misma red). Ninguno de los dos es la landing.
     ips.mockResolvedValue({ ips: ['192.168.1.6'] })
     abrir()
 
-    await waitFor(() => expect(screen.getAllByTestId('invite-url').length).toBeGreaterThan(0))
+    await waitFor(() => expect(screen.getByTestId('invite-menu-content')).toBeTruthy())
+    fireEvent.change(screen.getByLabelText('URL publica (si usas un tunel)'), {
+      target: { value: 'https://mesa.trycloudflare.com' },
+    })
+
+    await waitFor(() => expect(screen.getAllByTestId('invite-url').length).toBeGreaterThan(1))
     const urls = screen.getAllByTestId('invite-url').map((u) => u.textContent ?? '')
     expect(urls.some((u) => u.includes('192.168.1.6'))).toBe(true)
-    expect(urls.some((u) => u.includes('/campaigns/join/CODE123'))).toBe(true)
-    expect(urls.some((u) => u.includes('localhost'))).toBe(false)
+    expect(
+      urls.some((u) => u.includes('https://mesa.trycloudflare.com/campaigns/join/CODE123')),
+    ).toBe(true)
   })
 
   it('copia el link y confirma que se copio', async () => {
@@ -105,13 +111,19 @@ describe('InviteMenu', () => {
     expect(writeText).toHaveBeenCalledWith('https://mesa.trycloudflare.com/join')
   })
 
-  it('con la URL publica en localhost, el link fijo no se muestra', async () => {
-    // No le sirve a nadie de la mesa: no se ofrece.
+  it('el link fijo usa la URL publica (la del tunel), no la del navegador', async () => {
     ips.mockResolvedValue({ ips: [] })
     abrir(campPublico())
 
     await waitFor(() => expect(screen.getByTestId('invite-menu-content')).toBeTruthy())
-    expect(screen.queryByTestId('invite-fixed-link')).toBeNull()
+    fireEvent.change(screen.getByLabelText('URL publica (si usas un tunel)'), {
+      target: { value: 'https://mesa.trycloudflare.com' },
+    })
+
+    await waitFor(() => expect(screen.getByTestId('invite-fixed-link')).toBeTruthy())
+    expect(screen.getByTestId('invite-fixed-link').textContent).toContain(
+      'https://mesa.trycloudflare.com/join',
+    )
   })
 
   it('el boton de la URL publica copia el LINK DE LA PARTIDA, no la URL pelada', async () => {

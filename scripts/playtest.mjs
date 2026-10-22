@@ -29,12 +29,14 @@ const pasos = [
     color: '\x1b[36m',
     cmd: 'npm',
     args: ['run', 'dev:backend'],
+    reiniciar: true,
   },
   {
     nombre: 'frontend (build de produccion)',
     color: '\x1b[35m',
     cmd: 'npm',
     args: ['run', 'serve:prod'],
+    reiniciar: true,
   },
 ]
 
@@ -54,10 +56,18 @@ function cerrar() {
   process.exit(0)
 }
 
-for (const paso of pasos) {
+/**
+ * Levanta un paso y lo vuelve a levantar si se cae.
+ *
+ * En Windows los procesos de node/uvicorn mueren solos a veces (el dev
+ * server de Vite con el crash 3221226505 ✗, o un uvicorn que se cae con el
+ * reload). Sin esto, el DM se queda sin servidor a mitad de la sesion y
+ * cree que la app se rompio ✗. Con el watchdog, vuelve solo ✓.
+ */
+function levantar(paso) {
+  const prefijo = `${paso.color}[${paso.nombre}]\x1b[0m `
   const hijo = spawn(paso.cmd, paso.args, { stdio: ['ignore', 'pipe', 'pipe'], shell: true })
   hijos.push(hijo)
-  const prefijo = `${paso.color}[${paso.nombre}]\x1b[0m `
   const escribir = (buffer) => {
     for (const linea of String(buffer).split('\n')) {
       if (linea.trim()) console.log(prefijo + linea)
@@ -66,9 +76,18 @@ for (const paso of pasos) {
   hijo.stdout.on('data', escribir)
   hijo.stderr.on('data', escribir)
   hijo.on('exit', (code) => {
-    borrarUrlPublica()
     console.log(`${prefijo}salio (codigo ${code})`)
+    if (terminado || !paso.reiniciar) return
+    console.log(`${prefijo}se cae solo en Windows: lo vuelvo a levantar en 2 s...`)
+    setTimeout(() => {
+      if (!terminado) levantar(paso)
+    }, 2000)
   })
+  return hijo
+}
+
+for (const paso of pasos) {
+  levantar(paso)
 }
 
 process.on('SIGINT', cerrar)
@@ -102,9 +121,7 @@ if (!tunel) {
           if (guardarUrlPublica(url)) {
             console.log('  (la app ya la sabe: menu "Invitar" -> URL publica)')
           }
-          if (tunel.urlFija) {
-            console.log('  URL fija: el link /join de Discord no cambia nunca.')
-          } else {
+          if (!tunel.urlFija) {
             console.log(
               '  \x1b[33mOjo:\x1b[0m la URL es efimera (cambia en cada partida):\n' +
                 '  comparti el link DE LA PARTIDA (el que trae el codigo).',
@@ -121,6 +138,7 @@ if (!tunel) {
   hijo.stdout.on('data', avisar)
   hijo.stderr.on('data', avisar)
   hijo.on('exit', (code) => {
+    borrarUrlPublica()
     console.log(`${prefijo}salio (codigo ${code})`)
   })
 }
@@ -132,7 +150,7 @@ setTimeout(() => {
       '  \x1b[32mListo.\x1b[0m El juego esta en http://localhost:5173',
       '',
       '  Que hacen los jugadores:',
-      '    1. menu "Invitar" -> pegar la URL del tunel -> copiar el link',
+      '    1. menu "Invitar" -> el link de la mesa (el que trae el codigo)',
       '    2. (opcional) activar "Partida abierta" -> el link fijo /join',
       '    3. mandar ese link al grupo de Discord',
       '',
