@@ -264,6 +264,17 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
               </span>
             </button>
           )}
+          {publica && esLocal && (
+            <p
+              className="text-[0.65rem] text-[var(--warning)] mb-1"
+              data-testid="invite-no-tunnel-hint"
+            >
+              {t(
+                'dm.inviteNoTunnel',
+                'No hay tunel: la URL de arriba es de esta maquina. Levantalo con "npm run tunnel" o pegá la URL del tunel.',
+              )}
+            </p>
+          )}
           {publica && code && (
             <p
               className="text-[0.65rem] text-[var(--text-secondary)] mb-1"

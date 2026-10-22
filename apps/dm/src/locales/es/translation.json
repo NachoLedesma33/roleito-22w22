@@ -79,6 +79,7 @@
     "logoutTitle": "¿Salir de 22w22?"
   },
   "dm": {
+    "inviteNoTunnel": "No hay tunel: la URL de arriba es de esta maquina. Levantalo con npm run tunnel o pega la URL del tunel.",
     "inviteCopyLink": "Copiar el link de la partida",
     "inviteShareHint": "Lo que se comparte es el link CON el codigo (abajo). La URL sola abre la landing del DM.",
     "inviteCopyError": "El navegador no dejo copiar: copiala a mano (esta a la vista).",

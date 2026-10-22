@@ -1395,7 +1395,7 @@ export default function PlayerView() {
                 <img
                   src={staticUrl(myChar.portrait_path)!}
                   alt={myChar.name}
-                  className="w-full h-24 rounded-lg object-cover object-[center_25%] border border-[var(--bg-tertiary)]"
+                  className="w-full h-32 rounded-lg object-cover object-[center_20%] border border-[var(--bg-tertiary)]"
                 />
               ) : (
                 <div className="w-full h-24 rounded-lg bg-[var(--accent)]/20 border border-[var(--accent)]/40 flex items-center justify-center text-xl font-bold text-white">

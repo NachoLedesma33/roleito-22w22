@@ -308,7 +308,8 @@
     "zoneColor": "Zone color",
     "zonePolygon": "Zone (polygon)",
     "zoneRect": "Zone (rect)",
-    "zonesBtn": "Zones"
+    "zonesBtn": "Zones",
+    "inviteNoTunnel": "No tunnel: the URL above is this machine. Start one with npm run tunnel or paste the tunnel URL."
   },
   "dmConfirm": {
     "clearWalls": "Delete ALL walls and doors?"
@@ -342,7 +343,6 @@
     "detectDiscarded": "detection discarded",
     "detectFallbackCv": "AI unavailable: the detection was made by computer vision",
     "detectFailed": "Could not detect - check the backend",
-    "detectBatch": "{{n}} scenes detected — review the proposal in each one",
     "detectProposed": "{{n}} proposed elements — review",
     "fogCleared": "fog regions removed",
     "lightAttached": "light added to token",
