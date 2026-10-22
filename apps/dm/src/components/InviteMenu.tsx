@@ -117,8 +117,6 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
   }, [abierta, campaign, onCampaignChange]);
 
   const code = campaign?.invite_code ?? null;
-  /** El link fijo: el mismo para todas las partidas (el atajo `/join`). */
-  const urlFija = `${window.location.origin}/join`;
 
   // Un tunel efimero (Cloudflare quick, tunnelmole) cambia de URL en cada
   // partida: el link "/join" NO es fijo ahi. Con un dominio propio (o
@@ -133,21 +131,19 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
   /** El link que se comparte: la URL publica MAS el codigo. */
   const linkPartida = `${publica}${path}`;
   const urls: { url: string; hint: string }[] = [];
+  /** El link fijo: el mismo para todas las partidas (el atajo `/join`). */
+  const urlFija = `${publica}/join`;
   if (code) {
-    // El link que se manda es el que el DM pega como "URL publica": si juega
-    // con un tunel (o abre la app desde el tunel), ese es el unico que
-    // llega a los jugadores de otra casa o ciudad.
-    if (publica) {
+    // Solo se ofrecen los links que LLEGAN a un jugador:
+    // - el de la URL publica (el tunel o el dominio): el que sirve para otra
+    //   casa u otra ciudad ✓
+    // - los de la LAN: sirven para los que estan en la misma red ✓
+    // El de "esta maquina" (localhost) NO se muestra: localhost es la
+    // maquina de cada uno, no le sirve a nadie de la mesa ✗.
+    if (publica && !esLocal) {
       urls.push({
         url: `${publica}${path}`,
-        hint: esLocal
-          ? t('dm.inviteHere', 'Desde esta maquina')
-          : t('dm.invitePublic', 'Link publico (tunel)'),
-      });
-    } else {
-      urls.push({
-        url: `${window.location.origin}${path}`,
-        hint: t('dm.inviteHere', 'Desde esta maquina'),
+        hint: t('dm.invitePublic', 'Link publico (tunel)'),
       });
     }
     for (const ip of ips) {
@@ -170,10 +166,13 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
 
   const copy = useCallback(
     async (url: string) => {
+      // Primero se limpia: si la copia falla, no puede quedar el check del
+      // link anterior (pareceria que se copio ese).
+      setCopied(null);
+      setCopyError(false);
       try {
         await navigator.clipboard.writeText(url);
         setCopied(url);
-        setCopyError(false);
         window.setTimeout(() => setCopied(null), 2000);
       } catch {
         // El navegador lo bloqueo (o no hay portapapeles): NO se copia en
@@ -230,7 +229,7 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
             />
             {t('dm.invitePublicGame', 'Partida abierta: cualquiera con el link entra')}
           </label>
-          {abierta && (
+          {abierta && !esLocal && (
             <button
               type="button"
               onClick={() => copy(urlFija)}
