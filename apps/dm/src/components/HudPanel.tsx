@@ -217,13 +217,17 @@ export default function HudPanel({
     setZIndex(nextZ);
   }, []);
 
+  // La posicion NO se guarda en cada movimiento: escribir en localStorage en
+  // cada pointermove es una escritura SINCRONICA en el hilo principal, y eso
+  // hacia que el panel se glitchease y se moviera erraticamente mientras lo
+  // arrastraban (el DM lo reporto). Se guarda al soltar ✓.
+  //
+  // El tamaño se guarda una vez al montar (el default) y al soltar el borde.
   useEffect(() => {
     saveSize(panelId, size.width, size.height);
-  }, [panelId, size.width, size.height]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [panelId]);
 
-  useEffect(() => {
-    savePosition(panelId, pos.x, pos.y);
-  }, [panelId, pos.x, pos.y]);
 
   const handleMinimize = useCallback(() => {
     setMinimized(true);
@@ -246,6 +250,8 @@ export default function HudPanel({
       if (g) {
         setPos({ x: g.x, y: g.y });
         setSize({ width: g.w, height: g.h });
+        savePosition(panelId, g.x, g.y);
+        saveSize(panelId, g.w, g.h);
       }
       setMaximized(false);
     } else {
@@ -289,10 +295,16 @@ export default function HudPanel({
 
   const handlePointerUp = useCallback(() => {
     if (isDragging) {
-      setPos((p) => ({ x: snap(p.x), y: snap(p.y) }));
+      setPos((p) => {
+        const next = { x: snap(p.x), y: snap(p.y) };
+        // Se guarda al soltar (no en cada movimiento): el write sincronico a
+        // localStorage en cada pointermove hacia glitquear el panel ✗.
+        savePosition(panelId, next.x, next.y);
+        return next;
+      });
     }
     setIsDragging(false);
-  }, [isDragging]);
+  }, [isDragging, panelId]);
 
   const handleResizeDown = useCallback(
     (edge: ResizeEdge) => (e: React.PointerEvent) => {
@@ -343,8 +355,11 @@ export default function HudPanel({
   );
 
   const handleResizeUp = useCallback(() => {
+    // El tamaño se guarda al soltar el borde (mismo motivo que la posición).
+    saveSize(panelId, size.width, size.height);
+    savePosition(panelId, pos.x, pos.y);
     setResizeEdge(null);
-  }, []);
+  }, [panelId, size.width, size.height, pos.x, pos.y]);
 
   if (minimized) return null;
 
