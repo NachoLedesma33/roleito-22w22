@@ -35,7 +35,7 @@ interface ItemRendererProps {
    * token hace dos segundos ✗. Con este mapa, la luz lee la posicion
    * interpolada del token en cada frame ✓.
    */
-  livePositions?: Map<string, { x: number; z: number; rotation: number }>
+  livePositions?: React.RefObject<Map<string, { x: number; z: number; rotation: number }>>
   rotationOverride?: number
   occluders?: import('@/lib/lightOcclusion').Occluder[]
   renderMode?: RenderMode
@@ -667,7 +667,7 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
     // La luz pegada sigue al token EN VIVO (la posicion interpolada), no a
     // la del estado de React (que llega cada ~2 s).
     if (attached && meta.attachedTo) {
-      const live = livePositions?.get(meta.attachedTo)
+      const live = livePositions?.current?.get(meta.attachedTo)
       if (live && groupRef.current) {
         groupRef.current.position.set(live.x, 0, live.z)
         if (attachedCone) groupRef.current.rotation.y = live.rotation

@@ -745,10 +745,12 @@ function DraggableToken({
   onClick,
   onContextMenu,
   onDoubleClick,
+  livePositions,
 }: {
   entity: SceneEntity;
   isSelected: boolean;
   isMovable: boolean;
+  livePositions?: React.RefObject<Map<string, { x: number; z: number; rotation: number }>>;
   /** Detectado por un sentido especial pero no visible: se pinta como fantasma. */
   sensed?: boolean;
   onClick?: (sceneCharId: string) => void;
@@ -762,6 +764,20 @@ function DraggableToken({
       groupRef.current.userData.sceneCharId = entity.sceneCharId;
     }
   }, [entity.sceneCharId]);
+
+  // La posicion REAL del token, en el mismo frame en que se dibuja. Las
+  // luces pegadas la leen de aca (no del estado de React ni del mapa
+  // interpolado del servidor): asi la luz y la ficha son el mismo objeto
+  // visible, sin un fotograma de desfasaje.
+  useFrame(() => {
+    const g = groupRef.current
+    if (!g) return
+    livePositions?.current?.set(entity.sceneCharId, {
+      x: g.position.x,
+      z: g.position.z,
+      rotation: g.rotation.y,
+    })
+  })
 
   // Apply position imperatively: guarantees the Three.js group moves even if
   // R3F skips array-prop reconciliation on `<group position={[...]}>`.
@@ -2226,6 +2242,17 @@ export default function SceneRenderer({
   // tokens Y luces pegadas, eliminando el lag de un ciclo WS.
   const visualPos = useVisualInterpolation(characters, draggingId);
 
+  // Las posiciones REALES de los tokens: las escribe el token mismo en cada
+  // frame (DraggableToken) y las leen las luces pegadas.
+  //
+  // Por que hace falta: el token se posiciona IMPERATIVAMENTE (y durante el
+  // drag manda el mouse), mientras la luz leia el mapa interpolado del
+  // servidor -> dos ciclos de actualizacion distintos -> la luz se despegaba
+  // de la ficha y tardaba "varios segundos" en volver (cuando llegaba el
+  // snapshot). Con este mapa, la luz copia la posicion REAL del token en el
+  // MISMO frame: nunca se separan.
+  const liveTokenPos = useRef<Map<string, { x: number; z: number; rotation: number }>>(new Map());
+
   // visibleChars con posiciones visuales interpoladas (para tokens, luces, arrastre)
   //
   // SIN useMemo a proposito: `visualPos` es un Map que se MUTA en cada frame
@@ -2395,6 +2422,7 @@ export default function SceneRenderer({
             onClick={isMovable ? handleTokenClickWrap : undefined}
             onContextMenu={isMovable ? onTokenContextMenu : undefined}
             onDoubleClick={isMovable ? onTokenDoubleClick : undefined}
+            livePositions={liveTokenPos}
           />
         );
       })}
@@ -2410,7 +2438,7 @@ export default function SceneRenderer({
           mapScale={mapScale}
           imageAspect={imageAspect}
           positionOverride={item.metadata.type === 'light' ? attachedLight.get(item.id)?.pos : undefined}
-          livePositions={visualPos}
+          livePositions={liveTokenPos}
           rotationOverride={item.metadata.type === 'light' ? attachedLight.get(item.id)?.rotation : undefined}
           occluders={occluders}
           renderMode={renderMode}

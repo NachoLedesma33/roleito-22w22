@@ -88,7 +88,30 @@ Esto ya tiene la infraestructura a medias ✓:
 | N1 ✅ | La `pointLight` real por item de luz (con el tope de luces) | el mapa se ilumina de verdad y el DM ve la luz que da | medio (perf) |
 | N2 ✅ | La niebla tapa el halo (render order o mascara) | el jugador no ve luz en zonas oscuras | bajo |
 | N3 | Los tokens de los jugadores sin luz, fuera de lo revelado, no se ven | el DM ve a un jugador sin luz solo si esta en lo revelado | medio |
-| N4 | La posicion de la luz y la del token, una sola fuente | la luz y el token nunca se desincronizan | bajo |
+| N4 ✅ | La posicion de la luz y la del token, una sola fuente | la luz y el token nunca se desincronizan | bajo |
+
+### 2.2 N4: la posicion real se comparte (la causa del retardo de segundos)
+
+El sintoma era "la luz se despegaba de la ficha y tardaba varios segundos en
+volver". La causa NO era el suavizado: eran **dos ciclos de actualizacion
+distintos**.
+
+- El **token** se posiciona de forma IMPERATIVA (un `useEffect` que hace
+  `group.position.set(...)`; y durante el drag, el mouse escribe directo en
+  el grupo) -> esta en el frame exacto ✓.
+- La **luz** leia el mapa `visualPos`, que se interpola desde las posiciones
+  que manda el SERVIDOR -> en el mejor caso era el ultimo WS (11 Hz) y
+  durante un drag, la posicion del servidor (que tarda ~2 s en volver) ✗.
+
+Ahora hay **una sola fuente**: un mapa compartido (`liveTokenPos`) donde cada
+token escribe su posicion real en su propio `useFrame`, y las luces pegadas la
+leen en el mismo frame. La luz y la ficha son el mismo objeto visible: no
+hay fotograma de desfasaje ni ida y vuelta al servidor ✗.
+
+Aplica igual al WASD del jugador (la posicion optimista `wasdTarget` llega al
+prop del token -> el token la escribe en el mapa -> la luz la copia) ✓ y al
+drag and drop del DM (el mouse manda en el grupo -> el token lo escribe ->
+la luz lo copia) ✓.
 
 ### 2.1 Como quedaron N1 y N2
 
