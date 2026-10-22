@@ -640,13 +640,12 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
   const radians = (deg: number) => (deg * Math.PI) / 180
   const attached = !!meta.attachedTo
   const attachedCone = attached && source.mode === 'directional'
-  const geometryDirDeg = attachedCone ? 270 : (source.direction ?? 0)
-  // La dirección del cono ya está codificada en la geometría (grados). El
-  // grupo NO se rota por `source.direction`: si se rotaba, el halo y la luz
-  // real quedaban desalineados y el slider "dir" no se notaba. La luz real
-  // sigue la dirección con la posición del target (ver abajo).
-  const groupRotY = attachedCone ? (rotationOverride ?? 0) : 0
+  // El cono libre se dibuja apuntando a +X (0°) y el grupo se rota por
+  // `dirRad`: así el slider "dir" rota de verdad el cono (halo + luz real),
+  // sin depender de que la geometría se regenere.
+  const geometryDirDeg = attachedCone ? 270 : 0
   const dirRad = ((source.direction ?? 0) * Math.PI) / 180
+  const groupRotY = attachedCone ? (rotationOverride ?? 0) : dirRad
   const is2d = renderMode === '2d'
   const Y = getY(renderMode)
 
@@ -668,7 +667,7 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
     if (light && target && 'target' in light) {
       light.target = target
       if (attachedCone) target.position.set(0, 0, 1)
-      else target.position.set(Math.cos(dirRad), 0, -Math.sin(dirRad))
+      else target.position.set(1, 0, 0)
       target.updateMatrixWorld()
     }
   }, [source.mode, attachedCone, dirRad])
@@ -694,13 +693,6 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
   useFrame((state) => {
     // La luz pegada sigue al token EN VIVO (la posicion interpolada), no a
     // la del estado de React (que llega cada ~2 s).
-    if (!attachedCone) {
-      const target = coneTargetRef.current
-      if (target) {
-        target.position.set(Math.cos(dirRad), 0, -Math.sin(dirRad))
-        target.updateMatrixWorld()
-      }
-    }
     if (attached && meta.attachedTo) {
       const live = livePositions?.current?.get(meta.attachedTo)
       if (live && groupRef.current) {
@@ -883,7 +875,7 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
             decay={2}
             intensity={3.0 * source.intensity}
           />
-          <object3D ref={coneTargetRef} position={attachedCone ? [0, 0, 1] : [Math.cos(dirRad), 0, -Math.sin(dirRad)]} />
+          <object3D ref={coneTargetRef} position={attachedCone ? [0, 0, 1] : [1, 0, 0]} />
         </>
       ) : (
         <pointLight
