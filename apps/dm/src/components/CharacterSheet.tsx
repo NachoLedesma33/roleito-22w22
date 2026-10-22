@@ -420,7 +420,7 @@ export default function CharacterSheet({
         <div className="space-y-2">
           <button
             onClick={() => fileInput.current?.click()}
-            className="w-full max-w-[200px] aspect-[3/4] mx-auto rounded-lg overflow-hidden shrink-0 border-2 border-dashed border-[var(--bg-tertiary)] hover:border-[var(--accent)] transition-colors cursor-pointer"
+            className="w-full aspect-[3/4] max-h-[48vh] mx-auto my-1 rounded-lg overflow-hidden border-2 border-dashed border-[var(--bg-tertiary)] hover:border-[var(--accent)] transition-colors cursor-pointer"
             title="Hacé clic para subir retrato"
           >
             {pUrl ? (

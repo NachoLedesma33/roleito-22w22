@@ -821,8 +821,12 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
           dibujaba un halo (un mesh) y no iluminaba nada del mapa, asi que el
           DM no veia la luz que le daba al jugador. Va dentro del grupo, asi
           que sigue al token (incluido el cono, que mira a donde mira el
-          token ✓). */}
-      {source.mode === 'directional' ? (
+          token ✓).
+
+          En el POV del jugador (readOnly) NO se renderiza: alla la luz ya
+          entra por la mascara de percepcion (FogOverlay) y el pointLight
+          real solo competia con la niebla y quemaba GPU/RAM al pedo. */}
+      {!readOnly && (source.mode === 'directional' ? (
         <>
           <spotLight
             ref={realLightRef as React.RefObject<THREE.SpotLight>}
@@ -845,7 +849,7 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
           decay={2}
           intensity={2.4 * source.intensity}
         />
-      )}
+      ))}
       {halo}
       {!readOnly && source.mode !== 'directional' && (
         <LineLoopPoints radius={ringRadius} position={Y.lightRing} />
