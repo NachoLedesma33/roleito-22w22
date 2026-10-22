@@ -1396,10 +1396,10 @@ export default function PlayerView() {
                 <img
                   src={staticUrl(myChar.portrait_path)!}
                   alt={myChar.name}
-                  className="w-28 h-40 mx-auto rounded-lg object-cover object-[center_20%] border border-[var(--bg-tertiary)]"
+                  className="w-full max-w-[140px] aspect-[3/4] mx-auto rounded-lg object-cover object-[center_20%] border border-[var(--bg-tertiary)]"
                 />
               ) : (
-                <div className="w-28 h-40 mx-auto rounded-lg bg-[var(--accent)]/20 border border-[var(--accent)]/40 flex items-center justify-center text-xl font-bold text-white">
+                <div className="w-full max-w-[140px] aspect-[3/4] mx-auto rounded-lg bg-[var(--accent)]/20 border border-[var(--accent)]/40 flex items-center justify-center text-xl font-bold text-white">
                   {myChar.name.slice(0, 2).toUpperCase()}
                 </div>
               )}
