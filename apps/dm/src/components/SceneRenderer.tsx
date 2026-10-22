@@ -2347,6 +2347,24 @@ export default function SceneRenderer({
   //
   // Las luces pegadas a un personaje heredan su posición, como el halo. Si no,
   // una antorcha en la mano de un token quemaría en el centro del mapa.
+  /**
+   * Que tokens llevan una luz pegada.
+   *
+   * El DM pidio que al ponerle una antorcha (o cualquier luz) al jugador, el
+   * token tambien brille: si no, el mapa queda tan oscuro que no se ve ni el
+   * que lleva la luz ✗. El brillo extra es SOLO de render: no se toca el dato
+   * del token (el brightness del DM manda).
+   */
+  const charsWithLight = useMemo(() => {
+    const conLuz = new Set<string>();
+    for (const item of items) {
+      const meta = item.metadata as { type?: string; attachedTo?: string } | undefined;
+      if (!item.visible || meta?.type !== 'light' || !meta.attachedTo) continue;
+      conLuz.add(meta.attachedTo);
+    }
+    return conLuz;
+  }, [items]);
+
   const fireSpots = useMemo(() => {
     const spots: { key: string; x: number; z: number; variant: 'flame' | 'embers'; radius: number }[] = [];
     for (const item of items) {
@@ -2465,7 +2483,11 @@ export default function SceneRenderer({
         return (
           <DraggableToken
             key={ch.sceneCharId}
-            entity={ch}
+            entity={
+              charsWithLight.has(ch.sceneCharId)
+                ? { ...ch, brightness: Math.max(ch.brightness ?? 0, 0.45) }
+                : ch
+            }
             isSelected={isMovable && selectedTokenId === ch.sceneCharId}
             isMovable={isMovable}
             sensed={!!sensedIds?.has(ch.sceneCharId)}

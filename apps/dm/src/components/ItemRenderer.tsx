@@ -676,8 +676,13 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
     if (!groupRef.current) return
     const p = positionOverride ?? [item.x, 0, item.y]
     groupRef.current.position.set(p[0], p[1], p[2])
-    groupRef.current.rotation.y = groupRotY
-  }, [positionOverride, item.x, item.y, groupRotY])
+    // El cono PEGADO a un token lo gobierna el useFrame de mas abajo, con la
+    // rotacion VIVA del token. Este efecto NO lo pisa: `groupRotY` es 0 en el
+    // POV del jugador (el DM es el unico que pasa `rotationOverride`), asi que
+    // el efecto congelaba el cono en 0 y el DM veia que la luz no rotaba con
+    // el personaje ✗.
+    if (!attachedCone) groupRef.current.rotation.y = groupRotY
+  }, [positionOverride, item.x, item.y, groupRotY, attachedCone])
 
   useFrame((state) => {
     // La luz pegada sigue al token EN VIVO (la posicion interpolada), no a
@@ -749,6 +754,16 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
   }, [source.mode, source.angle, geometryDirDeg, source.radius, mapHeight])
 
   const ringRadius = source.radius * mapHeight
+  /**
+   * El alcance de la luz REAL (la que ilumina el mapa).
+   *
+   * `ringRadius * 2` sola se queda corta cuando el radio es chico: una
+   * antorcha con radio 0.02 iluminaba 1,2 unidades, o sea nada. El minimo
+   * garantiza que la luz pegada al token ilumine el area alrededor del
+   * token (que es lo que el DM quiere: que la antorcha "ilumine mas en la
+   * oscuridad" y no solo ponga un tinte de color).
+   */
+  const lightDistance = Math.max(ringRadius * 2, 3.5)
   const y = Y.lightHalo
   const markerY = Y.lightMarker
   const lightOx = (positionOverride?.[0] ?? item.x)
@@ -850,7 +865,7 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
             position={[0, 0.1, 0]}
             angle={Math.min(((source.angle ?? 90) * Math.PI) / 180, Math.PI / 2)}
             penumbra={0.6}
-            distance={ringRadius * 2}
+            distance={lightDistance}
             decay={2}
             intensity={2.4 * source.intensity}
           />
@@ -861,13 +876,18 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
           ref={realLightRef as React.RefObject<THREE.PointLight>}
           color={source.color}
           position={[0, 0.1, 0]}
-          distance={ringRadius * 2}
+          distance={lightDistance}
           decay={2}
           intensity={2.4 * source.intensity}
         />
       )}
       {halo}
-      {!readOnly && source.mode !== 'directional' && (
+      {/* El aro del radio solo cuando la luz esta SELECCIONADA: antes cada
+          luz de la escena dibujaba su aro en el piso, y con varias luces el
+          mapa era un enjambre de aros (el DM lo señalo como el culpable de
+          que el POV se sintiera pesado). El aro sigue apareciendo cuando
+          editas la luz, que es cuando sirve ✓. */}
+      {!readOnly && isSelected && source.mode !== 'directional' && (
         <LineLoopPoints radius={ringRadius} position={Y.lightRing} />
       )}
       {!readOnly && attached && (
