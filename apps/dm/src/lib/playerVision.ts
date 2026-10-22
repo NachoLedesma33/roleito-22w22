@@ -62,7 +62,11 @@ export function collectWorldLights(
       source.mode !== 'directional'
         ? null
         : ownCone && origin.rotation !== undefined
-          ? rotationToConeDirDeg(origin.rotation)
+          ? rotationToConeDirDeg(
+              (origin.rotation ?? 0) +
+                (origin.facingOffset ?? 0) +
+                ((source.direction ?? 0) * Math.PI) / 180,
+            )
           : (source.direction ?? 0)
     lights.push({ x: origin.x, z: origin.z, source, directionDeg })
   }
