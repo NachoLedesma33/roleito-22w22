@@ -1269,6 +1269,7 @@ export default function PlayerView() {
               occluders={sceneOccluders}
               fogRegions={sceneFogRegions}
               fogPerception={perception}
+              followCharId={mySceneCharId}
               sensedIds={sensedIdSet(sensed)}
               showZones
               readOnly

@@ -179,6 +179,15 @@ interface SceneRendererProps {
   /** false = POV silenciado: el audio del clima queda mudo (el 🔇 del jugador). */
   weatherAudioEnabled?: boolean;
   selectedTokenId?: string | null;
+  /**
+   * Token al que sigue la camara (solo el POV del jugador).
+   *
+   * Sin esto el jugador camina y su ficha se va del borde de la pantalla: la
+   * camara estaba fija en el centro del mapa. Se sigue la posicion YA
+   * interpolada (la misma que usa el modelo del token), asi que la camara y
+   * la ficha van pegadas, con 0 ms de desfase.
+   */
+  followCharId?: string | null;
   selectedItemIds?: string[];
   readOnly?: boolean;
   showZones?: boolean;
@@ -2175,6 +2184,39 @@ function MovementRangeOverlay({
   );
 }
 
+/**
+ * La camara sigue a un token (POV del jugador).
+ *
+ * Se mueve por DELTA: cuando el token se interpola a una posicion nueva, la
+ * camara se corre exactamente lo mismo y el vinculo con el token se mantiene.
+ * Los controles orbitales siguen siendo los de siempre (mismo zoom, misma
+ * inclinacion): lo unico que cambia es el punto que miran.
+ */
+function CameraFollow({ x, z }: { x: number; z: number }) {
+  const controls = useThree((s) => s.controls) as
+    | { target: THREE.Vector3; update: () => void }
+    | null;
+  const camera = useThree((s) => s.camera);
+  const last = useRef<{ x: number; z: number } | null>(null);
+
+  useFrame(() => {
+    if (!controls) return;
+    const prev = last.current;
+    last.current = { x, z };
+    if (!prev) return;
+    const dx = x - prev.x;
+    const dz = z - prev.z;
+    if (dx === 0 && dz === 0) return;
+    controls.target.x += dx;
+    controls.target.z += dz;
+    camera.position.x += dx;
+    camera.position.z += dz;
+    controls.update();
+  });
+
+  return null;
+}
+
 export default function SceneRenderer({
   backgroundUrl,
   characters,
@@ -2188,6 +2230,7 @@ export default function SceneRenderer({
   weatherIntensity = null,
   weatherAudioEnabled = true,
   selectedTokenId,
+  followCharId = null,
   selectedItemIds = [],
   readOnly = false,
   showZones = false,
@@ -2272,6 +2315,13 @@ export default function SceneRenderer({
     () => visibleCharsVisual.some((c) => (c.statuses ?? []).some((s) => GLOW_STATUSES.has(s))),
     [visibleCharsVisual],
   );
+  // El token que sigue la camara, con la posicion YA interpolada (la misma
+  // que dibuja el modelo): asi la camara y la ficha van pegadas.
+  const followedChar = useMemo(
+    () => visibleCharsVisual.find((c) => c.sceneCharId === followCharId) ?? null,
+    [visibleCharsVisual, followCharId],
+  );
+
   const renderItems = useMemo(() => {
     return items
       .filter((i) => i.visible && (showZones || i.metadata.type !== 'zone'))
@@ -2535,6 +2585,7 @@ export default function SceneRenderer({
           onPlace={(p) => onTokenPlace(tokenPlace.entity_type, tokenPlace.entity_id, p.x, p.z)}
         />
       )}
+      {followedChar && <CameraFollow x={followedChar.x} z={followedChar.z} />}
       <OrbitControls
         makeDefault
         enabled={!drawing}

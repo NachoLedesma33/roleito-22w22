@@ -215,6 +215,27 @@ descarto ✓.
 Gates: lint 0 errores / typecheck limpio / vitest 297 / e2e 50+40 (los specs
 de jugador, luz, niebla, dashboard, ficha, iniciativa, a11y y landing).
 
+### 2.6 La camara del POV del jugador no seguia a su ficha
+
+En el POV del jugador la camara estaba FIJA en el centro del mapa (la misma
+de la mesa del DM). El jugador camina con WASD y su ficha se iba del borde de
+la pantalla: el "mini delay" que se reportaba era, en parte, esto.
+
+Ahora `SceneRenderer` acepta `followCharId` y, cuando viene informado, la
+camara sigue al token **por delta**: cuando la ficha se interpola a una
+posicion nueva, la camara se corre exactamente lo mismo. Se sigue la posicion
+YA interpolada (la misma que dibuja el modelo), asi que camara y ficha van
+pegadas con 0 ms de desfase.
+
+El DM no lo usa (`followCharId` va en `null`): el DM ve la mesa entera.
+
+### 2.7 Lo que NO es un bug (medido)
+
+- **11 FPS medidos**: era throttling de pestana en segundo plano. Con la
+  pestana visible: DM 59-60 FPS, jugador 58-60 FPS, hilo principal 95% idle.
+- **El nombre del token desincronizado**: es un bug preexistente del label 3D
+  (troika), NO de la luz ni de la camara. Queda para otra tanda.
+
 ## 3. Lo que YA esta hecho (no hay que rehacerlo)
 
 - La posicion viva de los tokens (`useVisualInterpolation` ✓) y la de las
