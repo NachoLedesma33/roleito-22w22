@@ -908,7 +908,7 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
   )
 }
 
-function FogHitRegion({ item, isSelected, onClick, onContextMenu, mapScale = 1, imageAspect = 1, renderMode = DEFAULT_RENDER_MODE }: ItemRendererProps) {
+function FogHitRegion({ item, isSelected, onContextMenu, mapScale = 1, imageAspect = 1, renderMode = DEFAULT_RENDER_MODE }: ItemRendererProps) {
   const shape = item.shape as import('@core/domain/types').ItemShape & { type: 'polygon'; points: number[] }
   const meta = item.metadata as import('@core/domain/types').FogMetadata
   const brushRadius = meta.brushRadius ?? null
@@ -972,10 +972,11 @@ function FogHitRegion({ item, isSelected, onClick, onContextMenu, mapScale = 1, 
   }, [shape.points, mapWidth, mapHeight, Y])
 
   return (
-    <group
-      onClick={(e) => { e.stopPropagation(); onClick?.() }}
-      onContextMenu={(e) => { e.stopPropagation(); onContextMenu?.(e.nativeEvent) }}
-    >
+    // El click IZQUIERDO no se intercepta: el pincel de niebla pintado queda
+    // en el mapa como un aro invisible que se comia los clics del DM (no
+    // podia mover un token ni hacer otra cosa si caia encima). Se edita con
+    // el clic DERECHO, que abre el menu de la niebla ✓.
+    <group onContextMenu={(e) => { e.stopPropagation(); onContextMenu?.(e.nativeEvent) }}>
       {hitGeometry.map((d, i) => (
         <mesh key={i} geometry={d.geo} position={[d.cx, 0, d.cy]}>
           <meshBasicMaterial transparent opacity={0} side={THREE.DoubleSide} depthWrite={false} />

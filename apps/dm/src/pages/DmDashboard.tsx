@@ -3216,7 +3216,7 @@ const startFogMode = useCallback(() => {
                 onItemContextMenu={(itemId, clientX, clientY) => {
                   const item = graphRef.getItem(itemId)
                   if (item?.metadata.type === 'door') handleDoorContextMenu(itemId, clientX, clientY)
-                  else if (item?.metadata.type === 'wall' || item?.metadata.type === 'zone') handleWallContextMenu(itemId, clientX, clientY)
+                  else if (item?.metadata.type === 'wall' || item?.metadata.type === 'zone' || item?.metadata.type === 'fog') handleWallContextMenu(itemId, clientX, clientY)
                 }}
                 onDrawStart={handleDrawStart}
                 onDrawMove={handleDrawMove}
