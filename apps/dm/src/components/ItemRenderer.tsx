@@ -690,7 +690,7 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
     // POV del jugador (el DM es el unico que pasa `rotationOverride`), asi que
     // el efecto congelaba el cono en 0 y el DM veia que la luz no rotaba con
     // el personaje ✗.
-    groupRef.current.rotation.y = groupRotY
+    if (!attachedCone) groupRef.current.rotation.y = groupRotY
   }, [positionOverride, item.x, item.y, groupRotY, attachedCone])
 
   useFrame((state) => {
@@ -701,6 +701,8 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
       if (live && groupRef.current) {
         groupRef.current.position.set(live.x, 0, live.z)
         if (attachedCone) groupRef.current.rotation.y = live.rotation + dirRad
+      } else {
+        if (Math.random() < 0.02) console.log('NO LIVE for', meta.attachedTo)
       }
     }
     const mat = haloMatRef.current
