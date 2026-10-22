@@ -2227,15 +2227,19 @@ export default function SceneRenderer({
   const visualPos = useVisualInterpolation(characters, draggingId);
 
   // visibleChars con posiciones visuales interpoladas (para tokens, luces, arrastre)
-  const visibleCharsVisual = useMemo(() =>
-    characters
-      .filter((c) => c.visible || !readOnly || sensedIds?.has(c.sceneCharId))
-      .map((c) => {
-        const vp = visualPos.get(c.sceneCharId);
-        return vp ? { ...c, x: vp.x, z: vp.z, rotation: vp.rotation } : c;
-      }),
-    [characters, visualPos, readOnly, sensedIds]
-  );
+  //
+  // SIN useMemo a proposito: `visualPos` es un Map que se MUTA en cada frame
+  // (la interpolacion a 60 fps), asi que su identidad no cambia y el memo
+  // nunca se refrescaba ✗ -> las luces pegadas (y el cono direccional, que se
+  // arma con esta posicion) se quedaban con la posicion vieja: el halo
+  // pegado seguia al token (eso lo mueve el useFrame del LightRenderer ✓)
+  // pero la iluminacion de verdad, varios segundos atras ✗.
+  const visibleCharsVisual = characters
+    .filter((c) => c.visible || !readOnly || sensedIds?.has(c.sceneCharId))
+    .map((c) => {
+      const vp = visualPos.get(c.sceneCharId);
+      return vp ? { ...c, x: vp.x, z: vp.z, rotation: vp.rotation } : c;
+    });
 
   const hasGlow = useMemo(
     () => visibleCharsVisual.some((c) => (c.statuses ?? []).some((s) => GLOW_STATUSES.has(s))),

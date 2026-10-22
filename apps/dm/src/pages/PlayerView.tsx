@@ -1389,16 +1389,17 @@ export default function PlayerView() {
             defaultWidth={288}
           >
             <div className="p-3 space-y-2">
-              {/* El retrato ocupa TODO el ancho del HUD (es la imagen del
-                  personaje) y los datos quedan abajo. */}
+              {/* El retrato va VERTICAL y centrado: en un recuadro ancho la
+                  imagen se cortaba (la cara quedaba fuera). Los datos de abajo
+                  se corren con el ✓. */}
               {myChar.portrait_path ? (
                 <img
                   src={staticUrl(myChar.portrait_path)!}
                   alt={myChar.name}
-                  className="w-full h-32 rounded-lg object-cover object-[center_20%] border border-[var(--bg-tertiary)]"
+                  className="w-28 h-40 mx-auto rounded-lg object-cover object-[center_20%] border border-[var(--bg-tertiary)]"
                 />
               ) : (
-                <div className="w-full h-24 rounded-lg bg-[var(--accent)]/20 border border-[var(--accent)]/40 flex items-center justify-center text-xl font-bold text-white">
+                <div className="w-28 h-40 mx-auto rounded-lg bg-[var(--accent)]/20 border border-[var(--accent)]/40 flex items-center justify-center text-xl font-bold text-white">
                   {myChar.name.slice(0, 2).toUpperCase()}
                 </div>
               )}
