@@ -65,7 +65,7 @@ import HudPanel from '@/components/HudPanel';
 import ToolButton from '@/components/ui/ToolButton';
 import IconButton from '@/components/ui/IconButton';
 import { staticUrl } from '@/lib/staticUrl';
-import { Dices, Swords, NotebookPen, ClipboardList, CalendarDays, ScrollText, FolderOpen, Map as MapIcon, Bot, MessageCircle, Zap, BookOpen, StickyNote, LayoutGrid, Brush, SquareDashed, PaintBucket, Undo2, Redo2, CloudSun, Settings, ImagePlus, Wand2, Square, Mountain, ChevronDown, Users, Layers } from 'lucide-react';
+import { Dices, Swords, NotebookPen, ClipboardList, CalendarDays, ScrollText, FolderOpen, Map as MapIcon, Bot, MessageCircle, Zap, BookOpen, StickyNote, LayoutGrid, Brush, SquareDashed, PaintBucket, Undo2, Redo2, CloudSun, Settings, ImagePlus, Wand2, Square, Mountain, ChevronDown, Users, Layers, Lightbulb, Trash, Sparkles, CircleDot } from 'lucide-react';
 
 export default function DmDashboard() {
   const { t } = useTranslation();
@@ -2617,26 +2617,30 @@ const startFogMode = useCallback(() => {
           })()}
           {selectedLight && (
             <div className="pointer-events-auto flex flex-wrap items-center gap-2 bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded px-2 py-1 shrink-0">
-              <span className="text-[10px] text-[var(--text-secondary)]">💡 {selectedLight.item.name}</span>
+              <span className="flex items-center gap-1.5 text-xs font-medium text-[var(--text-primary)]">
+                <Lightbulb size={13} className="text-amber-400" aria-hidden />
+                {selectedLight.item.name}
+              </span>
               <button
                 onClick={() => { handleDeleteItem(selectedLight.item.id); setSelectedItemId(null) }}
-                className="text-[10px] px-1.5 py-0.5 rounded bg-red-600 text-white hover:bg-red-700 transition-colors ml-1"
+                className="p-1 rounded bg-red-600/90 text-white hover:bg-red-600 transition-colors ml-1"
                 title={t('dm.deleteLightTitle', 'Eliminar luz')}
+                aria-label={t('dm.deleteLightTitle', 'Eliminar luz')}
               >
-                🗑
+                <Trash size={13} aria-hidden />
               </button>
               <div className="flex gap-0.5">
                 {(['hard', 'soft', 'directional'] as const).map((m) => (
                   <button
                     key={m}
                     onClick={() => handleLightSourceChange({ mode: m })}
-                    className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${selectedLight.source.mode === m ? 'bg-amber-600 text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'}`}
+                    className={`text-[11px] px-2 py-1 rounded transition-colors ${selectedLight.source.mode === m ? 'bg-amber-600 text-white' : 'text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
                   >
                     {m === 'directional' ? t('dm.modeCone', 'cone') : m}
                   </button>
                 ))}
               </div>
-              <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
+              <label className="flex items-center gap-1.5 text-[11px] text-[var(--text-primary)]">
                 {t('dm.lightColor', 'color')}
                 <input
                   type="color"
@@ -2646,7 +2650,7 @@ const startFogMode = useCallback(() => {
                   title={t('dm.lightColorTitle', 'Color de luz')}
                 />
               </label>
-              <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
+              <label className="flex items-center gap-1.5 text-[11px] text-[var(--text-primary)]">
                 {t('dm.lightInt', 'int')}
                 <input
                   type="range"
@@ -2660,7 +2664,7 @@ const startFogMode = useCallback(() => {
                 />
                 <span className="w-7">{selectedLight.source.intensity.toFixed(2)}</span>
               </label>
-              <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
+              <label className="flex items-center gap-1.5 text-[11px] text-[var(--text-primary)]">
                 {t('dm.lightRange', 'range')}
                 <input
                   type="range"
@@ -2683,7 +2687,7 @@ const startFogMode = useCallback(() => {
                   title={t('dm.lightRangeExactTitle', 'Alcance (escribí el valor exacto)')}
                 />
               </label>
-              <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
+              <label className="flex items-center gap-1.5 text-[11px] text-[var(--text-primary)]">
                 {selectedLight.source.mode === 'hard' ? t('dm.lightEdge', 'edge') : t('dm.lightFalloff', 'falloff')}
                 <input
                   type="range"
@@ -2702,10 +2706,11 @@ const startFogMode = useCallback(() => {
                   onClick={() => handleLightSourceChange(selectedLight.source.flicker?.enabled
                     ? { flicker: undefined }
                     : { flicker: { speed: selectedLight.source.flicker?.speed ?? 0.3, variance: selectedLight.source.flicker?.variance ?? 0.1, enabled: true } })}
-                  className={`cursor-pointer px-1.5 py-0.5 rounded transition-colors ${selectedLight.source.flicker?.enabled ? 'bg-amber-600 text-white' : 'hover:bg-[var(--bg-tertiary)]'}`}
+                  className={`flex cursor-pointer items-center gap-1 px-2 py-1 rounded transition-colors text-[11px] ${selectedLight.source.flicker?.enabled ? 'bg-amber-600 text-white' : 'text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
                   title={t('dm.flickerTitle', 'Parpadeo')}
                 >
-                  {t('dm.flicker', '✨ flick')}
+                  <Sparkles size={12} aria-hidden />
+                  {t('dm.flicker', 'flick')}
                 </span>
                 {selectedLight.source.flicker?.enabled && (
                   <>
@@ -2737,10 +2742,11 @@ const startFogMode = useCallback(() => {
                   onClick={() => handleLightSourceChange(selectedLight.source.pulse?.enabled
                     ? { pulse: undefined }
                     : { pulse: { speed: selectedLight.source.pulse?.speed ?? 0.6, variance: selectedLight.source.pulse?.variance ?? 0.2, enabled: true } })}
-                  className={`cursor-pointer px-1.5 py-0.5 rounded transition-colors ${selectedLight.source.pulse?.enabled ? 'bg-amber-600 text-white' : 'hover:bg-[var(--bg-tertiary)]'}`}
+                  className={`flex cursor-pointer items-center gap-1 px-2 py-1 rounded transition-colors text-[11px] ${selectedLight.source.pulse?.enabled ? 'bg-amber-600 text-white' : 'text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]'}`}
                   title={t('dm.pulseTitle', 'Pulso')}
                 >
-                  {t('dm.pulse', '🔶 pulse')}
+                  <CircleDot size={12} aria-hidden />
+                  {t('dm.pulse', 'pulse')}
                 </span>
                 {selectedLight.source.pulse?.enabled && (
                   <>
