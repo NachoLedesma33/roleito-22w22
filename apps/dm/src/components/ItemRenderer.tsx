@@ -667,9 +667,11 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
     const target = coneTargetRef.current
     if (light && target && 'target' in light) {
       light.target = target
+      if (attachedCone) target.position.set(0, 0, 1)
+      else target.position.set(Math.cos(dirRad), 0, -Math.sin(dirRad))
       target.updateMatrixWorld()
     }
-  }, [source.mode])
+  }, [source.mode, attachedCone, dirRad])
 
   // Apply position imperatively, igual que DraggableToken: R3F puede saltear la
   // reconciliacion del array-prop `<group position={[...]}>`. Sin esto, una luz
