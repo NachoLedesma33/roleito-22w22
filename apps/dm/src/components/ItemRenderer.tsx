@@ -643,12 +643,12 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
   // El cono libre se dibuja apuntando a +X (0°) y el grupo se rota por
   // `dirRad`: así el slider "dir" rota de verdad el cono (halo + luz real),
   // sin depender de que la geometría se regenere.
-  const geometryDirDeg = attachedCone ? 270 : 0
+  const geometryDirDeg = attachedCone ? 270 : (source.direction ?? 0)
   const dirRad = ((source.direction ?? 0) * Math.PI) / 180
   // El cono pegado al token sigue la rotación del personaje Y respeta el
   // slider "dir" como desfase: así el DM puede girar la linterna sin que deje
   // de seguir al token cuando este rota.
-  const groupRotY = attachedCone ? (rotationOverride ?? 0) + dirRad : dirRad
+  const groupRotY = attachedCone ? (rotationOverride ?? 0) + dirRad : 0
   const is2d = renderMode === '2d'
   const Y = getY(renderMode)
 
@@ -670,7 +670,7 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
     if (light && target && 'target' in light) {
       light.target = target
       if (attachedCone) target.position.set(0, 0, 1)
-      else target.position.set(1, 0, 0)
+      else target.position.set(Math.cos(dirRad), 0, -Math.sin(dirRad))
       target.updateMatrixWorld()
     }
   }, [source.mode, attachedCone, dirRad])
@@ -878,7 +878,7 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
             decay={2}
             intensity={3.0 * source.intensity}
           />
-          <object3D ref={coneTargetRef} position={attachedCone ? [0, 0, 1] : [1, 0, 0]} />
+          <object3D ref={coneTargetRef} position={attachedCone ? [0, 0, 1] : [Math.cos(dirRad), 0, -Math.sin(dirRad)]} />
         </>
       ) : (
         <pointLight
