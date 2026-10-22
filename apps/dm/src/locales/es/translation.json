@@ -79,6 +79,9 @@
     "logoutTitle": "¿Salir de 22w22?"
   },
   "dm": {
+    "inviteCopyLink": "Copiar el link de la partida",
+    "inviteShareHint": "Lo que se comparte es el link CON el codigo (abajo). La URL sola abre la landing del DM.",
+    "inviteCopyError": "El navegador no dejo copiar: copiala a mano (esta a la vista).",
     "inviteCopyUrl": "Copiar la URL publica",
     "inviteEphemeral": "Este tunel cambia de URL en cada partida: comparti el link de la partida (el de arriba), no el fijo.",
     "wsLive": "Conectado",

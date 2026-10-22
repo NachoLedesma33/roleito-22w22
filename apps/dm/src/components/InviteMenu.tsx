@@ -24,6 +24,8 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
   const [open, setOpen] = useState(false);
   const [ips, setIps] = useState<string[]>([]);
   const [copied, setCopied] = useState<string | null>(null);
+  /** El portapapeles fallo: hay que avisar (si no, parece que no copio). */
+  const [copyError, setCopyError] = useState(false);
   /** La URL publica (el tunel), si el DM esta jugando desde una. */
   // Arranca con el origen de la app: si el DM esta jugando por el tunel (o
   // por su dominio), ESA es la URL que llega a los jugadores. Con el campo
@@ -128,6 +130,8 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
   const esLocal = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/i.test(publica);
   const port = window.location.port ? `:${window.location.port}` : '';
   const path = code ? `/campaigns/join/${code}` : '';
+  /** El link que se comparte: la URL publica MAS el codigo. */
+  const linkPartida = `${publica}${path}`;
   const urls: { url: string; hint: string }[] = [];
   if (code) {
     // El link que se manda es el que el DM pega como "URL publica": si juega
@@ -140,7 +144,8 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
           ? t('dm.inviteHere', 'Desde esta maquina')
           : t('dm.invitePublic', 'Link publico (tunel)'),
       });
-    } else {      urls.push({
+    } else {
+      urls.push({
         url: `${window.location.origin}${path}`,
         hint: t('dm.inviteHere', 'Desde esta maquina'),
       });
@@ -168,9 +173,12 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
       try {
         await navigator.clipboard.writeText(url);
         setCopied(url);
+        setCopyError(false);
         window.setTimeout(() => setCopied(null), 2000);
       } catch {
-        // Sin permiso de portapapeles: la URL queda visible para copiarla a mano.
+        // El navegador lo bloqueo (o no hay portapapeles): NO se copia en
+        // silencio -> se avisa y el link queda a la vista para copiar a mano.
+        setCopyError(true);
       }
     },
     [],
@@ -229,8 +237,16 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
               data-testid="invite-fixed-link"
               className="block w-full text-left px-2 py-1.5 rounded bg-[var(--bg-tertiary)] hover:bg-[var(--bg-secondary)]"
             >
-              <span className="block font-mono text-xs text-[var(--text-primary)] truncate">
-                {urlFija}
+              <span className="flex items-center gap-2">
+                <span className="flex-1 min-w-0 font-mono text-xs text-[var(--text-primary)] truncate">
+                  {urlFija}
+                </span>
+                <span
+                  className="shrink-0 text-[var(--text-secondary)]"
+                  data-testid="invite-copy-icon"
+                >
+                  {copied === urlFija ? <Check size={13} /> : <Copy size={13} />}
+                </span>
               </span>
               <span className="block text-[0.65rem] text-secondary">
                 {copied === urlFija
@@ -238,6 +254,28 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
                   : t('dm.inviteFixedLink', 'Link fijo: el mismo para todas las partidas')}
               </span>
             </button>
+          )}
+          {publica && code && (
+            <p
+              className="text-[0.65rem] text-[var(--text-secondary)] mb-1"
+              data-testid="invite-share-hint"
+            >
+              {t(
+                'dm.inviteShareHint',
+                'Lo que se comparte es el link CON el codigo (abajo). La URL sola abre la landing del DM.',
+              )}
+            </p>
+          )}
+          {copyError && (
+            <p
+              className="text-[0.65rem] text-[var(--danger)]"
+              data-testid="invite-copy-error"
+            >
+              {t(
+                'dm.inviteCopyError',
+                'El navegador no dejo copiar: copiala a mano (esta a la vista).',
+              )}
+            </p>
           )}
           {hostEphemeral && (
             <p
@@ -263,14 +301,14 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
               />
               <button
                 type="button"
-                onClick={() => copy(publica)}
-                disabled={!publica}
+                onClick={() => copy(linkPartida)}
+                disabled={!publica || !code}
                 data-testid="invite-copy-public-url"
-                title={t('dm.inviteCopyUrl', 'Copiar la URL publica')}
-                aria-label={t('dm.inviteCopyUrl', 'Copiar la URL publica')}
+                title={t('dm.inviteCopyLink', 'Copiar el link de la partida')}
+                aria-label={t('dm.inviteCopyLink', 'Copiar el link de la partida')}
                 className="shrink-0 p-1.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] disabled:opacity-40 disabled:hover:text-[var(--text-secondary)]"
               >
-                {copied === publica ? <Check size={14} /> : <Copy size={14} />}
+                {copied === linkPartida ? <Check size={14} /> : <Copy size={14} />}
               </button>
             </div>
           </label>
@@ -288,10 +326,19 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
                   key={u.url}
                   onClick={() => copy(u.url)}
                   data-testid="invite-url"
+                  title={t('dm.inviteCopyLink', 'Copiar el link de la partida')}
                   className="block w-full text-left px-2 py-1.5 rounded hover:bg-[var(--bg-tertiary)]"
                 >
-                  <span className="block font-mono text-xs text-[var(--text-primary)] truncate">
-                    {u.url}
+                  <span className="flex items-center gap-2">
+                    <span className="flex-1 min-w-0 font-mono text-xs text-[var(--text-primary)] truncate">
+                      {u.url}
+                    </span>
+                    <span
+                      className="shrink-0 text-[var(--text-secondary)]"
+                      data-testid="invite-copy-icon"
+                    >
+                      {copied === u.url ? <Check size={13} /> : <Copy size={13} />}
+                    </span>
                   </span>
                   <span className="block text-[0.65rem] text-[var(--text-secondary)]">
                     {copied === u.url ? t('dm.inviteCopied', 'Copiado') : u.hint}

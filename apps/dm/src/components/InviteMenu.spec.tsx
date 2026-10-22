@@ -92,6 +92,67 @@ describe('InviteMenu', () => {
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining('/join'))
   })
 
+  it('el boton de la URL publica copia el LINK DE LA PARTIDA, no la URL pelada', async () => {
+    // La URL pelada (https://<tunel>) abre la LANDING (que es del DM): si se
+    // comparte eso, el jugador no llega al POV. Lo que se comparte es el link
+    // con el codigo.
+    ips.mockResolvedValue({ ips: [] })
+    abrir()
+
+    await waitFor(() => expect(screen.getByTestId('invite-menu-content')).toBeTruthy())
+    const boton = screen.getByTestId('invite-copy-public-url')
+
+    fireEvent.change(screen.getByLabelText('URL publica (si usas un tunel)'), {
+      target: { value: 'https://mesa.trycloudflare.com' },
+    })
+
+    await waitFor(() => expect(boton.hasAttribute('disabled')).toBe(false))
+    fireEvent.click(boton)
+
+    await waitFor(() =>
+      expect(writeText).toHaveBeenCalledWith(
+        'https://mesa.trycloudflare.com/campaigns/join/CODE123',
+      ),
+    )
+  })
+
+  it('cada link de la mesa tiene su boton de copiar', async () => {
+    // El link de la LAN tambien: cada URL que se puede compartir, con su
+    // boton (y con confirmacion al copiar).
+    ips.mockResolvedValue({ ips: ['192.168.1.6'] })
+    abrir()
+
+    await waitFor(() => expect(screen.getAllByTestId('invite-url').length).toBeGreaterThan(1))
+    const links = screen.getAllByTestId('invite-url')
+    for (const link of links) {
+      expect(link.querySelector('[data-testid="invite-copy-icon"]')).toBeTruthy()
+    }
+
+    // Y el de la LAN copia SU url (con el codigo, no la pelada).
+    const lan = links.find((l) => l.textContent?.includes('192.168.1.6'))
+    expect(lan).toBeTruthy()
+    fireEvent.click(lan!)
+    await waitFor(() =>
+      expect(writeText).toHaveBeenCalledWith(
+        expect.stringContaining('192.168.1.6'),
+      ),
+    )
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('/campaigns/join/CODE123'))
+  })
+
+  it('si el portapapeles falla, lo avisa (no falla en silencio)', async () => {
+    writeText.mockRejectedValueOnce(new Error('bloqueado'))
+    ips.mockResolvedValue({ ips: [] })
+    abrir()
+
+    await waitFor(() => expect(screen.getAllByTestId('invite-url').length).toBeGreaterThan(0))
+    fireEvent.click(screen.getAllByTestId('invite-url')[0])
+
+    await waitFor(() =>
+      expect(screen.getByTestId('invite-copy-error')).toBeTruthy(),
+    )
+  })
+
   it('la URL publica arranca con el origen de la app (hay algo que copiar)', async () => {
     // Si el DM esta jugando por el tunel, el origen ES la URL que llega a
     // los jugadores: con el campo vacio el menu ofrecia el link de localhost
@@ -107,7 +168,11 @@ describe('InviteMenu', () => {
     expect(boton.hasAttribute('disabled')).toBe(false)
 
     fireEvent.click(boton)
-    await waitFor(() => expect(writeText).toHaveBeenCalledWith(window.location.origin))
+    await waitFor(() => expect(writeText).toHaveBeenCalled())
+    // Copia el link de la partida (con el codigo), no la URL pelada.
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining('/campaigns/join/CODE123'),
+    )
   })
 
   it('si el DM juega en local, ofrece la URL del tunel que tiene abierta', async () => {
@@ -131,25 +196,6 @@ describe('InviteMenu', () => {
     const enlace = screen.getByTestId('invite-url')
     expect(enlace.textContent).toContain(
       'https://mesa.trycloudflare.com/campaigns/join/CODE123',
-    )
-  })
-
-  it('la URL publica tiene boton de copiar', async () => {
-    ips.mockResolvedValue({ ips: [] })
-    abrir()
-
-    await waitFor(() => expect(screen.getByTestId('invite-menu-content')).toBeTruthy())
-    const boton = screen.getByTestId('invite-copy-public-url')
-
-    fireEvent.change(screen.getByLabelText('URL publica (si usas un tunel)'), {
-      target: { value: 'https://mesa.trycloudflare.com' },
-    })
-
-    await waitFor(() => expect(boton.hasAttribute('disabled')).toBe(false))
-    fireEvent.click(boton)
-
-    await waitFor(() =>
-      expect(writeText).toHaveBeenCalledWith('https://mesa.trycloudflare.com'),
     )
   })
 
