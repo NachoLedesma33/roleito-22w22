@@ -85,6 +85,16 @@ export default function DmDashboard() {
   // en lo revelado (PLAN-NIEBLA-Y-LUCES.md, N3).
   const [reveals, setReveals] = useState<RevealLike[]>([]);
   // El DM tiene autoridad sobre la mesa: con el toggle prendido ve a todos.
+  /**
+   * Que token tiene la FICHA abierta.
+   *
+   * Antes la ficha se abria sola al hacer clic en un token, y al DM le
+   * annoying: cada click sobre un modelo le tapaba la mesa con la ficha (y
+   * el token se movia de lugar si lo arrastraba sin querer). Ahora el click
+   * izquierdo solo SELECCIONA y la ficha se abre con el clic derecho ->
+   * "Ver ficha de <nombre>" ✓.
+   */
+  const [sheetTokenId, setSheetTokenId] = useState<string | null>(null);
   const [seeHiddenPlayers, setSeeHiddenPlayers] = useState(() => {
     try {
       return localStorage.getItem('roleito:dm:seeHiddenPlayers') === '1';
@@ -1887,6 +1897,7 @@ const startFogMode = useCallback(() => {
       y: clientY,
       items: [
         { label: i18n.t('dmContext.selectToken', 'Seleccionar {{name}}', { name }), icon: '◉', onClick: () => setSelectedTokenId(sceneCharId) },
+        { label: i18n.t('dmContext.openSheet', 'Ver ficha de {{name}}', { name }), icon: '📖', onClick: () => setSheetTokenId(sceneCharId) },
         { label: sc?.visible ? i18n.t('dmContext.hidePlayers', 'Ocultar a los jugadores') : i18n.t('dmContext.showPlayers', 'Mostrar a los jugadores'), icon: sc?.visible ? '👁' : '🚫', onClick: () => handleToggleVisibility(sceneCharId) },
         { label: '', separator: true, onClick: () => {} },
         { label: i18n.t('dmContext.statusTitle', 'Estado'), icon: '⚠️', onClick: () => {}, disabled: true },
@@ -2000,8 +2011,10 @@ const startFogMode = useCallback(() => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [scenes, activeScene, selectedTokenId, showQuickActions, showSessionLog, showSceneNotes, showDiceRoller, showRecap, showNotebook, showAssistant, showTokenTray, showLayers, viewingMap, tokenQuickEdit, handleRemoveFromScene, setContextMenu]);
 
-  const selectedEntity = selectedTokenId
-    ? sceneChars.find((sc) => sc.id === selectedTokenId)
+  // La ficha mira `sheetTokenId` (la que el DM abrio a proposito), no el token
+  // merely seleccionado: seleccionar no abre la ficha ✓.
+  const selectedEntity = sheetTokenId
+    ? sceneChars.find((sc) => sc.id === sheetTokenId)
     : null;
   const selectedChar = selectedEntity
     ? allEntities.find((e) => e.id === selectedEntity.entity_id)
@@ -3300,7 +3313,10 @@ const startFogMode = useCallback(() => {
                       }`}
                     >
                       <button
-                        onClick={() => handleTokenClick(sc.id)}
+                        onClick={() => {
+                          handleTokenClick(sc.id);
+                          setSheetTokenId(sc.id);
+                        }}
                         className="flex items-center gap-1.5 flex-1 text-left"
                       >
                         <span
@@ -3415,7 +3431,7 @@ const startFogMode = useCallback(() => {
                     setNpcs((prev) => prev.map((n) => n.id === updated.id ? updated as NPC : n));
                   }
                 }}
-                onClose={() => setSelectedTokenId(null)}
+                onClose={() => setSheetTokenId(null)}
               />
             </div>
           )}

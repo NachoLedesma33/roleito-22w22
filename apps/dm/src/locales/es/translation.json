@@ -334,7 +334,8 @@
     "showPlayers": "Mostrar a los jugadores",
     "statusGroup": "· {{name}}",
     "statusTitle": "Estado",
-    "viewSheet": "Ver ficha de personaje"
+    "viewSheet": "Ver ficha de personaje",
+    "openSheet": "Ver ficha de {{name}}"
   },
   "dmToast": {
     "advisorPendingMany": "{{count}} propuestas esperando tu aprobación",

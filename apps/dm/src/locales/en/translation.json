@@ -334,7 +334,8 @@
     "showPlayers": "Show to players",
     "statusGroup": "· {{name}}",
     "statusTitle": "Status",
-    "viewSheet": "View character sheet"
+    "viewSheet": "View character sheet",
+    "openSheet": "View sheet of {{name}}"
   },
   "dmToast": {
     "advisorPendingMany": "{{count}} proposals waiting for your approval",
