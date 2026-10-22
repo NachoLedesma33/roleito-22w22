@@ -420,7 +420,10 @@ export default function PlayerView() {
       const itemsKey = `${d.scene_id ?? ''}|${items.length}|${items.map((i) => i.id).join(',')}`
       const sigLine = `${visionType}|${visionRange}|${itemsKey}|${shareLight}`
       const last = lastLosRef.current
-      if (last && Math.hypot(pos.x - last.x, pos.z - last.z) < 0.25 && last.sig === sigLine) return
+      // El umbral es chico a proposito: con el WASD el jugador avanza 0.15
+      // por tecla, asi que con 0.25 el trabajo de vision no se reenviaba
+      // hasta la segunda tecla y el circulo iluminado se quedaba atras ✗.
+      if (last && Math.hypot(pos.x - last.x, pos.z - last.z) < 0.03 && last.sig === sigLine) return
       const { w: mapW, h: mapH } = mapperRef.current
       if (mapW <= 0 || mapH <= 0) return
       const visions: VisionConfig[] = [{
@@ -455,7 +458,7 @@ export default function PlayerView() {
       }
       lastItemsKeyRef.current = itemsKey
       workerRef.current.postMessage(job)
-    }, 250)
+    }, 80)
     return () => clearInterval(timer)
   }, [mySceneCharId, shareLight])
 

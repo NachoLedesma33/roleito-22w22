@@ -133,6 +133,26 @@ shaders cuando cambia la cantidad de luces ✗. Con muchas luces en la escena
 el frame rate se cae ✗ -> si se nota, el tope de luces (solo las N mas
 cercanas al DM/jugador ✓) va en N3.
 
+### 2.3 La latencia del circulo de luz (el POV del jugador)
+
+El circulo iluminado que ve el jugador NO es un mesh: es el **borde de la
+mascara de percepcion** que calcula el worker de vision (LoS ✓). O sea que
+su latencia NO es la del render (60 fps ✓) sino **la del trabajo de
+vision** ✗:
+
+- el trabajo se reenviaba cada **250 ms** ✗
+- y solo si el jugador se habia movido mas de **0.25 unidades** ✗ (con el
+  WASD son 0.15 por tecla ✗ -> recien en la segunda tecla ✗)
+
+O sea: el circulo se actualizaba 4 veces por segundo y con medio paso de
+desfase ✗. Ahora: **cada 80 ms** (12 veces por segundo ✓) y con un umbral
+de **0.03** (se reenvia con cualquier movimiento real ✓).
+
+El costo: el worker recalcula la mascara 3 veces mas seguido ✗ (es el
+worker, no el hilo principal ✓ -> la UI no se bloquea ✓). Si en una maquina
+lenta eso se nota, el ajuste fino es el paso siguiente (la luz del jugador
+resuelta EN EL CLIENTE, sin pasar por el worker ✗).
+
 ## 3. Lo que YA esta hecho (no hay que rehacerlo)
 
 - La posicion viva de los tokens (`useVisualInterpolation` ✓) y la de las
