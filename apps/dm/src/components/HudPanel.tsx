@@ -207,6 +207,26 @@ export default function HudPanel({
   const [resizeEdge, setResizeEdge] = useState<ResizeEdge | null>(null);
   const [zIndex, setZIndex] = useState(BASE_Z);
   const [minimized, setMinimized] = useState(false);
+
+  // Mantener el panel dentro del viewport/stage cuando cambia el zoom o el
+  // tamaño de la ventana: si el usuario agranda/reduce la página, un panel
+  // guardado fuera de pantalla se recupera en vez de quedar inalcanzable.
+  useEffect(() => {
+    const clamp = () => {
+      const stage = getStageRect();
+      setPos((p) => {
+        const maxX = Math.max(stage.left, stage.left + stage.width - size.width);
+        const maxY = Math.max(stage.top, stage.top + stage.height - size.height);
+        return {
+          x: Math.min(maxX, Math.max(stage.left, p.x)),
+          y: Math.min(maxY, Math.max(stage.top, p.y)),
+        };
+      });
+    };
+    window.addEventListener('resize', clamp);
+    clamp();
+    return () => window.removeEventListener('resize', clamp);
+  }, [size.width, size.height]);
   const [maximized, setMaximized] = useState(false);
   const prevGeom = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
   const dragOffset = useRef({ x: 0, y: 0 });

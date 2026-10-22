@@ -767,6 +767,14 @@ function DraggableToken({
   onDoubleClick?: (sceneCharId: string, clientX: number, clientY: number) => void;
 }) {
   const groupRef = useRef<THREE.Group>(null);
+  // Rotación viva del token: NO está en `group.rotation.y` (la rotación se
+  // aplica al hijo, TokenModel/TokenSprite), así que hay que tomarla del dato.
+  // Se actualiza en cada render para que Q/E del jugador se refleje al instante
+  // en las luces pegadas (cono) sin esperar al snapshot del servidor.
+  const rotationRef = useRef((entity.rotation ?? 0) + (entity.facingOffset ?? 0));
+  useEffect(() => {
+    rotationRef.current = (entity.rotation ?? 0) + (entity.facingOffset ?? 0);
+  }, [entity.rotation, entity.facingOffset]);
 
   useEffect(() => {
     if (groupRef.current) {
@@ -784,7 +792,7 @@ function DraggableToken({
     livePositions?.current?.set(entity.sceneCharId, {
       x: g.position.x,
       z: g.position.z,
-      rotation: g.rotation.y,
+      rotation: rotationRef.current,
     })
   })
 
@@ -2607,7 +2615,7 @@ export default function SceneRenderer({
           onPlace={(p) => onTokenPlace(tokenPlace.entity_type, tokenPlace.entity_id, p.x, p.z)}
         />
       )}
-      {followedChar && <CameraFollow x={followedChar.x} z={followedChar.z} />}
+      {followedChar && !draggingId && <CameraFollow x={followedChar.x} z={followedChar.z} />}
       <OrbitControls
         makeDefault
         enabled={!drawing}

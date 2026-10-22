@@ -704,7 +704,7 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
     if (marker) marker.opacity = (0.9 * source.intensity + 0.3) * mod
     // La luz real (la que ilumina el mapa) parpadea con el mismo mod.
     const real = realLightRef.current
-    if (real) real.intensity = 2.4 * source.intensity * mod
+    if (real) real.intensity = 3.0 * source.intensity * mod
   })
 
   const glowTexture = useMemo(() => {
@@ -763,7 +763,7 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
    * token (que es lo que el DM quiere: que la antorcha "ilumine mas en la
    * oscuridad" y no solo ponga un tinte de color).
    */
-  const lightDistance = Math.max(ringRadius * 2, 3.5)
+  const lightDistance = Math.max(ringRadius * 2, 4.0)
   const y = Y.lightHalo
   const markerY = Y.lightMarker
   const lightOx = (positionOverride?.[0] ?? item.x)
@@ -867,7 +867,7 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
             penumbra={0.6}
             distance={lightDistance}
             decay={2}
-            intensity={2.4 * source.intensity}
+            intensity={3.0 * source.intensity}
           />
           <object3D ref={coneTargetRef} position={[0, 0, -1]} />
         </>
@@ -878,7 +878,7 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
           position={[0, 0.1, 0]}
           distance={lightDistance}
           decay={2}
-          intensity={2.4 * source.intensity}
+          intensity={3.0 * source.intensity}
         />
       )}
       {halo}

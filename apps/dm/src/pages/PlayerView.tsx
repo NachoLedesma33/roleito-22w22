@@ -138,6 +138,7 @@ export default function PlayerView() {
   } | null>(null);
   const [rollingInit, setRollingInit] = useState(false);
   const [wasdTarget, setWasdTarget] = useState<{ x: number; z: number; rotation: number } | null>(null);
+  const [draggingCharId, setDraggingCharId] = useState<string | null>(null);
   const [shareLight, setShareLight] = useState(() => {
     try { return localStorage.getItem(`roleito:pv:${code}:sharelight`) !== '0' } catch { return true }
   });
@@ -1303,7 +1304,7 @@ export default function PlayerView() {
                   statuses: c.statuses ?? [],
                 };
               })}
-              draggingId={null}
+              draggingId={draggingCharId}
               lighting={data.lighting}
               weather={data.weather ?? null}
               weatherIntensity={data.weather_intensity ?? 1}
@@ -1346,6 +1347,7 @@ export default function PlayerView() {
                       const rotation = wasdTarget?.rotation ?? (data.characters.find(
                         (ch) => ch.type === 'character' && data.player_characters.some((p) => p.id === ch.entity_id && p.id === choice.id)
                       )?.rotation ?? 0);
+                      setDraggingCharId(null);
                       reportMove(x, z, rotation, true);
                     }
                   : undefined
@@ -1356,6 +1358,7 @@ export default function PlayerView() {
                       const rotation = wasdTarget?.rotation ?? (data.characters.find(
                         (ch) => ch.type === 'character' && data.player_characters.some((p) => p.id === ch.entity_id && p.id === choice.id)
                       )?.rotation ?? 0);
+                      setDraggingCharId((prev) => (prev ? prev : _sceneCharId));
                       reportMove(x, z, rotation, false);
                     }
                   : undefined
