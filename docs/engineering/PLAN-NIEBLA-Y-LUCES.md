@@ -87,7 +87,7 @@ Esto ya tiene la infraestructura a medias ✓:
 |---|---|---|---|
 | N1 ✅ | La `pointLight` real por item de luz (con el tope de luces) | el mapa se ilumina de verdad y el DM ve la luz que da | medio (perf) |
 | N2 ✅ | La niebla tapa el halo (render order o mascara) | el jugador no ve luz en zonas oscuras | bajo |
-| N3 | Los tokens de los jugadores sin luz, fuera de lo revelado, no se ven | el DM ve a un jugador sin luz solo si esta en lo revelado | medio |
+| N3 | Los tokens de los jugadores sin luz, fuera de lo revelado, no se ven | el DM ve a un jugador sin luz solo si esta en lo revelado | **hecho** |
 | N4 ✅ | La posicion de la luz y la del token, una sola fuente | la luz y el token nunca se desincronizan | bajo |
 
 ### 2.2 N4: la posicion real se comparte (la causa del retardo de segundos)
@@ -235,6 +235,46 @@ El DM no lo usa (`followCharId` va en `null`): el DM ve la mesa entera.
   pestana visible: DM 59-60 FPS, jugador 58-60 FPS, hilo principal 95% idle.
 - **El nombre del token desincronizado**: es un bug preexistente del label 3D
   (troika), NO de la luz ni de la camara. Queda para otra tanda.
+
+### 2.8 N3: el DM ve a los jugadores sin luz solo si estan en lo revelado
+
+El problema: el jugador calcula su **mascara de percepcion** en el worker (la
+misma que usa para pintar la niebla: que celdas ve AHORA). Esa mascara vivia
+solo en el cliente del jugador, asi que el DM no tenia forma de saber si un
+jugador estaba a oscuras o iluminado.
+
+Como quedo:
+
+1. **El jugador publica la mascara** (`apps/dm/src/pages/PlayerView.tsx`):
+   la manda al servidor cada vez que cambia de verdad (una firma barata: la
+   cantidad de celdas reveladas + la suma de sus indices) y con un throttle de
+   500 ms. La mascara se empaqueta a **1 bit por celda** y va en base64
+   (`apps/dm/src/lib/revealMask.ts`): son miles de celdas, mandarla cruda en
+   cada frame era caro.
+2. **El backend la guarda** (`scene_reveals`, tabla nueva): un reveal por
+   jugador y escena. El POST es publico como el resto de las rutas de
+   `/invite/{code}` (el jugador se autentica con el codigo, no con un token);
+   el GET es del DM.
+3. **El DM la consulta** (`DmDashboard.tsx`, poll cada 1,5 s) y filtra lo que
+   dibuja: un personaje de **jugador** que no esta iluminado y no esta en lo
+   revelado por nadie, no se ve. Los NPC se ven siempre, y con el toggle
+   prendido se ven todos.
+
+Reglas del filtro (`dmSeesCharacter` en `lib/revealMask.ts`):
+
+- toggle prendido -> se ve siempre (el DM tiene autoridad sobre la mesa);
+- el personaje esta iluminado -> se ve siempre (lo calcula el DM con sus
+  propias luces: `collectWorldLights` + `lightLevelAt`);
+- no hay ningun reveal publicado todavia -> se ve (no se le tapa la partida de
+  golpe mientras el jugador entra);
+- si no: se ve solo si esta dentro de lo revelado por ALGUN jugador (la mesa
+  ve la mesa).
+
+El toggle vive en la toolbar del DM (icono de ojo) y se recuerda en
+`localStorage` (`roleito:dm:seeHiddenPlayers`).
+
+Lo que NO cambia: los personajes NO se borran del estado, solo de lo que se
+dibuja -> el DM los puede seguir seleccionando y moviendo.
 
 ## 3. Lo que YA esta hecho (no hay que rehacerlo)
 

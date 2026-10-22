@@ -26,6 +26,7 @@ import { usePlayerSync, type Choice } from '@/lib/usePlayerSync';
 import { type CharPos } from '@/lib/playerVision';
 import { buildOccluders } from '@/lib/lightOcclusion';
 import { countVisibleCells, type PerceptionMask } from '@/lib/playerPerception';
+import { packReveal, revealSignature } from '@/lib/revealMask';
 import { computeSensed, sensedIds as sensedIdSet, type SensedChar } from '@/lib/playerSense';
 import { loadExplored, saveExplored } from '@/lib/exploredMemory';
 import type { VisionConfig } from '@core/domain/types';
@@ -467,6 +468,51 @@ export default function PlayerView() {
   // escena ni los de las luces: la luz entra al mask como dato y la niebla del DM
   // como rol por celda, así que antes competían entre sí por zIndex y el jugador
   // ganaba siempre.
+  // N3: el DM ve a un jugador sin luz solo si esta en lo revelado. El jugador
+  // publica su mascara de percepcion (la que ya usa para pintar la niebla) y
+  // el DM la consulta.
+  //
+  // Se manda solo cuando cambia de verdad (una firma barata de la mascara) y
+  // con throttle: son ~1,5 MB de mascara cruda por envio, no se manda en cada
+  // frame. Es best-effort: si falla, el DM ve todo (que es lo de antes) ✓.
+  const revealSigRef = useRef<string>('')
+  const revealAtRef = useRef(0)
+  const publishReveal = useCallback(
+    (mask: PerceptionMask) => {
+      const d = dataRef.current
+      const c = choiceRef.current
+      if (!d || !c || c.kind !== 'character') return
+      const sig = revealSignature(mask.data)
+      const ahora = Date.now()
+      if (sig === revealSigRef.current || ahora - revealAtRef.current < 500) return
+      revealSigRef.current = sig
+      revealAtRef.current = ahora
+      const sc = d.characters.find((ch) => ch.entity_id === c.id)
+      if (!sc) return
+      const visionRange = sc.vision_range ?? 6
+      const res = visionRange <= 8 ? 0.08 : visionRange <= 16 ? 0.12 : 0.18
+      const { w: mapW, h: mapH } = mapperRef.current
+      void api.campaigns
+        .publishReveal(code ?? '', {
+          player_id: c.id,
+          cols: mask.cols,
+          rows: mask.rows,
+          res,
+          map_width: mapW,
+          map_height: mapH,
+          bits: packReveal(mask.data, mask.cols, mask.rows),
+        })
+        .catch(() => {
+          // best-effort: sin reveal, el DM ve todo
+        })
+    },
+    [code],
+  )
+
+  useEffect(() => {
+    if (perception) publishReveal(perception)
+  }, [perception, publishReveal])
+
   const sceneFogRegions = useMemo<FogRegion[]>(() => [], [])
   const sceneOccluders = useMemo(
     () => (data ? buildOccluders(data.items ?? [], mapperW, mapperH) : []),

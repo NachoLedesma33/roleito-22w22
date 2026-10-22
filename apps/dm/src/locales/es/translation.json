@@ -309,7 +309,9 @@
     "zoneColor": "Color de zona",
     "zonePolygon": "Zona (polígono)",
     "zoneRect": "Zona (rect)",
-    "zonesBtn": "Zonas"
+    "zonesBtn": "Zonas",
+    "seeHiddenPlayersStart": "Ver a los jugadores sin luz",
+    "seeHiddenPlayersStop": "Dejar de ver a los jugadores sin luz"
   },
   "dmConfirm": {
     "clearWalls": "¿Eliminar TODAS las paredes y puertas?"

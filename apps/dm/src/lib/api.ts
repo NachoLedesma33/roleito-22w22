@@ -325,6 +325,23 @@ export interface Player {
   created_at: string;
 }
 
+/**
+ * Que esta viendo un jugador ahora en una escena (N3).
+ *
+ * `bits` es la mascara de percepcion empaquetada a 1 bit por celda, en base64
+ * (ver `lib/revealMask.ts`).
+ */
+export interface SceneReveal {
+  player_id: string;
+  cols: number;
+  rows: number;
+  res: number;
+  map_width: number;
+  map_height: number;
+  bits: string;
+  updated_at: string | null;
+}
+
 export interface PlayerFogRegion {
   points: number[];
   revealed: boolean;
@@ -627,6 +644,33 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify({ enabled }),
       }),
+    /**
+     * Publica que esta viendo el jugador ahora (N3).
+     *
+     * Publica como las rutas de /invite: el jugador se autentica con el
+     * codigo, no con un token.
+     */
+    publishReveal: (
+      code: string,
+      data: {
+        player_id: string;
+        cols: number;
+        rows: number;
+        res: number;
+        map_width: number;
+        map_height: number;
+        bits: string;
+      },
+    ) =>
+      request<{ ok: boolean }>(`/campaigns/invite/${code}/reveals`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    /** Que esta viendo cada jugador en la escena (lo consulta el DM). */
+    reveals: (campaignId: string, sceneId: string) =>
+      request<SceneReveal[]>(`/campaigns/${campaignId}/scenes/${sceneId}/reveals`),
+
     /** La campaña abierta al público: detras del link fijo `/join`. */
     activeInvite: () =>
       request<{ invite_code: string; campaign_id: string; campaign_name: string }>(

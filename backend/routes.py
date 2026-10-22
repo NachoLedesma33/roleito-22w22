@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Body, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import delete, select
 from database import get_session
@@ -28,6 +28,7 @@ from models import (
     CampaignCalendar,
     ProgressClock,
     PlayerFog,
+    SceneReveal,
     LightRequest,
 )
 from schemas import (
@@ -1297,6 +1298,100 @@ async def invite_revision(
         raise HTTPException(status_code=404, detail="Invalid invite code")
 
     return {"revision": await compute_player_revision(db, campaign.id)}
+
+
+# ── N3: que esta viendo cada jugador ahora ──────────────────────
+#
+# El jugador publica su mascara de percepcion (la que ya usa para pintar la
+# niebla) y el DM la consulta: asi el DM ve a un jugador sin luz solo si el
+# jugador esta en lo revelado (PLAN-NIEBLA-Y-LUCES.md, N3).
+#
+# El POST es publico como el resto de las rutas de /invite/{code}: el jugador
+# se autentica con el codigo de invitacion, no con un token.
+
+
+@campaigns_router.post("/campaigns/invite/{code}/reveals")
+async def publish_reveal(
+    code: str,
+    payload: dict = Body(...),
+    db: AsyncSession = Depends(get_session),
+):
+    result = await db.execute(
+        select(Campaign).where(Campaign.invite_code == code)
+    )
+    campaign = result.scalar_one_or_none()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Invalid invite code")
+
+    player_id = str(payload.get("player_id") or "")
+    if not player_id:
+        raise HTTPException(status_code=400, detail="player_id required")
+
+    scenes_r = await db.execute(
+        select(Scene).where(
+            Scene.campaign_id == campaign.id,
+            Scene.status == "active",
+        )
+    )
+    scenes = scenes_r.scalars().all()
+    scene = scenes[0] if scenes else None
+    if not scene:
+        # Sin escena activa no hay nada que revelar.
+        return {"ok": True}
+
+    existing_r = await db.execute(
+        select(SceneReveal).where(
+            SceneReveal.scene_id == scene.id,
+            SceneReveal.player_id == player_id,
+        )
+    )
+    row = existing_r.scalar_one_or_none()
+    if row is None:
+        row = SceneReveal(
+            campaign_id=campaign.id,
+            scene_id=scene.id,
+            player_id=player_id,
+        )
+        db.add(row)
+
+    row.cols = int(payload.get("cols") or 0)
+    row.rows = int(payload.get("rows") or 0)
+    row.res = float(payload.get("res") or 0.08)
+    row.map_width = float(payload.get("map_width") or 0.0)
+    row.map_height = float(payload.get("map_height") or 0.0)
+    row.bits = str(payload.get("bits") or "")
+    await db.commit()
+    return {"ok": True}
+
+
+@campaigns_router.get("/campaigns/{campaign_id}/scenes/{scene_id}/reveals")
+async def get_reveals(
+    campaign_id: str,
+    scene_id: str,
+    db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+):
+    result = await db.execute(
+        select(SceneReveal).where(
+            SceneReveal.campaign_id == campaign_id,
+            SceneReveal.scene_id == scene_id,
+        )
+    )
+    rows = result.scalars().all()
+    return [
+        {
+            "player_id": r.player_id,
+            "cols": r.cols,
+            "rows": r.rows,
+            "res": r.res,
+            "map_width": r.map_width,
+            "map_height": r.map_height,
+            "bits": r.bits,
+            "updated_at": r.updated_at.isoformat() if r.updated_at else None,
+        }
+        for r in rows
+    ]
+
 
 
 @campaigns_router.get("/campaigns/invite/{code}")

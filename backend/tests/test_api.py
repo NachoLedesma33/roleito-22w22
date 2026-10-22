@@ -3266,3 +3266,56 @@ async def test_el_digest_cuenta_lo_que_espera_al_dm(client):
         await client.get(f"/api/campaigns/{camp['id']}/agents/digest", headers=headers)
     ).json()
     assert digest["pending"] == 0
+
+
+@pytest.mark.asyncio
+async def test_reveals_roundtrip(client, anon_client):
+    """N3: el jugador publica que esta viendo y el DM lo consulta.
+
+    El POST es publico (el jugador se autentica con el codigo de invitacion);
+    el GET es del DM.
+    """
+    camp = (await client.post("/api/campaigns", json={"name": "Reveal Camp"})).json()
+    scen = (await client.post(f"/api/campaigns/{camp['id']}/scenes", json={"name": "Cueva"})).json()
+    cid, sid = camp["id"], scen["id"]
+    char = (await client.post(f"/api/campaigns/{cid}/characters", json={"name": "Vela"})).json()
+    await client.put(f"/api/campaigns/{cid}/scenes/{sid}", json={"status": "active"})
+    code = (await client.post(f"/api/campaigns/{cid}/invite-code")).json()["invite_code"]
+
+    # 4x4 celdas, 1 bit por celda: solo la celda (0,0) revelada -> 0b10000000
+    payload = {
+        "player_id": char["id"],
+        "cols": 4,
+        "rows": 4,
+        "res": 1.0,
+        "map_width": 4.0,
+        "map_height": 4.0,
+        "bits": "gA==",
+    }
+
+    res = await anon_client.post(f"/api/campaigns/invite/{code}/reveals", json=payload)
+    assert res.status_code == 200, res.text
+    assert res.json()["ok"] is True
+
+    got = (await client.get(f"/api/campaigns/{cid}/scenes/{sid}/reveals")).json()
+    assert len(got) == 1
+    assert got[0]["player_id"] == char["id"]
+    assert got[0]["cols"] == 4
+    assert got[0]["rows"] == 4
+    assert got[0]["bits"] == "gA=="
+
+    # Un segundo POST del mismo jugador ACTUALIZA (no duplica).
+    payload2 = dict(payload, bits="AQ==")
+    res = await anon_client.post(f"/api/campaigns/invite/{code}/reveals", json=payload2)
+    assert res.status_code == 200, res.text
+    got = (await client.get(f"/api/campaigns/{cid}/scenes/{sid}/reveals")).json()
+    assert len(got) == 1
+    assert got[0]["bits"] == "AQ=="
+
+    # El DM lo consulta con rol; sin rol no entra.
+    res = await anon_client.get(f"/api/campaigns/{cid}/scenes/{sid}/reveals")
+    assert res.status_code in (401, 403)
+
+    # Un codigo de invitacion invalido no publica nada.
+    res = await anon_client.post("/api/campaigns/invite/no-existe/reveals", json=payload)
+    assert res.status_code == 404

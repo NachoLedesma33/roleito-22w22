@@ -56,6 +56,10 @@ import SceneSettingsHud from '@/components/SceneSettingsHud';
 import type { ContextMenuItem } from '@/components/ContextMenu';
 import ToastContainer from '@/components/ToastContainer';
 import { rollToToast, useToastQueue } from '@/lib/toastQueue';
+import { dmSeesCharacter, type RevealLike } from '@/lib/revealMask';
+import { collectWorldLights, type CharPos } from '@/lib/playerVision';
+import { lightLevelAt } from '@/lib/lightMask';
+import { LIGHT_THRESHOLD } from '@/lib/playerPerception';
 import InviteMenu from '@/components/InviteMenu';
 import { wsReconnectDelay } from '@/lib/wsBackoff';
 import { usePendingDigest } from '@/lib/usePendingDigest';
@@ -65,7 +69,7 @@ import HudPanel from '@/components/HudPanel';
 import ToolButton from '@/components/ui/ToolButton';
 import IconButton from '@/components/ui/IconButton';
 import { staticUrl } from '@/lib/staticUrl';
-import { Dices, Swords, NotebookPen, ClipboardList, CalendarDays, ScrollText, FolderOpen, Map as MapIcon, Bot, MessageCircle, Zap, BookOpen, StickyNote, LayoutGrid, Brush, SquareDashed, PaintBucket, Undo2, Redo2, CloudSun, Settings, ImagePlus, Wand2, Square, Mountain, ChevronDown, Users, Layers, Lightbulb, Trash, Sparkles, CircleDot } from 'lucide-react';
+import { Dices, Swords, NotebookPen, ClipboardList, CalendarDays, ScrollText, FolderOpen, Map as MapIcon, Bot, MessageCircle, Zap, BookOpen, StickyNote, LayoutGrid, Brush, SquareDashed, PaintBucket, Undo2, Redo2, CloudSun, Settings, ImagePlus, Wand2, Square, Mountain, ChevronDown, Users, Layers, Lightbulb, Trash, Sparkles, CircleDot, Eye, EyeOff } from 'lucide-react';
 
 export default function DmDashboard() {
   const { t } = useTranslation();
@@ -75,6 +79,31 @@ export default function DmDashboard() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [activeScene, setActiveScene] = useState<Scene | null>(null);
   const [sceneChars, setSceneChars] = useState<SceneCharacter[]>([]);
+
+  // N3: que esta viendo cada jugador ahora. El jugador publica su mascara de
+  // percepcion y el DM la consulta: asi ve a un jugador sin luz solo si esta
+  // en lo revelado (PLAN-NIEBLA-Y-LUCES.md, N3).
+  const [reveals, setReveals] = useState<RevealLike[]>([]);
+  // El DM tiene autoridad sobre la mesa: con el toggle prendido ve a todos.
+  const [seeHiddenPlayers, setSeeHiddenPlayers] = useState(() => {
+    try {
+      return localStorage.getItem('roleito:dm:seeHiddenPlayers') === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleSeeHiddenPlayers = useCallback(() => {
+    setSeeHiddenPlayers((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('roleito:dm:seeHiddenPlayers', next ? '1' : '0');
+      } catch {
+        // sin persistencia: el toggle igual funciona en esta sesion
+      }
+      return next;
+    });
+  }, []);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [npcs, setNpcs] = useState<NPC[]>([]);
   const [loading, setLoading] = useState(true);
@@ -579,6 +608,7 @@ const applyFogMode = useCallback(
     setLastFogMode(mode);
     try {
       localStorage.setItem('roleito:dm:fogMode', mode);
+
     } catch {
       /* localStorage puede estar bloqueado: el modo dura lo que la sesión */
     }
@@ -1707,6 +1737,81 @@ const startFogMode = useCallback(() => {
     ...npcs.map((n) => ({ ...n, type: 'npc' as const, sub: n.status })),
   ];
 
+  // El poll de los reveals: cada 1,5 s (el DM no necesita mas precision: lo
+  // que cambia es si el jugador camina hacia la luz).
+  useEffect(() => {
+    if (!campaignId || !activeScene) {
+      setReveals([]);
+      return;
+    }
+    let cancelled = false;
+    const load = () => {
+      api.campaigns
+        .reveals(campaignId, activeScene.id)
+        .then((r) => {
+          if (!cancelled) setReveals(r as RevealLike[]);
+        })
+        .catch(() => {
+          // best-effort: sin reveals, el DM ve todo
+        });
+    };
+    load();
+    const timer = window.setInterval(load, 1500);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [campaignId, activeScene]);
+
+  // Que personajes de jugador se le escapan al DM (N3).
+  //
+  // Se filtran SOLO al dibujar: el estado no se toca, asi que el DM los puede
+  // seguir seleccionando y moviendo (la mesa no se rompe).
+  const hiddenPlayerIds = useMemo(() => {
+    if (seeHiddenPlayers) return new Set<string>();
+    if (reveals.length === 0) return new Set<string>();
+    if (!activeScene) return new Set<string>();
+    const { mapH } = sceneWorldSize(activeScene.map_scale ?? 1, mapAspect);
+
+    // Las luces las tiene el DM: el personaje iluminado se ve siempre.
+    const charPos = new Map<string, CharPos>(
+      sceneChars.map((sc) => [
+        sc.id,
+        { x: sc.x, z: sc.z, rotation: sc.rotation ?? 0 },
+      ]),
+    );
+    const lights = collectWorldLights(sceneItems, charPos, null, {
+      shareCarriedLights: true,
+    });
+
+    const ocultos = new Set<string>();
+    for (const sc of sceneChars) {
+      if (sc.entity_type !== 'character') continue;
+      const ent = characters.find((c) => c.id === sc.entity_id);
+      // Los NPC los ve el DM siempre: el N3 es sobre los jugadores.
+      if (!ent || ent.type !== 'player') continue;
+      const lit = lightLevelAt(sc.x, sc.z, lights, sceneOccluders, mapH) >= LIGHT_THRESHOLD;
+      const visible = dmSeesCharacter({
+        reveals,
+        x: sc.x,
+        z: sc.z,
+        lit,
+        seeAll: seeHiddenPlayers,
+      });
+      if (!visible) ocultos.add(sc.id);
+    }
+    return ocultos;
+  }, [
+    seeHiddenPlayers,
+    reveals,
+    activeScene,
+    sceneChars,
+    sceneItems,
+    sceneOccluders,
+    characters,
+    mapAspect,
+  ]);
+
   // Close context menu on any click
   useEffect(() => {
     if (!contextMenu) return;
@@ -2071,8 +2176,27 @@ const startFogMode = useCallback(() => {
               {activeScene?.status === 'active' ? t('dm.synced', '✓ Sincronizada') : t('dm.sync', '⟳ Sincronizar')}
             </button>
             <div className="w-px h-5 bg-[var(--bg-tertiary)] shrink-0" />
-            
-              
+            <button
+              onClick={toggleSeeHiddenPlayers}
+              className={`shrink-0 p-1.5 rounded transition-colors ${
+                seeHiddenPlayers
+                  ? 'bg-green-600/20 text-green-400 border border-green-600/40'
+                  : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-transparent'
+              }`}
+              title={
+                seeHiddenPlayers
+                  ? t('dm.seeHiddenPlayersStop', 'Dejar de ver a los jugadores sin luz')
+                  : t('dm.seeHiddenPlayersStart', 'Ver a los jugadores sin luz')
+              }
+              aria-label={
+                seeHiddenPlayers
+                  ? t('dm.seeHiddenPlayersStop', 'Dejar de ver a los jugadores sin luz')
+                  : t('dm.seeHiddenPlayersStart', 'Ver a los jugadores sin luz')
+              }
+              data-testid="dm-see-hidden-players"
+            >
+              {seeHiddenPlayers ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
         <InviteMenu campaign={campaign} onCampaignChange={setCampaign} />
           </>
         }
@@ -3018,7 +3142,9 @@ const startFogMode = useCallback(() => {
             }>
               <SceneRenderer
                 backgroundUrl={staticUrl(activeScene.background_path)!}
-                characters={sceneChars.map((sc) => {
+                characters={sceneChars
+                  .filter((sc) => !hiddenPlayerIds.has(sc.id))
+                  .map((sc) => {
                   const ent = allEntities.find((e) => e.id === sc.entity_id);
                   // Posiciones autoritativas (sin interpolar): la interpolación visual
                   // 60fps ahora vive en SceneRenderer via useFrame.

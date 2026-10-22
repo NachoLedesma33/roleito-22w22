@@ -324,6 +324,36 @@ class SceneCharacter(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+class SceneReveal(Base):
+    """
+    Que esta viendo un jugador AHORA, en una escena.
+
+    Es lo que permite el N3 del plan de niebla y luces: el DM ve a un jugador
+    sin luz solo si el jugador esta en lo revelado. El jugador publica su
+    mascara de percepcion (la que ya calcula para pintar la niebla) y el DM la
+    consulta.
+
+    `bits` es la mascara empaquetada: 1 bit por celda, en base64. La celda
+    (col, row) cubre x = -map_width/2 + (col+0.5)*res, z = -map_height/2 +
+    (row+0.5)*res (el mismo centro que `playerPerception.cellCenterX/Z`).
+    """
+
+    __tablename__ = "scene_reveals"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    campaign_id = Column(String, ForeignKey("campaigns.id"), nullable=False)
+    scene_id = Column(String, ForeignKey("scenes.id"), nullable=False)
+    # El personaje del jugador (characters.id), no el de la escena.
+    player_id = Column(String, nullable=False)
+    cols = Column(Integer, default=0)
+    rows = Column(Integer, default=0)
+    res = Column(Float, default=0.08)
+    map_width = Column(Float, default=0.0)
+    map_height = Column(Float, default=0.0)
+    bits = Column(Text, default="")
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class MapMarker(Base):
     __tablename__ = "map_markers"
 

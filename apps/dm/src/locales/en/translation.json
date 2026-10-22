@@ -309,7 +309,9 @@
     "zonePolygon": "Zone (polygon)",
     "zoneRect": "Zone (rect)",
     "zonesBtn": "Zones",
-    "inviteNoTunnel": "No tunnel: the URL above is this machine. Start one with npm run tunnel or paste the tunnel URL."
+    "inviteNoTunnel": "No tunnel: the URL above is this machine. Start one with npm run tunnel or paste the tunnel URL.",
+    "seeHiddenPlayersStart": "Show players without light",
+    "seeHiddenPlayersStop": "Stop showing players without light"
   },
   "dmConfirm": {
     "clearWalls": "Delete ALL walls and doors?"
