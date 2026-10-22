@@ -9,6 +9,7 @@
     "dev:lan": "npm run dev:lan --workspace=apps/dm",
     "build:prod": "npm run build --workspace=apps/dm",
     "serve:prod": "npm run serve:prod --workspace=apps/dm",
+    "serve:lan": "npm run serve:lan --workspace=apps/dm",
     "playtest": "npm run build:prod && node scripts/playtest.mjs",
     "tunnel": "node scripts/tunnel.mjs",
     "dev:renderer": "npm run dev --workspace=apps/renderer",
