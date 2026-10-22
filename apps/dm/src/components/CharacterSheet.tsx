@@ -415,21 +415,23 @@ export default function CharacterSheet({
         <input ref={iconFileInput} type="file" accept="image/*" className="hidden" onChange={handleIconFile} />
         <input ref={audioFileInput} type="file" accept="audio/*" className="hidden" onChange={handleAudioFile} />
 
-        {/* Portrait + Header */}
-        <div className="flex items-start gap-3">
+        {/* Retrato + cabecera. El retrato ocupa TODO el ancho del HUD: es la
+            imagen del personaje y al lado de los datos queda chiquita. */}
+        <div className="space-y-2">
           <button
             onClick={() => fileInput.current?.click()}
-            className="w-16 h-16 rounded-lg overflow-hidden shrink-0 border-2 border-dashed border-[var(--bg-tertiary)] hover:border-[var(--accent)] transition-colors cursor-pointer"
+            className="w-full h-28 rounded-lg overflow-hidden shrink-0 border-2 border-dashed border-[var(--bg-tertiary)] hover:border-[var(--accent)] transition-colors cursor-pointer"
             title="Hacé clic para subir retrato"
           >
             {pUrl ? (
               <img src={pUrl} alt={entity.name} className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full bg-[var(--bg-tertiary)] flex items-center justify-center text-xl font-bold text-[var(--accent)]">
+              <div className="w-full h-full bg-[var(--bg-tertiary)] flex items-center justify-center text-3xl font-bold text-[var(--accent)]">
                 {entity.name.charAt(0)}
               </div>
             )}
           </button>
+          <div className="flex items-start gap-3">
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold truncate">{entity.name}</p>
             <p className="text-[10px] text-[var(--text-secondary)]">
@@ -464,6 +466,7 @@ export default function CharacterSheet({
               </div>
             )}
           </div>
+          </div>
         </div>
 
         {/* VIDA Attributes */}
@@ -474,9 +477,9 @@ export default function CharacterSheet({
             { label: 'Dest', abbr: 'D', value: entity.dexterity, color: 'text-green-400' },
             { label: 'Astuc', abbr: 'A', value: entity.cunning, color: 'text-yellow-400' },
           ].map((a) => (
-            <div key={a.abbr} className="text-center bg-[var(--bg-tertiary)] rounded py-1.5">
-              <p className="text-[9px] text-[var(--text-secondary)]">{a.label}</p>
-              <p className={`text-sm font-bold ${a.color}`}>{a.value === '-' ? '−' : a.value}</p>
+            <div key={a.abbr} className="text-center bg-[var(--bg-tertiary)] rounded py-1 px-0.5">
+              <p className="text-[8px] leading-none text-[var(--text-secondary)]">{a.label}</p>
+              <p className={`text-xs leading-tight font-bold ${a.color}`}>{a.value === '-' ? '−' : a.value}</p>
             </div>
           ))}
         </div>

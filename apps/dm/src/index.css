@@ -224,6 +224,32 @@ h6 {
   to { transform: translateX(110%); opacity: 0; }
 }
 
+/* ── Scrollbar ──────────────────────────────────────────────────────
+   El generico de Chrome (ancho, gris claro) desentona en una app oscura.
+   Este es fino, con los colores del tema, y aparece al scrollear. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-subtle, #2a2a33) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--border-subtle, #2a2a33);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary, #8b8b99);
+}
+
 .scrollbar-none {
   scrollbar-width: none;
 }

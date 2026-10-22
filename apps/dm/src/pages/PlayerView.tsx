@@ -1389,18 +1389,20 @@ export default function PlayerView() {
             defaultWidth={288}
           >
             <div className="p-3 space-y-2">
+              {/* El retrato ocupa TODO el ancho del HUD (es la imagen del
+                  personaje) y los datos quedan abajo. */}
+              {myChar.portrait_path ? (
+                <img
+                  src={staticUrl(myChar.portrait_path)!}
+                  alt={myChar.name}
+                  className="w-full h-24 rounded-lg object-cover border border-[var(--bg-tertiary)]"
+                />
+              ) : (
+                <div className="w-full h-24 rounded-lg bg-[var(--accent)]/20 border border-[var(--accent)]/40 flex items-center justify-center text-xl font-bold text-white">
+                  {myChar.name.slice(0, 2).toUpperCase()}
+                </div>
+              )}
               <div className="flex items-center gap-2.5">
-                {myChar.portrait_path ? (
-                  <img
-                    src={staticUrl(myChar.portrait_path)!}
-                    alt={myChar.name}
-                    className="w-12 h-12 rounded-full object-cover border border-[var(--bg-tertiary)]"
-                  />
-                ) : (
-                  <div className="w-12 h-12 rounded-full bg-[var(--accent)]/20 border border-[var(--accent)]/40 flex items-center justify-center text-sm font-bold text-white">
-                    {myChar.name.slice(0, 2).toUpperCase()}
-                  </div>
-                )}
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-[var(--text-primary)] truncate">{myChar.name}</p>
                   <p className="text-[10px] text-[var(--text-secondary)] truncate">
@@ -1483,9 +1485,9 @@ export default function PlayerView() {
                         { label: t('pv.attrDest', 'Dest'), value: myChar.dexterity },
                         { label: t('pv.attrAstuc', 'Astuc'), value: myChar.cunning },
                       ].map((a) => (
-                        <div key={a.label} className="text-center bg-[var(--bg-tertiary)]/50 rounded py-1">
-                          <p className="text-[9px] text-[var(--text-secondary)]">{a.label}</p>
-                          <p className="font-bold text-[var(--text-primary)]">{a.value === '-' ? '−' : a.value}</p>
+                        <div key={a.label} className="text-center bg-[var(--bg-tertiary)]/50 rounded py-0.5 px-0.5">
+                          <p className="text-[8px] leading-none text-[var(--text-secondary)]">{a.label}</p>
+                          <p className="text-xs leading-tight font-bold text-[var(--text-primary)]">{a.value === '-' ? '−' : a.value}</p>
                         </div>
                       ))}
                     </div>
