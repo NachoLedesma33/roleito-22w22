@@ -45,23 +45,49 @@ export const ARCHIVO_URL = join(
   'tunnel_url.txt',
 )
 
+/**
+ * Ademas, un archivo ESTATICO que el frontend puede leer sin backend.
+ *
+ * El backend es la fuente oficial (`/api/network/public-url`), pero si el
+ * puerto 8000 esta tomado por un proceso viejo (un zombi de Windows ✗) el
+ * menu cae en localhost y el DM pierde el link del tunel ✗. Con este
+ * archivo, el frontend lo lee directo del disco: funciona siempre ✓.
+ */
+export const ARCHIVOS_PUBLICOS = [
+  join(dirname(fileURLToPath(import.meta.url)), '..', 'apps', 'dm', 'dist', 'tunnel-url.txt'),
+  join(dirname(fileURLToPath(import.meta.url)), '..', 'apps', 'dm', 'public', 'tunnel-url.txt'),
+]
+
 /** Escribe la URL publica del tunel (la app la lee y la usa sola). */
 export function guardarUrlPublica(url) {
+  let ok = false
   try {
     mkdirSync(dirname(ARCHIVO_URL), { recursive: true })
     writeFileSync(ARCHIVO_URL, url, 'utf8')
-    return true
+    ok = true
   } catch {
-    return false
+    // si falla, se sigue con los archivos estaticos
   }
+  for (const archivo of ARCHIVOS_PUBLICOS) {
+    try {
+      mkdirSync(dirname(archivo), { recursive: true })
+      writeFileSync(archivo, url, 'utf8')
+      ok = true
+    } catch {
+      // el archivo estatico es un extra: si falla, el del backend sigue
+    }
+  }
+  return ok
 }
 
 /** Borra la URL (el tunel se cerro: esa URL ya no lleva a nada). */
 export function borrarUrlPublica() {
-  try {
-    if (existsSync(ARCHIVO_URL)) rmSync(ARCHIVO_URL, { force: true })
-  } catch {
-    // nada que hacer
+  for (const archivo of [ARCHIVO_URL, ...ARCHIVOS_PUBLICOS]) {
+    try {
+      if (existsSync(archivo)) rmSync(archivo, { force: true })
+    } catch {
+      // nada que hacer
+    }
   }
 }
 

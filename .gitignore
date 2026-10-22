@@ -139,3 +139,7 @@ backend/perf_probe2.py
 
 # La URL publica del tunel: es de esta maquina y cambia por partida
 data/tunnel_url.txt
+
+# La URL publica del tunel: es de esta maquina y cambia por partida
+apps/dm/public/tunnel-url.txt
+apps/dm/dist/tunnel-url.txt

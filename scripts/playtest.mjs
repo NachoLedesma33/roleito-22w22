@@ -12,7 +12,7 @@
  * Para jugar por la LAN (todos en la misma wifi) alcanza con `npm run dev:lan`.
  */
 
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import {
   elegirTunel,
   parseUrl,
@@ -39,6 +39,18 @@ const pasos = [
     reiniciar: true,
   },
 ]
+
+/** El puerto esta tomado? (un servidor viejo sirviendo codigo viejo) */
+function puertoOcupado(puerto) {
+  const probe = spawnSync(
+    process.platform === 'win32' ? 'netstat' : 'lsof',
+    process.platform === 'win32'
+      ? ['-ano', '-p', `tcp:${puerto}`]
+      : ['-i', `:${puerto}`, '-t', 'tcp'],
+    { stdio: 'ignore', shell: process.platform === 'win32' },
+  )
+  return probe.status === 0
+}
 
 const hijos = []
 let terminado = false
@@ -87,6 +99,15 @@ function levantar(paso) {
 }
 
 for (const paso of pasos) {
+  const puerto = paso.nombre.startsWith('backend') ? 8000 : 5173
+  if (puertoOcupado(puerto)) {
+    console.log(
+      `\n  \x1b[33mOjo:\x1b[0m el puerto ${puerto} ya esta ocupado.\n` +
+        `  Si es un proceso VIEJO de la app, va a servir el codigo viejo y no se\n` +
+        `  van a ver los cambios. Matalo antes de seguir:\n` +
+        `      taskkill /F /PID <pid>  (o el que diga: netstat -ano | findstr :${puerto})\n`,
+    )
+  }
   levantar(paso)
 }
 

@@ -52,15 +52,31 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
     // despues la del tunel vivo, que gana: es la que sirve ahora.
     const recordada = localStorage.getItem('roleito:invite:public-url');
     if (recordada) setUrlPublica(recordada);
-    void api.network
-      .publicUrl()
-      .then((r) => {
-        if (cancelled || !r.public_url) return;
-        setUrlPublica(r.public_url);
+
+    // Primero el archivo estatico que deja el script del tunel: funciona
+    // aunque el backend este ocupado por un proceso viejo ✗ (el menu caeria
+    // en localhost y el DM perderia el link del tunel ✗).
+    void fetch('/tunnel-url.txt', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.text() : ''))
+      .then((txt) => {
+        const url = txt.trim()
+        if (cancelled || !url) return
+        setUrlPublica(url)
       })
       .catch(() => {
-        // sin tunel y sin URL recordada: el menu ofrece los links de la LAN
-      });
+        // sin archivo estatico: se prueba el backend
+      })
+      .finally(() => {
+        void api.network
+          .publicUrl()
+          .then((r) => {
+            if (cancelled || !r.public_url) return;
+            setUrlPublica(r.public_url);
+          })
+          .catch(() => {
+            // sin tunel y sin URL recordada: el menu ofrece los links de la LAN
+          })
+      })
     return () => {
       cancelled = true;
     };
