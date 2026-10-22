@@ -40,6 +40,7 @@ const NarrativeEngine = lazy(() => import('@/pages/NarrativeEngine'));
 const AgentPanel = lazy(() => import('@/pages/AgentPanel'));
 const TTSPanel = lazy(() => import('@/pages/TTSPanel'));
 const WorldStateView = lazy(() => import('@/pages/WorldStateView'));
+const NotFound = lazy(() => import('@/pages/NotFound'));
 const MemoryView = lazy(() => import('@/pages/MemoryView'));
 
 function Splash() {
@@ -125,6 +126,7 @@ function App() {
             <Route path="/campaigns/:id/memory" element={<MemoryView />} />
           </Route>
         </Route>
+      <Route path="*" element={<NotFound />} />
       </Routes>
       </Suspense>
     </AuthProvider>
