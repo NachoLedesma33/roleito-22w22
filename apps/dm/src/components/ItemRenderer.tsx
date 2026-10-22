@@ -645,7 +645,10 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
   // sin depender de que la geometría se regenere.
   const geometryDirDeg = attachedCone ? 270 : 0
   const dirRad = ((source.direction ?? 0) * Math.PI) / 180
-  const groupRotY = attachedCone ? (rotationOverride ?? 0) : dirRad
+  // El cono pegado al token sigue la rotación del personaje Y respeta el
+  // slider "dir" como desfase: así el DM puede girar la linterna sin que deje
+  // de seguir al token cuando este rota.
+  const groupRotY = attachedCone ? (rotationOverride ?? 0) + dirRad : dirRad
   const is2d = renderMode === '2d'
   const Y = getY(renderMode)
 
