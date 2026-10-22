@@ -634,6 +634,21 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
   const haloMatRef = useRef<THREE.MeshBasicMaterial>(null)
   const orbMatRef = useRef<THREE.MeshStandardMaterial>(null)
   const orbMarkerRef = useRef<THREE.MeshBasicMaterial>(null)
+  const realLightRef = useRef<THREE.PointLight & THREE.SpotLight>(null)
+  const coneTargetRef = useRef<THREE.Object3D>(null)
+
+  // El cono direccional necesita un target: el spotLight apunta a un objeto
+  // de la escena, no a unas coordenadas. El target es un hijo del grupo (asi
+  // hereda la rotacion del token ✓) y esta en el -Z local (la direccion del
+  // cono ✓).
+  useEffect(() => {
+    const light = realLightRef.current
+    const target = coneTargetRef.current
+    if (light && target && 'target' in light) {
+      light.target = target
+      target.updateMatrixWorld()
+    }
+  }, [source.mode])
 
   // Apply position imperatively, igual que DraggableToken: R3F puede saltear la
   // reconciliacion del array-prop `<group position={[...]}>`. Sin esto, una luz
@@ -666,6 +681,9 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
     if (orb) orb.emissiveIntensity = (0.9 * source.intensity + 0.3) * mod
     const marker = orbMarkerRef.current
     if (marker) marker.opacity = (0.9 * source.intensity + 0.3) * mod
+    // La luz real (la que ilumina el mapa) parpadea con el mismo mod.
+    const real = realLightRef.current
+    if (real) real.intensity = 2.4 * source.intensity * mod
   })
 
   const glowTexture = useMemo(() => {
@@ -750,7 +768,7 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
   const halo = (() => {
     if (occludedGeometry) {
       return (
-        <mesh geometry={occludedGeometry} position={[0, y, 0]}>
+        <mesh geometry={occludedGeometry} position={[0, y, 0]} renderOrder={40}>
           <meshBasicMaterial
             ref={haloMatRef}
             map={glowTexture}
@@ -764,7 +782,7 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
     }
     if (source.mode === 'directional' && sectorGeometry) {
       return (
-        <mesh geometry={sectorGeometry} position={[0, y, 0]}>
+        <mesh geometry={sectorGeometry} position={[0, y, 0]} renderOrder={40}>
           <meshBasicMaterial
             ref={haloMatRef}
             map={glowTexture}
@@ -777,7 +795,7 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
       )
     }
     return (
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, y, 0]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, y, 0]} renderOrder={40}>
         <circleGeometry args={[ringRadius, 32]} />
         <meshBasicMaterial
           ref={haloMatRef}
@@ -799,6 +817,35 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
       onClick={(e) => { e.stopPropagation(); onClick?.() }}
       onContextMenu={(e) => { e.stopPropagation(); onContextMenu?.(e.nativeEvent) }}
     >
+      {/* La iluminacion REAL de la luz: hasta ahora el item de luz solo
+          dibujaba un halo (un mesh) y no iluminaba nada del mapa, asi que el
+          DM no veia la luz que le daba al jugador. Va dentro del grupo, asi
+          que sigue al token (incluido el cono, que mira a donde mira el
+          token ✓). */}
+      {source.mode === 'directional' ? (
+        <>
+          <spotLight
+            ref={realLightRef as React.RefObject<THREE.SpotLight>}
+            color={source.color}
+            position={[0, 0.1, 0]}
+            angle={Math.min(((source.angle ?? 90) * Math.PI) / 180, Math.PI / 2)}
+            penumbra={0.6}
+            distance={ringRadius * 2}
+            decay={2}
+            intensity={2.4 * source.intensity}
+          />
+          <object3D ref={coneTargetRef} position={[0, 0, -1]} />
+        </>
+      ) : (
+        <pointLight
+          ref={realLightRef as React.RefObject<THREE.PointLight>}
+          color={source.color}
+          position={[0, 0.1, 0]}
+          distance={ringRadius * 2}
+          decay={2}
+          intensity={2.4 * source.intensity}
+        />
+      )}
       {halo}
       {!readOnly && source.mode !== 'directional' && (
         <LineLoopPoints radius={ringRadius} position={Y.lightRing} />

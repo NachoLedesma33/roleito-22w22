@@ -85,10 +85,30 @@ Esto ya tiene la infraestructura a medias ✓:
 
 | Fase | Que | Terminado cuando | Riesgo |
 |---|---|---|---|
-| N1 | La `pointLight` real por item de luz (con el tope de luces) | el mapa se ilumina de verdad y el DM ve la luz que da | medio (perf) |
-| N2 | La niebla tapa el halo (render order o mascara) | el jugador no ve luz en zonas oscuras | bajo |
+| N1 ✅ | La `pointLight` real por item de luz (con el tope de luces) | el mapa se ilumina de verdad y el DM ve la luz que da | medio (perf) |
+| N2 ✅ | La niebla tapa el halo (render order o mascara) | el jugador no ve luz en zonas oscuras | bajo |
 | N3 | Los tokens de los jugadores sin luz, fuera de lo revelado, no se ven | el DM ve a un jugador sin luz solo si esta en lo revelado | medio |
 | N4 | La posicion de la luz y la del token, una sola fuente | la luz y el token nunca se desincronizan | bajo |
+
+### 2.1 Como quedaron N1 y N2
+
+**N1 (hecho)**: cada item de luz tiene ahora una luz real de Three.js
+(`pointLight` para las puntuales, `spotLight` para el cono direccional ✓).
+Va **dentro del grupo** del item, asi que sigue al token por efecto (la
+posicion viva ✓) y el cono mira a donde mira el token (el `target` del
+spotLight es un hijo del grupo ✓). El radio sale de `source.radius` ✓ y el
+parpadeo mueve la intensidad ✓.
+
+**N2 (hecho)**: el halo (el glow) paso a `renderOrder={40}`, por DEBAJO de la
+niebla (`renderOrder={50}` ✓). Antes el halo no tenia renderOrder (0 ✓) pero
+al ser transparente el blending lo dejaba por encima del negro de la
+niebla ✗ -> el jugador veia el circulo iluminando zonas oscuras ✗. Ahora la
+niebla lo tapa: el glow solo se ve donde el jugador puede ver ✓.
+
+**Ojo con el costo (N3)**: cada luz real hace que Three.js recompile los
+shaders cuando cambia la cantidad de luces ✗. Con muchas luces en la escena
+el frame rate se cae ✗ -> si se nota, el tope de luces (solo las N mas
+cercanas al DM/jugador ✓) va en N3.
 
 ## 3. Lo que YA esta hecho (no hay que rehacerlo)
 
