@@ -26,12 +26,22 @@ interface ItemRendererProps {
   mapScale?: number
   imageAspect?: number
   positionOverride?: [number, number, number]
+  /**
+   * Las posiciones vivas de los tokens (la interpolacion a 60 fps).
+   *
+   * La luz pegada a un token tiene que seguirlo EN VIVO: la posicion del
+   * estado de React llega cada ~2 s (el poll de la revision), asi que con
+   * solo `positionOverride` la luz se quedaba en el lugar donde estaba el
+   * token hace dos segundos ✗. Con este mapa, la luz lee la posicion
+   * interpolada del token en cada frame ✓.
+   */
+  livePositions?: Map<string, { x: number; z: number; rotation: number }>
   rotationOverride?: number
   occluders?: import('@/lib/lightOcclusion').Occluder[]
   renderMode?: RenderMode
 }
 
-export default function ItemRenderer({ item, isSelected, readOnly = false, showZones = false, onClick, onContextMenu, mapScale = 1, imageAspect = 1, positionOverride, rotationOverride, occluders, renderMode = DEFAULT_RENDER_MODE }: ItemRendererProps) {
+export default function ItemRenderer({ item, isSelected, readOnly = false, showZones = false, onClick, onContextMenu, mapScale = 1, imageAspect = 1, positionOverride, rotationOverride, occluders, livePositions, renderMode = DEFAULT_RENDER_MODE }: ItemRendererProps) {
   const groupRef = useRef<THREE.Group>(null)
 
   useFrame((state) => {
@@ -56,7 +66,7 @@ export default function ItemRenderer({ item, isSelected, readOnly = false, showZ
   }
 
   if (item.metadata.type === 'light') {
-    return <LightRenderer item={item} isSelected={isSelected} onClick={onClick} onContextMenu={onContextMenu} mapScale={mapScale} positionOverride={positionOverride} rotationOverride={rotationOverride} occluders={occluders} readOnly={readOnly} renderMode={renderMode} />
+    return <LightRenderer item={item} isSelected={isSelected} onClick={onClick} onContextMenu={onContextMenu} mapScale={mapScale} positionOverride={positionOverride} rotationOverride={rotationOverride} occluders={occluders} livePositions={livePositions} readOnly={readOnly} renderMode={renderMode} />
   }
 
   if (item.metadata.type === 'wall' && item.shape?.type === 'line') {
@@ -607,7 +617,7 @@ function ZonePortalMarkers({ nodes }: { nodes: { points: THREE.Vector3[]; color:
   )
 }
 
-function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, positionOverride, rotationOverride, occluders, readOnly = false, renderMode = DEFAULT_RENDER_MODE }: ItemRendererProps) {
+function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1, positionOverride, rotationOverride, occluders, livePositions, readOnly = false, renderMode = DEFAULT_RENDER_MODE }: ItemRendererProps) {
   const meta = item.metadata as LightMetadata
   const source = normalizeLightConfig(meta.source)
   const mapHeight = 10 * mapScale
@@ -639,6 +649,15 @@ function LightRenderer({ item, isSelected, onClick, onContextMenu, mapScale = 1,
   }, [positionOverride, item.x, item.y, groupRotY])
 
   useFrame((state) => {
+    // La luz pegada sigue al token EN VIVO (la posicion interpolada), no a
+    // la del estado de React (que llega cada ~2 s).
+    if (attached && meta.attachedTo) {
+      const live = livePositions?.get(meta.attachedTo)
+      if (live && groupRef.current) {
+        groupRef.current.position.set(live.x, 0, live.z)
+        if (attachedCone) groupRef.current.rotation.y = live.rotation
+      }
+    }
     const mat = haloMatRef.current
     if (!mat) return
     const mod = animateLightIntensity(source, state.clock.elapsedTime)

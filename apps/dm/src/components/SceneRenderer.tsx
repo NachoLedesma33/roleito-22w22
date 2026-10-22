@@ -2406,6 +2406,7 @@ export default function SceneRenderer({
           mapScale={mapScale}
           imageAspect={imageAspect}
           positionOverride={item.metadata.type === 'light' ? attachedLight.get(item.id)?.pos : undefined}
+          livePositions={visualPos}
           rotationOverride={item.metadata.type === 'light' ? attachedLight.get(item.id)?.rotation : undefined}
           occluders={occluders}
           renderMode={renderMode}
