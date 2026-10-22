@@ -26,9 +26,18 @@ const HOSTS_PERMITIDOS = [
   '.ts.net', // Tailscale Funnel (gratis, URL fija)
 ];
 
+/**
+ * El backend al que se proxya el API.
+ *
+ * `ROLEITO_BACKEND` lo permite moverlo (otro puerto, otro host). Sirve para
+ * levantar dos instancias (por ejemplo, una con el build de produccion y
+ * otra con el dev server) sin tocar el codigo.
+ */
+const BACKEND = process.env.ROLEITO_BACKEND ?? 'http://localhost:8000';
+
 const apiProxy = {
   '/api': {
-    target: 'http://localhost:8000',
+    target: BACKEND,
     changeOrigin: true,
     ws: true,
   },
