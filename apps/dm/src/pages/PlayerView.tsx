@@ -119,7 +119,7 @@ export default function PlayerView() {
   const [notesSaving, setNotesSaving] = useState(false);
   const [usingSpellId, setUsingSpellId] = useState<string | null>(null);
   const [showDiceRoller, setShowDiceRoller] = useState(false);
-  // Paneles de información del jugador (misiones, calendario, documentos): un
+  // Paneles de informaciÃ³n del jugador (misiones, calendario, documentos): un
   // estado en vez de uno por panel, y los botones salen de la misma fuente.
   const [openPanels, setOpenPanels] = useState<Partial<Record<PlayerPanelId, boolean>>>({});
   const togglePanel = useCallback((id: PlayerPanelId) => {
@@ -148,7 +148,7 @@ export default function PlayerView() {
     if (Number.isFinite(a) && a > 0) setImageAspect(a);
   }, []);
   const myCharRef = useRef<Character | null>(null);
-  // Teclas activas (teclado + D-pad táctil). Compartido por el loop de movimiento.
+  // Teclas activas (teclado + D-pad tÃ¡ctil). Compartido por el loop de movimiento.
   const keysPressedRef = useRef(new Set<string>());
 
   const choiceRef = useRef<Choice>(null);
@@ -156,7 +156,7 @@ export default function PlayerView() {
   const wasdTargetRef = useRef<{ x: number; z: number; rotation: number } | null>(null);
   const lastRollTsRef = useRef<number>(Date.now());
   // Sync con el DM: join inicial, WebSocket y poll de revisions. Los refs se
-  // crean acá porque el loop de movimiento también los usa.
+  // crean acÃ¡ porque el loop de movimiento tambiÃ©n los usa.
   const {
     data, myChar, choice, pickerOpen, loading, error, live, panelRevision,
     notesDraft, fading, setNotesDraft, setChoice, setPickerOpen, setMyChar,
@@ -221,13 +221,13 @@ export default function PlayerView() {
     }
   }, [data, choice, audioOn]);
 
-  // Volumen de audio publicado por el DM: si está sincronizado, todos los POV
+  // Volumen de audio publicado por el DM: si estÃ¡ sincronizado, todos los POV
   // siguen estos valores y los sliders del jugador quedan bloqueados.
   useEffect(() => {
     setSharedAudio(normalizeSharedAudio(data?.audio));
   }, [data?.audio]);
 
-  // Prompt de iniciativa para este jugador (si el DM lo agregó al combate)
+  // Prompt de iniciativa para este jugador (si el DM lo agregÃ³ al combate)
   useEffect(() => {
     if (choice?.kind !== 'character' || !data || !data.scene_id) return;
     const sceneId = data.scene_id;
@@ -271,7 +271,7 @@ export default function PlayerView() {
       push(
         rollToToast({
           id: `init-${Date.now()}`,
-          roller_name: myChar?.name ?? i18n.t('pv.rollerYou', 'Tú'),
+          roller_name: myChar?.name ?? i18n.t('pv.rollerYou', 'TÃº'),
           dice_type: 6,
           count: 1,
           results: [value],
@@ -282,7 +282,7 @@ export default function PlayerView() {
       );
       setPendingRoll(null);
     } catch {
-      // Sin pending: el DM ya tiró por este personaje.
+      // Sin pending: el DM ya tirÃ³ por este personaje.
       setPendingRoll(null);
     } finally {
       setRollingInit(false);
@@ -322,12 +322,12 @@ export default function PlayerView() {
   }, [data, mySceneCharId, wasdTarget])
 
   // Por ref y no por dependencia del efecto: el intervalo de 250ms no se puede
-  // reiniciar en cada snapshot o la percepción se queda sin recalcular.
+  // reiniciar en cada snapshot o la percepciÃ³n se queda sin recalcular.
   const visionCharPosRef = useRef(visionCharPos)
   useEffect(() => { visionCharPosRef.current = visionCharPos }, [visionCharPos])
 
   // Memoria de lo explorado (paso 6): se lee al entrar a la escena y se pasa al
-  // worker. Solo se acumula si el DM encendió `remember_explored` en esta escena.
+  // worker. Solo se acumula si el DM encendiÃ³ `remember_explored` en esta escena.
   const mapScale = data?.map_scale ?? 1
   const mapperH = sceneWorldHeight(mapScale)
   const mapperW = mapperH * imageAspect
@@ -348,13 +348,13 @@ export default function PlayerView() {
     exploredRef.current = loadExplored(d.campaign_id, d.scene_id, cols, rows)
   }, [data?.campaign_id, data?.scene_id, data?.remember_explored, mySceneCharId, mapperW, mapperH])
 
-  // Percepción (worker + throttle): una sola máscara de alpha con LoS, luz y la
-  // niebla del DM ya resueltas (PLAN-VISION-PERCEPCION.md §4.1). Antes esto eran
-  // polígonos que competían por zIndex y la visión ganaba contra la niebla siempre.
+  // PercepciÃ³n (worker + throttle): una sola mÃ¡scara de alpha con LoS, luz y la
+  // niebla del DM ya resueltas (PLAN-VISION-PERCEPCION.md Â§4.1). Antes esto eran
+  // polÃ­gonos que competÃ­an por zIndex y la visiÃ³n ganaba contra la niebla siempre.
   // El mask (10K+ DDA rays) corre en un Web Worker para no bloquear el render thread.
   const [perception, setPerception] = useState<PerceptionMask | null>(null)
   // Criaturas que el personaje detecta pero no ve (blindsight/tremorsense/
-  // truesight, `lib/playerSense.ts`). Se recalcula con cada máscara del worker.
+  // truesight, `lib/playerSense.ts`). Se recalcula con cada mÃ¡scara del worker.
   const [sensed, setSensed] = useState<SensedChar[]>([])
   const mySceneCharIdRef = useRef<string | null>(null)
   useEffect(() => { mySceneCharIdRef.current = mySceneCharId }, [mySceneCharId])
@@ -372,8 +372,8 @@ export default function PlayerView() {
       if (msg?.kind !== 'los') return
       if (!lastLosRef.current || msg.jobId !== lastLosRef.current.jobId) return
       setPerception(msg.mask)
-      // Detección de criaturas (sentidos especiales): con la máscara fresca y
-      // la posición actual, no la del render anterior.
+      // DetecciÃ³n de criaturas (sentidos especiales): con la mÃ¡scara fresca y
+      // la posiciÃ³n actual, no la del render anterior.
       const sd = dataRef.current
       const myId = mySceneCharIdRef.current
       const mySc = sd?.characters.find((c) => c.id === myId)
@@ -393,7 +393,7 @@ export default function PlayerView() {
       } else {
         setSensed([])
       }
-      // Guardar lo acumulado para la próxima sesión (solo si el DM la pidió).
+      // Guardar lo acumulado para la prÃ³xima sesiÃ³n (solo si el DM la pidiÃ³).
       const d = dataRef.current
       if (msg.explored && d?.scene_id) {
         const cols = msg.mask?.cols ?? 0
@@ -424,7 +424,7 @@ export default function PlayerView() {
       const last = lastLosRef.current
       // El umbral es chico a proposito: con el WASD el jugador avanza 0.15
       // por tecla, asi que con 0.25 el trabajo de vision no se reenviaba
-      // hasta la segunda tecla y el circulo iluminado se quedaba atras ✗.
+      // hasta la segunda tecla y el circulo iluminado se quedaba atras âœ—.
       if (last && Math.hypot(pos.x - last.x, pos.z - last.z) < 0.03 && last.sig === sigLine) return
       const { w: mapW, h: mapH } = mapperRef.current
       if (mapW <= 0 || mapH <= 0) return
@@ -451,10 +451,10 @@ export default function PlayerView() {
         mapH,
         res,
         // El worker no ve a los tokens: las antorchas pegadas a uno/from otro
-        // salen de acá, y sin esto el cono propio no seguiría el facing.
+        // salen de acÃ¡, y sin esto el cono propio no seguirÃ­a el facing.
         charPos: Object.fromEntries(visionCharPosRef.current),
         shareCarriedLights: shareLight,
-        // Memoria de lo explorado (paso 6): solo con la política del DM.
+        // Memoria de lo explorado (paso 6): solo con la polÃ­tica del DM.
         explored: exploredRef.current,
         accumulate: Boolean(data?.remember_explored),
       }
@@ -464,10 +464,10 @@ export default function PlayerView() {
     return () => clearInterval(timer)
   }, [mySceneCharId, shareLight])
 
-  // SceneRenderer recibe los cálculos, no los hace: la niebla que ve el jugador es
-  // su máscara de percepción. Ya no se le pasan los polígonos de niebla de la
+  // SceneRenderer recibe los cÃ¡lculos, no los hace: la niebla que ve el jugador es
+  // su mÃ¡scara de percepciÃ³n. Ya no se le pasan los polÃ­gonos de niebla de la
   // escena ni los de las luces: la luz entra al mask como dato y la niebla del DM
-  // como rol por celda, así que antes competían entre sí por zIndex y el jugador
+  // como rol por celda, asÃ­ que antes competÃ­an entre sÃ­ por zIndex y el jugador
   // ganaba siempre.
   // N3: el DM ve a un jugador sin luz solo si esta en lo revelado. El jugador
   // publica su mascara de percepcion (la que ya usa para pintar la niebla) y
@@ -475,7 +475,7 @@ export default function PlayerView() {
   //
   // Se manda solo cuando cambia de verdad (una firma barata de la mascara) y
   // con throttle: son ~1,5 MB de mascara cruda por envio, no se manda en cada
-  // frame. Es best-effort: si falla, el DM ve todo (que es lo de antes) ✓.
+  // frame. Es best-effort: si falla, el DM ve todo (que es lo de antes) âœ“.
   const revealSigRef = useRef<string>('')
   const revealAtRef = useRef(0)
   const publishReveal = useCallback(
@@ -536,7 +536,7 @@ export default function PlayerView() {
       })
       push({
         id: `asklight-${Date.now()}`,
-        rollerName: i18n.t('pv.lightRequestRoller', '🕯️ Petición de luz'),
+        rollerName: i18n.t('pv.lightRequestRoller', 'ðŸ•¯ï¸ PeticiÃ³n de luz'),
         diceType: 1,
         count: 1,
         results: [1],
@@ -723,7 +723,7 @@ export default function PlayerView() {
     return () => { running = false; cancelAnimationFrame(rafRef.current); };
   }, [choice, data]);
 
-  // ─── Movimiento por teclado ──────────────────────────────────────────
+  // â”€â”€â”€ Movimiento por teclado â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // `MOVE_TICK_MS` es el piso de la fluidity: cada tick avanza `MOVE_SPEED`
   // unidades y PATCHea la posicion. 90 ms con interpolacion en el cliente se ve
   // continuo; 40 ms era tan rapido que solo servia para saturar el backend, y con
@@ -980,16 +980,16 @@ export default function PlayerView() {
   }, [myChar, data, notesDraft, syncNotesDraft]);
 
   // "Usar" descuenta el coste en PM y deja el evento ability_used (C4): el
-  // endpoint hace los dos en la misma transacción y la respuesta trae la
-  // ficha ya actualizada, así que el PM bar se refresca con setMyChar.
+  // endpoint hace los dos en la misma transacciÃ³n y la respuesta trae la
+  // ficha ya actualizada, asÃ­ que el PM bar se refresca con setMyChar.
   const handleUseSpell = useCallback(
     async (spell: Spell) => {
       if (!myChar || !data) return;
       const current = myChar.current_pm ?? myChar.max_pm ?? 0;
       const cost = spell.cost_pm;
       if (!Number.isFinite(cost) || cost > current) return;
-      // El click es el gesto que desbloquea audio: sonar acá cuenta como
-      // autoplay permitido, aunque la llamada al back falle después.
+      // El click es el gesto que desbloquea audio: sonar acÃ¡ cuenta como
+      // autoplay permitido, aunque la llamada al back falle despuÃ©s.
       if (spell.audio_path) {
         const url = staticUrl(spell.audio_path);
         if (url) void new Audio(url).play().catch(() => {});
@@ -1013,7 +1013,7 @@ export default function PlayerView() {
       id: s.id,
       label: s.name,
       icon: <span className="text-lg leading-none">{abilityIconChip(s.icon, s.name)}</span>,
-      hint: `Lv${s.level} · ${s.cost_pm} PM`,
+      hint: `Lv${s.level} Â· ${s.cost_pm} PM`,
     }));
   }, [myChar]);
 
@@ -1035,7 +1035,7 @@ export default function PlayerView() {
     lines.push(i18n.t('pv.mdClass', '- **Clase**: {{v}}', { v: myChar.class_ }));
     lines.push(i18n.t('pv.mdStatus', '- **Estado**: {{v}}', { v: myChar.status }));
     lines.push(i18n.t('pv.mdKnowledge', '- **Conocimiento**: {{v}}', { v: myChar.knowledge_scope }));
-    if (myChar.current_location_id) lines.push(i18n.t('pv.mdLocation', '- **Ubicación**: {{v}}', { v: myChar.current_location_id }));
+    if (myChar.current_location_id) lines.push(i18n.t('pv.mdLocation', '- **UbicaciÃ³n**: {{v}}', { v: myChar.current_location_id }));
     lines.push('');
     lines.push(i18n.t('pv.mdAttributes', '## Atributos (VIDA)'));
     lines.push(i18n.t('pv.mdVigor', '- Vigor: {{v}}', { v: myChar.vigor }));
@@ -1043,16 +1043,16 @@ export default function PlayerView() {
     lines.push(i18n.t('pv.mdDexterity', '- Destreza: {{v}}', { v: myChar.dexterity }));
     lines.push(i18n.t('pv.mdCunning', '- Astucia: {{v}}', { v: myChar.cunning }));
     lines.push('');
-    lines.push(i18n.t('pv.mdDerived', '## Estadísticas Derivadas'));
-    lines.push(i18n.t('pv.mdPvMax', '- PV Máx: {{v}}', { v: myChar.max_pv }));
-    lines.push(i18n.t('pv.mdPmMax', '- PM Máx: {{v}}', { v: myChar.max_pm }));
+    lines.push(i18n.t('pv.mdDerived', '## EstadÃ­sticas Derivadas'));
+    lines.push(i18n.t('pv.mdPvMax', '- PV MÃ¡x: {{v}}', { v: myChar.max_pv }));
+    lines.push(i18n.t('pv.mdPmMax', '- PM MÃ¡x: {{v}}', { v: myChar.max_pm }));
     lines.push(i18n.t('pv.mdDefense', '- Defensa: {{v}}', { v: myChar.defense }));
     lines.push(i18n.t('pv.mdPvCurrent', '- PV Actual: {{v}}', { v: myChar.current_pv ?? myChar.max_pv }));
     lines.push(i18n.t('pv.mdPmCurrent', '- PM Actual: {{v}}', { v: myChar.current_pm ?? myChar.max_pm }));
     lines.push('');
     lines.push(i18n.t('pv.mdInventory', '## Inventario'));
     if (myChar.inventory_json.length === 0) {
-      lines.push(i18n.t('pv.mdEmpty', '- Vacío'));
+      lines.push(i18n.t('pv.mdEmpty', '- VacÃ­o'));
     } else {
       myChar.inventory_json.forEach((item) => {
         const equipped = item.equipped ? i18n.t('pv.mdEquipped', ' (Equipado)') : '';
@@ -1083,8 +1083,8 @@ export default function PlayerView() {
     URL.revokeObjectURL(url);
   }, [myChar]);
 
-  // Botones de los paneles de información. Solo el personaje tiene paneles: el
-  // espectador no, así que la lista sale vacía y no se dibuja nada.
+  // Botones de los paneles de informaciÃ³n. Solo el personaje tiene paneles: el
+  // espectador no, asÃ­ que la lista sale vacÃ­a y no se dibuja nada.
   const panelToggles = useMemo<PlayerPanelToggle[]>(
     () =>
       choice?.kind === 'character'
@@ -1121,7 +1121,7 @@ export default function PlayerView() {
   if (loading && !missingCode) {
     return (
       <div className="h-screen flex items-center justify-center bg-black text-[var(--text-secondary)]">
-        {t('pv.joining', 'Uniéndose a la campaña...')}
+        {t('pv.joining', 'UniÃ©ndose a la campaÃ±a...')}
       </div>
     );
   }
@@ -1129,7 +1129,7 @@ export default function PlayerView() {
   if (error || missingCode || !data) {
     return (
       <div className="h-screen flex items-center justify-center bg-black text-red-400">
-        {error || (missingCode ? t('pv.noCode', 'Sin código de invitación') : t('pv.joinFailedShort', 'No se pudo unir'))}
+        {error || (missingCode ? t('pv.noCode', 'Sin cÃ³digo de invitaciÃ³n') : t('pv.joinFailedShort', 'No se pudo unir'))}
       </div>
     );
   }
@@ -1139,7 +1139,7 @@ export default function PlayerView() {
   const invItems = myChar?.inventory_json ?? [];
   const myStatuses = data.characters.find((c) => c.id === mySceneCharId)?.statuses ?? [];
 
-  // D-pad táctil: alimenta el mismo Set que el teclado en el loop de movimiento.
+  // D-pad tÃ¡ctil: alimenta el mismo Set que el teclado en el loop de movimiento.
   const pad = (key: string) => ({
     onPointerDown: (e: React.PointerEvent) => {
       e.preventDefault();
@@ -1249,8 +1249,8 @@ export default function PlayerView() {
             className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--surface)]/95 border border-[var(--warning)]/40 shadow-lg"
             data-testid="initiative-prompt"
           >
-            <span className="text-[var(--warning)] text-sm">⚔️</span>
-            <span className="text-xs text-[var(--text-primary)]">{t('pv.rollInitiative', '¡Tirá iniciativa!')}</span>
+            <span className="text-[var(--warning)] text-sm">âš”ï¸</span>
+            <span className="text-xs text-[var(--text-primary)]">{t('pv.rollInitiative', 'Â¡TirÃ¡ iniciativa!')}</span>
             <button
               type="button"
               onClick={handleInitiativeRoll}
@@ -1258,7 +1258,7 @@ export default function PlayerView() {
               className="text-sm px-2.5 py-1 rounded bg-[var(--warning)] text-black font-semibold hover:bg-[var(--warning)]/80 disabled:opacity-40 transition-colors"
               data-testid="initiative-roll-btn"
             >
-              🎲 d6
+              ðŸŽ² d6
             </button>
           </div>
         )}
@@ -1272,7 +1272,9 @@ export default function PlayerView() {
           >
             <SceneRenderer
               backgroundUrl={staticUrl(data.background_path)!}
-              characters={data.characters.map((c) => {
+              characters={data.characters
+                .filter((c) => (c as any).visible !== false)
+                .map((c) => {
                 const mySceneCharId = choice?.kind === 'character'
                   ? data.characters.find(
                       (ch) => ch.type === 'character' && data.player_characters.some((p) => p.id === ch.entity_id && p.id === choice.id)
@@ -1281,7 +1283,7 @@ export default function PlayerView() {
                 const isMyChar = c.id === mySceneCharId;
                 // Posiciones autoritativas para otros; para el propio personaje usamos
                 // wasdTarget (optimista, inmediato) para que su token y sus luces
-                // respondan sin lag. La interpolación visual 60fps está en SceneRenderer.
+                // respondan sin lag. La interpolaciÃ³n visual 60fps estÃ¡ en SceneRenderer.
                 if (isMyChar && wasdTarget) {
                   return {
                     id: c.id, sceneCharId: c.id, name: c.name, type: c.type,
@@ -1369,15 +1371,15 @@ export default function PlayerView() {
           </Suspense>
         ) : (
           <div className="w-full h-full flex items-center justify-center text-[var(--text-secondary)]">
-            {t('pv.noSceneYet', 'El DM aún no abrió una escena')}
+            {t('pv.noSceneYet', 'El DM aÃºn no abriÃ³ una escena')}
           </div>
         )}
 
         {/*
-          La niebla del jugador se pinta en una textura de WebGL, así que no hay
-          nada legible en el DOM. Esto es el seam para el e2e de percepción (y un
-          dato útil si hay que debuggear por qué alguien ve de más): cuántas
-          celdas ve el personaje, y cuántas de la rejilla.
+          La niebla del jugador se pinta en una textura de WebGL, asÃ­ que no hay
+          nada legible en el DOM. Esto es el seam para el e2e de percepciÃ³n (y un
+          dato Ãºtil si hay que debuggear por quÃ© alguien ve de mÃ¡s): cuÃ¡ntas
+          celdas ve el personaje, y cuÃ¡ntas de la rejilla.
         */}
         <div
           className="hidden"
@@ -1417,7 +1419,7 @@ export default function PlayerView() {
               { k: 'w', label: <ArrowUp className="h-4 w-4" />, name: t('pv.moveUp', 'Mover adelante') },
               { k: 'e', label: <RotateCw className="h-4 w-4" />, name: t('pv.rotateRight', 'Girar a la derecha') },
               { k: 'a', label: <ArrowLeft className="h-4 w-4" />, name: t('pv.moveLeft', 'Mover a la izquierda') },
-              { k: 's', label: <ArrowDown className="h-4 w-4" />, name: t('pv.moveDown', 'Mover atrás') },
+              { k: 's', label: <ArrowDown className="h-4 w-4" />, name: t('pv.moveDown', 'Mover atrÃ¡s') },
               { k: 'd', label: <ArrowRight className="h-4 w-4" />, name: t('pv.moveRight', 'Mover a la derecha') },
             ].map((b) => (
               <button
@@ -1446,7 +1448,7 @@ export default function PlayerView() {
             <div className="p-3 space-y-2">
               {/* El retrato va VERTICAL y centrado: en un recuadro ancho la
                   imagen se cortaba (la cara quedaba fuera). Los datos de abajo
-                  se corren con el ✓. */}
+                  se corren con el âœ“. */}
               {myChar.portrait_path ? (
                 <img
                   src={staticUrl(myChar.portrait_path)!}
@@ -1462,7 +1464,7 @@ export default function PlayerView() {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-[var(--text-primary)] truncate">{myChar.name}</p>
                   <p className="text-[11px] text-[var(--text-secondary)] truncate">
-                    {[myChar.race, myChar.class_].filter(Boolean).join(' · ') || '\u00A0'}
+                    {[myChar.race, myChar.class_].filter(Boolean).join(' Â· ') || '\u00A0'}
                   </p>
                 </div>
                 <div className="ml-auto flex gap-1 shrink-0">
@@ -1472,7 +1474,7 @@ export default function PlayerView() {
                     title={t('pv.exportSheet', 'Exportar ficha como Markdown')}
                     className="w-5 h-5 rounded bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary)]/70 text-[var(--text-primary)] hover:text-white text-xs flex items-center justify-center transition-colors"
                   >
-                    ↓
+                    â†“
                   </button>
                   <button
                     type="button"
@@ -1480,7 +1482,7 @@ export default function PlayerView() {
                     title={t('pv.printSheet', 'Imprimir ficha')}
                     className="w-5 h-5 rounded bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary)]/70 text-[var(--text-primary)] hover:text-white text-xs flex items-center justify-center transition-colors"
                   >
-                    🖨
+                    ðŸ–¨
                   </button>
                   {Object.entries(VIDA_LABELS).map(([key, attrLabel]) => (
                     <span
@@ -1543,18 +1545,18 @@ export default function PlayerView() {
                       ].map((a) => (
                         <div key={a.label} className="text-center bg-[var(--bg-tertiary)]/50 rounded py-0.5 px-0.5">
                           <p className="text-[8px] leading-none text-[var(--text-secondary)]">{a.label}</p>
-                          <p className="text-xs leading-tight font-bold text-[var(--text-primary)]">{a.value === '-' ? '−' : a.value}</p>
+                          <p className="text-xs leading-tight font-bold text-[var(--text-primary)]">{a.value === '-' ? 'âˆ’' : a.value}</p>
                         </div>
                       ))}
                     </div>
                     <div className="grid grid-cols-3 gap-1 text-center">
                       <div className="bg-[var(--bg-tertiary)]/50 rounded py-1">
                         <p className="font-bold text-red-400">{myChar.max_pv}</p>
-                        <p className="text-[10px] text-[var(--text-secondary)]">{t('pv.pvMax', 'PV máx.')}</p>
+                        <p className="text-[10px] text-[var(--text-secondary)]">{t('pv.pvMax', 'PV mÃ¡x.')}</p>
                       </div>
                       <div className="bg-[var(--bg-tertiary)]/50 rounded py-1">
                         <p className="font-bold text-blue-400">{myChar.max_pm}</p>
-                        <p className="text-[10px] text-[var(--text-secondary)]">{t('pv.pmMax', 'PM máx.')}</p>
+                        <p className="text-[10px] text-[var(--text-secondary)]">{t('pv.pmMax', 'PM mÃ¡x.')}</p>
                       </div>
                       <div className="bg-[var(--bg-tertiary)]/50 rounded py-1">
                         <p className="font-bold text-green-400">{myChar.defense}</p>
@@ -1570,7 +1572,7 @@ export default function PlayerView() {
                 {sheetTab === 'inventory' && (
                   <div className="space-y-1">
                     {invItems.length === 0 ? (
-                      <p className="text-[10px] text-[var(--text-secondary)]">{t('pv.empty', 'Vacío')}</p>
+                      <p className="text-[10px] text-[var(--text-secondary)]">{t('pv.empty', 'VacÃ­o')}</p>
                     ) : (
                       invItems.map((item, i) => (
                         <div key={i} className="flex items-center gap-1.5">
@@ -1621,7 +1623,7 @@ export default function PlayerView() {
                               title={t('pv.hasSound', 'Tiene sonido: suena al usar')}
                               data-testid={`spell-audio-${spell.id}`}
                             >
-                              🔊
+                              ðŸ”Š
                             </span>
                           )}
                           <button
@@ -1669,9 +1671,9 @@ export default function PlayerView() {
           <div className="absolute inset-0 z-20 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6">
             <div className="bg-[var(--surface)] border border-[var(--bg-tertiary)]/60 rounded-xl p-4 sm:p-6 w-full max-w-md space-y-4">
               <div>
-                <h2 className="text-lg font-bold text-[var(--text-primary)]">{t('pv.whoAreYou', '¿Quién sos?')}</h2>
+                <h2 className="text-lg font-bold text-[var(--text-primary)]">{t('pv.whoAreYou', 'Â¿QuiÃ©n sos?')}</h2>
                 <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-                  {t('pv.pickCharHint', 'Elegí tu personaje para ver tu ficha durante la sesión.')}
+                  {t('pv.pickCharHint', 'ElegÃ­ tu personaje para ver tu ficha durante la sesiÃ³n.')}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -1708,7 +1710,7 @@ export default function PlayerView() {
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-[var(--text-primary)] truncate">{p.name}</p>
                   <p className="text-[10px] text-[var(--text-secondary)] truncate">
-                        {[p.race, p.class_name].filter(Boolean).join(' · ')}
+                        {[p.race, p.class_name].filter(Boolean).join(' Â· ')}
                       </p>
                     </div>
                   </button>
@@ -1795,10 +1797,10 @@ export default function PlayerView() {
                     {grimorioDetail.name}
                   </p>
                   <p className="text-[10px] text-[var(--text-secondary)] mt-0.5">
-                    Lv{grimorioDetail.level} · {grimorioDetail.cost_pm} PM
+                    Lv{grimorioDetail.level} Â· {grimorioDetail.cost_pm} PM
                     {grimorioDetail.audio_path && (
                       <span className="ml-1.5" title={t('pv.hasSound', 'Tiene sonido: suena al usar')}>
-                        🔊
+                        ðŸ”Š
                       </span>
                     )}
                   </p>
@@ -1809,12 +1811,12 @@ export default function PlayerView() {
                   className="shrink-0 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
                   aria-label={t('pv.closeGrimorio', 'Cerrar Grimorio')}
                 >
-                  ✕
+                  âœ•
                 </button>
               </div>
               <div className="h-px bg-[var(--bg-tertiary)]" />
               <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                {grimorioDetail.description || t('pv.noDescription', 'Sin descripción.')}
+                {grimorioDetail.description || t('pv.noDescription', 'Sin descripciÃ³n.')}
               </p>
               <button
                 type="button"

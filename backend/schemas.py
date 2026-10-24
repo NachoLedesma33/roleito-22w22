@@ -478,6 +478,7 @@ class SceneResponse(BaseModel):
     entrance_z: float = 0.0
     map_scale: float = 1.0
     model_y_offset: float = 0.0
+    room_skin: str = ""
     grid_size: float = 0.0
     grid_snap: bool = False
     items_json: str = "[]"

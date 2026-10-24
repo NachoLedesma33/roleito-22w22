@@ -92,31 +92,29 @@ export default function SceneSettingsHud({ scene, onUpdate, onClose }: SceneSett
           </p>
         </div>
 
-        {/* Model Y Offset — only for 3D models */}
-        {isModel && (
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">Desplazamiento del piso</label>
-              <span className="text-[10px] text-[var(--accent)] font-mono">{modelYOffset.toFixed(3)}</span>
-            </div>
-            <input
-              type="range"
-              min={-10}
-              max={10}
-              step={0.001}
-              value={modelYOffset}
-              onChange={(e) => {
-                const v = parseFloat(e.target.value);
-                setModelYOffset(v);
-                handleUpdate('model_y_offset', v);
-              }}
-              className="w-full h-1 accent-[var(--accent)]"
-            />
-            <p className="text-[9px] text-[var(--text-secondary)] mt-0.5">
-              Ajustalo si los tokens flotan sobre o bajo el piso
-            </p>
+        {/* Altura del mapa (ajuste fino sobre anclaje del skin) */}
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">{isModel ? 'Altura de los tokens (piso visual)' : 'Altura del mapa (ajuste fino)'}</label>
+            <span className="text-[10px] text-[var(--accent)] font-mono">{modelYOffset.toFixed(1)}</span>
           </div>
-        )}
+          <input
+            type="range"
+            min={-50}
+            max={50}
+            step={0.5}
+            value={modelYOffset}
+            onChange={(e) => {
+              const v = parseFloat(e.target.value);
+              setModelYOffset(v);
+              handleUpdate('model_y_offset', v);
+            }}
+            className="w-full h-1 accent-[var(--accent)]"
+          />
+          <p className="text-[9px] text-[var(--text-secondary)] mt-0.5">
+            Ajuste fino sobre el anclaje del ambiente
+          </p>
+        </div>
 
         {/* Grid Size */}
         <div>

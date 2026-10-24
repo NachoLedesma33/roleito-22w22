@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Body, Depends, HTTPException, WebSocket, WebSocketDisconnect
+﻿from fastapi import APIRouter, Body, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import delete, select
 from database import get_session
@@ -241,7 +241,7 @@ ws_manager = CampaignWSManager()
 
 
 async def broadcast_revision(db: AsyncSession, campaign_id: str) -> None:
-    """Empuja la revisión actual a los players conectados (wake de snapshot)."""
+    """Empuja la revisi??n actual a los players conectados (wake de snapshot)."""
     # Invalida PRIMERO: esta funcion la llama toda mutacion, y es la que garantiza
     # que la revision que sale por el WS sea la del estado nuevo.
     invalidate_player_revision(campaign_id)
@@ -395,15 +395,15 @@ async def network_public_url(
 
 @campaigns_router.get("/campaigns/active-invite")
 async def active_invite(db: AsyncSession = Depends(get_session)):
-    """El codigo de la campaña que esta ABIERTA al público.
+    """El codigo de la campa??a que esta ABIERTA al p??blico.
 
     Es lo que hay detras del link fijo del playtest remoto
     (`https://<tu-dominio>/join`): el host no cambia nunca, asi que el link se
-    pega una vez en el Discord de la mesa, pero el codigo de la campaña cambia
+    pega una vez en el Discord de la mesa, pero el codigo de la campa??a cambia
     (es lo que mantiene el invite como secreto).
 
-    Solo responde si el DM abrio la partida al público (`public_join` en los
-    settings de la campaña). Si no hay ninguna abierta, 404: el link fijo no
+    Solo responde si el DM abrio la partida al p??blico (`public_join` en los
+    settings de la campa??a). Si no hay ninguna abierta, 404: el link fijo no
     es una puerta abierta.
     """
     # La mas tocada ultimamente: el DM abre la partida justo antes de jugar, asi
@@ -842,10 +842,10 @@ async def import_campaign(
     db.add(campaign)
     await db.flush()
 
-    # Los assets viajan con la campaña de ORIGEN en el path. Los bytes se
-    # escriben en la carpeta de la campaña destino y `asset_rewrites` deja el
+    # Los assets viajan con la campa??a de ORIGEN en el path. Los bytes se
+    # escriben en la carpeta de la campa??a destino y `asset_rewrites` deja el
     # equivalencia para que las columnas (retratos, fondos, mapas) apunten a la
-    # copia y no a los archivos de la campaña de la que vinieron.
+    # copia y no a los archivos de la campa??a de la que vinieron.
     asset_rewrites: dict[str, str] = {}
     for asset in data.assets:
         rel = asset.get("path", "")
@@ -863,14 +863,14 @@ async def import_campaign(
         asset_rewrites[rel] = new_rel
 
     def imported_path(value: str | None) -> str | None:
-        """Path de un asset importado: el de la campaña destino si se importó."""
+        """Path de un asset importado: el de la campa??a destino si se import??."""
         rel = asset_rel(value) if value else None
         if rel and rel in asset_rewrites:
             return asset_abs(asset_rewrites[rel])
-        # No viajó en el bundle (pesa más que MAX_ASSET_BYTES): si el archivo
-        # sigue en el disco de esta máquina, se copia a la campaña destino.
-        # Sin eso la columna quedaba apuntando a la campaña de origen y borrarla
-        # rompía la importada.
+        # No viaj?? en el bundle (pesa m??s que MAX_ASSET_BYTES): si el archivo
+        # sigue en el disco de esta m??quina, se copia a la campa??a destino.
+        # Sin eso la columna quedaba apuntando a la campa??a de origen y borrarla
+        # romp??a la importada.
         if rel:
             source = asset_abs(rel)
             if os.path.isfile(source):
@@ -1139,7 +1139,7 @@ async def import_campaign(
         await db.flush()
         id_map[nv.get("id", "")] = new_nv.id
 
-    # Refs internos de items_json: luces attachadas a scene_characters → id nuevo
+    # Refs internos de items_json: luces attachadas a scene_characters ??? id nuevo
     for scene_obj, raw_items in scene_items_for_remap:
         try:
             items = json.loads(raw_items)
@@ -1300,7 +1300,7 @@ async def invite_revision(
     return {"revision": await compute_player_revision(db, campaign.id)}
 
 
-# ── N3: que esta viendo cada jugador ahora ──────────────────────
+# ?????? N3: que esta viendo cada jugador ahora ??????????????????????????????????????????????????????????????????
 #
 # El jugador publica su mascara de percepcion (la que ya usa para pintar la
 # niebla) y el DM la consulta: asi el DM ve a un jugador sin luz solo si el
@@ -1491,9 +1491,10 @@ async def join_by_invite_code(
         "lighting": lighting,
         "map_scale": getattr(active_scene, 'map_scale', 1.0) if active_scene else 1.0,
         "model_y_offset": getattr(active_scene, 'model_y_offset', 0.0) if active_scene else 0.0,
+        "room_skin": getattr(active_scene, 'room_skin', '') if active_scene else '',
         "grid_size": getattr(active_scene, 'grid_size', 0.0) if active_scene else 0.0,
         "grid_snap": bool(getattr(active_scene, 'grid_snap', 0)) if active_scene else False,
-        # Política de mesa del DM: con esto el jugador recuerda lo explorado
+        # Pol??tica de mesa del DM: con esto el jugador recuerda lo explorado
         # (PLAN-VISION-PERCEPCION.md, paso 6).
         "remember_explored": bool(getattr(active_scene, 'remember_explored', 0)) if active_scene else False,
         "characters": scene_chars,

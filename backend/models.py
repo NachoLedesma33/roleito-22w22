@@ -286,6 +286,7 @@ class Scene(Base):
     entrance_z = Column(Float, default=0.0)
     map_scale = Column(Float, default=1.0)
     model_y_offset = Column(Float, default=0.0)
+    room_skin = Column(String, default='')
     grid_size = Column(Float, default=0.0)
     grid_snap = Column(Integer, default=0)
     items_json = Column(Text, default="[]")

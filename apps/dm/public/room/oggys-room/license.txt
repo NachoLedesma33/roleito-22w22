@@ -1,0 +1,8 @@
+Model Information:
+* title:	VR room Oggy's room [BAKED]
+* source:	https://sketchfab.com/3d-models/vr-room-oggys-room-baked-674cdeccd00c4f9c95a1b41905a6cb4c
+* author:	abhayexe (https://sketchfab.com/abhayexe)
+
+Model License:
+* license type:	SKETCHFAB Standard (https://sketchfab.com/licenses)
+* requirements:	Under basic restrictions, use worldwide, on all types of media, commercially or not, and in all types of derivative works
