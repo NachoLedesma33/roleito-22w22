@@ -2623,6 +2623,7 @@ export default function SceneRenderer({
           mapWidth={mapWidth}
           mapHeight={mapHeight}
           renderMode={renderMode}
+          offsetY={mapOffY}
         />
       )}
       {fogBrush && onFogStroke && (

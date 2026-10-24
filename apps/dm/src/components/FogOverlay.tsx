@@ -205,6 +205,7 @@ interface FogOverlayProps {
   mapWidth: number
   mapHeight: number
   renderMode?: import('@/lib/overlayY').RenderMode
+  offsetY?: number
 }
 
 export default function FogOverlay({
@@ -215,9 +216,11 @@ export default function FogOverlay({
   mapWidth,
   mapHeight,
   renderMode = '2d',
+  offsetY = 0,
 }: FogOverlayProps) {
+  void renderMode;
   const aspect = mapHeight > 0 ? mapWidth / mapHeight : 1
-  const fogY = renderMode === '2d' ? 0.08 : 6
+  const fogY = offsetY + 0.08
 
   // El tamaño va en la clave: si el aspect del mapa cambia (o se carga el fondo
   // tarde) es OTRA textura, con su propia subida correcta.
