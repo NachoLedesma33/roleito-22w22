@@ -2483,7 +2483,7 @@ export default function SceneRenderer({
         />
       )}
       <Canvas
-        camera={{ position: [skin.camera?.x ?? 0, skin.camera?.y ?? 8, skin.camera?.z ?? 8], fov: 50, near: 0.1, far: 100000 }}
+        camera={{ position: [skin.camera?.x ?? 0, skin.camera?.y ?? 8, skin.camera?.z ?? 8], fov: 50, near: 0.1, far: 1000000 }}
         style={{ width: '100%', height: '100%' }}
         onPointerMissed={handleCanvasPointerMissed}
       >
