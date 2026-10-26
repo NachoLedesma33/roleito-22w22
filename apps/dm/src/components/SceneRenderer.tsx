@@ -2488,10 +2488,10 @@ export default function SceneRenderer({
         onPointerMissed={handleCanvasPointerMissed}
       >
         <SceneLighting mode={lighting} />
-        {skin.modelUrl && (roomSkinId === '' || roomSkinId == null || roomSkinId === 'oggys') && (
+        {skin.modelUrl && (
           <Suspense fallback={null}>
             {/* @ts-ignore */}
-            <RoomBackground skin={'oggys'} mapScale={mapScale} />
+            <RoomBackground modelUrl={skin.modelUrl} modelScale={skin.modelScale ?? 40} floorOffset={skin.floorOffset ?? 0} />
           </Suspense>
         )}
         <group position={[mapOffX, mapOffY, mapOffZ]}>

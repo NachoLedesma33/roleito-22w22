@@ -2,6 +2,8 @@ export type RoomSkin = {
   id: string;
   label: string;
   modelUrl?: string;
+  modelScale?: number;
+  floorOffset?: number;
   /** Coordenadas donde debe aparecer el mapa de juego */
   mapAnchor: { x: number; y: number; z: number };
   /** Posición inicial de cámara relativa al anclaje */
@@ -22,9 +24,21 @@ export const ROOM_SKINS: RoomSkin[] = [
     id: 'oggys',
     label: "Oggy's Room",
     modelUrl: '/room/oggys-room/scene.gltf',
+    modelScale: 40,
+    floorOffset: -30,
     mapAnchor: { x: 0, y: 136, z: 0 },
     camera: { x: 0, y: 140, z: 12 },
     roomRadius: 19 * 40,
+  },
+  {
+    id: 'skybox-anime',
+    label: 'Anime Sky (skybox)',
+    modelUrl: '/room/skybox-anime-sky/scene.glb',
+    modelScale: 300,
+    floorOffset: 0,
+    mapAnchor: { x: 0, y: 0, z: 0 },
+    camera: { x: 0, y: 2, z: 6 },
+    roomRadius: 100000,
   },
 ];
 

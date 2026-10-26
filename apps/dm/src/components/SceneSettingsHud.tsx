@@ -2,11 +2,12 @@ import { useState } from 'react';
 import type { Scene } from '@/lib/api';
 import { api } from '@/lib/api';
 import { gridCellUnits } from '@/lib/sceneWorld';
+import { ROOM_SKINS } from '@/lib/roomSkins';
 import HudPanel from './HudPanel';
 
 interface SceneSettingsHudProps {
   scene: Scene;
-  onUpdate: (updates: Partial<Pick<Scene, 'map_scale' | 'model_y_offset' | 'grid_size' | 'grid_snap'>>) => Promise<void>;
+  onUpdate: (updates: Partial<Pick<Scene, 'map_scale' | 'model_y_offset' | 'room_skin' | 'grid_size' | 'grid_snap'>>) => Promise<void>;
   onClose: () => void;
 }
 
@@ -68,6 +69,22 @@ export default function SceneSettingsHud({ scene, onUpdate, onClose }: SceneSett
   return (
     <HudPanel title="Ajustes de escena" panelId="scene-settings" onClose={onClose} className="w-64">
       <div className="space-y-3 p-3">
+        {/* Skin de fondo (cuarto virtual) */}
+        <div>
+          <label className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">Ambiente de fondo</label>
+          <select
+            className="w-full mt-1 text-[11px] bg-[var(--bg-tertiary)] border border-[var(--bg-tertiary)] rounded px-2 py-1"
+            value={scene.room_skin || ''}
+            onChange={async (e) => {
+              const v = e.target.value;
+              await onUpdate({ room_skin: v, model_y_offset: 0 });
+            }}
+          >
+            {ROOM_SKINS.map((s) => (
+              <option key={s.id} value={s.id}>{s.label}</option>
+            ))}
+          </select>
+        </div>
         {/* Map Scale */}
         <div>
           <div className="flex items-center justify-between mb-1">
