@@ -19,7 +19,7 @@ const TS_CANDIDATES = [
 function hasTailscale() {
   for (const c of TS_CANDIDATES) {
     const r = spawnSync(c, ['version'], { stdio: 'ignore' });
-    if (r.status === 0) return c;
+    if (r.status === 0) return c; // found
   }
   return null;
 }
@@ -47,7 +47,7 @@ console.log(`Tailscale detectado: ${ts}\n`);
 // 1. login (interactivo, abre navegador)
 const status = spawnSync(ts, ['status', '--json'], { encoding: 'utf8' });
 let loggedIn = false;
-try { loggedIn = JSON.parse(status.stdout || '{}').BackendState === 'Running'; } catch {}
+try { loggedIn = JSON.parse(status.stdout || '{}').BackendState === 'Running'; } catch { /* ignore */ }
 if (!loggedIn) {
   console.log('Paso 1/2: login (se abre el navegador). Ejecuta manualmente:');
   console.log(`  "${ts}" up\n`);

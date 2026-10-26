@@ -1273,7 +1273,6 @@ export default function PlayerView() {
             <SceneRenderer
               backgroundUrl={staticUrl(data.background_path)!}
               characters={data.characters
-                .filter((c) => (c as any).visible !== false)
                 .map((c) => {
                 const mySceneCharId = choice?.kind === 'character'
                   ? data.characters.find(

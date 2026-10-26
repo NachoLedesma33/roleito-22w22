@@ -31,7 +31,7 @@ function levantar(nombre, color, cmd, args) {
 function cerrar() {
   if (terminado) return
   terminado = true
-  for (const h of hijos) { try { h.kill() } catch {} }
+  for (const h of hijos) { try { h.kill() } catch { /* ignore */ } }
   process.exit(0)
 }
 
