@@ -3533,7 +3533,7 @@ const startFogMode = useCallback(() => {
           {showSceneSettings && activeScene && campaignId && (
             <SceneSettingsHud
               scene={activeScene}
-              onUpdate={async (updates: Partial<Pick<Scene, 'map_scale' | 'model_y_offset' | 'grid_size' | 'grid_snap'>>) => {
+              onUpdate={async (updates: Partial<Pick<Scene, 'map_scale' | 'model_y_offset' | 'room_skin' | 'grid_size' | 'grid_snap'>>) => {
                 const updated = await api.scenes.update(campaignId, activeScene.id, updates);
                 setActiveScene(updated);
                 setScenes((prev) => prev.map((s) => s.id === updated.id ? updated : s));

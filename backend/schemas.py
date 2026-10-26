@@ -436,6 +436,7 @@ class SceneUpdate(BaseModel):
     map_id: Optional[str] = None
     map_scale: Optional[float] = None
     model_y_offset: Optional[float] = None
+    room_skin: Optional[str] = None
     grid_size: Optional[float] = None
     grid_snap: Optional[bool] = None
     items_json: Optional[str] = None

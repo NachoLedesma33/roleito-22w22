@@ -74,7 +74,7 @@ export default function SceneSettingsHud({ scene, onUpdate, onClose }: SceneSett
           <label className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">Ambiente de fondo</label>
           <select
             className="w-full mt-1 text-[11px] bg-[var(--bg-tertiary)] border border-[var(--bg-tertiary)] rounded px-2 py-1"
-            value={scene.room_skin || ''}
+            value={scene.room_skin || 'oggys'}
             onChange={async (e) => {
               const v = e.target.value;
               await onUpdate({ room_skin: v, model_y_offset: 0 });
