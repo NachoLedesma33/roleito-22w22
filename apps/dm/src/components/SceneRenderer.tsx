@@ -2492,7 +2492,7 @@ export default function SceneRenderer({
         {skin.modelUrl && (
           <Suspense fallback={null}>
             {/* @ts-ignore */}
-            <RoomBackground modelUrl={skin.modelUrl} modelScale={skin.modelScale ?? 40} floorOffset={skin.floorOffset ?? 0} />
+            <RoomBackground modelUrl={skin.modelUrl} modelScale={skin.modelScale ?? 40} floorOffset={skin.floorOffset ?? 0} offsetX={skin.offsetX ?? 0} offsetZ={skin.offsetZ ?? 0} />
           </Suspense>
         )}
         <group position={[mapOffX, mapOffY, mapOffZ]}>

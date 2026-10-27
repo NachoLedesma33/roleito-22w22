@@ -6,7 +6,9 @@ export default function RoomBackground({
   modelUrl,
   modelScale = 40,
   floorOffset = -25,
-}: { modelUrl: string; modelScale?: number; floorOffset?: number }) {
+  offsetX = 0,
+  offsetZ = 0,
+}: { modelUrl: string; modelScale?: number; floorOffset?: number; offsetX?: number; offsetZ?: number }) {
   const { scene } = useGLTF(modelUrl);
 
   const cloned = useMemo(() => {
@@ -30,6 +32,6 @@ export default function RoomBackground({
   const scale = modelScale;
 
   return (
-    <primitive object={cloned} scale={scale} position={[0, floorOffset, 0]} />
+    <primitive object={cloned} scale={scale} position={[offsetX, floorOffset, offsetZ]} />
   );
 }
