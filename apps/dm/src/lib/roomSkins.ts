@@ -221,6 +221,26 @@ export const ROOM_SKINS: RoomSkin[] = [
     camera: { x: 0, y: 2, z: 6 },
     roomRadius: 100000,
   },
+  {
+    id: 'realistic-forest',
+    label: 'Realistic Forest',
+    modelUrl: '/room/realistic-forest/scene.glb',
+    modelScale: 0.073087,
+    floorOffset: 0,
+    mapAnchor: { x: 0, y: 0, z: 0 },
+    camera: { x: 0, y: 2, z: 6 },
+    roomRadius: 100000,
+  },
+  {
+    id: 'library',
+    label: 'Library',
+    modelUrl: '/room/library/scene.glb',
+    modelScale: 1.373078,
+    floorOffset: 0,
+    mapAnchor: { x: 0, y: 0, z: 0 },
+    camera: { x: 0, y: 2, z: 6 },
+    roomRadius: 100000,
+  },
 ];
 
 export const DEFAULT_ROOM_SKIN = 'oggys';
