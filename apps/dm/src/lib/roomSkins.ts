@@ -236,7 +236,7 @@ export const ROOM_SKINS: RoomSkin[] = [
     label: 'Library',
     modelUrl: '/room/library/scene.glb',
     modelScale: 500,
-    floorOffset: 0,
+    floorOffset: -1100,
     mapAnchor: { x: 0, y: 100, z: 0 },
     camera: { x: 0, y: 102, z: 6 },
     roomRadius: 100000,
