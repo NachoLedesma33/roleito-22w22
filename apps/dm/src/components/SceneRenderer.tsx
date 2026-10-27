@@ -2684,21 +2684,16 @@ export default function SceneRenderer({
           {(['X', 'Y', 'Z'] as const).map((axis) => {
             const val = axis === 'X' ? mapOffX : axis === 'Y' ? mapOffY : mapOffZ;
             const setVal = axis === 'X' ? setMapOffX : axis === 'Y' ? setMapOffY : setMapOffZ;
-            const min = axis === 'Y' ? -300 : -100;
-            const max = axis === 'Y' ? 300 : 100;
             return (
               <div key={axis} className="flex items-center gap-1">
                 <span className="w-4">{axis}</span>
                 <input
-                  type="range"
-                  min={min}
-                  max={max}
-                  step={axis === 'Y' ? 1 : 0.5}
+                  type="number"
+                  step={1}
                   value={val}
                   onChange={(e) => setVal(parseFloat(e.target.value) || 0)}
-                  className="w-24 h-1 accent-[var(--accent)]"
+                  className="w-20 bg-gray-800 rounded px-1 text-[10px]"
                 />
-                <span className="w-10 text-right">{val.toFixed(1)}</span>
               </div>
             );
           })}

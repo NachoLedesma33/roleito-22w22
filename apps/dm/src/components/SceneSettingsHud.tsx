@@ -117,8 +117,8 @@ export default function SceneSettingsHud({ scene, onUpdate, onClose }: SceneSett
           </div>
           <input
             type="range"
-            min={-200}
-            max={200}
+            min={-500}
+            max={500}
             step={1}
             value={modelYOffset}
             onChange={(e) => {
