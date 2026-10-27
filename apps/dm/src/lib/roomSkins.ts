@@ -40,16 +40,7 @@ export const ROOM_SKINS: RoomSkin[] = [
     camera: { x: 0, y: 2, z: 6 },
     roomRadius: 100000,
   },
-  {
-    id: 'skybox-alien-nebula',
-    label: 'Alien Nebula (skybox)',
-    modelUrl: '/room/skybox-alien-nebula/scene.glb',
-    modelScale: 10,
-    floorOffset: 0,
-    mapAnchor: { x: 0, y: 0, z: 0 },
-    camera: { x: 0, y: 2, z: 6 },
-    roomRadius: 100000,
-  },
+
   {
     id: 'lush-alien-landscape-skybox',
     label: 'Lush Alien Landscape Skybox',
