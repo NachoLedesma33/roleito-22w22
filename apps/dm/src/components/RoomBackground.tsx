@@ -7,7 +7,6 @@ export default function RoomBackground({
   modelScale = 40,
   floorOffset = -25,
 }: { modelUrl: string; modelScale?: number; floorOffset?: number }) {
-  console.log('[RoomBackground] url=', modelUrl, 'scale=', modelScale);
   const { scene } = useGLTF(modelUrl);
 
   const cloned = useMemo(() => {
