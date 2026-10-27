@@ -2678,7 +2678,33 @@ export default function SceneRenderer({
       />
       {hasGlow && <BloomPass />}
       </Canvas>
-      {/* Coordenadas debug ocultas (solo para ajuste manual) */}
+      {!readOnly && (
+        <div className="absolute top-2 right-2 z-20 bg-black/70 text-white text-[10px] rounded p-2 space-y-1 w-44">
+          <div className="font-bold">Posicion del mapa (XYZ)</div>
+          {(['X', 'Y', 'Z'] as const).map((axis) => {
+            const val = axis === 'X' ? mapOffX : axis === 'Y' ? mapOffY : mapOffZ;
+            const setVal = axis === 'X' ? setMapOffX : axis === 'Y' ? setMapOffY : setMapOffZ;
+            const min = axis === 'Y' ? -300 : -100;
+            const max = axis === 'Y' ? 300 : 100;
+            return (
+              <div key={axis} className="flex items-center gap-1">
+                <span className="w-4">{axis}</span>
+                <input
+                  type="range"
+                  min={min}
+                  max={max}
+                  step={axis === 'Y' ? 1 : 0.5}
+                  value={val}
+                  onChange={(e) => setVal(parseFloat(e.target.value) || 0)}
+                  className="w-24 h-1 accent-[var(--accent)]"
+                />
+                <span className="w-10 text-right">{val.toFixed(1)}</span>
+              </div>
+            );
+          })}
+          <div className="text-[9px] text-gray-300">Mueve el mapa para ubicarlo dentro del modelo.</div>
+        </div>
+      )}
     </div>
   );
 }
