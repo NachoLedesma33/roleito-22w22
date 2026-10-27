@@ -11,6 +11,11 @@ export default function RoomBackground({
 
   const cloned = useMemo(() => {
     const c = scene.clone(true);
+    // Centrar el modelo en el origen para que la camara quede "dentro"
+    // (util para escenas que vienen desplazadas, como bosques/bibliotecas).
+    const box = new THREE.Box3().setFromObject(c);
+    const center = box.getCenter(new THREE.Vector3());
+    c.position.sub(center);
     c.traverse((child) => {
       const mesh = child as THREE.Mesh;
       if (mesh.isMesh) {
