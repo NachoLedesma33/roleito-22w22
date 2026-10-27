@@ -227,8 +227,8 @@ export const ROOM_SKINS: RoomSkin[] = [
     modelUrl: '/room/realistic-forest/scene.glb',
     modelScale: 40,
     floorOffset: 0,
-    mapAnchor: { x: 0, y: 0, z: 0 },
-    camera: { x: 0, y: 2, z: 6 },
+    mapAnchor: { x: 0, y: -4100, z: 0 },
+    camera: { x: 0, y: -4098, z: 6 },
     roomRadius: 100000,
   },
   {
@@ -237,8 +237,8 @@ export const ROOM_SKINS: RoomSkin[] = [
     modelUrl: '/room/library/scene.glb',
     modelScale: 40,
     floorOffset: 0,
-    mapAnchor: { x: 0, y: 0, z: 0 },
-    camera: { x: 0, y: 2, z: 6 },
+    mapAnchor: { x: 0, y: -160, z: 0 },
+    camera: { x: 0, y: -158, z: 6 },
     roomRadius: 100000,
   },
 ];
