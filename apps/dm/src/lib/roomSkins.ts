@@ -227,8 +227,8 @@ export const ROOM_SKINS: RoomSkin[] = [
     modelUrl: '/room/realistic-forest/scene.glb',
     modelScale: 40,
     floorOffset: -1100,
-    mapAnchor: { x: 0, y: 0, z: 0 },
-    camera: { x: 0, y: 2, z: 6 },
+    mapAnchor: { x: -700, y: -800, z: 0 },
+    camera: { x: -700, y: -798, z: 6 },
     roomRadius: 100000,
   },
   {
