@@ -104,5 +104,13 @@ Luego solo los relevantes a la tarea. `scripts/check-docs-consistency.py` valida
 | `diagnosing-bugs` | Bugs duros / regresiones de perf (canvas `zone Z1/Z2`, `status S1`): loop de feedback antes de tocar código |
 | `roleito-modularizacion` *(skill del repo, `.opencode/skills/`)* | **Obligatoria** al escribir/refactorizar código: checklist de la directiva, fases del plan, y gate de verificación antes de commitear |
 | `roleito-docsync` *(skill del repo, `.opencode/skills/`)* | **Obligatoria** al cerrar feature/fase o cambiar comportamiento/decisión: checklist de docs a actualizar + `check-docs-consistency.py` antes de commitear |
+| `roleito-bg-models` *(skill del repo, `.opencode/skills/`)* | Cargar modelos 3D al catalogo de fondos (room skins). |
+| `systematic-debugging` | Bugs duros / perf: loop de feedback antes de tocar codigo. |
+| `test-driven-development` | TDD para features/bugfixes. |
+| `verification-before-completion` | Verificar antes de declarar completo. |
+| `context7-mcp` | Docs al dia de librerias. |
+| `caveman` | Ahorro de tokens en sesiones largas. |
+| `simplify` | Limpieza post-feature. |
+| `requesting-code-review` | Review antes de merge. |
 
 > Las skills del repo viven en `.opencode/skills/<nombre>/SKILL.md` y se cargan automáticamente al abrir el proyecto, aunque no se lean los `AGENTS.md`. Preferí una skill de repo a depender solo de `AGENTS.md`.
