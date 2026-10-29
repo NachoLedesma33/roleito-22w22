@@ -2678,7 +2678,7 @@ export default function SceneRenderer({
       {hasGlow && <BloomPass />}
       </Canvas>
       {!readOnly && (
-        <div className="absolute top-2 right-2 z-20 bg-black/70 text-white text-[10px] rounded p-2 space-y-1 w-44">
+        <div className="absolute top-2 right-2 z-20 bg-black/70 text-white text-[10px] rounded p-2 space-y-1 w-44 pointer-events-none">
           <div className="font-bold">Posicion del mapa (XYZ)</div>
           {(['X', 'Y', 'Z'] as const).map((axis) => {
             const val = axis === 'X' ? mapOffX : axis === 'Y' ? mapOffY : mapOffZ;
@@ -2691,7 +2691,7 @@ export default function SceneRenderer({
                   step={1}
                   value={val}
                   onChange={(e) => setVal(parseFloat(e.target.value) || 0)}
-                  className="w-20 bg-gray-800 rounded px-1 text-[10px]"
+                  className="w-20 bg-gray-800 rounded px-1 text-[10px] pointer-events-auto"
                 />
               </div>
             );
