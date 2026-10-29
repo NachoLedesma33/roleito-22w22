@@ -4,15 +4,23 @@ import { useLoader } from '@react-three/fiber';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import { useMemo } from 'react';
 
-function GlbBg({ modelUrl, modelScale, floorOffset, offsetX, offsetZ }: any) {
-  const gltf: any = useGLTF(modelUrl);
-  const scene = gltf.scene ?? gltf;
+interface RoomBgProps {
+  modelUrl: string;
+  modelScale?: number;
+  floorOffset?: number;
+  offsetX?: number;
+  offsetZ?: number;
+}
+
+function GlbBg({ modelUrl, modelScale, floorOffset, offsetX, offsetZ }: RoomBgProps) {
+  const gltf = useGLTF(modelUrl) as { scene: THREE.Group };
+  const scene = gltf.scene;
   const cloned = useMemo(() => {
     const c = scene.clone(true);
     const box = new THREE.Box3().setFromObject(c);
     const center = box.getCenter(new THREE.Vector3());
     c.position.sub(center);
-    c.traverse((child: any) => {
+    c.traverse((child) => {
       const mesh = child as THREE.Mesh;
       if (mesh.isMesh) {
         mesh.castShadow = false;
@@ -22,17 +30,17 @@ function GlbBg({ modelUrl, modelScale, floorOffset, offsetX, offsetZ }: any) {
     });
     return c;
   }, [scene]);
-  return <primitive object={cloned} scale={modelScale} position={[offsetX, floorOffset, offsetZ]} />;
+  return <primitive object={cloned} scale={modelScale} position={[offsetX ?? 0, floorOffset ?? 0, offsetZ ?? 0]} />;
 }
 
-function FbxBg({ modelUrl, modelScale, floorOffset, offsetX, offsetZ }: any) {
-  const fbx: any = useLoader(FBXLoader, modelUrl);
+function FbxBg({ modelUrl, modelScale, floorOffset, offsetX, offsetZ }: RoomBgProps) {
+  const fbx = useLoader(FBXLoader, modelUrl) as THREE.Group;
   const cloned = useMemo(() => {
     const c = fbx.clone(true);
     const box = new THREE.Box3().setFromObject(c);
     const center = box.getCenter(new THREE.Vector3());
     c.position.sub(center);
-    c.traverse((child: any) => {
+    c.traverse((child) => {
       const mesh = child as THREE.Mesh;
       if (mesh.isMesh) {
         mesh.castShadow = false;
@@ -42,10 +50,10 @@ function FbxBg({ modelUrl, modelScale, floorOffset, offsetX, offsetZ }: any) {
     });
     return c;
   }, [fbx]);
-  return <primitive object={cloned} scale={modelScale} position={[offsetX, floorOffset, offsetZ]} />;
+  return <primitive object={cloned} scale={modelScale} position={[offsetX ?? 0, floorOffset ?? 0, offsetZ ?? 0]} />;
 }
 
-export default function RoomBackground(props: { modelUrl: string; modelScale?: number; floorOffset?: number; offsetX?: number; offsetZ?: number }) {
+export default function RoomBackground(props: RoomBgProps) {
   const isFbx = /\.fbx$/i.test(props.modelUrl);
   if (isFbx) return <FbxBg {...props} />;
   return <GlbBg {...props} />;
