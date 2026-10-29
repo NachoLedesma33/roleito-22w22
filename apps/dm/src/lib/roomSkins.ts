@@ -255,6 +255,26 @@ export const ROOM_SKINS: RoomSkin[] = [
     camera: { x: 0, y: 2, z: 6 },
     roomRadius: 100000,
   },
+  {
+    id: 'free-skybox-sci-fi-space-room-interior',
+    label: 'Free Skybox Sci-Fi Space Room Interior',
+    modelUrl: '/room/free-skybox-sci-fi-space-room-interior/source/basic_skybox_3d_flip.fbx',
+    modelScale: 300,
+    floorOffset: 0,
+    mapAnchor: { x: 0, y: 0, z: 0 },
+    camera: { x: 0, y: 2, z: 6 },
+    roomRadius: 100000,
+  },
+  {
+    id: 'free-skybox-dystopian-alleyway-fbx',
+    label: 'Free Skybox Dystopian Alleyway (FBX)',
+    modelUrl: '/room/free-skybox-dystopian-alleyway/source/basic_skybox_3d.fbx',
+    modelScale: 300,
+    floorOffset: 0,
+    mapAnchor: { x: 0, y: 0, z: 0 },
+    camera: { x: 0, y: 2, z: 6 },
+    roomRadius: 100000,
+  },
 ];
 
 export const DEFAULT_ROOM_SKIN = 'oggys';
