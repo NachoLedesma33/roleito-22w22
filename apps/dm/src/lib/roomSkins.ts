@@ -247,7 +247,7 @@ export const ROOM_SKINS: RoomSkin[] = [
   },
 ];
 
-export const DEFAULT_ROOM_SKIN = 'oggys';
+export const DEFAULT_ROOM_SKIN = 'none';
 
 export function getRoomSkin(id?: string | null): RoomSkin {
   if (!id) return ROOM_SKINS.find((s) => s.id === DEFAULT_ROOM_SKIN) || ROOM_SKINS[0];
