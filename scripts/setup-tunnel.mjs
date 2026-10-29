@@ -74,7 +74,7 @@ try {
   const self = j.Self || {};
   const dns = self.DNSName || '';
   if (dns) url = 'https://' + dns.replace(/\.$/, '/');
-} catch {}
+} catch { /* ignore */ }
 if (url) {
   const tunnelFile = join(ROOT, 'data', 'tunnel_url.txt');
   const publicFile = join(ROOT, 'apps', 'dm', 'public', 'tunnel-url.txt');

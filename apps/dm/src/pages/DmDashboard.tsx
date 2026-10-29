@@ -3195,7 +3195,7 @@ const startFogMode = useCallback(() => {
                 mapScale={activeScene.map_scale ?? 1}
                 onAspectChange={handleAspectChange}
                 modelYOffset={activeScene.model_y_offset ?? 0}
-                roomSkinId={(activeScene as any).room_skin || ''}
+                roomSkinId={activeScene.room_skin || ''}
                 gridSize={activeScene.grid_size ?? 0}
                 gridSnap={activeScene.grid_snap ?? false}
                 movementRange={movementRange}
