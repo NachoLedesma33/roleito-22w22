@@ -44,16 +44,6 @@ export const ROOM_SKINS: RoomSkin[] = [
   },
 
   {
-    id: 'lush-alien-landscape-skybox',
-    label: 'Lush Alien Landscape Skybox',
-    modelUrl: '/room/lush-alien-landscape-skybox/scene.glb',
-    modelScale: 10,
-    floorOffset: 0,
-    mapAnchor: { x: 0, y: 0, z: 0 },
-    camera: { x: 0, y: 2, z: 6 },
-    roomRadius: 100000,
-  },
-  {
     id: 'deep-space-skybox',
     label: 'Deep Space Skybox',
     modelUrl: '/room/deep-space-skybox/scene.glb',
