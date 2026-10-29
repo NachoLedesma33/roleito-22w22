@@ -245,6 +245,16 @@ export const ROOM_SKINS: RoomSkin[] = [
     camera: { x: 0, y: 102, z: 6 },
     roomRadius: 100000,
   },
+  {
+    id: 'free-skybox-dystopian-alleyway',
+    label: 'Free Skybox Dystopian Alleyway',
+    modelUrl: '/room/free-skybox-dystopian-alleyway/scene.glb',
+    modelScale: 300,
+    floorOffset: 0,
+    mapAnchor: { x: 0, y: 0, z: 0 },
+    camera: { x: 0, y: 2, z: 6 },
+    roomRadius: 100000,
+  },
 ];
 
 export const DEFAULT_ROOM_SKIN = 'oggys';
