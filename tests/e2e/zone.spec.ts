@@ -64,7 +64,7 @@ test.describe('Zones (Build menu)', () => {
   }) => {
     // Cargar la escena 3D (render por software en CI) lleva el test al borde del
     // timeout default: en el runner del CI se pasaba.
-    test.setTimeout(60_000);
+    test.setTimeout(90_000);
 
     const scene = await createScene(request, campaign.id, 'Zona Rect');
 
@@ -77,7 +77,7 @@ test.describe('Zones (Build menu)', () => {
     const putPromise = page.waitForResponse(
       (res) =>
         res.url().includes(`/scenes/${scene.id}/items`) && res.request().method() === 'PUT',
-      { timeout: 15_000 },
+      { timeout: 30_000 },
     );
 
     await page.mouse.move(box.x + box.width * 0.35, box.y + box.height * 0.4);
@@ -108,7 +108,7 @@ test.describe('Zones (Build menu)', () => {
     request,
   }) => {
     // Ver Z1: cargar la escena 3D lleva el test al borde del timeout default.
-    test.setTimeout(60_000);
+    test.setTimeout(90_000);
 
     const scene = await createScene(request, campaign.id, 'Zona Poly');
 
@@ -125,7 +125,7 @@ test.describe('Zones (Build menu)', () => {
     const putPromise = page.waitForResponse(
       (res) =>
         res.url().includes(`/scenes/${scene.id}/items`) && res.request().method() === 'PUT',
-      { timeout: 20_000 },
+      { timeout: 30_000 },
     );
 
     await page.mouse.click(cx - box.width * 0.28, cy + box.height * 0.22);

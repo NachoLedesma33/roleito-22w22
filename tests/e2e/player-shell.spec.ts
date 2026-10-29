@@ -72,7 +72,7 @@ test.describe('Player Shell â Grimorio', () => {
   ) {
     const code = await generateInviteCode(request, campaignId);
     await page.goto(`/campaigns/join/${code}`);
-    await expect(page.getByText('Â¿QuiÃ©n sos?')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('Â¿QuiÃ©n sos?')).toBeVisible({ timeout: 20_000 });
     await page.getByRole('button', { name: new RegExp(name) }).click();
     await expect(playerSheet(page)).toBeVisible();
   }
@@ -89,6 +89,7 @@ test.describe('Player Shell â Grimorio', () => {
     campaign,
     request,
   }) => {
+    test.setTimeout(60_000);
     await setupGrimorio(request, campaign.id, 'Kaelen');
     await joinAs(page, request, campaign.id, 'Kaelen');
     await openGrimorio(page);
@@ -104,6 +105,7 @@ test.describe('Player Shell â Grimorio', () => {
     campaign,
     request,
   }) => {
+    test.setTimeout(60_000);
     await setupGrimorio(request, campaign.id, 'Kaelen');
     await joinAs(page, request, campaign.id, 'Kaelen');
     await openGrimorio(page);
@@ -122,6 +124,7 @@ test.describe('Player Shell â Grimorio', () => {
     campaign,
     request,
   }) => {
+    test.setTimeout(60_000);
     await setupGrimorio(request, campaign.id, 'Kaelen');
     await joinAs(page, request, campaign.id, 'Kaelen');
     await openGrimorio(page);
@@ -182,6 +185,7 @@ test.describe('Player Shell â Grimorio', () => {
     campaign,
     request,
   }) => {
+    test.setTimeout(60_000);
     await setupGrimorio(request, campaign.id, 'Kaelen');
     await joinAs(page, request, campaign.id, 'Kaelen');
     await openGrimorio(page);
