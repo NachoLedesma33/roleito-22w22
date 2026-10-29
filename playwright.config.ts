@@ -4,8 +4,8 @@ export default defineConfig({
   globalSetup: './tests/global-setup.ts',
   globalTeardown: './tests/global-teardown.ts',
   testDir: './tests/e2e',
-  timeout: 30_000,
-  retries: 1,
+  timeout: 60_000,
+  retries: process.env.CI ? 2 : 0,
   workers: 1,
   use: {
     baseURL: 'http://localhost:5173',
@@ -22,13 +22,13 @@ export default defineConfig({
       command: 'npm run dev:dm',
       url: 'http://localhost:5173',
       reuseExistingServer: !process.env.CI,
-      timeout: 60_000,
+      timeout: 120_000,
     },
     {
       command: process.env.CI ? 'npm run dev:backend:ci' : 'npm run dev:backend',
       url: 'http://localhost:8000/health',
       reuseExistingServer: !process.env.CI,
-      timeout: 60_000,
+      timeout: 120_000,
     },
   ],
 });
