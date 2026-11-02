@@ -593,6 +593,14 @@ export default function PlayerView() {
       x, z,
       rotation: target.rotation,
       source: 'player',
+    }).then((res: { ignored?: boolean; x: number; z: number; rotation?: number }) => {
+      if (res && res.ignored) {
+        // El DM movió este token hace <500ms: el backend ignoró nuestro move.
+        // Revertir al estado autoritativo del servidor.
+        const serverPos = { x: res.x, z: res.z, rotation: res.rotation ?? target.rotation };
+        wasdTargetRef.current = serverPos;
+        setWasdTarget(serverPos);
+      }
     }).catch(() => {});
   };
 
