@@ -144,6 +144,7 @@ export default function PlayerView() {
   });
   const [askingLight, setAskingLight] = useState(false);
   const [imageAspect, setImageAspect] = useState(1);
+  const [markers, setMarkers] = useState<Array<{ id: number; x: number; z: number; color: string }>>([]);
   const handleAspectChange = useCallback((a: number) => {
     if (Number.isFinite(a) && a > 0) setImageAspect(a);
   }, []);
@@ -161,7 +162,11 @@ export default function PlayerView() {
     data, myChar, choice, pickerOpen, loading, error, live, panelRevision,
     notesDraft, fading, setNotesDraft, setChoice, setPickerOpen, setMyChar,
     syncNotesDraft, fetchMyChar,
-  } = usePlayerSync(code, { sceneIdRef, choiceRef, wasdTargetRef });
+  } = usePlayerSync(code, { sceneIdRef, choiceRef, wasdTargetRef, onMarker: (m) => {
+    const id = Date.now();
+    setMarkers((prev) => [...prev, { id, x: m.x, z: m.z, color: m.color ?? '#facc15' }]);
+    window.setTimeout(() => setMarkers((prev) => prev.filter((p) => p.id !== id)), m.ttl_ms ?? 3000);
+  } });
   const dataRef = useRef<typeof data>(null);
   const lastMoveAtRef = useRef(0);
   const lastMoveDirRef = useRef(0);
@@ -1323,6 +1328,7 @@ export default function PlayerView() {
               mapScale={data.map_scale ?? 1}
               onAspectChange={handleAspectChange}
               modelYOffset={data.model_y_offset ?? 0}
+              markers={markers}
               items={data.items ?? []}
               occluders={sceneOccluders}
               fogRegions={sceneFogRegions}

@@ -67,6 +67,7 @@ export interface UsePlayerSyncRefs {
   sceneIdRef: MutableRefObject<string | null>;
   choiceRef: MutableRefObject<Choice>;
   wasdTargetRef: MutableRefObject<{ x: number; z: number; rotation: number } | null>;
+  onMarker?: (m: { x: number; z: number; color?: string; ttl_ms?: number }) => void;
 }
 
 export interface UsePlayerSyncResult {
@@ -102,7 +103,7 @@ export interface UsePlayerSyncResult {
  * barato el poll.
  */
 export function usePlayerSync(code: string | undefined, refs: UsePlayerSyncRefs): UsePlayerSyncResult {
-  const { sceneIdRef, choiceRef, wasdTargetRef } = refs;
+  const { sceneIdRef, choiceRef, wasdTargetRef, onMarker } = refs;
 
   const [data, setData] = useState<JoinData | null>(null);
   const [myChar, setMyChar] = useState<Character | null>(null);
@@ -337,6 +338,10 @@ const applySceneCharacters = useCallback((sceneId: string, incoming: unknown[]) 
             revision?: string;
             scene_id?: string;
             characters?: unknown[];
+             x?: number;
+             z?: number;
+             color?: string;
+             ttl_ms?: number;
           };
           if (import.meta.env?.DEV) console.debug('[sync] WS message', { type: msg.type, scene_id: msg.scene_id, chars: msg.characters?.length });
           if (msg.type === 'revision' && msg.revision) {
@@ -346,6 +351,9 @@ const applySceneCharacters = useCallback((sceneId: string, incoming: unknown[]) 
             setLive(true);
             // Camino barato: un token se movio. NO se baja el snapshot.
             applySceneCharacters(msg.scene_id, msg.characters ?? []);
+          } else if (msg.type === 'marker') {
+            setLive(true);
+            onMarker?.({ x: msg.x ?? 0, z: msg.z ?? 0, color: msg.color, ttl_ms: msg.ttl_ms });
           }
         } catch {
           // mensaje no JSON: ignorar
