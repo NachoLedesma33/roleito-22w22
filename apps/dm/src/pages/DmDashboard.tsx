@@ -2269,7 +2269,7 @@ const startFogMode = useCallback(() => {
                   buildMenu.anchorFrom(e.currentTarget);
                   setBuildMenuOpen(!buildMenuOpen);
                 }}
-                className={`flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs transition-colors duration-[var(--dur-fast)] ease-[var(--ease-standard)] ${drawState || zoneDraft || portalDraft || fogMode || rectFogMode || zoneFogActive || lightPlaceMode || attachLightMode ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                className={`flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs ${drawState || zoneDraft || portalDraft || fogMode || rectFogMode || zoneFogActive || lightPlaceMode || attachLightMode ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
               >
                 <Mountain aria-hidden="true" className="h-4 w-4 shrink-0" />
                 <span className="flex-1 text-left">{t('dm.build', 'Construir')}</span>

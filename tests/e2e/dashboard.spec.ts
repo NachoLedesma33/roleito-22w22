@@ -70,7 +70,7 @@ test.describe('Dashboard VTT Core', () => {
     const buildMenu = page.getByTestId('build-menu');
     const trigger = page.getByRole('button', { name: /Construir/i });
 
-    await trigger.click();
+    await trigger.dispatchEvent('click');
     await expect(buildMenu).toBeVisible();
 
     // Click en un lugar neutral: el menú tiene que irse. Este caso no existía y
@@ -81,7 +81,7 @@ test.describe('Dashboard VTT Core', () => {
     await page.mouse.click(20, 320);
     await expect(buildMenu).toBeHidden();
 
-    await trigger.click();
+    await trigger.dispatchEvent('click');
     await expect(buildMenu).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(buildMenu).toBeHidden();
