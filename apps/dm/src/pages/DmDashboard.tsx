@@ -96,6 +96,11 @@ export default function DmDashboard() {
    */
   const [sheetTokenId, setSheetTokenId] = useState<string | null>(null);
   const [markers, setMarkers] = useState<Array<{ id: number; x: number; z: number; color: string; ttl: number }>>([]);
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
+    }
+  }, []);
   const [seeHiddenPlayers, setSeeHiddenPlayers] = useState(() => {
     try {
       const v = localStorage.getItem('roleito:dm:seeHiddenPlayers');
@@ -1248,7 +1253,14 @@ const startFogMode = useCallback(() => {
       }
       try {
         const reqs = await api.lightRequests.list(campaignId);
-        if (!cancelled) setLightRequests(reqs.filter((r) => r.status === 'pending'));
+        const pending = reqs.filter((r) => r.status === 'pending');
+        if (!cancelled) {
+          if (pending.length > lightRequests.length && 'Notification' in window && Notification.permission === 'granted') {
+            const newest = pending[pending.length - 1];
+            new Notification('Petición de luz', { body: `${newest.character_name ?? 'Un jugador'} pide luz`, icon: '/favicon.ico' });
+          }
+          setLightRequests(pending);
+        }
       } catch {
         // best-effort
       }
