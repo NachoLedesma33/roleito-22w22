@@ -41,6 +41,7 @@
 - `ROADMAP-MEJORAS.md` — mejoras futuras priorizadas.
 - `PERFORMANCE.md` — notas de performance.
 
-## Historial (planes resueltos, eliminados)
+## Historial (planes/resueltos, eliminados)
 - `AUDITORIA-VTT.md` (2026-10-15): auditoría funcional VTT — resuelta, features implementadas.
 - `PLAN-DADOS-3D.md` (2026-10-10): dados 3D — resuelto (DiceRoller).
+- `SDD_Persistent_AI_RPG_World_Engine_v0.1.md` (raíz): spec original v0.1 — superseded por `docs/core/CONTEXT.md` + `docs/core/ARCHITECTURE.md`.
