@@ -200,6 +200,7 @@ interface SceneRendererProps {
   backgroundOffsetZ?: number;
   roomBackgroundSkin?: string;
   roomSkinId?: string;
+  markers?: Array<{ id: number; x: number; z: number; color: string }>;
   gridSize?: number;
   gridSnap?: boolean;
   movementRange?: {
@@ -2289,6 +2290,7 @@ export default function SceneRenderer({
   zoneFogActive = false,
   roomBackgroundSkin: _roomBackgroundSkin = 'wood',
   roomSkinId = '',
+  markers = [],
   onZoneFogSelect,
   lightPlace = null,
   onLightPlace,
@@ -2529,6 +2531,12 @@ export default function SceneRenderer({
           }))}
         />
       )}
+      {(markers ?? []).map((m) => (
+        <mesh key={m.id} position={[m.x, mapOffY + 0.1, m.z]}>
+          <sphereGeometry args={[0.3, 16, 16]} />
+          <meshBasicMaterial color={m.color} transparent opacity={0.8} />
+        </mesh>
+      ))}
       {visibleCharsVisual.map((ch) => {
         const isMovable = movableEntityIds
           ? movableEntityIds.includes(ch.sceneCharId)
