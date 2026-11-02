@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { useGLTF } from '@react-three/drei';
 import { useLoader } from '@react-three/fiber';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 
 interface RoomBgProps {
   modelUrl: string;
@@ -53,8 +53,10 @@ function FbxBg({ modelUrl, modelScale, floorOffset, offsetX, offsetZ }: RoomBgPr
   return <primitive object={cloned} scale={modelScale} position={[offsetX ?? 0, floorOffset ?? 0, offsetZ ?? 0]} />;
 }
 
-export default function RoomBackground(props: RoomBgProps) {
+function RoomBackground(props: RoomBgProps) {
   const isFbx = /\.fbx$/i.test(props.modelUrl);
   if (isFbx) return <FbxBg {...props} />;
   return <GlbBg {...props} />;
 }
+
+export default memo(RoomBackground);
