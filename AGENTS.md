@@ -16,7 +16,7 @@ Al agregar, modificar o refactorizar **cualquier** código de este repo (feature
 - El código nuevo sigue los patrones que ya existen en el repo (tokens CSS, `components/ui/`, `api.ts`, `@core/domain/types`, `HudPanel`, i18n `t()`). No introduzcas un patrón paralelo.
 - **No declares pruebas exitosas si no las ejecutaste.** Reportá resultados reales, incluido "no pude ejecutar X".
 - Antes de cerrar un cambio: `npm run lint` → `npm run typecheck` → `npm run test --workspace=apps/dm` → pytest si tocaste backend → e2e de lo afectado. Cada fase = 1 commit + CI verde.
-- Actualizá `docs/IMPLEMENTATION-STATUS.md` y la doc de la feature cuando una decisión arquitectónica lo requiera.
+- Actualizá `docs/roadmap/IMPLEMENTATION-STATUS.md` y la doc de la feature cuando una decisión arquitectónica lo requiera.
 
 ## Stack & Structure
 - **Frontend real (único): `apps/dm`** — React 18 + TS strict + Vite + Tailwind. Three.js/R3F se usan DENTRO de apps/dm (SceneRenderer, PlayerView), no en apps separadas.
@@ -51,21 +51,21 @@ Al agregar, modificar o refactorizar **cualquier** código de este repo (feature
 - Nunca mandar campaña completa al LLM
 
 ## Docs — Reading Order
-1. `docs/CONTEXT.md` (leer primero, siempre)
-2. `docs/PRODUCT.md`
-3. `docs/DESIGN-SYSTEM.md` (UI/UX: alto contraste, theming, cero transparencias en paneles con texto)
-4. `docs/DM-DASHBOARD-VTT.md`
-5. `docs/HYBRID-SHADOW-GEOMETRY.md` (walls/vision/fog manual-first — canon actual)
-6. `docs/DOMAIN.md`
-7. `docs/ARCHITECTURE.md`
-8. `docs/DATABASE.md`
-9. `docs/EVENT-SYSTEM.md`
+1. `docs/core/CONTEXT.md` (leer primero, siempre)
+2. `docs/core/PRODUCT.md`
+3. `docs/core/DESIGN-SYSTEM.md` (UI/UX: alto contraste, theming, cero transparencias en paneles con texto)
+4. `docs/dm/DM-DASHBOARD-VTT.md`
+5. `docs/system/HYBRID-SHADOW-GEOMETRY.md` (walls/vision/fog manual-first — canon actual)
+6. `docs/core/DOMAIN.md`
+7. `docs/core/ARCHITECTURE.md`
+8. `docs/core/DATABASE.md`
+9. `docs/core/EVENT-SYSTEM.md`
 Luego solo los relevantes a la tarea. `scripts/check-docs-consistency.py` valida docs vs código.
 
 **Docs de ingeniería (aplicar siempre, ver directiva arriba):**
 - `docs/ROLEITO_GUIA_MODULARIZACION_ARQUITECTURA.md`
 - `docs/engineering/DIAGNOSTICO-Y-PLAN-MODULARIZACION.md`
-- `docs/IMPLEMENTATION-STATUS.md` (estado maestro de features; sincronizar al cerrar fases)
+- `docs/roadmap/IMPLEMENTATION-STATUS.md` (estado maestro de features; sincronizar al cerrar fases)
 
 ## Gotchas (lecciones pagadas)
 - **Emoji/glifo → icono lucide rompe e2e en silencio**: un SVG **no aporta texto** al DOM. Todo `getByRole({name})` / `getByText` que incluía el glifo queda roto con timeout 30s, **indistinguible de flake de carga**. Reales: `🏆 100 gp`→`100 gp` (quest Q1), `← Volver a la lista`→`Volver a la lista` (notebook NB4). **Si tocás texto visible o nombre accesible de un control, grepeá los specs y actualizá locators en el mismo commit**, y corré el spec afectado. `getByRole({name})` matchea por **substring del nombre accesible**, no por texto crudo.
@@ -84,7 +84,7 @@ Luego solo los relevantes a la tarea. `scripts/check-docs-consistency.py` valida
 | **GitHub MCP** | global, **solo lectura** | Issues, PRs y releases del repo. El header `X-MCP-Readonly` deja fuera las tools de escritura: no puede tocar el repo. |
 | **grep.app** | global | Buscar cómo está implementado algo de verdad en el código público de GitHub. |
 | **Serena** | global | Navegación **semántica** del código (símbolos, referencias) vía LSP. Contexto `oaicompat-agent`: solo 3 tools, así que el costo de contexto es bajo. |
-| **graphify** | global (CLI, skill propia) | **Capa de consulta del código**: un grafo del repo (7.8k nodos / 13.3k aristas) que responde "qué toca esto" sin releer archivos. `graphify query "<pregunta>"` (orientación), `graphify affected "<archivo>" --depth 2` (radio de impacto antes de editar), `graphify god-nodes` (hubs = dónde el código se enreda), `graphify path A B`. **Complementa, no reemplaza**: grep/Serena para el símbolo exacto, graphify para el entorno y el radio de impacto; los **docs** siguen siendo la verdad del diseño (`docs/CONTEXT.md` primero). El grafo es de **código**: no cubre los docs ni el "por qué". Se refresca con `graphify update . --no-cluster` (AST puro, sin LLM, sin costo). `graphify-out/` está en `.gitignore`: es local, no se commitea. **Visualizador HTML (paso aparte)**: `graphify update` NO genera HTML; lo genera `graphify cluster-only .` → `graphify-out/graph.html` (D3 interactivo) — con `--no-label` para no pagar LLM, y `GRAPHIFY_VIZ_NODE_LIMIT=20000` porque el visualizador se salta los grafos de más de 5000 nodos (este tiene 7.8k). `graphify tree` → `graphify-out/GRAPH_TREE.html` (árbol D3 plegable, sin límite de nodos). |
+| **graphify** | global (CLI, skill propia) | **Capa de consulta del código**: un grafo del repo (7.8k nodos / 13.3k aristas) que responde "qué toca esto" sin releer archivos. `graphify query "<pregunta>"` (orientación), `graphify affected "<archivo>" --depth 2` (radio de impacto antes de editar), `graphify god-nodes` (hubs = dónde el código se enreda), `graphify path A B`. **Complementa, no reemplaza**: grep/Serena para el símbolo exacto, graphify para el entorno y el radio de impacto; los **docs** siguen siendo la verdad del diseño (`docs/core/CONTEXT.md` primero). El grafo es de **código**: no cubre los docs ni el "por qué". Se refresca con `graphify update . --no-cluster` (AST puro, sin LLM, sin costo). `graphify-out/` está en `.gitignore`: es local, no se commitea. **Visualizador HTML (paso aparte)**: `graphify update` NO genera HTML; lo genera `graphify cluster-only .` → `graphify-out/graph.html` (D3 interactivo) — con `--no-label` para no pagar LLM, y `GRAPHIFY_VIZ_NODE_LIMIT=20000` porque el visualizador se salta los grafos de más de 5000 nodos (este tiene 7.8k). `graphify tree` → `graphify-out/GRAPH_TREE.html` (árbol D3 plegable, sin límite de nodos). |
 | **Superpowers** | proyecto (`opencode.json`) | Skills de método: `writing-plans`, `executing-plans`, `test-driven-development`, `verification-before-completion`, code review. |
 | **oh-my-opencode-slim** | proyecto (`opencode.json`) | Agentes extra (explorer, fixer, designer, oracle) + LSP + búsqueda AST. El preset `roleito` usa **los modelos que ya tenés** (`omniroute/*`, `gemini/*`), no los de OpenAI. El orquestador queda como un agente más: el agente principal sigue siendo `build`. |
 

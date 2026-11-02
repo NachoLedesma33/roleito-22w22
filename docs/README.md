@@ -40,3 +40,7 @@
 ## Roadmap
 - `ROADMAP-MEJORAS.md` — mejoras futuras priorizadas.
 - `PERFORMANCE.md` — notas de performance.
+
+## Historial (planes resueltos, eliminados)
+- `AUDITORIA-VTT.md` (2026-10-15): auditoría funcional VTT — resuelta, features implementadas.
+- `PLAN-DADOS-3D.md` (2026-10-10): dados 3D — resuelto (DiceRoller).
