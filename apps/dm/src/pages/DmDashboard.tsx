@@ -95,6 +95,7 @@ export default function DmDashboard() {
    * "Ver ficha de <nombre>" ✓.
    */
   const [sheetTokenId, setSheetTokenId] = useState<string | null>(null);
+  const [markers, setMarkers] = useState<Array<{ id: number; x: number; z: number; color: string; ttl: number }>>([]);
   const [seeHiddenPlayers, setSeeHiddenPlayers] = useState(() => {
     try {
       const v = localStorage.getItem('roleito:dm:seeHiddenPlayers');
@@ -340,6 +341,10 @@ export default function DmDashboard() {
             type?: string;
             scene_id?: string;
             characters?: SceneCharacter[];
+             x?: number;
+             z?: number;
+             color?: string;
+             ttl_ms?: number;
           };
           // Camino barato: un token se movio. Antes esto caia al `revision` y
           // hacia `GET /scenes/{id}/characters` por cada tick de teclado.
@@ -365,6 +370,10 @@ export default function DmDashboard() {
           } else if (msg.type === 'revision' && Date.now() - lastLocalChangeRef.current > 500) {
             const sc = await api.scenes.getCharacters(campaignId, activeScene.id);
             if (!cancelled) setSceneChars(sc);
+          } else if (msg.type === 'marker') {
+            const m = { id: Date.now(), x: msg.x ?? 0, z: msg.z ?? 0, color: msg.color ?? '#facc15', ttl: msg.ttl_ms ?? 3000 };
+            setMarkers((prev) => [...prev, m]);
+            window.setTimeout(() => setMarkers((prev) => prev.filter((p) => p.id !== m.id)), m.ttl);
           }
         } catch {
           // mensaje no JSON: ignorar
@@ -2429,6 +2438,17 @@ const startFogMode = useCallback(() => {
               <span className="flex-1 text-left">Exportar mapa</span>
             </button>
             <button
+              onClick={() => {
+                const x = selectedTokenId ? (sceneChars.find((s) => s.id === selectedTokenId)?.x ?? 0) : 0;
+                const z = selectedTokenId ? (sceneChars.find((s) => s.id === selectedTokenId)?.z ?? 0) : 0;
+                api.campaigns.placeMarker(campaignId!, { x, z, color: '#facc15', ttl_ms: 3000 }).catch(() => {});
+              }}
+              className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              title="Colocar marcador en el mapa"
+            >
+              <span className="flex-1 text-left">Marcar</span>
+            </button>
+            <button
               onClick={() => fileInput.current?.click()}
               className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--bg-tertiary)] px-2 py-1.5 text-xs text-[var(--text-secondary)] transition-colors duration-[var(--dur-fast)] hover:text-[var(--text-primary)] shrink-0"
               title={t('dm.uploadBgTitle', 'Subir fondo de mapa')}
@@ -3210,6 +3230,7 @@ const startFogMode = useCallback(() => {
                 onAspectChange={handleAspectChange}
                 modelYOffset={activeScene.model_y_offset ?? 0}
                 roomSkinId={activeScene.room_skin || ''}
+                markers={markers}
                 gridSize={activeScene.grid_size ?? 0}
                 gridSnap={activeScene.grid_snap ?? false}
                 movementRange={movementRange}
