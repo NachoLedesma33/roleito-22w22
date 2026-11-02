@@ -2412,8 +2412,22 @@ const startFogMode = useCallback(() => {
                   </div>
                 </AnchoredMenu>
 
-
             </div>
+            <button
+              onClick={() => {
+                const canvas = document.querySelector('canvas');
+                if (!canvas) return;
+                const url = (canvas as HTMLCanvasElement).toDataURL('image/png');
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `roleito-map-${Date.now()}.png`;
+                a.click();
+              }}
+              className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              title="Exportar mapa como PNG"
+            >
+              <span className="flex-1 text-left">Exportar mapa</span>
+            </button>
             <button
               onClick={() => fileInput.current?.click()}
               className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--bg-tertiary)] px-2 py-1.5 text-xs text-[var(--text-secondary)] transition-colors duration-[var(--dur-fast)] hover:text-[var(--text-primary)] shrink-0"
