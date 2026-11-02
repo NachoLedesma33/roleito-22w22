@@ -1,78 +1,42 @@
-# Documentación del Proyecto
+# Roleito — Documentación
 
-Este directorio contiene la especificación técnica y funcional del RPG World Engine.
+## Lectura obligatoria (en orden)
+1. `CONTEXT.md` — contexto del proyecto (leer primero siempre).
+2. `PRODUCT.md` — producto y visión.
+3. `DESIGN-SYSTEM.md` — UI/UX, theming, contraste.
+4. `ARCHITECTURE.md` — arquitectura del sistema.
+5. `DOMAIN.md` — dominio y entidades.
+6. `DATABASE.md` — modelo de datos.
+7. `EVENT-SYSTEM.md` — sistema de eventos.
 
-## Orden de lectura
+## Ingeniería (aplicar siempre)
+- `ROLEITO_GUIA_MODULARIZACION_ARQUITECTURA.md` — directiva de ingeniería.
+- `engineering/DIAGNOSTICO-Y-PLAN-MODULARIZACION.md` — diagnóstico y fases (cerradas).
+- `engineering/PLAN-VISION-PERCEPCION.md` — visión/percepción.
+- `engineering/PLAN-NIEBLA-Y-LUCES.md` — fog y luces.
+- `engineering/PLAN-PLAYTEST-REMOTO.md` — playtest remoto/túnel.
+- `engineering/PLAN-PROVEEDORES-IA-Y-SEGURIDAD.md` — IA y seguridad.
+- `IMPLEMENTATION-STATUS.md` — estado maestro de features.
 
-1. `CONTEXT.md` — Contexto raíz, leer primero siempre
-2. `PRODUCT.md` — Visión y objetivos del producto
-3. `DM-DASHBOARD-VTT.md` — El tablero del DM
-4. `HYBRID-SHADOW-GEOMETRY.md` — Paredes, sombra y zona (el canon actual)
-5. `DOMAIN.md` — Contrato de dominio conceptual
-6. `ARCHITECTURE.md` — Arquitectura técnica
-7. `DATABASE.md` — Persistencia SQLite
-8. `EVENT-SYSTEM.md` — Pipeline central de eventos
-9. Luego leer solo los docs relevantes a la tarea
+## Sistemas del producto
+- `CHARACTER-SYSTEM.md`, `CHARACTER-STATS.md`, `CHARACTER-PERSISTENCE.md`
+- `CANON.md`, `MEMORY.md`, `NARRATIVE.md`, `INGESTION-AND-LORE.md`
+- `DICE-SYSTEM.md`, `LIGHTING-SYSTEM.md`, `COLLISION-SYSTEM.md`
+- `FOG-AND-VISIBILITY.md`, `FOG-OF-WAR.md`, `HYBRID-SHADOW-GEOMETRY.md`
+- `MOVEMENT-AGENT.md`, `NAVIGATION-AND-COLLISION.md`, `NAVMESH-AND-PATHFINDING.md`
+- `INTERACTIVE-OBJECTS.md`, `DYNAMIC-OBSTACLES.md`, `CONDITIONS-AURAS.md`
+- `ASSET-SYSTEM.md`, `DATA-DIRECTORY.md`, `DATA-MODEL.md`
+- `ENVIRONMENT-SPEC.md`, `CAMERA-SYSTEM.md`, `2D-TO-3D.md`, `3D-RENDERER.md`
+- `AI-AGENTS.md`, `AI-3D-ENVIRONMENTS.md`, `AGENTS-SYSTEM.md`, `AGENT-SYSTEM.md` (ver `docs/AGENTS.md`)
+- `MEMORY.md`, `CONTEXT-SYSTEM.md`, `CONTEXT.md`
 
-## Estado de la Documentación
+## DM y operación
+- `DM-DASHBOARD-VTT.md`, `DM-CONTROL-DECK.md`, `DM-CONTROLLER.md`, `DM-NOTEBOOK.md`, `DM-SUPER-ADMIN.md`
+- `DM-DASHBOARD-VTT.md`
 
-### Completados
-- `CONTEXT.md` ✅
-- `PRODUCT.md` ✅
-- `DOMAIN.md` ✅
-- `ARCHITECTURE.md` ✅
-- `DATABASE.md` ✅
-- `EVENT-SYSTEM.md` ✅
-- `INGESTION-AND-LORE.md` ✅
-- `SETTING-INGESTION.md` ✅
-- `CONTEXT-SYSTEM.md` ✅
-- `AGENTS-SYSTEM.md` ✅
-- `AGENTS.md` ✅
-- `SESSION-SYSTEM.md` ✅
-- `WORLD-STATE.md` ✅
-- `RENDERER.md` ✅
-- `DM-CONTROLLER.md` ✅
-- `DATA-MODEL.md` ✅
-- `DATA-DIRECTORY.md` ✅
-- `SECURITY.md` ✅
-- `PERFORMANCE.md` ✅
-- `TESTING.md` ✅
-- `ROADMAP.md` ✅
+## Testing
+- `E2E-TEST-PLAN.md` (eliminado; ver tests/e2e)
 
-### Punteros (docs consolidados: el contenido vive en el doc que"­apunta)
-> Los archivos viejos se conservan como punteros: cada uno dice dónde está
-> el contenido. No son deuda ni docs rotos.
-- `CANON.md` — stub, contenido movido a EVENT-SYSTEM.md §43-48
-- `MEMORY.md` — stub, contenido movido a CONTEXT-SYSTEM.md §16-19
-- `RECAP-ENGINE.md` — stub, contenido movido a SESSION-SYSTEM.md §62-70
-- `SCENE-ENGINE.md` — stub, contenido movido a SESSION-SYSTEM.md §82-87
-- `CHARACTER-SYSTEM.md` — stub, contenido movido a DATA-MODEL.md §14-16
-- `DM-CONTROL-DECK.md` — stub, contenido movido a DM-CONTROLLER.md
-- `3D-RENDERER.md` — stub, contenido movido a RENDERER.md
-- `AI-AGENTS.md` — stub, contenido movido a AGENTS-SYSTEM.md
-- `CONTEXT-BUILDER.md` — stub, contenido movido a CONTEXT-SYSTEM.md
-
-### No existen (planificados en §24)
-- `TTS.md`
-- `ASSET-MANAGEMENT.md`
-
-## Setting Externo
-
-`SETTING-INGESTION.md` define cómo se importa el worldbuilding externo a la base de conocimiento local.
-
-El setting externo se almacena en:
-
-```text
-/data/settings/
-```
-
-La información específica de campaña se almacena en:
-
-```text
-/data/campaigns/
-```
-
-## Correcciones de docs
-
-`FIX-PLAN.md` es la auditoría de 2026-10: **ya se ejecutó**. Para el estado
-de hoy de cada doc, `IMPLEMENTATION-STATUS.md` es la fuente.
+## Roadmap
+- `ROADMAP-MEJORAS.md` — mejoras futuras priorizadas.
+- `PERFORMANCE.md` — notas de performance.
