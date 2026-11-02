@@ -667,6 +667,8 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    placeMarker: (campaignId: string, data: { x: number; z: number; color?: string; ttl_ms?: number }) =>
+      request<{ ok: boolean }>(`/campaigns/${campaignId}/marker`, { method: 'POST', body: JSON.stringify(data) }),
 
     /** Que esta viendo cada jugador en la escena (lo consulta el DM). */
     reveals: (campaignId: string, sceneId: string) =>
