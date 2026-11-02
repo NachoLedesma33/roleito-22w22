@@ -156,7 +156,7 @@ export default function PlayerView() {
   const wasdTargetRef = useRef<{ x: number; z: number; rotation: number } | null>(null);
   const lastRollTsRef = useRef<number>(Date.now());
   // Sync con el DM: join inicial, WebSocket y poll de revisions. Los refs se
-  // crean acÃ¡ porque el loop de movimiento tambiÃ©n los usa.
+  // crean acÃ¡ porque el loop de movimiento también los usa.
   const {
     data, myChar, choice, pickerOpen, loading, error, live, panelRevision,
     notesDraft, fading, setNotesDraft, setChoice, setPickerOpen, setMyChar,
@@ -989,7 +989,7 @@ export default function PlayerView() {
       const cost = spell.cost_pm;
       if (!Number.isFinite(cost) || cost > current) return;
       // El click es el gesto que desbloquea audio: sonar acÃ¡ cuenta como
-      // autoplay permitido, aunque la llamada al back falle despuÃ©s.
+      // autoplay permitido, aunque la llamada al back falle después.
       if (spell.audio_path) {
         const url = staticUrl(spell.audio_path);
         if (url) void new Audio(url).play().catch(() => {});
@@ -1013,7 +1013,7 @@ export default function PlayerView() {
       id: s.id,
       label: s.name,
       icon: <span className="text-lg leading-none">{abilityIconChip(s.icon, s.name)}</span>,
-      hint: `Lv${s.level} Â· ${s.cost_pm} PM`,
+      hint: `Lv${s.level} · ${s.cost_pm} PM`,
     }));
   }, [myChar]);
 
@@ -1121,7 +1121,7 @@ export default function PlayerView() {
   if (loading && !missingCode) {
     return (
       <div className="h-screen flex items-center justify-center bg-black text-[var(--text-secondary)]">
-        {t('pv.joining', 'UniÃ©ndose a la campaÃ±a...')}
+        {t('pv.joining', 'Uniéndose a la campaÃ±a...')}
       </div>
     );
   }
@@ -1377,7 +1377,7 @@ export default function PlayerView() {
         {/*
           La niebla del jugador se pinta en una textura de WebGL, asÃ­ que no hay
           nada legible en el DOM. Esto es el seam para el e2e de percepciÃ³n (y un
-          dato Ãºtil si hay que debuggear por quÃ© alguien ve de mÃ¡s): cuÃ¡ntas
+          dato Ãºtil si hay que debuggear por qué alguien ve de mÃ¡s): cuÃ¡ntas
           celdas ve el personaje, y cuÃ¡ntas de la rejilla.
         */}
         <div
@@ -1463,7 +1463,7 @@ export default function PlayerView() {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-[var(--text-primary)] truncate">{myChar.name}</p>
                   <p className="text-[11px] text-[var(--text-secondary)] truncate">
-                    {[myChar.race, myChar.class_].filter(Boolean).join(' Â· ') || '\u00A0'}
+                    {[myChar.race, myChar.class_].filter(Boolean).join(' · ') || '\u00A0'}
                   </p>
                 </div>
                 <div className="ml-auto flex gap-1 shrink-0">
@@ -1670,7 +1670,7 @@ export default function PlayerView() {
           <div className="absolute inset-0 z-20 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6">
             <div className="bg-[var(--surface)] border border-[var(--bg-tertiary)]/60 rounded-xl p-4 sm:p-6 w-full max-w-md space-y-4">
               <div>
-                <h2 className="text-lg font-bold text-[var(--text-primary)]">{t('pv.whoAreYou', 'Â¿QuiÃ©n sos?')}</h2>
+                <h2 className="text-lg font-bold text-[var(--text-primary)]">{t('pv.whoAreYou', '¿Quién sos?')}</h2>
                 <p className="text-xs text-[var(--text-secondary)] mt-0.5">
                   {t('pv.pickCharHint', 'ElegÃ­ tu personaje para ver tu ficha durante la sesiÃ³n.')}
                 </p>
@@ -1709,7 +1709,7 @@ export default function PlayerView() {
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-[var(--text-primary)] truncate">{p.name}</p>
                   <p className="text-[10px] text-[var(--text-secondary)] truncate">
-                        {[p.race, p.class_name].filter(Boolean).join(' Â· ')}
+                        {[p.race, p.class_name].filter(Boolean).join(' · ')}
                       </p>
                     </div>
                   </button>
@@ -1796,7 +1796,7 @@ export default function PlayerView() {
                     {grimorioDetail.name}
                   </p>
                   <p className="text-[10px] text-[var(--text-secondary)] mt-0.5">
-                    Lv{grimorioDetail.level} Â· {grimorioDetail.cost_pm} PM
+                    Lv{grimorioDetail.level} · {grimorioDetail.cost_pm} PM
                     {grimorioDetail.audio_path && (
                       <span className="ml-1.5" title={t('pv.hasSound', 'Tiene sonido: suena al usar')}>
                         ðŸ”Š

@@ -8,7 +8,7 @@ import {
   updateScene,
 } from '../helpers/api-helpers';
 
-test.describe('Player Shell â Grimorio', () => {
+test.describe('Player Shell — Grimorio', () => {
   function playerSheet(page: Page) {
     return page
       .locator('div.fixed')
@@ -30,7 +30,7 @@ test.describe('Player Shell â Grimorio', () => {
             {
               id: 'spell-rayo',
               name: 'Rayo',
-              description: 'Una descarga elÃ©ctrica.',
+              description: 'Una descarga eléctrica.',
               level: 2,
               cost_pm: 3,
             },
@@ -50,7 +50,7 @@ test.describe('Player Shell â Grimorio', () => {
       { entityType: 'character', entityId: char.id, x: 0, z: 0 },
     ]);
     await updateScene(request, campaignId, scene.id, { status: 'active' });
-    // C4: usar habilidad necesita sesiÃ³n activa
+    // C4: usar habilidad necesita sesión activa
     const session = await request.post(
       `http://localhost:8000/api/campaigns/${campaignId}/sessions`,
       { data: { number: 1, date: '2026-10-08' } },
@@ -72,7 +72,7 @@ test.describe('Player Shell â Grimorio', () => {
   ) {
     const code = await generateInviteCode(request, campaignId);
     await page.goto(`/campaigns/join/${code}`);
-    await expect(page.getByText('Â¿QuiÃ©n sos?')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText('¿Quién sos?')).toBeVisible({ timeout: 20_000 });
     await page.getByRole('button', { name: new RegExp(name) }).click();
     await expect(playerSheet(page)).toBeVisible();
   }
@@ -96,8 +96,8 @@ test.describe('Player Shell â Grimorio', () => {
 
     await expect(page.getByRole('button', { name: /Rayo/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /Escudo/ })).toBeVisible();
-    await expect(page.getByText('Lv2 Â· 3 PM')).toBeVisible();
-    await expect(page.getByText('Lv1 Â· 2 PM')).toBeVisible();
+    await expect(page.getByText('Lv2 · 3 PM')).toBeVisible();
+    await expect(page.getByText('Lv1 · 2 PM')).toBeVisible();
   });
 
   test('G2: elegir una habilidad abre el detalle del Grimorio', async ({
@@ -114,8 +114,8 @@ test.describe('Player Shell â Grimorio', () => {
     const detail = page.getByTestId('grimorio-detail');
     await expect(detail).toBeVisible();
     await expect(detail).toContainText('Rayo');
-    await expect(detail).toContainText('Lv2 Â· 3 PM');
-    await expect(detail).toContainText('Una descarga elÃ©ctrica.');
+    await expect(detail).toContainText('Lv2 · 3 PM');
+    await expect(detail).toContainText('Una descarga eléctrica.');
     await expect(detail.getByRole('button', { name: 'Usar (3 PM)' })).toBeEnabled();
   });
 
@@ -140,12 +140,12 @@ test.describe('Player Shell â Grimorio', () => {
     await expect(detail.getByRole('button', { name: 'PM insuficientes' })).toBeDisabled();
   });
 
-  test('G4: bÃºsqueda interna filtra y Esc cierra detalle y mosaic', async ({
+  test('G4: búsqueda interna filtra y Esc cierra detalle y mosaic', async ({
     page,
     campaign,
     request,
   }) => {
-    // Unirse a la campaÃ±a + cargar la vista del jugador lleva el test al borde
+    // Unirse a la campaña + cargar la vista del jugador lleva el test al borde
     // del timeout default: en el runner del CI (mas lento) se pasaba.
     test.setTimeout(60_000);
 
@@ -175,12 +175,12 @@ test.describe('Player Shell â Grimorio', () => {
     await expect(page.getByRole('dialog', { name: 'Grimorio' })).toHaveCount(0);
   });
 
-  // RegresiÃ³n de CI (shard 3, 2026-10-16): `Island` escuchaba Escape en el
-  // `onKeyDown` de su propio div, asÃ­ que la tecla solo llegaba con el foco
+  // Regresión de CI (shard 3, 2026-10-16): `Island` escuchaba Escape en el
+  // `onKeyDown` de su propio div, así que la tecla solo llegaba con el foco
   // adentro. El foco se lleva un `setTimeout(0)` al abrir, y si Escape se
   // pulsaba antes de que corriera, se quedaba en el disparador. Este test lo
-  // hace determinista: el foco estÃ¡ explÃ­citamente AFUERA del diÃ¡logo.
-  test('G5: Esc cierra el Grimorio aunque el foco estÃ© en el disparador', async ({
+  // hace determinista: el foco está explícitamente AFUERA del diálogo.
+  test('G5: Esc cierra el Grimorio aunque el foco esté en el disparador', async ({
     page,
     campaign,
     request,
