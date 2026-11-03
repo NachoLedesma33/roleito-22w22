@@ -51,7 +51,7 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
     // Primero la ultima URL pegada a mano (para no esperar al backend), y
     // despues la del tunel vivo, que gana: es la que sirve ahora.
     const recordada = localStorage.getItem('roleito:invite:public-url');
-    if (recordada) setUrlPublica(recordada);
+    if (recordada && /^https?:\/\//i.test(recordada.trim())) setUrlPublica(recordada.trim());
 
     // Primero el archivo estatico que deja el script del tunel: funciona
     // aunque el backend este ocupado por un proceso viejo ✗ (el menu caeria
