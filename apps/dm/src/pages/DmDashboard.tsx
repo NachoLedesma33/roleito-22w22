@@ -1604,6 +1604,27 @@ const startFogMode = useCallback(() => {
     }
   }, [campaignId, activeScene, graphRef, mapAspect, push]);
 
+  // Accesibilidad: flechas de teclado mueven el token seleccionado.
+  useEffect(() => {
+    if (!selectedTokenId || !activeScene) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      const sc = sceneCharsRef.current.find((s) => s.id === selectedTokenId);
+      if (!sc) return;
+      const step = activeScene.grid_size && activeScene.grid_size > 0 ? activeScene.grid_size : 0.5;
+      let dx = 0, dz = 0;
+      if (e.key === 'ArrowLeft') dx = -step;
+      else if (e.key === 'ArrowRight') dx = step;
+      else if (e.key === 'ArrowUp') dz = -step;
+      else if (e.key === 'ArrowDown') dz = step;
+      else return;
+      e.preventDefault();
+      handleTokenDrop(selectedTokenId, sc.x + dx, sc.z + dz);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selectedTokenId, activeScene, handleTokenDrop]);
+
   // Qué tapa la luz en la escena. Lo calcula la vista y lo pasa a SceneRenderer:
   // el render no depende de buildOccluders, y el rango de movimiento usa la
   // misma lista en vez de recalcularla.
