@@ -94,6 +94,12 @@ export default function CharacterDetail() {
     e.target.value = '';
   };
 
+  const handleFrameChange = async (frame: string) => {
+    if (!campaignId || !characterId) return;
+    const updated = await api.characters.update(campaignId, characterId, { frame: frame === 'none' ? null : frame });
+    setCharacter(updated);
+  };
+
   if (loading) return <p className="text-[var(--text-secondary)]">Cargando...</p>;
   if (error) return <p className="text-[var(--danger)]">Error: {error}</p>;
   if (!character) return <p className="text-[var(--text-secondary)]">Personaje no encontrado</p>;
@@ -188,6 +194,37 @@ export default function CharacterDetail() {
         ) : (
           <div className="w-full h-48 rounded bg-[var(--bg-secondary)] flex items-center justify-center text-[var(--text-secondary)] text-sm">
             No hay modelo 3D subido. El token se renderizará como sprite 2D en la escena.
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center gap-3 my-2">
+        <div className="flex-1 h-px bg-[var(--bg-tertiary)]" />
+        <span className="text-xs text-[var(--text-secondary)]">O</span>
+        <div className="flex-1 h-px bg-[var(--bg-tertiary)]" />
+      </div>
+
+      <div className="mb-6 border border-[var(--bg-tertiary)] rounded-lg p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold">Marco del token (2D)</h2>
+        </div>
+        <p className="text-xs text-[var(--text-secondary)] mb-3">
+          Para tokens sin modelo 3D: elige un marco decorativo para el retrato.
+        </p>
+        <select
+          className="w-full text-[11px] bg-[var(--bg-tertiary)] border border-[var(--bg-tertiary)] rounded px-2 py-1.5"
+          value={character.frame ?? 'none'}
+          onChange={(e) => handleFrameChange(e.target.value)}
+        >
+          <option value="none">Sin marco</option>
+          <option value="gold">Oro</option>
+          <option value="silver">Plata</option>
+          <option value="iron">Hierro</option>
+          <option value="magical">Mágico</option>
+        </select>
+        {character.frame && character.frame !== 'none' && (
+          <div className="mt-3 flex justify-center">
+            <img src={`/frames/${character.frame}.svg`} alt="marco" className="w-24 h-24" />
           </div>
         )}
       </div>
