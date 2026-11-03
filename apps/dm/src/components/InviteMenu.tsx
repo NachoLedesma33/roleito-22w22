@@ -60,7 +60,7 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
       .then((res) => (res.ok ? res.text() : ''))
       .then((txt) => {
         const url = txt.trim()
-        if (cancelled || !url) return
+        if (cancelled || !url || !/^https?:\/\//i.test(url)) return
         setUrlPublica(url)
       })
       .catch(() => {
