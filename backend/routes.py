@@ -1,4 +1,5 @@
 ﻿from fastapi import APIRouter, Body, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import delete, select
 from database import get_session
@@ -307,6 +308,30 @@ async def campaign_ws(
             await websocket.receive_text()
     except WebSocketDisconnect:
         ws_manager.disconnect(campaign.id, websocket)
+
+
+class MarkerRequest(BaseModel):
+    x: float
+    z: float
+    color: str = "#facc15"
+    ttl_ms: int = 3000
+
+
+@campaigns_router.post("/campaigns/{campaign_id}/marker")
+async def place_marker(
+    campaign_id: str,
+    data: MarkerRequest,
+    db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+):
+    await ws_manager.broadcast(campaign_id, {
+        "type": "marker",
+        "x": data.x,
+        "z": data.z,
+        "color": data.color,
+        "ttl_ms": data.ttl_ms,
+    })
+    return {"ok": True}
 
 
 @campaigns_router.post("/campaigns", response_model=CampaignResponse)
