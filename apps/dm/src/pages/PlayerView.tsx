@@ -933,25 +933,36 @@ export default function PlayerView() {
       audioStartedRef.current = true;
       const el = audioRef.current;
       if (el && el.getAttribute('src')) void el.play().catch(() => {});
-      localStorage.setItem(`roleito:pv:${code}`, id);
-      const c: Choice = { kind: 'character', id };
-      choiceRef.current = c;
-      setChoice(c);
-      setPickerOpen(false);
-      const sc = data.characters.find(
-        (ch) => ch.type === 'character' && data.player_characters.some((p) => p.id === ch.entity_id && p.id === id)
-      );
-      if (sc) {
-        const initTarget = { x: sc.x, z: sc.z, rotation: sc.rotation ?? 0 };
-        wasdTargetRef.current = initTarget;
-        setWasdTarget(initTarget);
-      }
-      fetchMyChar(data.campaign_id, id).then((ch) => {
-        if (ch) {
-          setMyChar(ch);
-          syncNotesDraft(ch);
-        }
-      });
+      // Token de jugador por sesión (no compartido entre pestañas).
+      let token = sessionStorage.getItem(`roleito:pvtoken:${code}`);
+      if (!token) { token = crypto.randomUUID(); sessionStorage.setItem(`roleito:pvtoken:${code}`, token); }
+      // Claim optimista: si ya está tomado, volver al picker.
+      api.campaigns.claimCharacter(data.campaign_id, id, token)
+        .then(() => {
+          localStorage.setItem(`roleito:pv:${code}`, id);
+          const c: Choice = { kind: 'character', id };
+          choiceRef.current = c;
+          setChoice(c);
+          setPickerOpen(false);
+          const sc = data.characters.find(
+            (ch) => ch.type === 'character' && data.player_characters.some((p) => p.id === ch.entity_id && p.id === id)
+          );
+          if (sc) {
+            const initTarget = { x: sc.x, z: sc.z, rotation: sc.rotation ?? 0 };
+            wasdTargetRef.current = initTarget;
+            setWasdTarget(initTarget);
+          }
+          fetchMyChar(data.campaign_id, id).then((ch) => {
+            if (ch) {
+              setMyChar(ch);
+              syncNotesDraft(ch);
+            }
+          });
+        })
+        .catch(() => {
+          push({ id: `claim-${Date.now()}`, rollerName: 'Sistema', diceType: 1, count: 1, results: [1], total: 1, label: 'Personaje ya tomado por otro jugador', timestamp: Date.now() });
+          setPickerOpen(true);
+        });
     },
     [code, data, fetchMyChar, syncNotesDraft]
   );

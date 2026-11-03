@@ -90,6 +90,7 @@ class Character(Base):
     portrait_path = Column(String, nullable=True)
     model_path = Column(String, nullable=True)
     frame = Column(String, nullable=True)
+    claimed_by = Column(String, nullable=True)
 
     vigor = Column(String, default="/")
     intelligence = Column(String, default="/")

@@ -160,6 +160,7 @@ class CharacterResponse(BaseModel):
     portrait_path: Optional[str] = None
     model_path: Optional[str] = None
     frame: Optional[str] = None
+    claimed_by: Optional[str] = None
     vigor: VidaAttr
     intelligence: VidaAttr
     dexterity: VidaAttr

@@ -291,6 +291,33 @@ async def invite_ws(
         ws_manager.disconnect(campaign.id, websocket)
 
 
+class ClaimCharacterRequest(BaseModel):
+    player_token: str
+
+
+@campaigns_router.post("/campaigns/{campaign_id}/characters/{character_id}/claim")
+async def claim_character(
+    campaign_id: str,
+    character_id: str,
+    data: ClaimCharacterRequest,
+    db: AsyncSession = Depends(get_session),
+):
+    result = await db.execute(
+        select(Character).where(
+            Character.id == character_id,
+            Character.campaign_id == campaign_id,
+        )
+    )
+    ch = result.scalar_one_or_none()
+    if not ch:
+        raise HTTPException(status_code=404, detail="Character not found")
+    if ch.claimed_by and ch.claimed_by != data.player_token:
+        raise HTTPException(status_code=409, detail="Character already claimed")
+    ch.claimed_by = data.player_token
+    await db.commit()
+    return {"ok": True, "claimed_by": ch.claimed_by}
+
+
 @campaigns_router.websocket("/ws/campaigns/{campaign_id}")
 async def campaign_ws(
     websocket: WebSocket,
