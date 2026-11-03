@@ -3243,6 +3243,7 @@ const startFogMode = useCallback(() => {
                     visible: !!sc.visible,
                     portraitUrl: staticUrl(ent?.portrait_path ?? null),
                     modelUrl: staticUrl(ent?.model_path ?? null),
+                    frameUrl: ent?.frame ? `/frames/${ent.frame}.svg` : null,
                     rotation: sc.rotation ?? 0,
                     tokenScale: sc.token_scale ?? 1,
                     brightness: sc.brightness ?? 0,

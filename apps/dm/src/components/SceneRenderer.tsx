@@ -887,6 +887,7 @@ function DraggableToken({
           type={entity.type}
           position={[0, 0, 0]}
           portraitUrl={entity.portraitUrl}
+          frameUrl={entity.frameUrl}
           isSelected={isSelected}
           tokenScale={entity.tokenScale ?? 1}
           invisible={invisible}
