@@ -1,0 +1,7 @@
+[
+  { "id": "none", "name": "Sin marco", "url": null },
+  { "id": "gold", "name": "Oro", "url": "/frames/gold.svg" },
+  { "id": "silver", "name": "Plata", "url": "/frames/silver.svg" },
+  { "id": "iron", "name": "Hierro", "url": "/frames/iron.svg" },
+  { "id": "magical", "name": "Mágico", "url": "/frames/magical.svg" }
+]

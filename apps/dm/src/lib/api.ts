@@ -149,6 +149,7 @@ export interface Character {
   knowledge_scope: string;
   portrait_path: string | null;
   model_path: string | null;
+  frame: string | null;
   vigor: VidaAttr;
   intelligence: VidaAttr;
   dexterity: VidaAttr;
@@ -201,6 +202,7 @@ export interface NPC {
   visual_config_json: Record<string, unknown>;
   portrait_path: string | null;
   model_path: string | null;
+  frame: string | null;
   vigor: VidaAttr;
   intelligence: VidaAttr;
   dexterity: VidaAttr;
@@ -234,6 +236,7 @@ type CharacterCreateFields = {
   inventory_json?: InventoryItem[];
   spells_json?: Spell[];
   player_notes?: string;
+  frame?: string | null;
 };
 
 type CharacterUpdateFields = Partial<CharacterCreateFields>;

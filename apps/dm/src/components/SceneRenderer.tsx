@@ -144,6 +144,7 @@ interface SceneEntity {
   visible: boolean;
   portraitUrl?: string | null;
   modelUrl?: string | null;
+  frameUrl?: string | null;
   rotation?: number;
   tokenScale?: number;
   brightness?: number;

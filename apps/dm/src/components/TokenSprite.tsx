@@ -15,6 +15,7 @@ interface TokenSpriteProps {
   type: string;
   position: [number, number, number];
   portraitUrl?: string | null;
+  frameUrl?: string | null;
   isSelected?: boolean;
   isDragging?: boolean;
   tokenScale?: number;
@@ -30,6 +31,7 @@ export default function TokenSprite({
   type,
   position,
   portraitUrl,
+  frameUrl,
   isSelected,
   isDragging,
   tokenScale = 1,
@@ -52,6 +54,14 @@ export default function TokenSprite({
     tex.colorSpace = THREE.SRGBColorSpace;
     return tex;
   }, [portraitUrl]);
+
+  const frameTexture = useMemo(() => {
+    if (!frameUrl) return null;
+    const loader = new THREE.TextureLoader();
+    const tex = loader.load(frameUrl);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }, [frameUrl]);
 
   useFrame(({ clock }) => {
     if (groupRef.current && !isDragging) {
@@ -84,6 +94,12 @@ export default function TokenSprite({
             <mesh position={[0, 0.6 * tokenScale, 0]}>
               <circleGeometry args={[radius, 32]} />
               <meshStandardMaterial color={petrified ? '#9ca3af' : color} emissive={petrified ? '#4a4f57' : color} emissiveIntensity={petrified ? 0.15 : 0.4} transparent={invisible} opacity={invisible ? 0.25 : 1} depthWrite={!invisible} />
+            </mesh>
+          )}
+          {frameTexture && (
+            <mesh position={[0, 0.6 * tokenScale, 0.02]}>
+              <circleGeometry args={[radius + 0.05, 32]} />
+              <meshBasicMaterial map={frameTexture} transparent depthWrite={false} />
             </mesh>
           )}
           {!texture && (

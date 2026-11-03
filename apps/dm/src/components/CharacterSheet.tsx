@@ -82,6 +82,12 @@ export default function CharacterSheet({
     e.target.value = '';
   }, [campaignId, entity.id, entityType, onUpdate]);
 
+  const handleFrameChange = useCallback(async (frame: string) => {
+    if (entityType !== 'character') return;
+    const updated = await api.characters.update(campaignId, entity.id, { frame: frame === 'none' ? null : frame });
+    onUpdate(updated);
+  }, [campaignId, entity.id, entityType, onUpdate]);
+
   const handleSaveHp = useCallback(async () => {
     const clamped = Math.max(0, Math.min(entity.max_pv, currentHp));
     setCurrentHp(clamped);
@@ -431,6 +437,20 @@ export default function CharacterSheet({
               </div>
             )}
           </button>
+          <div className="flex items-center gap-2">
+            <label className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">Marco</label>
+            <select
+              className="flex-1 text-[11px] bg-[var(--bg-tertiary)] border border-[var(--bg-tertiary)] rounded px-2 py-1"
+              value={entity.frame ?? 'none'}
+              onChange={(e) => handleFrameChange(e.target.value)}
+            >
+              <option value="none">Sin marco</option>
+              <option value="gold">Oro</option>
+              <option value="silver">Plata</option>
+              <option value="iron">Hierro</option>
+              <option value="magical">Mágico</option>
+            </select>
+          </div>
           <div className="flex items-start gap-3">
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold truncate">{entity.name}</p>

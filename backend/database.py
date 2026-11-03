@@ -72,6 +72,7 @@ MIGRATIONS = [
     ("scene_characters", "updated_at", "ALTER TABLE scene_characters ADD COLUMN updated_at TIMESTAMP"),
     ("characters", "player_notes", "ALTER TABLE characters ADD COLUMN player_notes TEXT DEFAULT ''"),
     ("characters", "model_path", "ALTER TABLE characters ADD COLUMN model_path TEXT"),
+    ("characters", "frame", "ALTER TABLE characters ADD COLUMN frame TEXT"),
     ("npcs", "model_path", "ALTER TABLE npcs ADD COLUMN model_path TEXT"),
     ("scene_characters", "rotation", "ALTER TABLE scene_characters ADD COLUMN rotation FLOAT DEFAULT 0.0"),
     ("scenes", "map_scale", "ALTER TABLE scenes ADD COLUMN map_scale FLOAT DEFAULT 1.0"),

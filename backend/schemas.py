@@ -118,6 +118,7 @@ class CharacterCreate(BaseModel):
     inventory_json: list = []
     spells_json: list = []
     player_notes: str = ""
+    frame: Optional[str] = None
 
 
 class CharacterUpdate(BaseModel):
@@ -158,6 +159,7 @@ class CharacterResponse(BaseModel):
     knowledge_scope: str
     portrait_path: Optional[str] = None
     model_path: Optional[str] = None
+    frame: Optional[str] = None
     vigor: VidaAttr
     intelligence: VidaAttr
     dexterity: VidaAttr
@@ -229,6 +231,7 @@ class NPCResponse(BaseModel):
     visual_config_json: dict
     portrait_path: Optional[str] = None
     model_path: Optional[str] = None
+    frame: Optional[str] = None
     vigor: VidaAttr
     intelligence: VidaAttr
     dexterity: VidaAttr
