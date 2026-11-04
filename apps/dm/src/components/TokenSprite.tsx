@@ -57,8 +57,9 @@ export default function TokenSprite({
 
   const frameTexture = useMemo(() => {
     if (!frameUrl) return null;
+    console.log('[TokenSprite] frameUrl=', frameUrl);
     const loader = new THREE.TextureLoader();
-    const tex = loader.load(frameUrl);
+    const tex = loader.load(frameUrl, () => console.log('[TokenSprite] frame loaded OK:', frameUrl), (e) => console.error('[TokenSprite] frame load error:', frameUrl, e));
     tex.colorSpace = THREE.SRGBColorSpace;
     return tex;
   }, [frameUrl]);
@@ -97,9 +98,9 @@ export default function TokenSprite({
             </mesh>
           )}
           {frameTexture && (
-            <mesh position={[0, 0.6 * tokenScale, 0.02]} renderOrder={10}>
-              <circleGeometry args={[radius + 0.05, 32]} />
-              <meshBasicMaterial map={frameTexture} transparent depthWrite={false} depthTest={false} />
+            <mesh position={[0, 0.6 * tokenScale, 0.05]} renderOrder={10}>
+              <circleGeometry args={[radius + 0.15, 32]} />
+              <meshBasicMaterial map={frameTexture} transparent depthWrite={false} depthTest={false} alphaTest={0.05} />
             </mesh>
           )}
           {!texture && (
