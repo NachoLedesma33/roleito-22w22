@@ -137,6 +137,7 @@ async def apply_vida_response(
         "knowledge_scope": char.knowledge_scope,
         "portrait_path": char.portrait_path,
         "model_path": char.model_path,
+        "frame": char.frame,
         "vigor": char.vigor,
         "intelligence": char.intelligence,
         "dexterity": char.dexterity,
