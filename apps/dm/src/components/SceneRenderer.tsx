@@ -3,6 +3,7 @@ import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { Billboard, OrbitControls, Text, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import RoomBackground from './RoomBackground';
+import { VfxBurst } from './VfxBurst';
 import { getRoomSkin } from '@/lib/roomSkins';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
@@ -202,6 +203,7 @@ interface SceneRendererProps {
   roomBackgroundSkin?: string;
   roomSkinId?: string;
   markers?: Array<{ id: number; x: number; z: number; color: string }>;
+  vfx?: Array<{ id: number; type: 'fire' | 'ice' | 'lightning' | 'heal' | 'void'; from: [number, number, number]; to: [number, number, number]; startedAt: number; duration: number }>;
   gridSize?: number;
   gridSnap?: boolean;
   movementRange?: {
@@ -2297,6 +2299,7 @@ export default function SceneRenderer({
   roomBackgroundSkin: _roomBackgroundSkin = 'wood',
   roomSkinId = '',
   markers = [],
+  vfx = [],
   onZoneFogSelect,
   lightPlace = null,
   onLightPlace,
@@ -2542,6 +2545,9 @@ export default function SceneRenderer({
           <sphereGeometry args={[0.3, 16, 16]} />
           <meshBasicMaterial color={m.color} transparent opacity={0.8} />
         </mesh>
+      ))}
+      {(vfx ?? []).map((e) => (
+        <VfxBurst key={e.id} effect={e} />
       ))}
       {visibleCharsVisual.map((ch) => {
         const isMovable = movableEntityIds

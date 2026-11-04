@@ -96,6 +96,7 @@ export default function DmDashboard() {
    */
   const [sheetTokenId, setSheetTokenId] = useState<string | null>(null);
   const [markers, setMarkers] = useState<Array<{ id: number; x: number; z: number; color: string; ttl: number }>>([]);
+  const [vfx, setVfx] = useState<Array<{ id: number; type: 'fire' | 'ice' | 'lightning' | 'heal' | 'void'; from: [number, number, number]; to: [number, number, number]; startedAt: number; duration: number }>>([]);
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission().catch(() => {});
@@ -1944,7 +1945,6 @@ const startFogMode = useCallback(() => {
       items: [
         { label: i18n.t('dmContext.selectToken', 'Seleccionar {{name}}', { name }), icon: '◉', onClick: () => setSelectedTokenId(sceneCharId) },
         { label: i18n.t('dmContext.openSheet', 'Ver ficha de {{name}}', { name }), icon: '📖', onClick: () => setSheetTokenId(sceneCharId) },
-        { label: i18n.t('dmContext.openSheet', 'Ver ficha de {{name}}', { name }), icon: '📖', onClick: () => setSheetTokenId(sceneCharId) },
 
         { label: sc?.visible ? i18n.t('dmContext.hidePlayers', 'Ocultar a los jugadores') : i18n.t('dmContext.showPlayers', 'Mostrar a los jugadores'), icon: sc?.visible ? '👁' : '🚫', onClick: () => handleToggleVisibility(sceneCharId) },
         { label: '', separator: true, onClick: () => {} },
@@ -2471,6 +2471,21 @@ const startFogMode = useCallback(() => {
               title="Exportar mapa como PNG"
             >
               <span className="flex-1 text-left">Exportar mapa</span>
+            </button>
+            <button
+              onClick={() => {
+                if (!selectedTokenId) return;
+                const sc = sceneCharsRef.current.find((s) => s.id === selectedTokenId);
+                if (!sc) return;
+                const target = sceneCharsRef.current.find((s) => s.id !== selectedTokenId);
+                const effect = { id: Date.now(), type: 'fire' as const, from: [sc.x, 0.6, sc.z] as [number, number, number], to: [target?.x ?? sc.x + 2, 0.6, target?.z ?? sc.z] as [number, number, number], startedAt: performance.now(), duration: 1500 };
+                setVfx((prev) => [...prev, effect]);
+                window.setTimeout(() => setVfx((prev) => prev.filter((e) => e.id !== effect.id)), 2000);
+              }}
+              className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              title="Lanzar VFX de fuego"
+            >
+              <span className="flex-1 text-left">VFX Fuego</span>
             </button>
             <button
               onClick={() => {
@@ -3267,6 +3282,7 @@ const startFogMode = useCallback(() => {
                 modelYOffset={activeScene.model_y_offset ?? 0}
                 roomSkinId={activeScene.room_skin || ''}
                 markers={markers}
+                vfx={vfx}
                 gridSize={activeScene.grid_size ?? 0}
                 gridSnap={activeScene.grid_snap ?? false}
                 movementRange={movementRange}
