@@ -97,9 +97,9 @@ export default function TokenSprite({
             </mesh>
           )}
           {frameTexture && (
-            <mesh position={[0, 0.6 * tokenScale, 0.02]}>
+            <mesh position={[0, 0.6 * tokenScale, 0.02]} renderOrder={10}>
               <circleGeometry args={[radius + 0.05, 32]} />
-              <meshBasicMaterial map={frameTexture} transparent depthWrite={false} />
+              <meshBasicMaterial map={frameTexture} transparent depthWrite={false} depthTest={false} />
             </mesh>
           )}
           {!texture && (
