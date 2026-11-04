@@ -55,7 +55,13 @@ export default function TokenSprite({
     return tex;
   }, [portraitUrl]);
 
-  // frameTexture removed (using solid ring for now)
+  const frameTexture = useMemo(() => {
+    if (!frameUrl) return null;
+    const loader = new THREE.TextureLoader();
+    const tex = loader.load(frameUrl);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }, [frameUrl]);
 
   useFrame(({ clock }) => {
     if (groupRef.current && !isDragging) {
@@ -90,10 +96,10 @@ export default function TokenSprite({
               <meshStandardMaterial color={petrified ? '#9ca3af' : color} emissive={petrified ? '#4a4f57' : color} emissiveIntensity={petrified ? 0.15 : 0.4} transparent={invisible} opacity={invisible ? 0.25 : 1} depthWrite={!invisible} />
             </mesh>
           )}
-          {frameUrl && (
+          {frameTexture && (
             <mesh position={[0, 0.6 * tokenScale, 0.05]} renderOrder={10}>
-              <ringGeometry args={[radius + 0.02, radius + 0.18, 32]} />
-              <meshBasicMaterial color="#ff00ff" transparent={false} depthWrite={false} depthTest={false} />
+              <circleGeometry args={[radius + 0.15, 32]} />
+              <meshBasicMaterial map={frameTexture} transparent depthWrite={false} depthTest={false} alphaTest={0.05} />
             </mesh>
           )}
           {!texture && (
