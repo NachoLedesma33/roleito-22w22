@@ -1944,6 +1944,8 @@ const startFogMode = useCallback(() => {
       items: [
         { label: i18n.t('dmContext.selectToken', 'Seleccionar {{name}}', { name }), icon: '◉', onClick: () => setSelectedTokenId(sceneCharId) },
         { label: i18n.t('dmContext.openSheet', 'Ver ficha de {{name}}', { name }), icon: '📖', onClick: () => setSheetTokenId(sceneCharId) },
+        { label: i18n.t('dmContext.openSheet', 'Ver ficha de {{name}}', { name }), icon: '📖', onClick: () => setSheetTokenId(sceneCharId) },
+        ...(!ent?.model_path ? [{ label: 'Marco del token', icon: '', onClick: () => setSheetTokenId(sceneCharId) }] : []),
         { label: sc?.visible ? i18n.t('dmContext.hidePlayers', 'Ocultar a los jugadores') : i18n.t('dmContext.showPlayers', 'Mostrar a los jugadores'), icon: sc?.visible ? '👁' : '🚫', onClick: () => handleToggleVisibility(sceneCharId) },
         { label: '', separator: true, onClick: () => {} },
         { label: i18n.t('dmContext.statusTitle', 'Estado'), icon: '⚠️', onClick: () => {}, disabled: true },

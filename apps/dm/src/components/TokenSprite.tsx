@@ -42,6 +42,7 @@ export default function TokenSprite({
 }: TokenSpriteProps) {
   const groupRef = useRef<THREE.Group>(null);
   const color = TOKEN_COLORS[type] || '#94a3b8';
+  if (frameUrl) console.log('[TokenSprite] frameUrl=', frameUrl, 'id=', id);
   const initials = name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2);
   const radius = 0.4 * tokenScale;
   const fontSize = 0.3 * tokenScale;
