@@ -2483,7 +2483,7 @@ const startFogMode = useCallback(() => {
               >
                 <span className="flex-1 text-left">Habilidades VFX</span>
               </button>
-              <AnchoredMenu open={vfxMenuOpen} rect={null} anchorId="vfx" testId="vfx-menu" minWidth={180}>
+              <AnchoredMenu open={vfxMenuOpen} rect={vfxMenu.rect} anchorId="vfx" testId="vfx-menu" minWidth={180}>
                 {(['fire', 'ice', 'lightning', 'heal', 'void'] as const).map((type) => (
                   <button
                     key={type}
