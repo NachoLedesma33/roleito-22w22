@@ -98,6 +98,7 @@ export default function DmDashboard() {
   const [markers, setMarkers] = useState<Array<{ id: number; x: number; z: number; color: string; ttl: number }>>([]);
   const [vfx, setVfx] = useState<Array<{ id: number; type: 'fire' | 'ice' | 'lightning' | 'heal' | 'void'; from: [number, number, number]; to: [number, number, number]; startedAt: number; duration: number }>>([]);
   const [pendingVfx, setPendingVfx] = useState<'fire' | 'ice' | 'lightning' | 'heal' | 'void' | null>(null);
+  const [vfxMenuOpen, setVfxMenuOpen] = useState(false);
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission().catch(() => {});
@@ -241,6 +242,7 @@ export default function DmDashboard() {
   const lightingMenu = useAnchoredMenu({ open: openMenu === 'lighting', onClose: closeLightingMenu, anchorId: 'lighting', align: 'end', width: 150, gap: -2 });
   const weatherMenu = useAnchoredMenu({ open: openMenu === 'weather', onClose: closeLightingMenu, anchorId: 'weather', align: 'end', width: 170, gap: -2 });
   const buildMenu = useAnchoredMenu({ open: buildMenuOpen, onClose: closeBuildMenu, anchorId: 'build' });
+  const vfxMenu = useAnchoredMenu({ open: vfxMenuOpen, onClose: () => setVfxMenuOpen(false), anchorId: 'vfx' });
   const mapMenu = useAnchoredMenu({ open: showMapMenu, onClose: closeMapMenu, anchorId: 'map', align: 'end', width: 140, gap: 2 });
 
   const [lightContextMenu, setLightContextMenu] = useState<{ x: number; y: number; itemId: string } | null>(null);
@@ -2437,17 +2439,7 @@ const startFogMode = useCallback(() => {
                   >
                     {t('dm.clearLights', '🗑️ Limpiar todas las luces')}
                   </button>{t('dm.clearLights', '🗑️ Limpiar todas las luces')}
-                  <div className="border-t border-[var(--bg-tertiary)] my-1" />
-                  <p className="px-3 py-1 text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">Habilidades VFX</p>
-                  {(['fire', 'ice', 'lightning', 'heal', 'void'] as const).map((type) => (
-                    <button
-                      key={type}
-                      onClick={() => { setPendingVfx(type); setBuildMenuOpen(false); }}
-                      className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-[var(--text-secondary)]"
-                    >
-                      {type === 'fire' ? 'Fuego' : type === 'ice' ? 'Hielo' : type === 'lightning' ? 'Rayo' : type === 'heal' ? 'Sanación' : 'Vacío'}
-                    </button>
-                  ))}
+
 
                   <div className="border-t border-[var(--bg-tertiary)] my-1" />
                   <div className="px-3 py-1">
@@ -2480,6 +2472,28 @@ const startFogMode = useCallback(() => {
                   </div>
                 </AnchoredMenu>
 
+            </div>
+            <div className="relative shrink-0" data-anchor="vfx">
+              <button
+                onClick={(e) => {
+                  vfxMenu.anchorFrom(e.currentTarget);
+                  setVfxMenuOpen(!vfxMenuOpen);
+                }}
+                className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              >
+                <span className="flex-1 text-left">Habilidades VFX</span>
+              </button>
+              <AnchoredMenu open={vfxMenuOpen} rect={null} anchorId="vfx" testId="vfx-menu" minWidth={180}>
+                {(['fire', 'ice', 'lightning', 'heal', 'void'] as const).map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => { setPendingVfx(type); setVfxMenuOpen(false); }}
+                    className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-[var(--text-secondary)]"
+                  >
+                    {type === 'fire' ? 'Fuego' : type === 'ice' ? 'Hielo' : type === 'lightning' ? 'Rayo' : type === 'heal' ? 'Sanación' : 'Vacío'}
+                  </button>
+                ))}
+              </AnchoredMenu>
             </div>
             <button
               onClick={() => {
