@@ -48,6 +48,7 @@ export default function CharacterForm() {
   const [portraitFile, setPortraitFile] = useState<File | null>(null);
   const [portraitPreview, setPortraitPreview] = useState<string | null>(null);
   const [modelFile, setModelFile] = useState<File | null>(null);
+  const [frame, setFrame] = useState('none');
   const [modelPreviewUrl, setModelPreviewUrl] = useState<string | null>(null);
   const modelFileInput = useRef<HTMLInputElement>(null);
 
@@ -71,6 +72,7 @@ export default function CharacterForm() {
           setMaxPv(c.max_pv);
           setMaxPm(c.max_pm);
           setDefense(c.defense);
+          setFrame(c.frame ?? 'none');
         })
         .catch((e) => setError(e.message))
         .finally(() => setLoading(false));
@@ -99,6 +101,7 @@ export default function CharacterForm() {
         max_pv: maxPv,
         max_pm: maxPm,
         defense,
+        frame: frame === 'none' ? null : frame,
       };
       if (isEdit) {
         await api.characters.update(campaignId, characterId!, data);
@@ -281,6 +284,32 @@ export default function CharacterForm() {
               )}
             </div>
           </div>
+        </div>
+
+        <div className="flex items-center gap-3 my-2">
+          <div className="flex-1 h-px bg-[var(--bg-tertiary)]" />
+          <span className="text-xs text-[var(--text-secondary)]">O</span>
+          <div className="flex-1 h-px bg-[var(--bg-tertiary)]" />
+        </div>
+
+        <div>
+          <label className="block text-sm text-[var(--text-secondary)] mb-1">Marco del token (2D, sin modelo 3D)</label>
+          <select
+            className="w-full rounded border border-[var(--bg-tertiary)] bg-[var(--bg-secondary)] px-3 py-2 text-sm"
+            value={frame}
+            onChange={(e) => setFrame(e.target.value)}
+          >
+            <option value="none">Sin marco</option>
+            <option value="gold">Oro</option>
+            <option value="silver">Plata</option>
+            <option value="iron">Hierro</option>
+            <option value="magical">Mágico</option>
+          </select>
+          {frame !== 'none' && (
+            <div className="mt-2 flex justify-center">
+              <img src={`/frames/${frame}.svg`} alt="marco" className="w-16 h-16" />
+            </div>
+          )}
         </div>
 
         <div>
