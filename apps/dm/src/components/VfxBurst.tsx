@@ -7,8 +7,8 @@ export interface VfxEffect {
   type: 'fire' | 'ice' | 'lightning' | 'heal' | 'void';
   from: [number, number, number];
   to: [number, number, number];
-  startedAt: number;
   duration: number;
+  startedAt?: number;
 }
 
 const COLORS: Record<VfxEffect['type'], string> = {
@@ -37,6 +37,7 @@ function makeTexture(color: string): THREE.Texture {
 
 export function VfxBurst({ effect }: { effect: VfxEffect }) {
   const pointsRef = useRef<THREE.Points>(null);
+  const startedRef = useRef<number | null>(null);
   const count = 60;
   const positions = useMemo(() => {
     const arr = new Float32Array(count * 3);
@@ -52,7 +53,8 @@ export function VfxBurst({ effect }: { effect: VfxEffect }) {
 
   useFrame(({ clock }) => {
     if (!pointsRef.current) return;
-    const t = (clock.elapsedTime * 1000 - effect.startedAt) / effect.duration;
+    if (startedRef.current === null) startedRef.current = clock.elapsedTime;
+    const t = (clock.elapsedTime - startedRef.current) / (effect.duration / 1000);
     if (t >= 1) {
       pointsRef.current.visible = false;
       return;
