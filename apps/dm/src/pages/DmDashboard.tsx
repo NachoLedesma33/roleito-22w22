@@ -97,6 +97,7 @@ export default function DmDashboard() {
   const [sheetTokenId, setSheetTokenId] = useState<string | null>(null);
   const [markers, setMarkers] = useState<Array<{ id: number; x: number; z: number; color: string; ttl: number }>>([]);
   const [vfx, setVfx] = useState<Array<{ id: number; type: 'fire' | 'ice' | 'lightning' | 'heal' | 'void'; from: [number, number, number]; to: [number, number, number]; startedAt: number; duration: number }>>([]);
+  const [pendingVfx, setPendingVfx] = useState<'fire' | 'ice' | 'lightning' | 'heal' | 'void' | null>(null);
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission().catch(() => {});
@@ -1487,6 +1488,17 @@ const startFogMode = useCallback(() => {
   }, [activeScene, graphRef, handleItemsChange, mapAspect, push]);
 
   const handleTokenClick = useCallback((tokenId: string) => {
+    if (pendingVfx && tokenId && selectedTokenId && tokenId !== selectedTokenId) {
+      const attacker = sceneCharsRef.current.find((s) => s.id === selectedTokenId);
+      const target = sceneCharsRef.current.find((s) => s.id === tokenId);
+      if (attacker && target) {
+        const effect = { id: Date.now(), type: pendingVfx, from: [attacker.x, 0.6, attacker.z] as [number, number, number], to: [target.x, 0.6, target.z] as [number, number, number], startedAt: performance.now(), duration: 1500 };
+        setVfx((prev) => [...prev, effect]);
+        window.setTimeout(() => setVfx((prev) => prev.filter((e) => e.id !== effect.id)), 2000);
+      }
+      setPendingVfx(null);
+      return;
+    }
     if (attachLightMode?.lightId) {
       handleAttachComplete(tokenId)
       return
@@ -1514,7 +1526,7 @@ const startFogMode = useCallback(() => {
     setDistanceFrom(null);
     setDistanceTo(null);
     setSelectedTokenId((prev) => prev === tokenId ? null : tokenId);
-  }, [distanceFrom, attachLightMode, handleAttachComplete]);
+  }, [distanceFrom, attachLightMode, handleAttachComplete, pendingVfx, selectedTokenId]);
 
   const handleTokenDrag = useCallback(async (sceneCharId: string, x: number, z: number) => {
     if (!campaignId || !activeScene) return;
@@ -2424,7 +2436,19 @@ const startFogMode = useCallback(() => {
                     className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-red-400"
                   >
                     {t('dm.clearLights', '🗑️ Limpiar todas las luces')}
-                  </button>
+                  </button>{t('dm.clearLights', '🗑️ Limpiar todas las luces')}
+                  <div className="border-t border-[var(--bg-tertiary)] my-1" />
+                  <p className="px-3 py-1 text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">Habilidades VFX</p>
+                  {(['fire', 'ice', 'lightning', 'heal', 'void'] as const).map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => { setPendingVfx(type); setBuildMenuOpen(false); }}
+                      className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-[var(--text-secondary)]"
+                    >
+                      {type === 'fire' ? 'Fuego' : type === 'ice' ? 'Hielo' : type === 'lightning' ? 'Rayo' : type === 'heal' ? 'Sanación' : 'Vacío'}
+                    </button>
+                  ))}
+
                   <div className="border-t border-[var(--bg-tertiary)] my-1" />
                   <div className="px-3 py-1">
                     <p className="text-[10px] text-[var(--text-secondary)] mb-1">{t('dm.wallMaterial', 'Material de paredes')}</p>
@@ -2471,24 +2495,6 @@ const startFogMode = useCallback(() => {
               title="Exportar mapa como PNG"
             >
               <span className="flex-1 text-left">Exportar mapa</span>
-            </button>
-            <button
-              onClick={() => {
-                console.log('[VFX] selectedTokenId=', selectedTokenId, 'sceneChars=', sceneCharsRef.current.length);
-                const tid = selectedTokenId || sceneCharsRef.current[0]?.id;
-                if (!tid) { console.log('[VFX] no token'); return; }
-                const sc = sceneCharsRef.current.find((s) => s.id === tid);
-                if (!sc) { console.log('[VFX] token not found in sceneChars'); return; }
-                const target = sceneCharsRef.current.find((s) => s.id !== tid);
-                const effect = { id: Date.now(), type: 'fire' as const, from: [sc.x, 0.6, sc.z] as [number, number, number], to: [target?.x ?? sc.x + 2, 0.6, target?.z ?? sc.z] as [number, number, number], startedAt: performance.now(), duration: 1500 };
-                console.log('[VFX] triggering effect', effect);
-                setVfx((prev) => [...prev, effect]);
-                window.setTimeout(() => setVfx((prev) => prev.filter((e) => e.id !== effect.id)), 2000);
-              }}
-              className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-              title="Lanzar VFX de fuego"
-            >
-              <span className="flex-1 text-left">VFX Fuego</span>
             </button>
             <button
               onClick={() => {
@@ -3238,6 +3244,11 @@ const startFogMode = useCallback(() => {
           data-hud-stage
           style={bgCSS ? { background: bgCSS } : undefined}
         >
+          {pendingVfx && (
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 z-30 bg-amber-600 text-white text-xs px-3 py-1.5 rounded shadow">
+              VFX {pendingVfx}: selecciona el token objetivo (Esc cancela)
+            </div>
+          )}
           {activeScene?.background_path ? (
             <Suspense fallback={
               <div className="w-full h-full flex items-center justify-center text-[var(--text-secondary)]">
