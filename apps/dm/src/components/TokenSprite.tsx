@@ -55,14 +55,7 @@ export default function TokenSprite({
     return tex;
   }, [portraitUrl]);
 
-  const frameTexture = useMemo(() => {
-    if (!frameUrl) return null;
-    console.log('[TokenSprite] frameUrl=', frameUrl);
-    const loader = new THREE.TextureLoader();
-    const tex = loader.load(frameUrl, () => console.log('[TokenSprite] frame loaded OK:', frameUrl), (e) => console.error('[TokenSprite] frame load error:', frameUrl, e));
-    tex.colorSpace = THREE.SRGBColorSpace;
-    return tex;
-  }, [frameUrl]);
+  // frameTexture removed (using solid ring for now)
 
   useFrame(({ clock }) => {
     if (groupRef.current && !isDragging) {
@@ -97,10 +90,10 @@ export default function TokenSprite({
               <meshStandardMaterial color={petrified ? '#9ca3af' : color} emissive={petrified ? '#4a4f57' : color} emissiveIntensity={petrified ? 0.15 : 0.4} transparent={invisible} opacity={invisible ? 0.25 : 1} depthWrite={!invisible} />
             </mesh>
           )}
-          {frameTexture && (
+          {frameUrl && (
             <mesh position={[0, 0.6 * tokenScale, 0.05]} renderOrder={10}>
-              <circleGeometry args={[radius + 0.15, 32]} />
-              <meshBasicMaterial map={frameTexture} transparent depthWrite={false} depthTest={false} alphaTest={0.05} />
+              <ringGeometry args={[radius, radius + 0.12, 32]} />
+              <meshBasicMaterial color="#d4af37" transparent depthWrite={false} depthTest={false} />
             </mesh>
           )}
           {!texture && (
