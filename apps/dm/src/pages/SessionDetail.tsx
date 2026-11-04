@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import SessionReplay from '@/components/SessionReplay';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, Session } from '@/lib/api';
@@ -23,7 +22,6 @@ export default function SessionDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [replayOpen, setReplayOpen] = useState(false);
 
   useEffect(() => {
     if (!campaignId || !sessionId) return;
@@ -88,9 +86,6 @@ export default function SessionDetail() {
               {t('sessionDetail.finish', 'Finalizar')}
             </Button>
           )}
-          <Button size="sm" variant="outline" onClick={() => setReplayOpen(true)}>
-            Replay
-          </Button>
           <Link
             to={`/campaigns/${campaignId}/sessions/${sessionId}/edit`}
             className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
@@ -137,9 +132,6 @@ export default function SessionDetail() {
           </div>
         )}
       </div>
-      {replayOpen && campaignId && sessionId && (
-        <SessionReplay campaignId={campaignId} sessionId={sessionId} onClose={() => setReplayOpen(false)} />
-      )}
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent data-testid="confirm-delete-dialog">
           <DialogHeader>
