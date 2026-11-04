@@ -92,8 +92,8 @@ export default function TokenSprite({
           )}
           {frameUrl && (
             <mesh position={[0, 0.6 * tokenScale, 0.05]} renderOrder={10}>
-              <ringGeometry args={[radius, radius + 0.12, 32]} />
-              <meshBasicMaterial color="#d4af37" transparent depthWrite={false} depthTest={false} />
+              <ringGeometry args={[radius + 0.02, radius + 0.18, 32]} />
+              <meshBasicMaterial color="#ff00ff" transparent={false} depthWrite={false} depthTest={false} />
             </mesh>
           )}
           {!texture && (
