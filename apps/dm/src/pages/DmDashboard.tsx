@@ -2474,11 +2474,14 @@ const startFogMode = useCallback(() => {
             </button>
             <button
               onClick={() => {
-                if (!selectedTokenId) return;
-                const sc = sceneCharsRef.current.find((s) => s.id === selectedTokenId);
-                if (!sc) return;
-                const target = sceneCharsRef.current.find((s) => s.id !== selectedTokenId);
+                console.log('[VFX] selectedTokenId=', selectedTokenId, 'sceneChars=', sceneCharsRef.current.length);
+                const tid = selectedTokenId || sceneCharsRef.current[0]?.id;
+                if (!tid) { console.log('[VFX] no token'); return; }
+                const sc = sceneCharsRef.current.find((s) => s.id === tid);
+                if (!sc) { console.log('[VFX] token not found in sceneChars'); return; }
+                const target = sceneCharsRef.current.find((s) => s.id !== tid);
                 const effect = { id: Date.now(), type: 'fire' as const, from: [sc.x, 0.6, sc.z] as [number, number, number], to: [target?.x ?? sc.x + 2, 0.6, target?.z ?? sc.z] as [number, number, number], startedAt: performance.now(), duration: 1500 };
+                console.log('[VFX] triggering effect', effect);
                 setVfx((prev) => [...prev, effect]);
                 window.setTimeout(() => setVfx((prev) => prev.filter((e) => e.id !== effect.id)), 2000);
               }}
