@@ -143,6 +143,7 @@ class CharacterUpdate(BaseModel):
     inventory_json: Optional[list] = None
     spells_json: Optional[list] = None
     player_notes: Optional[str] = None
+    frame: Optional[str] = None
 
 
 class CharacterResponse(BaseModel):
