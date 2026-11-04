@@ -243,7 +243,7 @@ export default function FogOverlay({
   }, [texture, color, regions, perception])
 
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, fogY, 0]} renderOrder={50}>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, fogY, 0]} renderOrder={50} raycast={() => {}}>
       <planeGeometry args={[mapWidth, mapHeight]} />
       {/*
         `depthTest: false` a propósito: la niebla tiene que tapar TODO lo que hay

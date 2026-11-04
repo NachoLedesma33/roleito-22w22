@@ -877,6 +877,8 @@ function DraggableToken({
           onPointerDown={handlePointerDown}
           onContextMenu={(e) => {
             const domEvent = e as unknown as PointerEvent;
+            domEvent.stopPropagation?.();
+            domEvent.preventDefault?.();
             onContextMenu?.(entity.sceneCharId, domEvent.clientX, domEvent.clientY);
           }}
         />
@@ -895,6 +897,8 @@ function DraggableToken({
           onPointerDown={handlePointerDown}
           onContextMenu={(e) => {
             const domEvent = e as unknown as PointerEvent;
+            domEvent.stopPropagation?.();
+            domEvent.preventDefault?.();
             onContextMenu?.(entity.sceneCharId, domEvent.clientX, domEvent.clientY);
           }}
         />
