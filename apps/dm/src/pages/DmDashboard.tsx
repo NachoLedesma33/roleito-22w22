@@ -1120,6 +1120,16 @@ const startFogMode = useCallback(() => {
         handleDeleteItem(selectedItemId)
         setSelectedItemId(null)
       }
+      if (e.key === 'Enter' && selectedTokenId) {
+        e.preventDefault()
+        setSheetTokenId(selectedTokenId)
+      }
+      if (e.key === 'Tab' && sceneCharsRef.current.length > 0) {
+        e.preventDefault()
+        const idx = sceneCharsRef.current.findIndex((s) => s.id === selectedTokenId)
+        const next = sceneCharsRef.current[(idx + 1) % sceneCharsRef.current.length]
+        if (next) setSelectedTokenId(next.id)
+      }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
