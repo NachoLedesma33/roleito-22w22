@@ -229,6 +229,10 @@ interface SceneRendererProps {
   onTokenDrag?: (sceneCharId: string, x: number, z: number) => void;
   onTokenContextMenu?: (sceneCharId: string, clientX: number, clientY: number) => void;
   onTokenDoubleClick?: (sceneCharId: string, clientX: number, clientY: number) => void;
+  onGroundContextMenu?: (x: number, z: number) => void;
+  onGroundClick?: (x: number, z: number) => void;
+  measureLine?: { a: [number, number]; b: [number, number] } | null;
+  aoeMarkers?: Array<{ id: number; shape: 'circle' | 'cone' | 'cube'; x: number; z: number; size: number; rotation: number }>;
   onDrawStart?: (point: { x: number; y: number }) => void;
   onDrawMove?: (point: { x: number; y: number }) => void;
   onDrawEnd?: () => void;
@@ -2287,6 +2291,10 @@ export default function SceneRenderer({
   onTokenDrag,
   onTokenContextMenu,
   onTokenDoubleClick,
+  onGroundContextMenu,
+  onGroundClick,
+  measureLine,
+  aoeMarkers,
   onDrawStart,
   onDrawMove,
   onDrawEnd,
@@ -2517,6 +2525,75 @@ export default function SceneRenderer({
           <FireSpot key={s.key} x={s.x} z={s.z} variant={s.variant} radius={s.radius} mapHeight={mapHeight} />
         ))}
       {gridSize > 0 && <GridOverlay width={mapWidth} height={mapHeight} gridSize={gridSize} renderMode={renderMode} />}
+      {measureLine && (
+        <group>
+          <line>
+            <bufferGeometry>
+              <bufferAttribute
+                attach="attributes-position"
+                count={2}
+                array={new Float32Array([measureLine.a[0], 0.05, measureLine.a[1], measureLine.b[0], 0.05, measureLine.b[1]])}
+                itemSize={3}
+              />
+            </bufferGeometry>
+            <lineBasicMaterial color="#facc15" linewidth={2} />
+          </line>
+          <mesh position={[(measureLine.a[0] + measureLine.b[0]) / 2, 0.2, (measureLine.a[1] + measureLine.b[1]) / 2]}>
+            <planeGeometry args={[1.2, 0.4]} />
+            <meshBasicMaterial color="#000" transparent opacity={0.7} />
+          </mesh>
+          <Text
+            position={[(measureLine.a[0] + measureLine.b[0]) / 2, 0.25, (measureLine.a[1] + measureLine.b[1]) / 2]}
+            fontSize={0.25}
+            color="#facc15"
+            anchorX="center"
+            anchorY="middle"
+          >
+            {`${(Math.hypot(measureLine.b[0] - measureLine.a[0], measureLine.b[1] - measureLine.a[1]) * 5).toFixed(1)} ft`}
+          </Text>
+        </group>
+      )}
+      {aoeMarkers && aoeMarkers.map((m) => (
+        <group key={m.id} position={[m.x, 0.05, m.z]} rotation={[0, m.rotation, 0]}>
+          {m.shape === 'circle' && (
+            <mesh rotation={[-Math.PI / 2, 0, 0]}>
+              <circleGeometry args={[m.size, 32]} />
+              <meshBasicMaterial color="#60a5fa" transparent opacity={0.25} side={THREE.DoubleSide} depthWrite={false} />
+            </mesh>
+          )}
+          {m.shape === 'cube' && (
+            <mesh rotation={[-Math.PI / 2, 0, 0]}>
+              <planeGeometry args={[m.size, m.size]} />
+              <meshBasicMaterial color="#60a5fa" transparent opacity={0.25} side={THREE.DoubleSide} depthWrite={false} />
+            </mesh>
+          )}
+          {m.shape === 'cone' && (
+            <mesh rotation={[-Math.PI / 2, 0, 0]}>
+              <circleGeometry args={[m.size, 32, 0, Math.PI / 2]} />
+              <meshBasicMaterial color="#60a5fa" transparent opacity={0.25} side={THREE.DoubleSide} depthWrite={false} />
+            </mesh>
+          )}
+        </group>
+      ))}
+      {onGroundContextMenu && (
+        <mesh
+          position={[0, 0.01, 0]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          visible={false}
+          onContextMenu={(e) => {
+            e.stopPropagation();
+            onGroundContextMenu?.(e.point.x, e.point.z);
+          }}
+          onClick={(e) => {
+            if (!onGroundClick) return;
+            e.stopPropagation();
+            onGroundClick(e.point.x, e.point.z);
+          }}
+        >
+          <planeGeometry args={[mapWidth, mapHeight]} />
+          <meshBasicMaterial transparent opacity={0} side={THREE.DoubleSide} />
+        </mesh>
+      )}
       {movementRange && (
         <MovementRangeOverlay
           cells={movementRange.cells}

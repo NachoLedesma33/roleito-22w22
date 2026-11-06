@@ -99,6 +99,13 @@ export default function DmDashboard() {
   const [vfx, setVfx] = useState<Array<{ id: number; type: 'fire' | 'ice' | 'lightning' | 'heal' | 'void'; from: [number, number, number]; to: [number, number, number]; startedAt: number; duration: number }>>([]);
   const [pendingVfx, setPendingVfx] = useState<'fire' | 'ice' | 'lightning' | 'heal' | 'void' | null>(null);
   const [vfxMenuOpen, setVfxMenuOpen] = useState(false);
+  const [measureMode, setMeasureMode] = useState(false);
+  const [measureA, setMeasureA] = useState<[number, number] | null>(null);
+  const [measureB, setMeasureB] = useState<[number, number] | null>(null);
+  const measureLine = measureA && measureB ? { a: measureA, b: measureB } : null;
+  const [aoeMode, setAoeMode] = useState<'circle' | 'cone' | 'cube' | null>(null);
+  const [aoeSize, setAoeSize] = useState(2);
+  const [aoeMarkers, setAoeMarkers] = useState<Array<{ id: number; shape: 'circle' | 'cone' | 'cube'; x: number; z: number; size: number; rotation: number }>>([]);
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission().catch(() => {});
@@ -2532,6 +2539,48 @@ const startFogMode = useCallback(() => {
               <span className="flex-1 text-left">Marcar</span>
             </button>
             <button
+              onClick={() => { setMeasureMode(true); setMeasureA(null); setMeasureB(null); }}
+              className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              title="Medir distancia entre dos puntos"
+            >
+              <span className="flex-1 text-left">Medir{measureA && !measureB ? ' (punto A)' : ''}</span>
+            </button>
+            <p className="px-3 py-1 text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">AoE</p>
+            {(['circle', 'cone', 'cube'] as const).map((shape) => (
+              <button
+                key={shape}
+                onClick={() => { setAoeMode(shape); setMeasureMode(false); }}
+                className={`flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs ${aoeMode === shape ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+              >
+                <span className="flex-1 text-left">{shape === 'circle' ? 'Círculo' : shape === 'cone' ? 'Cono' : 'Cubo'}</span>
+              </button>
+            ))}
+            <input
+              type="number"
+              min={0.5}
+              step={0.5}
+              value={aoeSize}
+              onChange={(e) => setAoeSize(Number(e.target.value) || 1)}
+              className="w-full text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-primary)]"
+              title="Tamaño (unidades)"
+            />
+            {aoeMarkers.length > 0 && (
+              <button
+                onClick={() => setAoeMarkers([])}
+                className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] text-red-400 hover:text-red-300"
+              >
+                <span className="flex-1 text-left">Limpiar AoE</span>
+              </button>
+            )}
+            {measureLine && (
+              <button
+                onClick={() => { setMeasureA(null); setMeasureB(null); setMeasureMode(false); }}
+                className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] text-red-400 hover:text-red-300"
+              >
+                <span className="flex-1 text-left">Limpiar medición</span>
+              </button>
+            )}
+            <button
               onClick={() => fileInput.current?.click()}
               className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--bg-tertiary)] px-2 py-1.5 text-xs text-[var(--text-secondary)] transition-colors duration-[var(--dur-fast)] hover:text-[var(--text-primary)] shrink-0"
               title={t('dm.uploadBgTitle', 'Subir fondo de mapa')}
@@ -3355,6 +3404,24 @@ const startFogMode = useCallback(() => {
                 onTokenDrag={handleTokenDrag}
                 onTokenContextMenu={handleTokenContextMenu}
                 onTokenDoubleClick={handleTokenDoubleClick}
+                onGroundContextMenu={(x, z) => {
+                  if (!campaignId) return;
+                  api.campaigns.placeMarker(campaignId, { x, z, color: '#facc15', ttl_ms: 3000 }).catch(() => {});
+                }}
+                onGroundClick={(x, z) => {
+                  if (measureMode) {
+                    if (!measureA) { setMeasureA([x, z]); return; }
+                    setMeasureB([x, z]);
+                    setMeasureMode(false);
+                    return;
+                  }
+                  if (aoeMode) {
+                    setAoeMarkers((prev) => [...prev, { id: Date.now(), shape: aoeMode, x, z, size: aoeSize, rotation: 0 }]);
+                    return;
+                  }
+                }}
+                measureLine={measureA && measureB ? { a: measureA, b: measureB } : null}
+                aoeMarkers={aoeMarkers}
                 onItemClick={handleItemClickForAttach}
                 onItemContextMenu={(itemId, clientX, clientY) => {
                   const item = graphRef.getItem(itemId)
