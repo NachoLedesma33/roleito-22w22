@@ -5,7 +5,7 @@ import AudioSettingsMenu from '@/components/AudioSettingsMenu';
 import i18n from '@/lib/i18n';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
-import { BookOpen, CalendarDays, Dices, Flame, Flashlight, FolderOpen, Target, Volume2, VolumeX, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, RotateCcw, RotateCw } from 'lucide-react';
+import { BookOpen, CalendarDays, Dices, Flame, Flashlight, FolderOpen, Target, Volume2, VolumeX, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, RotateCcw, RotateCw, Printer, Download } from 'lucide-react';
 import * as THREE from 'three';
 import SceneRenderer from '@/components/SceneRenderer';
 import DiceRoller, { rollDice } from '@/components/DiceRoller';
@@ -1548,7 +1548,7 @@ export default function PlayerView() {
                     title={t('pv.exportSheet', 'Exportar ficha como Markdown')}
                     className="w-5 h-5 rounded bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary)]/70 text-[var(--text-primary)] hover:text-white text-xs flex items-center justify-center transition-colors"
                   >
-                    â†“
+                    <Download size={12} />
                   </button>
                   <button
                     type="button"
@@ -1556,7 +1556,7 @@ export default function PlayerView() {
                     title={t('pv.printSheet', 'Imprimir ficha')}
                     className="w-5 h-5 rounded bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary)]/70 text-[var(--text-primary)] hover:text-white text-xs flex items-center justify-center transition-colors"
                   >
-                    ðŸ–¨
+                    <Printer size={12} />
                   </button>
                   {Object.entries(VIDA_LABELS).map(([key, attrLabel]) => (
                     <span
