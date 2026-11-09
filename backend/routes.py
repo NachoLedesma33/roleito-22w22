@@ -381,6 +381,49 @@ async def place_marker_invite(
     return {"ok": True}
 
 
+class VfxRequest(BaseModel):
+    type: str
+    from_x: float
+    from_z: float
+    to_x: float
+    to_z: float
+
+
+@campaigns_router.post("/campaigns/{campaign_id}/vfx")
+async def place_vfx(
+    campaign_id: str,
+    data: VfxRequest,
+    db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+):
+    await ws_manager.broadcast(campaign_id, {
+        "type": "vfx",
+        "vfx_type": data.type,
+        "from": [data.from_x, 0.6, data.from_z],
+        "to": [data.to_x, 0.6, data.to_z],
+    })
+    return {"ok": True}
+
+
+@campaigns_router.post("/campaigns/invite/{code}/vfx")
+async def place_vfx_invite(
+    code: str,
+    data: VfxRequest,
+    db: AsyncSession = Depends(get_session),
+):
+    result = await db.execute(select(Campaign).where(Campaign.invite_code == code))
+    campaign = result.scalar_one_or_none()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="invite not found")
+    await ws_manager.broadcast(campaign.id, {
+        "type": "vfx",
+        "vfx_type": data.type,
+        "from": [data.from_x, 0.6, data.from_z],
+        "to": [data.to_x, 0.6, data.to_z],
+    })
+    return {"ok": True}
+
+
 @campaigns_router.post("/campaigns", response_model=CampaignResponse)
 async def create_campaign(
     data: CampaignCreate,
@@ -1504,6 +1547,7 @@ async def join_by_invite_code(
             "class_name": c.class_,
             "portrait_path": c.portrait_path,
             "model_path": c.model_path,
+            "can_use_vfx": bool(getattr(c, "can_use_vfx", False)),
         }
         for c in all_chars
         if c.type == "player"

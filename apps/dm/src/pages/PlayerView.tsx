@@ -145,6 +145,8 @@ export default function PlayerView() {
   const [askingLight, setAskingLight] = useState(false);
   const [imageAspect, setImageAspect] = useState(1);
   const [markers, setMarkers] = useState<Array<{ id: number; x: number; z: number; color: string }>>([]);
+  const [vfx, setVfx] = useState<Array<{ id: number; type: 'fire' | 'ice' | 'lightning' | 'heal' | 'void'; from: [number, number, number]; to: [number, number, number]; startedAt: number; duration: number }>>([]);
+  const [pendingVfx, setPendingVfx] = useState<'fire' | 'ice' | 'lightning' | 'heal' | 'void' | null>(null);
   const handleAspectChange = useCallback((a: number) => {
     if (Number.isFinite(a) && a > 0) setImageAspect(a);
   }, []);
@@ -166,6 +168,10 @@ export default function PlayerView() {
     const id = Date.now();
     setMarkers((prev) => [...prev, { id, x: m.x, z: m.z, color: m.color ?? '#facc15' }]);
     window.setTimeout(() => setMarkers((prev) => prev.filter((p) => p.id !== id)), m.ttl_ms ?? 3000);
+  }, onVfx: (v) => {
+    const effect = { id: Date.now(), type: v.type as 'fire' | 'ice' | 'lightning' | 'heal' | 'void', from: v.from, to: v.to, startedAt: performance.now(), duration: 1500 };
+    setVfx((prev) => [...prev, effect]);
+    window.setTimeout(() => setVfx((prev) => prev.filter((e) => e.id !== effect.id)), 2000);
   } });
   const dataRef = useRef<typeof data>(null);
   const lastMoveAtRef = useRef(0);
@@ -1338,6 +1344,24 @@ export default function PlayerView() {
               weatherAudioEnabled={audioOn}
               mapScale={data.map_scale ?? 1}
               onAspectChange={handleAspectChange}
+              onTokenClick={(sceneCharId) => {
+                if (!pendingVfx || !code) return;
+                const mySceneCharId = choice?.kind === 'character'
+                  ? data.characters.find((ch) => ch.type === 'character' && data.player_characters.some((p) => p.id === ch.entity_id && p.id === choice.id))?.id
+                  : null;
+                if (!mySceneCharId || sceneCharId === mySceneCharId) return;
+                const attacker = data.characters.find((c) => c.id === mySceneCharId);
+                const target = data.characters.find((c) => c.id === sceneCharId);
+                if (!attacker || !target) return;
+                api.campaigns.placeVfxByInvite(code, {
+                  type: pendingVfx,
+                  from_x: attacker.x,
+                  from_z: attacker.z,
+                  to_x: target.x,
+                  to_z: target.z,
+                }).catch(() => {});
+                setPendingVfx(null);
+              }}
               modelYOffset={data.model_y_offset ?? 0}
               roomSkinId={data.room_skin ?? ''}
               onGroundContextMenu={(x, z) => {
@@ -1347,6 +1371,7 @@ export default function PlayerView() {
               backgroundOffsetX={data.background_offset_x ?? 0}
               backgroundOffsetZ={data.background_offset_z ?? 0}
               markers={markers}
+              vfx={vfx}
               gridSize={data.grid_size ?? 0}
               gridSnap={data.grid_snap ?? false}
               items={data.items ?? []}
@@ -1437,6 +1462,24 @@ export default function PlayerView() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {choice?.kind === 'character' && data.player_characters.find((p) => p.id === choice.id)?.can_use_vfx && (
+          <div className="absolute top-4 right-4 z-10 bg-surface border border-subtle rounded-lg p-2" data-testid="pv-vfx-menu">
+            <p className="text-[10px] text-[var(--text-secondary)] mb-1">VFX{pendingVfx ? `: ${pendingVfx}` : ''}</p>
+            <div className="flex flex-wrap gap-1">
+              {(['fire', 'ice', 'lightning', 'heal', 'void'] as const).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setPendingVfx((prev) => (prev === type ? null : type))}
+                  className={`text-[10px] px-2 py-0.5 rounded ${pendingVfx === type ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'}`}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+            {pendingVfx && <p className="text-[9px] text-[var(--text-secondary)] mt-1">Click en un token objetivo</p>}
           </div>
         )}
 

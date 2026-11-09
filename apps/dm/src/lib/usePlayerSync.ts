@@ -27,6 +27,7 @@ export interface PlayerCharOption {
   class_name: string;
   portrait_path: string | null;
   model_path: string | null;
+  can_use_vfx?: boolean;
 }
 
 /** A quién está mirando el jugador. `null` = todavía no eligió. */
@@ -71,6 +72,7 @@ export interface UsePlayerSyncRefs {
   choiceRef: MutableRefObject<Choice>;
   wasdTargetRef: MutableRefObject<{ x: number; z: number; rotation: number } | null>;
   onMarker?: (m: { x: number; z: number; color?: string; ttl_ms?: number }) => void;
+  onVfx?: (v: { type: string; from: [number, number, number]; to: [number, number, number] }) => void;
 }
 
 export interface UsePlayerSyncResult {
@@ -106,7 +108,7 @@ export interface UsePlayerSyncResult {
  * barato el poll.
  */
 export function usePlayerSync(code: string | undefined, refs: UsePlayerSyncRefs): UsePlayerSyncResult {
-  const { sceneIdRef, choiceRef, wasdTargetRef, onMarker } = refs;
+  const { sceneIdRef, choiceRef, wasdTargetRef, onMarker, onVfx } = refs;
 
   const [data, setData] = useState<JoinData | null>(null);
   const [myChar, setMyChar] = useState<Character | null>(null);
@@ -357,6 +359,9 @@ const applySceneCharacters = useCallback((sceneId: string, incoming: unknown[]) 
           } else if (msg.type === 'marker') {
             setLive(true);
             onMarker?.({ x: msg.x ?? 0, z: msg.z ?? 0, color: msg.color, ttl_ms: msg.ttl_ms });
+          } else if (msg.type === 'vfx') {
+            setLive(true);
+            onVfx?.({ type: (msg as { vfx_type?: string }).vfx_type ?? 'fire', from: (msg as { from?: [number, number, number] }).from ?? [0, 0.6, 0], to: (msg as { to?: [number, number, number] }).to ?? [0, 0.6, 0] });
           }
         } catch {
           // mensaje no JSON: ignorar

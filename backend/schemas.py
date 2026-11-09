@@ -119,6 +119,7 @@ class CharacterCreate(BaseModel):
     spells_json: list = []
     player_notes: str = ""
     frame: Optional[str] = None
+    can_use_vfx: Optional[bool] = None
 
 
 class CharacterUpdate(BaseModel):
@@ -144,6 +145,7 @@ class CharacterUpdate(BaseModel):
     spells_json: Optional[list] = None
     player_notes: Optional[str] = None
     frame: Optional[str] = None
+    can_use_vfx: Optional[bool] = None
 
 
 class CharacterResponse(BaseModel):
@@ -162,6 +164,7 @@ class CharacterResponse(BaseModel):
     model_path: Optional[str] = None
     frame: Optional[str] = None
     claimed_by: Optional[str] = None
+    can_use_vfx: bool = False
     vigor: VidaAttr
     intelligence: VidaAttr
     dexterity: VidaAttr

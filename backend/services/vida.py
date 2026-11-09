@@ -138,6 +138,7 @@ async def apply_vida_response(
         "portrait_path": char.portrait_path,
         "model_path": char.model_path,
         "frame": char.frame,
+        "can_use_vfx": bool(char.can_use_vfx),
         "vigor": char.vigor,
         "intelligence": char.intelligence,
         "dexterity": char.dexterity,

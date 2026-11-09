@@ -1516,6 +1516,9 @@ const startFogMode = useCallback(() => {
         const effect = { id: Date.now(), type: pendingVfx, from: [attacker.x, 0.6, attacker.z] as [number, number, number], to: [target.x, 0.6, target.z] as [number, number, number], startedAt: performance.now(), duration: 1500 };
         setVfx((prev) => [...prev, effect]);
         window.setTimeout(() => setVfx((prev) => prev.filter((e) => e.id !== effect.id)), 2000);
+        if (campaignId) {
+          api.campaigns.placeVfx(campaignId, { type: pendingVfx, from_x: attacker.x, from_z: attacker.z, to_x: target.x, to_z: target.z }).catch(() => {});
+        }
       }
       setPendingVfx(null);
       return;

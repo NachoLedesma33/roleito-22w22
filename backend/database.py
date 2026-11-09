@@ -74,6 +74,7 @@ MIGRATIONS = [
     ("characters", "model_path", "ALTER TABLE characters ADD COLUMN model_path TEXT"),
     ("characters", "frame", "ALTER TABLE characters ADD COLUMN frame TEXT"),
     ("characters", "claimed_by", "ALTER TABLE characters ADD COLUMN claimed_by TEXT"),
+    ("characters", "can_use_vfx", "ALTER TABLE characters ADD COLUMN can_use_vfx INTEGER DEFAULT 0"),
     ("npcs", "model_path", "ALTER TABLE npcs ADD COLUMN model_path TEXT"),
     ("scene_characters", "rotation", "ALTER TABLE scene_characters ADD COLUMN rotation FLOAT DEFAULT 0.0"),
     ("scenes", "map_scale", "ALTER TABLE scenes ADD COLUMN map_scale FLOAT DEFAULT 1.0"),

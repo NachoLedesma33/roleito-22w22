@@ -150,6 +150,7 @@ export interface Character {
   portrait_path: string | null;
   model_path: string | null;
   frame: string | null;
+  can_use_vfx?: boolean;
   vigor: VidaAttr;
   intelligence: VidaAttr;
   dexterity: VidaAttr;
@@ -674,6 +675,10 @@ export const api = {
       request<{ ok: boolean }>(`/campaigns/${campaignId}/marker`, { method: 'POST', body: JSON.stringify(data) }),
     placeMarkerByInvite: (code: string, data: { x: number; z: number; color?: string; ttl_ms?: number }) =>
       request<{ ok: boolean }>(`/campaigns/invite/${code}/marker`, { method: 'POST', body: JSON.stringify(data) }),
+    placeVfx: (campaignId: string, data: { type: string; from_x: number; from_z: number; to_x: number; to_z: number }) =>
+      request<{ ok: boolean }>(`/campaigns/${campaignId}/vfx`, { method: 'POST', body: JSON.stringify(data) }),
+    placeVfxByInvite: (code: string, data: { type: string; from_x: number; from_z: number; to_x: number; to_z: number }) =>
+      request<{ ok: boolean }>(`/campaigns/invite/${code}/vfx`, { method: 'POST', body: JSON.stringify(data) }),
     claimCharacter: (campaignId: string, characterId: string, playerToken: string) =>
       request<{ ok: boolean; claimed_by: string }>(`/campaigns/${campaignId}/characters/${characterId}/claim`, { method: 'POST', body: JSON.stringify({ player_token: playerToken }) }),
 

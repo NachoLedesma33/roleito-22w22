@@ -49,6 +49,7 @@ export default function CharacterForm() {
   const [portraitPreview, setPortraitPreview] = useState<string | null>(null);
   const [modelFile, setModelFile] = useState<File | null>(null);
   const [frame, setFrame] = useState('none');
+  const [canUseVfx, setCanUseVfx] = useState(false);
   const [modelPreviewUrl, setModelPreviewUrl] = useState<string | null>(null);
   const modelFileInput = useRef<HTMLInputElement>(null);
 
@@ -73,6 +74,7 @@ export default function CharacterForm() {
           setMaxPm(c.max_pm);
           setDefense(c.defense);
           setFrame(c.frame ?? 'none');
+          setCanUseVfx(c.can_use_vfx ?? false);
         })
         .catch((e) => setError(e.message))
         .finally(() => setLoading(false));
@@ -102,6 +104,7 @@ export default function CharacterForm() {
         max_pm: maxPm,
         defense,
         frame: frame === 'none' ? null : frame,
+        can_use_vfx: canUseVfx,
       };
       if (isEdit) {
         await api.characters.update(campaignId, characterId!, data);
@@ -310,6 +313,10 @@ export default function CharacterForm() {
               <img src={`/frames/${frame}.svg`} alt="marco" className="w-16 h-16" />
             </div>
           )}
+          <label className="flex items-center gap-2 mt-3 text-sm text-[var(--text-secondary)]">
+            <input type="checkbox" checked={canUseVfx} onChange={(e) => setCanUseVfx(e.target.checked)} />
+            Puede usar VFX (habilidades visuales)
+          </label>
         </div>
 
         <div>
