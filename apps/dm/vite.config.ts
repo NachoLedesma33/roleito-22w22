@@ -52,6 +52,7 @@ export default defineConfig({
     },
   },
   server: {
+    host: true,
     port: 5173,
     allowedHosts: HOSTS_PERMITIDOS,
     proxy: apiProxy,
@@ -61,6 +62,7 @@ export default defineConfig({
   // hay que usar ESTE, no el dev server: vite manda cientos de modulos sin
   // bundlear y la primera carga por un tunel seria de minutos.
   preview: {
+    host: true,
     port: 5173,
     allowedHosts: HOSTS_PERMITIDOS,
     proxy: apiProxy,
