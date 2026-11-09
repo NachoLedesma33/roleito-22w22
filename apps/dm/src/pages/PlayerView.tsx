@@ -1339,7 +1339,16 @@ export default function PlayerView() {
               mapScale={data.map_scale ?? 1}
               onAspectChange={handleAspectChange}
               modelYOffset={data.model_y_offset ?? 0}
+              roomSkinId={data.room_skin ?? ''}
+              onGroundContextMenu={(x, z) => {
+                if (!code) return;
+                api.campaigns.placeMarkerByInvite(code, { x, z, color: '#facc15', ttl_ms: 3000 }).catch(() => {});
+              }}
+              backgroundOffsetX={data.background_offset_x ?? 0}
+              backgroundOffsetZ={data.background_offset_z ?? 0}
               markers={markers}
+              gridSize={data.grid_size ?? 0}
+              gridSnap={data.grid_snap ?? false}
               items={data.items ?? []}
               occluders={sceneOccluders}
               fogRegions={sceneFogRegions}
@@ -1350,8 +1359,6 @@ export default function PlayerView() {
               readOnly
               fogColor="rgba(5, 5, 20, 0.82)"
               renderMode={DEFAULT_RENDER_MODE}
-              gridSize={data.grid_size ?? 0}
-              gridSnap={data.grid_snap ?? false}
               selectedTokenId={
                 choice?.kind === 'character'
                   ? data.characters.find(

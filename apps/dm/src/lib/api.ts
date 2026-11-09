@@ -672,6 +672,8 @@ export const api = {
       }),
     placeMarker: (campaignId: string, data: { x: number; z: number; color?: string; ttl_ms?: number }) =>
       request<{ ok: boolean }>(`/campaigns/${campaignId}/marker`, { method: 'POST', body: JSON.stringify(data) }),
+    placeMarkerByInvite: (code: string, data: { x: number; z: number; color?: string; ttl_ms?: number }) =>
+      request<{ ok: boolean }>(`/campaigns/invite/${code}/marker`, { method: 'POST', body: JSON.stringify(data) }),
     claimCharacter: (campaignId: string, characterId: string, playerToken: string) =>
       request<{ ok: boolean; claimed_by: string }>(`/campaigns/${campaignId}/characters/${characterId}/claim`, { method: 'POST', body: JSON.stringify({ player_token: playerToken }) }),
 

@@ -46,6 +46,9 @@ export interface JoinData {
   lighting: string;
   map_scale: number;
   model_y_offset: number;
+  room_skin?: string;
+  background_offset_x?: number;
+  background_offset_z?: number;
   grid_size: number;
   grid_snap: boolean;
   /**

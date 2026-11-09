@@ -361,6 +361,26 @@ async def place_marker(
     return {"ok": True}
 
 
+@campaigns_router.post("/campaigns/invite/{code}/marker")
+async def place_marker_invite(
+    code: str,
+    data: MarkerRequest,
+    db: AsyncSession = Depends(get_session),
+):
+    result = await db.execute(select(Campaign).where(Campaign.invite_code == code))
+    campaign = result.scalar_one_or_none()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="invite not found")
+    await ws_manager.broadcast(campaign.id, {
+        "type": "marker",
+        "x": data.x,
+        "z": data.z,
+        "color": data.color,
+        "ttl_ms": data.ttl_ms,
+    })
+    return {"ok": True}
+
+
 @campaigns_router.post("/campaigns", response_model=CampaignResponse)
 async def create_campaign(
     data: CampaignCreate,
@@ -1544,6 +1564,8 @@ async def join_by_invite_code(
         "map_scale": getattr(active_scene, 'map_scale', 1.0) if active_scene else 1.0,
         "model_y_offset": getattr(active_scene, 'model_y_offset', 0.0) if active_scene else 0.0,
         "room_skin": getattr(active_scene, 'room_skin', '') if active_scene else '',
+        "background_offset_x": getattr(active_scene, 'background_offset_x', 0.0) if active_scene else 0.0,
+        "background_offset_z": getattr(active_scene, 'background_offset_z', 0.0) if active_scene else 0.0,
         "grid_size": getattr(active_scene, 'grid_size', 0.0) if active_scene else 0.0,
         "grid_snap": bool(getattr(active_scene, 'grid_snap', 0)) if active_scene else False,
         # Pol??tica de mesa del DM: con esto el jugador recuerda lo explorado
