@@ -38,7 +38,7 @@ function makeTexture(color: string): THREE.Texture {
 export function VfxBurst({ effect }: { effect: VfxEffect }) {
   const pointsRef = useRef<THREE.Points>(null);
   const startedRef = useRef<number | null>(null);
-  const count = 60;
+  const count = 150;
   const positions = useMemo(() => {
     const arr = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
@@ -64,9 +64,9 @@ export function VfxBurst({ effect }: { effect: VfxEffect }) {
     for (let i = 0; i < count; i++) {
       const frac = i / count;
       const progress = Math.min(1, t + frac * 0.3);
-      arr[i * 3] = effect.from[0] + (effect.to[0] - effect.from[0]) * progress + (Math.random() - 0.5) * 0.5;
-      arr[i * 3 + 1] = effect.from[1] + (effect.to[1] - effect.from[1]) * progress + Math.sin(progress * Math.PI) * 2;
-      arr[i * 3 + 2] = effect.from[2] + (effect.to[2] - effect.from[2]) * progress + (Math.random() - 0.5) * 0.5;
+      arr[i * 3] = effect.from[0] + (effect.to[0] - effect.from[0]) * progress + (Math.random() - 0.5) * 1.5;
+      arr[i * 3 + 1] = effect.from[1] + (effect.to[1] - effect.from[1]) * progress + Math.sin(progress * Math.PI) * 3;
+      arr[i * 3 + 2] = effect.from[2] + (effect.to[2] - effect.from[2]) * progress + (Math.random() - 0.5) * 1.5;
     }
     pos.needsUpdate = true;
     const mat = pointsRef.current.material as THREE.PointsMaterial;
@@ -81,7 +81,7 @@ export function VfxBurst({ effect }: { effect: VfxEffect }) {
       </bufferGeometry>
       <pointsMaterial
         map={texture}
-        size={0.5}
+        size={0.8}
         transparent
         opacity={1}
         depthWrite={false}
