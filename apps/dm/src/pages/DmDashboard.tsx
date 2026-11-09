@@ -1113,6 +1113,8 @@ const startFogMode = useCallback(() => {
         else if (zoneFogActive) setZoneFogActive(false)
         else if (lightPlaceMode) setLightPlaceMode(null)
         else if (placingToken) setPlacingToken(null)
+        else if (measureMode) { setMeasureMode(false); setMeasureA(null); setMeasureB(null); }
+        else if (aoeMode) setAoeMode(null)
         else if (attachLightMode) setAttachLightMode(null)
         else setSelectedItemId(null)
       }
@@ -2549,7 +2551,7 @@ const startFogMode = useCallback(() => {
             {(['circle', 'cone', 'cube'] as const).map((shape) => (
               <button
                 key={shape}
-                onClick={() => { setAoeMode(shape); setMeasureMode(false); }}
+                onClick={() => { setAoeMode((prev) => (prev === shape ? null : shape)); setMeasureMode(false); }}
                 className={`flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs ${aoeMode === shape ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
               >
                 <span className="flex-1 text-left">{shape === 'circle' ? 'Círculo' : shape === 'cone' ? 'Cono' : 'Cubo'}</span>
@@ -2564,6 +2566,14 @@ const startFogMode = useCallback(() => {
               className="w-full text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-primary)]"
               title="Tamaño (unidades)"
             />
+            {aoeMode && (
+              <button
+                onClick={() => setAoeMode(null)}
+                className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] text-amber-400 hover:text-amber-300"
+              >
+                <span className="flex-1 text-left">Cancelar AoE (Esc)</span>
+              </button>
+            )}
             {aoeMarkers.length > 0 && (
               <button
                 onClick={() => setAoeMarkers([])}
