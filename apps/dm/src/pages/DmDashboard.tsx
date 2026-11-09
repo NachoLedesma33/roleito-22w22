@@ -423,16 +423,16 @@ export default function DmDashboard() {
     let timer: number;
     const poll = async () => {
       if (wsOpenRef.current) {
-        if (!cancelled) timer = window.setTimeout(poll, 1500);
+        if (!cancelled) timer = window.setTimeout(poll, 3000);
         return;
       }
       try {
         const sc = await api.scenes.getCharacters(campaignId, activeScene.id);
         if (!cancelled && Date.now() - lastLocalChangeRef.current > 500) setSceneChars(sc);
       } catch {}
-      if (!cancelled) timer = window.setTimeout(poll, 1500);
+      if (!cancelled) timer = window.setTimeout(poll, 3000);
     };
-    timer = window.setTimeout(poll, 1500);
+    timer = window.setTimeout(poll, 3000);
     return () => { cancelled = true; clearTimeout(timer); };
   }, [campaignId, activeScene]);
 
@@ -1846,7 +1846,7 @@ const startFogMode = useCallback(() => {
         });
     };
     load();
-    const timer = window.setInterval(load, 1500);
+    const timer = window.setInterval(load, 3000);
     return () => {
       cancelled = true;
       window.clearInterval(timer);

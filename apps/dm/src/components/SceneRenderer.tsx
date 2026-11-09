@@ -1,4 +1,4 @@
-import { Suspense, useMemo, useRef, useCallback, useEffect, useState } from 'react';
+import { Suspense, useMemo, useRef, useCallback, useEffect, useState, memo } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { Billboard, OrbitControls, Text, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
@@ -2248,7 +2248,7 @@ function CameraFollow({ x, z }: { x: number; z: number }) {
 
 const groundYRef = { current: 0 };
 
-export default function SceneRenderer({
+const SceneRendererImpl = function SceneRenderer({
   backgroundUrl,
   characters,
   items = [],
@@ -2778,3 +2778,5 @@ export default function SceneRenderer({
     </div>
   );
 }
+
+export default memo(SceneRendererImpl);
