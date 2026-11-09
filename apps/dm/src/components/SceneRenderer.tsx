@@ -231,6 +231,7 @@ interface SceneRendererProps {
   onTokenDoubleClick?: (sceneCharId: string, clientX: number, clientY: number) => void;
   onGroundContextMenu?: (x: number, z: number) => void;
   onGroundClick?: (x: number, z: number) => void;
+  groundClickActive?: boolean;
   measureLine?: { a: [number, number]; b: [number, number] } | null;
   aoeMarkers?: Array<{ id: number; shape: 'circle' | 'cone' | 'cube'; x: number; z: number; size: number; rotation: number }>;
   onDrawStart?: (point: { x: number; y: number }) => void;
@@ -2293,6 +2294,7 @@ const SceneRendererImpl = function SceneRenderer({
   onTokenDoubleClick,
   onGroundContextMenu,
   onGroundClick,
+  groundClickActive,
   measureLine,
   aoeMarkers,
   onDrawStart,
@@ -2585,7 +2587,7 @@ const SceneRendererImpl = function SceneRenderer({
             onGroundContextMenu?.(e.point.x, e.point.z);
           }}
           onClick={(e) => {
-            if (!onGroundClick) return;
+            if (!onGroundClick || !groundClickActive) return;
             e.stopPropagation();
             onGroundClick(e.point.x, e.point.z);
           }}

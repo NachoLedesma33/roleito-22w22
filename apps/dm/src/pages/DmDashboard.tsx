@@ -3421,6 +3421,7 @@ const startFogMode = useCallback(() => {
                   if (!campaignId) return;
                   api.campaigns.placeMarker(campaignId, { x, z, color: '#facc15', ttl_ms: 3000 }).catch(() => {});
                 }}
+                groundClickActive={measureMode || aoeMode !== null}
                 onGroundClick={(x, z) => {
                   if (measureMode) {
                     if (!measureA) { setMeasureA([x, z]); return; }
