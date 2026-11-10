@@ -609,3 +609,10 @@ Body: { "x": 2.5, "z": -1.3 }
 - Session log = temporal (what happened)
 - Both are useful but serve different purposes
 - Scene notes persist across sessions, session log is per-session
+
+## Ver también
+- `docs/core/CONTEXT.md` — contexto del proyecto.
+- `docs/core/ARCHITECTURE.md` — arquitectura del sistema.
+- `docs/core/EVENT-SYSTEM.md` — sistema de eventos.
+- `docs/README.md` — índice de documentación.
+- `docs/GLOSSARY.md` — glosario de términos.
