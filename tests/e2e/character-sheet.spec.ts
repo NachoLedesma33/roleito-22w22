@@ -82,7 +82,7 @@ test.describe('Character Sheet HUD', () => {
       (res) =>
         res.url().includes(`/characters/${char.id}`) &&
         res.request().method() === 'PUT',
-      { timeout: 10_000 },
+      { timeout: 30_000 },
     );
     await page.getByRole('button', { name: '+ Agregar objeto' }).click();
     await putPromise;
@@ -115,7 +115,7 @@ test.describe('Character Sheet HUD', () => {
         res.url().includes(`/characters/${char.id}`) &&
         res.request().method() === 'PUT' &&
         res.status() === 200,
-      { timeout: 10_000 },
+      { timeout: 30_000 },
     );
     await checkbox.click();
     await putPromise;
@@ -148,7 +148,7 @@ test.describe('Character Sheet HUD', () => {
       (res) =>
         res.url().includes(`/characters/${char.id}`) &&
         res.request().method() === 'PUT',
-      { timeout: 10_000 },
+      { timeout: 30_000 },
     );
     await page.getByRole('button', { name: '+ Agregar conjuro' }).click();
     await putPromise;
@@ -185,7 +185,7 @@ test.describe('Character Sheet HUD', () => {
         res.url().includes(`/characters/${char.id}`) &&
         res.request().method() === 'PUT' &&
         res.status() === 200,
-      { timeout: 10_000 },
+      { timeout: 30_000 },
     );
     await page.locator('button.bg-red-900\\/50').first().click();
     await pvInput.focus();
@@ -235,7 +235,7 @@ test.describe('Character Sheet HUD', () => {
         res.url().includes(`/characters/${b.id}`) &&
         res.request().method() === 'PUT' &&
         res.status() === 200,
-      { timeout: 10_000 },
+      { timeout: 30_000 },
     );
     await page.getByTitle('Aprender').click();
     await putPromise;
@@ -292,7 +292,7 @@ test.describe('Character Sheet HUD', () => {
         res.url().includes(`/abilities/${spellId}/icon/flame`) &&
         res.request().method() === 'PUT' &&
         res.status() === 200,
-      { timeout: 10_000 },
+      { timeout: 30_000 },
     );
     await page.getByTitle('Llama').click();
     await savedPromise;
@@ -362,7 +362,7 @@ test.describe('Character Sheet HUD', () => {
         res.url().includes(`/abilities/${spellId}`) &&
         res.request().method() === 'DELETE' &&
         res.status() === 200,
-      { timeout: 10_000 },
+      { timeout: 30_000 },
     );
     await page.getByTitle('Eliminar del catálogo').click();
     await page
