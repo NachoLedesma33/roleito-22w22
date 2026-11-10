@@ -72,11 +72,14 @@ export function useAnchoredMenu({
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
+    const onScroll = () => onClose();
     document.addEventListener('mousedown', onMouseDown);
     document.addEventListener('keydown', onKeyDown);
+    window.addEventListener('scroll', onScroll, true);
     return () => {
       document.removeEventListener('mousedown', onMouseDown);
       document.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('scroll', onScroll, true);
     };
   }, [open, onClose, anchorId]);
 
