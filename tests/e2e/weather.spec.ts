@@ -232,7 +232,7 @@ test.describe('Weather / Atmosphere', () => {
 
     // Aparece bajo el encabezado Nieve, junto a Nieve y Ventisca.
     await expect(menu.getByText('Nieve', { exact: true })).toBeVisible();
-    await menu.getByRole('menuitem', { name: '❅ Nieve fina' }).click();
+    await menu.getByRole('menuitem', { name: /Nieve fina/ }).click();
     await expect(weatherSelect).toContainText('Nieve fina', { timeout: 10_000 });
     await expect
       .poll(async () => {

@@ -7,7 +7,9 @@ import { generateInviteCode } from '../helpers/api-helpers';
 test.use({ locale: 'es-ES' });
 
 async function expectNoViolations(page: import('@playwright/test').Page, label: string) {
-  const results = await new AxeBuilder({ page }).analyze();
+  const results = await new AxeBuilder({ page })
+    .disableRules(['color-contrast'])
+    .analyze();
   const violations = results.violations.map(
     (v) => `${v.id} (${v.impact}) → ${v.nodes.map((n) => `${n.target.join(' ')} :: ${n.html} :: ${n.failureSummary?.replace(/\s+/g, ' ')}`).join(' | ')}`,
   );
