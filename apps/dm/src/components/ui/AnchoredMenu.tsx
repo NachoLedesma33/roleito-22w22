@@ -37,6 +37,7 @@ export default function AnchoredMenu({
     minWidth,
     maxHeight: '60vh',
     overflowY: 'auto',
+    pointerEvents: 'none',
   };
 
   if (flipUp) {
@@ -53,7 +54,9 @@ export default function AnchoredMenu({
       className="fixed bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg z-50 py-0.5"
       style={style}
     >
-      {children}
+      <div className="pointer-events-auto">
+        {children}
+      </div>
     </div>,
     document.body,
   );
