@@ -138,6 +138,49 @@ Prioridad media:
 - Stale wiki: mitigar con lint por PR + roleito-docsync
 - Overhead de mantenimiento: mitigar con ingest automático en commits que tocan docs
 
-## 10. Próximo paso
+## 10. Estrategia de mitigación de contras
 
-Decidir si implementar (Fase 0-1) o esperar a que el CI se estabilice. Recomendación: implementar Fase 0-1 en paralelo con el trabajo de CI (no bloquea).
+### 10.1 No duplicar: docs/ = raw/, wiki/ = síntesis derivada
+
+En vez de mantener `raw/` separado, usar los docs/ existentes como fuentes inmutables. La wiki/ solo contiene síntesis cross-cutting (decisiones, gotchas, arquitectura) que no caben en un solo doc. Esto reduce el mantenimiento a la mitad.
+
+```
+docs/                    # Fuentes (raw/) — NO se duplican
+├── core/, system/, dm/, roadmap/, engineering/
+└── wiki/                # Síntesis derivada (solo cross-cutting)
+    ├── index.md         # TOC de docs/ + wiki pages
+    ├── decisions.md     # Decisiones clave con cross-links
+    ├── gotchas.md       # Gotchas consolidados
+    └── architecture.md  # Síntesis de arquitectura
+```
+
+### 10.2 Mantenimiento mínimo
+
+- Ingest: solo cuando se toca un doc (roleito-docsync lo dispara)
+- Lint: por PR, no semanal
+- No crear wiki/ hasta que haya 3+ docs que se contradigan o necesiten síntesis
+- Mientras docs/ sea manejable, no hay wiki/
+
+### 10.3 Mezcla con lo existente (propuesta)
+
+| Componente actual | Rol en la mezcla | Cambio |
+|-------------------|------------------|--------|
+| `docs/` (core, system, dm, etc.) | Fuente de verdad (raw/) | Sin cambio |
+| `AGENTS.md` | Directiva + gotchas (ya es una wiki page) | Agregar cross-links a docs/ |
+| `memory.md` | Decisiones cross-proyecto | Agregar a wiki/ como "decisions.md" |
+| `graphify` | Grafo de código | Sin cambio; complementa wiki/ |
+| `roleito-docsync` skill | Dispara ingest cuando docs cambian | Agregar paso de ingest |
+| `docs/README.md` | Index de docs | Enriquecer con síntesis cross-cutting |
+
+### 10.4 Cuándo implementar
+
+**No implementar hasta que:**
+- Haya 3+ docs que se contradigan o necesiten síntesis cross-cutting
+- El equipo crezca (más de 1 dev)
+- Los docs superen 50K tokens y grep+read deje de ser confiable
+
+**Mientras tanto**: mantener docs/ bien organizados, cross-links en AGENTS.md, y memory.md actualizado. Eso da el 80% del beneficio con 20% del costo.
+
+## 11. Próximo paso
+
+No implementar. Mantener docs/ como está. Reevaluar cuando el proyecto crezca o los docs superen 50K tokens. El plan queda como referencia futura.
