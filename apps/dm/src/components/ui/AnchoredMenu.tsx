@@ -26,14 +26,32 @@ export default function AnchoredMenu({
   minWidth,
   children,
 }: AnchoredMenuProps) {
-  if (!open) return null;
+  if (!open || !rect) return null;
+
+  const menuMaxH = Math.round(window.innerHeight * 0.6);
+  const spaceBelow = window.innerHeight - rect.top;
+  const flipUp = spaceBelow < menuMaxH && rect.top > menuMaxH;
+
+  const style: React.CSSProperties = {
+    left: rect.left,
+    minWidth,
+    maxHeight: '60vh',
+    overflowY: 'auto',
+  };
+
+  if (flipUp) {
+    style.bottom = window.innerHeight - rect.top;
+  } else {
+    style.top = rect.top;
+  }
+
   return createPortal(
     <div
       role="menu"
       data-testid={testId}
       data-anchored-menu={anchorId}
-      className="fixed bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg z-50 py-0.5 max-h-[60vh] overflow-y-auto"
-      style={{ left: rect?.left ?? -9999, top: rect?.top ?? -9999, minWidth }}
+      className="fixed bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg z-50 py-0.5"
+      style={style}
     >
       {children}
     </div>,
