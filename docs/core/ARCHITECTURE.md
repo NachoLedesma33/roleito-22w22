@@ -2008,3 +2008,10 @@ Source References
 ```
 
 Never through giant prompts.
+
+## Ver también
+- `docs/core/CONTEXT.md` — contexto del proyecto.
+- `docs/core/DOMAIN.md` — dominio y entidades.
+- `docs/core/DATABASE.md` — modelo de datos.
+- `docs/core/EVENT-SYSTEM.md` — sistema de eventos.
+- `docs/README.md` — índice de documentación.

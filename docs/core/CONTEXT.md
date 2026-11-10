@@ -944,3 +944,10 @@ Después utilizar esa base para construir:
 Y finalmente:
 
 > **un director visual/narrativo asistido por IA para las sesiones.**
+
+## Ver también
+- `docs/core/ARCHITECTURE.md` — arquitectura del sistema.
+- `docs/core/DOMAIN.md` — dominio y entidades.
+- `docs/core/DATABASE.md` — modelo de datos.
+- `docs/core/EVENT-SYSTEM.md` — sistema de eventos.
+- `AGENTS.md` (raíz) — directiva de ingeniería y gotchas.
