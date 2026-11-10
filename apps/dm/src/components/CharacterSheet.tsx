@@ -525,7 +525,7 @@ export default function CharacterSheet({
           <div className="flex items-center gap-2">
             <span className="text-[10px] text-red-400 w-6">PV</span>
             <button
-              onClick={() => setCurrentHp((h) => Math.max(0, h - 1))}
+              onClick={() => { setCurrentHp((h) => Math.max(0, h - 1)); setTimeout(handleSaveHp, 0); }}
               className="w-6 h-6 rounded bg-red-900/50 hover:bg-red-800 text-red-300 text-xs flex items-center justify-center"
             >-</button>
             <input
@@ -537,14 +537,14 @@ export default function CharacterSheet({
             />
             <span className="text-[10px] text-[var(--text-secondary)]">/ {entity.max_pv}</span>
             <button
-              onClick={() => setCurrentHp((h) => Math.min(entity.max_pv, h + 1))}
+              onClick={() => { setCurrentHp((h) => Math.min(entity.max_pv, h + 1)); setTimeout(handleSaveHp, 0); }}
               className="w-6 h-6 rounded bg-green-900/50 hover:bg-green-800 text-green-300 text-xs flex items-center justify-center"
             >+</button>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[10px] text-blue-400 w-6">PM</span>
             <button
-              onClick={() => setCurrentPm((p) => Math.max(0, p - 1))}
+              onClick={() => { setCurrentPm((p) => Math.max(0, p - 1)); setTimeout(handleSavePm, 0); }}
               className="w-6 h-6 rounded bg-red-900/50 hover:bg-red-800 text-red-300 text-xs flex items-center justify-center"
             >-</button>
             <input
@@ -556,7 +556,7 @@ export default function CharacterSheet({
             />
             <span className="text-[10px] text-[var(--text-secondary)]">/ {entity.max_pm}</span>
             <button
-              onClick={() => setCurrentPm((p) => Math.min(entity.max_pm, p + 1))}
+              onClick={() => { setCurrentPm((p) => Math.min(entity.max_pm, p + 1)); setTimeout(handleSavePm, 0); }}
               className="w-6 h-6 rounded bg-green-900/50 hover:bg-green-800 text-green-300 text-xs flex items-center justify-center"
             >+</button>
           </div>
