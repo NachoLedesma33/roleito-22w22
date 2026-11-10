@@ -32,7 +32,7 @@ export default function AnchoredMenu({
       role="menu"
       data-testid={testId}
       data-anchored-menu={anchorId}
-      className="fixed bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg z-50 py-0.5"
+      className="fixed bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] rounded shadow-lg z-50 py-0.5 max-h-[60vh] overflow-y-auto"
       style={{ left: rect?.left ?? -9999, top: rect?.top ?? -9999, minWidth }}
     >
       {children}
