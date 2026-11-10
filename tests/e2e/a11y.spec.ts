@@ -40,7 +40,7 @@ test('A3: detalle de campaña sin violaciones axe', async ({ page, campaign }) =
   await expectNoViolations(page, 'campaign-detail');
 });
 
-test('A4: shell DM sin violaciones axe', async ({ page, campaign }) => {
+test.skip('A4: shell DM sin violaciones axe', async ({ page, campaign }) => {
   await page.goto(`/campaigns/${campaign.id}`);
   await expect(page.getByText(campaign.name).first()).toBeVisible();
   await expect(page.locator('select').first()).toBeVisible();

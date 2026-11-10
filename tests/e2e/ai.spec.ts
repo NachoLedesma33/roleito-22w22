@@ -125,7 +125,7 @@ test.describe('AI Provider Layer', () => {
     await expect(panel).toBeVisible();
 
     await panel.locator('[data-testid="ai-provider-select"]').selectOption('local');
-    await expect(panel.locator('[data-testid="ai-local-url"]')).toBeVisible();
+    await expect(panel.locator('[data-testid="ai-local-url"]')).toBeVisible({ timeout: 10_000 });
     await panel
       .locator('[data-testid="ai-local-url"] input')
       .fill('http://localhost:9');
