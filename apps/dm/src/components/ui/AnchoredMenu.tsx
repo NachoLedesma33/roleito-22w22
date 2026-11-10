@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { useEffect, useRef } from 'react';
 import type { AnchorRect } from '@/lib/useAnchoredMenu';
 
 interface AnchoredMenuProps {
@@ -27,24 +26,9 @@ export default function AnchoredMenu({
   minWidth,
   children,
 }: AnchoredMenuProps) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open || !ref.current || !rect) return;
-    const el = ref.current;
-    const menuH = el.offsetHeight;
-    const spaceBelow = window.innerHeight - rect.top;
-    if (menuH > spaceBelow && rect.top > menuH) {
-      el.style.top = `${rect.top - menuH}px`;
-    } else {
-      el.style.top = `${rect.top}px`;
-    }
-  }, [open, rect]);
-
   if (!open) return null;
   return createPortal(
     <div
-      ref={ref}
       role="menu"
       data-testid={testId}
       data-anchored-menu={anchorId}
