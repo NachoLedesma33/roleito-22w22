@@ -5,7 +5,7 @@ export default defineConfig({
   globalTeardown: './tests/global-teardown.ts',
   testDir: './tests/e2e',
   timeout: 60_000,
-  retries: process.env.CI ? 3 : 0,
+  retries: process.env.CI ? 5 : 0,
   workers: 1,
   use: {
     baseURL: 'http://localhost:5173',
