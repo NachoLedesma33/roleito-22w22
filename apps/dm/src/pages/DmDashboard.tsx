@@ -247,7 +247,7 @@ export default function DmDashboard() {
   const closeBuildMenu = useCallback(() => setBuildMenuOpen(false), []);
   const closeMapMenu = useCallback(() => setShowMapMenu(false), []);
   const lightingMenu = useAnchoredMenu({ open: openMenu === 'lighting', onClose: closeLightingMenu, anchorId: 'lighting', align: 'end', width: 150, gap: -2 });
-  const weatherMenu = useAnchoredMenu({ open: openMenu === 'weather', onClose: closeLightingMenu, anchorId: 'weather', align: 'end', width: 170, gap: -2 });
+  const weatherMenu = useAnchoredMenu({ open: openMenu === 'weather', onClose: closeLightingMenu, anchorId: 'weather', align: 'end', width: 170, gap: 8 });
   const buildMenu = useAnchoredMenu({ open: buildMenuOpen, onClose: closeBuildMenu, anchorId: 'build' });
   const vfxMenu = useAnchoredMenu({ open: vfxMenuOpen, onClose: () => setVfxMenuOpen(false), anchorId: 'vfx' });
   const mapMenu = useAnchoredMenu({ open: showMapMenu, onClose: closeMapMenu, anchorId: 'map', align: 'end', width: 140, gap: 2 });
