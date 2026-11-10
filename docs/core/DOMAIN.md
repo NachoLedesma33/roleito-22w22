@@ -1,3 +1,9 @@
+---
+topic: domain
+updated: 2026-11-10
+sources: [docs/core/CONTEXT.md, docs/core/ARCHITECTURE.md]
+---
+
 # DOMAIN.md
 
 > Modelo de dominio de Persistent AI RPG World Engine.

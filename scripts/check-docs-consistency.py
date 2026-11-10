@@ -189,6 +189,36 @@ def check_stale_types(code_types, doc_types):
     return stale
 
 
+def check_frontmatter():
+    """Verify frontmatter in docs: sources must point to existing files."""
+    issues = []
+    docs_with_fm = 0
+    docs_without_fm = 0
+    for f in DOCS_DIR.rglob("*.md"):
+        try:
+            content = f.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        if not content.startswith("---"):
+            docs_without_fm += 1
+            continue
+        # Parse frontmatter
+        end = content.find("---", 3)
+        if end == -1:
+            issues.append(f"{f.relative_to(ROOT)}: malformed frontmatter (no closing ---)")
+            continue
+        fm = content[3:end]
+        docs_with_fm += 1
+        # Check sources
+        m = re.search(r"sources:\s*\[(.*?)\]", fm)
+        if m:
+            srcs = [s.strip().strip("'\"") for s in m.group(1).split(",") if s.strip()]
+            for src in srcs:
+                if not (ROOT / src).exists():
+                    issues.append(f"{f.relative_to(ROOT)}: source not found: {src}")
+    return issues, docs_with_fm, docs_without_fm
+
+
 def main():
     print("=" * 60)
     print("Roleito Doc-Code Consistency Check")
@@ -272,6 +302,18 @@ def main():
     else:
         print("  OK No stale types")
 
+    # 6. Frontmatter check
+    print("\n[6] FRONTMATTER (sources must exist)")
+    print("-" * 40)
+    fm_issues, fm_with, fm_without = check_frontmatter()
+    if fm_issues:
+        for issue in fm_issues:
+            print(f"  WARNING {issue}")
+    else:
+        print(f"  OK {fm_with} docs with frontmatter, {fm_without} without")
+    if fm_without > 0:
+        print(f"  (INFO: {fm_without} docs without frontmatter - optional)")
+
     # Summary
     # Las colisiones de nombre NO cuentan para el veredicto: que un tipo este
     # definido en el codigo y documentado en docs/ es el estado sano, no un
@@ -280,10 +322,12 @@ def main():
     #
     # Lo que si es un problema real: definiciones que se contradicen entre docs,
     # strings de layer que no son los canonicos, y cross-references que faltan.
+    # Frontmatter issues (sources not found) are real issues.
     total_issues = (
         (0 if all_match else 1)
         + len(layer_issues)
         + len(ref_issues)
+        + len(fm_issues)
     )
     print("\n" + "=" * 60)
     if total_issues == 0:

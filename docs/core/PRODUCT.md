@@ -1,3 +1,9 @@
+---
+topic: product
+updated: 2026-11-10
+sources: [docs/core/CONTEXT.md]
+---
+
 # PRODUCT.md
 
 ## Estado Actual

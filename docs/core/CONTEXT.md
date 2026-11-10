@@ -1,3 +1,9 @@
+---
+topic: context
+updated: 2026-11-10
+sources: [AGENTS.md, docs/core/PRODUCT.md, docs/core/ARCHITECTURE.md]
+---
+
 # CONTEXT.md
 
 > Contexto raíz del proyecto.

@@ -1,3 +1,9 @@
+---
+topic: architecture
+updated: 2026-11-10
+sources: [docs/core/CONTEXT.md, docs/core/DOMAIN.md, docs/core/DATABASE.md]
+---
+
 # ARCHITECTURE.md
 
 > Arquitectura técnica de RPG World Engine.

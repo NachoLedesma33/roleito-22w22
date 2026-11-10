@@ -28,6 +28,8 @@ porque el doc diagnóstico no se actualizó al cerrar el plan.
    "PENDIENTE"/"NO arreglado"/"Deuda" del área que tocaste.
 5. `AGENTS.md` (raíz) — solo si cambia stack, comandos, gotchas o invariantes.
 6. `~/.config/opencode/memory.md` — roadmap y Active Work (UTF-8 BOM; editar vía Python,
+7. **Verificación final de links** — ejecutar `python scripts/check-docs-consistency.py` y
+   asegurar que no hay links rotos ni frontmatter con sources inexistentes.
    nunca con herramientas que rompan el BOM).
 
 ## Reglas

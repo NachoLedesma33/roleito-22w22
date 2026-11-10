@@ -1,3 +1,9 @@
+---
+topic: design
+updated: 2026-11-10
+sources: [docs/core/CONTEXT.md]
+---
+
 # Sistema de diseño 22W22 (V2: alto contraste y theming)
 
 Directrices globales de UI/UX de la plataforma: fantasía oscura, archivos

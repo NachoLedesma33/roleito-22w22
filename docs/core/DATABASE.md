@@ -1,3 +1,9 @@
+---
+topic: database
+updated: 2026-11-10
+sources: [docs/core/ARCHITECTURE.md, docs/core/DOMAIN.md]
+---
+
 # DATABASE.md
 
 > Especificación de persistencia de RPG World Engine.

@@ -1,3 +1,9 @@
+---
+topic: events
+updated: 2026-11-10
+sources: [docs/core/ARCHITECTURE.md, backend/event_routes.py]
+---
+
 # EVENT-SYSTEM.md
 
 > Sistema de eventos del RPG World Engine.
