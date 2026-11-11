@@ -266,6 +266,8 @@ class Asset(Base):
     file_path = Column(String, nullable=False)
     asset_type = Column(String, default="image")
     favorite = Column(Boolean, default=False)
+    category = Column(String, default="general")
+    shared_with = Column(String, nullable=True)  # player_id que puede usar este asset
     entity_type = Column(String, nullable=True)
     entity_id = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)

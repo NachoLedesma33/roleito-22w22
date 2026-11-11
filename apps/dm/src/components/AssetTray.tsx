@@ -19,15 +19,17 @@ interface Asset {
   size: number;
   favorite?: boolean;
   category?: string;
+  shared_with?: string | null;
 }
 
 interface AssetTrayProps {
   campaignId: string;
+  playerId?: string;
 }
 
 const CATEGORIES = ['Todos', 'Favoritos', 'Imágenes', 'Videos', 'Modelos'];
 
-export default function AssetTray({ campaignId }: AssetTrayProps) {
+export default function AssetTray({ campaignId, playerId }: AssetTrayProps) {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Asset | null>(null);
@@ -44,7 +46,11 @@ export default function AssetTray({ campaignId }: AssetTrayProps) {
     setLoading(true);
     try {
       const data = await api.campaigns.listAssets(campaignId);
-      setAssets(data.assets ?? []);
+      let list = data.assets ?? [];
+      if (playerId) {
+        list = list.filter((a: Asset) => a.shared_with === playerId || a.shared_with === null);
+      }
+      setAssets(list);
     } catch (e) {
       console.error('List assets failed:', e);
     } finally {

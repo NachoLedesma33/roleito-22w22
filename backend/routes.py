@@ -460,6 +460,7 @@ async def list_assets(
             "size": 0,
             "favorite": bool(a.favorite),
             "category": a.category or "general",
+            "shared_with": a.shared_with,
         })
     return {"assets": out}
 
@@ -538,18 +539,10 @@ async def deliver_asset(
     player_id = body.get("player_id")
     if not player_id:
         raise HTTPException(status_code=400, detail="player_id required")
-    # Create a handout with the asset
-    from models import Handout
-    handout = Handout(
-        campaign_id=campaign_id,
-        title=asset.name,
-        content=f"Asset entregado: {asset.name}",
-        image_path=asset.file_path,
-        visible_to_players=1,
-    )
-    db.add(handout)
+    # Mark asset as shared with the player (not a handout)
+    asset.shared_with = player_id
     await db.commit()
-    return {"ok": True, "handout_id": handout.id}
+    return {"ok": True, "asset_id": asset.id, "shared_with": player_id}
 
 class VfxRequest(BaseModel):
     type: str

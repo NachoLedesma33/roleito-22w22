@@ -8,6 +8,7 @@ import { useGLTF } from '@react-three/drei';
 import { BookOpen, CalendarDays, Dices, Flame, Flashlight, FolderOpen, Target, Volume2, VolumeX, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, RotateCcw, RotateCw, Printer, Download } from 'lucide-react';
 import * as THREE from 'three';
 import SceneRenderer from '@/components/SceneRenderer';
+import AssetTray from '@/components/AssetTray';
 import DiceRoller, { rollDice } from '@/components/DiceRoller';
 import { PlayerPanelToggles, PlayerPanels, type PlayerPanelId, type PlayerPanelToggle } from '@/components/player/PlayerPanels';
 import HudPanel from '@/components/HudPanel';
@@ -1445,6 +1446,12 @@ export default function PlayerView() {
           data-cols={perception?.cols ?? 0}
           data-rows={perception?.rows ?? 0}
         />
+
+        {choice?.kind === 'character' && data.campaign_id && (
+          <div className="absolute top-4 right-4 z-10 bg-surface border border-subtle rounded-lg p-2 w-48 max-sm:top-16 max-sm:right-2" data-testid="pv-assets">
+            <AssetTray campaignId={data.campaign_id} playerId={choice.id} />
+          </div>
+        )}
 
         {data.characters.length > 0 && (
           <div className="absolute bottom-4 right-4 z-10 bg-surface border border-subtle rounded-lg p-2 max-sm:bottom-auto max-sm:top-16 max-sm:right-2 max-sm:max-w-[140px]" data-testid="on-scene-list">

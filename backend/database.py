@@ -77,6 +77,7 @@ MIGRATIONS = [
     ("characters", "can_use_vfx", "ALTER TABLE characters ADD COLUMN can_use_vfx INTEGER DEFAULT 0"),
     ("assets", "favorite", "ALTER TABLE assets ADD COLUMN favorite INTEGER DEFAULT 0"),
     ("assets", "category", "ALTER TABLE assets ADD COLUMN category TEXT DEFAULT 'general'"),
+    ("assets", "shared_with", "ALTER TABLE assets ADD COLUMN shared_with TEXT"),
     ("npcs", "model_path", "ALTER TABLE npcs ADD COLUMN model_path TEXT"),
     ("scene_characters", "rotation", "ALTER TABLE scene_characters ADD COLUMN rotation FLOAT DEFAULT 0.0"),
     ("scenes", "map_scale", "ALTER TABLE scenes ADD COLUMN map_scale FLOAT DEFAULT 1.0"),
