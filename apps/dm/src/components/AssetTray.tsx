@@ -31,6 +31,11 @@ export default function AssetTray({ campaignId }: AssetTrayProps) {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Asset | null>(null);
+  const [renameTarget, setRenameTarget] = useState<Asset | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [deliverTarget, setDeliverTarget] = useState<Asset | null>(null);
+  const [players, setPlayers] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedPlayer, setSelectedPlayer] = useState('');
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('Todos');
   const fileInput = useRef<HTMLInputElement>(null);
@@ -50,6 +55,20 @@ export default function AssetTray({ campaignId }: AssetTrayProps) {
   useEffect(() => {
     void loadAssets();
   }, [loadAssets]);
+
+  useEffect(() => {
+    if (!deliverTarget) return;
+    (async () => {
+      try {
+        const chars = await api.characters.list(campaignId);
+        const players = chars.filter((c: any) => c.type === 'player').map((c: any) => ({ id: c.id, name: c.name }));
+        setPlayers(players);
+        if (players.length > 0) setSelectedPlayer(players[0].id);
+      } catch {
+        setPlayers([]);
+      }
+    })();
+  }, [deliverTarget, campaignId]);
 
   const handleUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -136,6 +155,27 @@ export default function AssetTray({ campaignId }: AssetTrayProps) {
               )}
               <span className="truncate w-full text-center">{a.name}</span>
               <div className="absolute top-0 right-0 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setRenameTarget(a);
+                  setRenameValue(a.name);
+                }}
+                className="p-0.5 rounded bg-black/50 text-white hover:text-blue-400"
+                title="Renombrar"
+              >
+                ✎
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDeliverTarget(a);
+                }}
+                className="p-0.5 rounded bg-black/50 text-white hover:text-green-400"
+                title="Entregar a jugador"
+              >
+                →
+              </button>
                 <button
                   onClick={async (e) => {
                     e.stopPropagation();
@@ -193,6 +233,69 @@ export default function AssetTray({ campaignId }: AssetTrayProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+    <Dialog open={!!renameTarget} onOpenChange={(open) => { if (!open) setRenameTarget(null); }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Renombrar asset</DialogTitle>
+          <DialogDescription>Ingresa el nuevo nombre.</DialogDescription>
+        </DialogHeader>
+        <input
+          type="text"
+          value={renameValue}
+          onChange={(e) => setRenameValue(e.target.value)}
+          className="w-full text-sm px-2 py-1 rounded bg-[var(--bg-tertiary)] text-white border border-[var(--bg-tertiary)]"
+        />
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setRenameTarget(null)}>Cancelar</Button>
+          <Button
+            onClick={async () => {
+              if (!renameTarget) return;
+              try {
+                await api.campaigns.renameAsset(campaignId, renameTarget.asset_id, renameValue);
+                await loadAssets();
+              } catch { /* best-effort */ }
+              setRenameTarget(null);
+            }}
+          >
+            Guardar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog open={!!deliverTarget} onOpenChange={(open) => { if (!open) setDeliverTarget(null); }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Entregar asset a jugador</DialogTitle>
+          <DialogDescription>Selecciona el jugador.</DialogDescription>
+        </DialogHeader>
+        <select
+          value={selectedPlayer}
+          onChange={(e) => setSelectedPlayer(e.target.value)}
+          className="w-full text-sm px-2 py-1 rounded bg-[var(--bg-tertiary)] text-white border border-[var(--bg-tertiary)]"
+        >
+          {players.map((p) => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setDeliverTarget(null)}>Cancelar</Button>
+          <Button
+            onClick={async () => {
+              if (!deliverTarget || !selectedPlayer) return;
+              try {
+                await api.campaigns.deliverAsset(campaignId, deliverTarget.asset_id, selectedPlayer);
+              } catch { /* best-effort */ }
+              setDeliverTarget(null);
+            }}
+          >
+            Entregar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
     </>
   );
 }

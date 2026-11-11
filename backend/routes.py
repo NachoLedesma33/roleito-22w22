@@ -420,6 +420,7 @@ async def upload_asset(
         name=file.filename or filename,
         file_path=file_path,
         asset_type=asset_type,
+        category="general",
     )
     db.add(asset)
     await db.commit()
@@ -457,6 +458,7 @@ async def list_assets(
             "url": url,
             "size": 0,
             "favorite": bool(a.favorite),
+            "category": a.category or "general",
         })
     return {"assets": out}
 
@@ -496,6 +498,57 @@ async def toggle_favorite(
     asset.favorite = not asset.favorite
     await db.commit()
     return {"asset_id": asset.id, "favorite": asset.favorite}
+
+
+@campaigns_router.put("/campaigns/{campaign_id}/assets/{asset_id}/name")
+async def rename_asset(
+    campaign_id: str,
+    asset_id: str,
+    body: dict,
+    db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+):
+    """Renombra un asset."""
+    result = await db.execute(select(Asset).where(Asset.id == asset_id, Asset.campaign_id == campaign_id))
+    asset = result.scalar_one_or_none()
+    if not asset:
+        raise HTTPException(status_code=404, detail="asset not found")
+    new_name = (body.get("name") or "").strip()
+    if not new_name:
+        raise HTTPException(status_code=400, detail="name required")
+    asset.name = new_name
+    await db.commit()
+    return {"asset_id": asset.id, "name": asset.name}
+
+
+@campaigns_router.post("/campaigns/{campaign_id}/assets/{asset_id}/deliver")
+async def deliver_asset(
+    campaign_id: str,
+    asset_id: str,
+    body: dict,
+    db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+):
+    """Entrega un asset a un jugador (crea handout con el asset)."""
+    result = await db.execute(select(Asset).where(Asset.id == asset_id, Asset.campaign_id == campaign_id))
+    asset = result.scalar_one_or_none()
+    if not asset:
+        raise HTTPException(status_code=404, detail="asset not found")
+    player_id = body.get("player_id")
+    if not player_id:
+        raise HTTPException(status_code=400, detail="player_id required")
+    # Create a handout with the asset
+    from models import Handout
+    handout = Handout(
+        campaign_id=campaign_id,
+        title=asset.name,
+        content=f"Asset entregado: {asset.name}",
+        image_path=asset.file_path,
+        visible_to_players=1,
+    )
+    db.add(handout)
+    await db.commit()
+    return {"ok": True, "handout_id": handout.id}
 
 class VfxRequest(BaseModel):
     type: str
