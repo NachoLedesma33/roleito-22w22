@@ -686,6 +686,8 @@ export const api = {
     },
     listAssets: (campaignId: string) =>
       request<{ assets: Array<{ asset_id: string; name: string; type: string; url: string; size: number; favorite?: boolean; category?: string }> }>(`/campaigns/${campaignId}/assets`),
+    listAssetsByInvite: (code: string, playerId?: string) =>
+      request<{ assets: Array<{ asset_id: string; name: string; type: string; url: string; size: number; favorite?: boolean; category?: string; shared_with?: string | null }> }>(`/campaigns/invite/${code}/assets${playerId ? '?player_id=' + playerId : ''}`),
     deleteAsset: (campaignId: string, assetId: string) =>
       request<{ ok: boolean }>(`/campaigns/${campaignId}/assets/${assetId}`, { method: 'DELETE' }),
     toggleFavorite: (campaignId: string, assetId: string) =>

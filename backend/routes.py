@@ -549,6 +549,42 @@ async def deliver_asset(
     })
     return {"ok": True, "asset_id": asset.id, "shared_with": player_id}
 
+
+@campaigns_router.get("/campaigns/invite/{code}/assets")
+async def list_assets_invite(
+    code: str,
+    player_id: str = None,
+    db: AsyncSession = Depends(get_session),
+):
+    """Lista los assets de una campaña accesibles por un jugador (shared_with = player_id o null)."""
+    result = await db.execute(select(Campaign).where(Campaign.invite_code == code))
+    campaign = result.scalar_one_or_none()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="invite not found")
+    q = select(Asset).where(Asset.campaign_id == campaign.id)
+    if player_id:
+        q = q.where((Asset.shared_with == player_id) | (Asset.shared_with.is_(None)))
+    else:
+        q = q.where(Asset.shared_with.is_(None))
+    result = await db.execute(q)
+    assets = result.scalars().all()
+    out = []
+    for a in assets:
+        rel = a.file_path.replace("\\", "/")
+        idx = rel.find("data/assets")
+        url = "/api/static/" + rel[idx + len("data/assets/"):].lstrip("/") if idx != -1 else f"/api/static/{campaign.id}/uploads/{os.path.basename(a.file_path)}"
+        out.append({
+            "asset_id": a.id,
+            "name": a.name,
+            "type": a.asset_type or "image",
+            "url": url,
+            "size": 0,
+            "favorite": bool(a.favorite),
+            "category": a.category or "general",
+            "shared_with": a.shared_with,
+        })
+    return {"assets": out}
+
 class VfxRequest(BaseModel):
     type: str
     from_x: float

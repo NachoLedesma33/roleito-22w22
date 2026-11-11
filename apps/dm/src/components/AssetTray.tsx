@@ -45,18 +45,19 @@ export default function AssetTray({ campaignId, playerId }: AssetTrayProps) {
   const loadAssets = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await api.campaigns.listAssets(campaignId);
-      let list = data.assets ?? [];
+      let data;
       if (playerId) {
-        list = list.filter((a: Asset) => a.shared_with === playerId || a.shared_with === null);
+        data = await api.campaigns.listAssetsByInvite(campaignId, playerId);
+      } else {
+        data = await api.campaigns.listAssets(campaignId);
       }
-      setAssets(list);
+      setAssets(data.assets ?? []);
     } catch (e) {
       console.error('List assets failed:', e);
     } finally {
       setLoading(false);
     }
-  }, [campaignId]);
+  }, [campaignId, playerId]);
 
   useEffect(() => {
     void loadAssets();
