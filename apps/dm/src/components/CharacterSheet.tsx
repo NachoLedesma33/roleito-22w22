@@ -3,6 +3,8 @@ import { Volume2 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import HudPanel from './HudPanel';
 import { api, Character, NPC, InventoryItem, Spell, CampaignAbility } from '@/lib/api';
+import AssetTray from './AssetTray';
+import { Activity, Package, Sparkles, Image as ImageIcon } from 'lucide-react';
 import { STATUS_OPTIONS } from '@/lib/statusMarkers';
 import { ABILITY_ICON_OPTIONS, abilityIconView, abilityFallbackGlyph } from '@/lib/abilityIcons';
 
@@ -24,7 +26,7 @@ function genId(): string {
   return crypto.randomUUID();
 }
 
-type Tab = 'stats' | 'inventory' | 'spells';
+type Tab = 'stats' | 'inventory' | 'spells' | 'assets';
 
 export default function CharacterSheet({
   entity,
@@ -595,17 +597,20 @@ export default function CharacterSheet({
 
         {/* Tab Bar */}
         <div className="flex gap-1 bg-[var(--bg-tertiary)]/50 rounded p-0.5">
-          {(['stats', 'inventory', 'spells'] as Tab[]).map((t) => (
+          {(['stats', 'inventory', 'spells', 'assets'] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`flex-1 text-[10px] py-1.5 rounded capitalize transition-colors ${
+              className={`flex-1 text-[10px] py-1.5 rounded capitalize transition-colors flex items-center justify-center gap-1 ${
                 tab === t
                   ? 'bg-[var(--accent)] text-white'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                  : 'text-white hover:text-white'
               }`}
             >
-              {{ stats: 'Características', inventory: 'Inventario', spells: 'Conjuros' }[t]}
+              {t === 'stats' && <Activity size={12} />}
+              {t === 'inventory' && <Package size={12} />}
+              {t === 'spells' && <Sparkles size={12} />}
+              {t === 'assets' && <ImageIcon size={12} />}
             </button>
           ))}
         </div>
@@ -796,6 +801,11 @@ export default function CharacterSheet({
                 ))}
               </div>
             )}
+        {String(tab) === 'assets' && (
+          <div className="space-y-2">
+            <AssetTray campaignId={campaignId} />
+          </div>
+        )}
           </div>
         )}
       </div>
