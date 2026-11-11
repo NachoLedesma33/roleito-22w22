@@ -676,7 +676,13 @@ export const api = {
     uploadAsset: (campaignId: string, file: File) => {
       const form = new FormData();
       form.append('file', file);
-      return request<{ asset_id: string; name: string; type: string; url: string; size: number }>(`/campaigns/${campaignId}/assets`, { method: 'POST', body: form });
+      return apiFetch(`/campaigns/${campaignId}/assets`, { method: 'POST', body: form }).then(async (res) => {
+        if (!res.ok) {
+          const body = await res.text();
+          throw new Error(`${res.status}: ${body}`);
+        }
+        return res.json();
+      });
     },
     listAssets: (campaignId: string) =>
       request<{ assets: Array<{ asset_id: string; name: string; type: string; url: string; size: number }> }>(`/campaigns/${campaignId}/assets`),
