@@ -5,7 +5,7 @@ import AudioSettingsMenu from '@/components/AudioSettingsMenu';
 import i18n from '@/lib/i18n';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
-import { BookOpen, CalendarDays, Dices, Flame, Flashlight, FolderOpen, Target, Volume2, VolumeX, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, RotateCcw, RotateCw, Printer, Download } from 'lucide-react';
+import { BookOpen, CalendarDays, Dices, Flame, Flashlight, FolderOpen, Target, Volume2, VolumeX, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, RotateCcw, RotateCw, Printer, Download, Activity, Package, Sparkles, Image as ImageIcon, StickyNote } from 'lucide-react';
 import * as THREE from 'three';
 import SceneRenderer from '@/components/SceneRenderer';
 import AssetTray from '@/components/AssetTray';
@@ -182,6 +182,15 @@ export default function PlayerView() {
   const loadAssets = useCallback(() => {
     setAssetRefreshKey((k) => k + 1);
   }, []);
+
+  // Poll assets every 10s as fallback (WS may not deliver)
+  useEffect(() => {
+    if (!data?.campaign_id || choice?.kind !== 'character') return;
+    const interval = setInterval(() => {
+      setAssetRefreshKey((k) => k + 1);
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [data?.campaign_id, choice?.kind]);
 
   useEffect(() => {
     void loadAssets();
@@ -1459,11 +1468,7 @@ export default function PlayerView() {
           data-rows={perception?.rows ?? 0}
         />
 
-        {choice?.kind === 'character' && data.campaign_id && (
-          <div className="absolute top-4 left-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-[var(--surface)] border border-[var(--bg-tertiary)] text-white hover:text-white hover:bg-[var(--bg-tertiary)] transition-colors" title="Assets" data-testid="pv-assets-toggle">
-            📦
-          </div>
-        )}
+
 
         {data.characters.length > 0 && (
           <div className="absolute bottom-4 right-4 z-10 bg-surface border border-subtle rounded-lg p-2 max-sm:bottom-auto max-sm:top-16 max-sm:right-2 max-sm:max-w-[140px]" data-testid="on-scene-list">
@@ -1621,7 +1626,11 @@ export default function PlayerView() {
                         : 'text-white hover:text-white'
                     }`}
                   >
-                    {tab === 'stats' ? t('pv.tabStats', 'Stats') : tab === 'inventory' ? t('pv.tabInv', 'Inv') : tab === 'spells' ? t('pv.tabSpells', 'Hech') : tab === 'notes' ? t('pv.tabNotes', 'Notas') : '📦'}
+                    {tab === 'stats' && <Activity size={12} />}
+                    {tab === 'inventory' && <Package size={12} />}
+                    {tab === 'spells' && <Sparkles size={12} />}
+                    {tab === 'notes' && <StickyNote size={12} />}
+                    {tab === 'assets' && <ImageIcon size={12} />}
                   </button>
                 ))}
               </div>
