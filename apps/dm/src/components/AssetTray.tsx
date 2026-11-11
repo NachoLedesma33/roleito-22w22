@@ -25,11 +25,12 @@ interface Asset {
 interface AssetTrayProps {
   campaignId: string;
   playerId?: string;
+  inviteCode?: string;
 }
 
 const CATEGORIES = ['Todos', 'Favoritos', 'Imágenes', 'Videos', 'Modelos'];
 
-export default function AssetTray({ campaignId, playerId }: AssetTrayProps) {
+export default function AssetTray({ campaignId, playerId, inviteCode }: AssetTrayProps) {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Asset | null>(null);
@@ -46,7 +47,9 @@ export default function AssetTray({ campaignId, playerId }: AssetTrayProps) {
     setLoading(true);
     try {
       let data;
-      if (playerId) {
+      if (playerId && inviteCode) {
+        data = await api.campaigns.listAssetsByInvite(inviteCode, playerId);
+      } else if (playerId) {
         data = await api.campaigns.listAssetsByInvite(campaignId, playerId);
       } else {
         data = await api.campaigns.listAssets(campaignId);
@@ -57,7 +60,7 @@ export default function AssetTray({ campaignId, playerId }: AssetTrayProps) {
     } finally {
       setLoading(false);
     }
-  }, [campaignId, playerId]);
+  }, [campaignId, playerId, inviteCode]);
 
   useEffect(() => {
     void loadAssets();

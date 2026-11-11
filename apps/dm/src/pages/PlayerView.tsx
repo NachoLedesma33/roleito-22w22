@@ -1766,7 +1766,7 @@ export default function PlayerView() {
                 )}
                 {sheetTab === 'assets' && (
                   <div className="space-y-2">
-                    <AssetTray campaignId={data.campaign_id} playerId={choice?.kind === 'character' ? choice.id : undefined} key={assetRefreshKey} />
+                    <AssetTray campaignId={data.campaign_id} playerId={choice?.kind === 'character' ? choice.id : undefined} inviteCode={code} key={assetRefreshKey} />
                   </div>
                 )}
               </div>
