@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { api } from '@/lib/api';
 import { Upload, Image, Film, Box } from 'lucide-react';
 
 interface Asset {
@@ -22,11 +23,8 @@ export default function AssetTray({ campaignId, onAssetDragStart }: AssetTrayPro
   const loadAssets = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/campaigns/${campaignId}/assets`);
-      if (res.ok) {
-        const data = await res.json();
-        setAssets(data.assets ?? []);
-      }
+      const data = await api.campaigns.listAssets(campaignId);
+      setAssets(data.assets ?? []);
     } catch {
       // best-effort
     } finally {
@@ -41,16 +39,9 @@ export default function AssetTray({ campaignId, onAssetDragStart }: AssetTrayPro
   const handleUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const form = new FormData();
-    form.append('file', file);
     try {
-      const res = await fetch(`/api/campaigns/${campaignId}/assets`, {
-        method: 'POST',
-        body: form,
-      });
-      if (res.ok) {
-        await loadAssets();
-      }
+      await api.campaigns.uploadAsset(campaignId, file);
+      await loadAssets();
     } catch {
       // best-effort
     }
@@ -66,10 +57,10 @@ export default function AssetTray({ campaignId, onAssetDragStart }: AssetTrayPro
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">Assets</span>
+        <span className="text-[10px] text-white font-bold uppercase tracking-wide">Assets</span>
         <button
           onClick={() => fileInput.current?.click()}
-          className="text-[10px] px-2 py-0.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          className="text-[10px] px-2 py-0.5 rounded bg-[var(--bg-tertiary)] text-white font-bold hover:text-white"
         >
           <Upload size={12} className="inline mr-1" />
           Subir

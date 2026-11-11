@@ -673,6 +673,13 @@ export const api = {
       }),
     placeMarker: (campaignId: string, data: { x: number; z: number; color?: string; ttl_ms?: number }) =>
       request<{ ok: boolean }>(`/campaigns/${campaignId}/marker`, { method: 'POST', body: JSON.stringify(data) }),
+    uploadAsset: (campaignId: string, file: File) => {
+      const form = new FormData();
+      form.append('file', file);
+      return request<{ asset_id: string; name: string; type: string; url: string; size: number }>(`/campaigns/${campaignId}/assets`, { method: 'POST', body: form });
+    },
+    listAssets: (campaignId: string) =>
+      request<{ assets: Array<{ asset_id: string; name: string; type: string; url: string; size: number }> }>(`/campaigns/${campaignId}/assets`),
     placeMarkerByInvite: (code: string, data: { x: number; z: number; color?: string; ttl_ms?: number }) =>
       request<{ ok: boolean }>(`/campaigns/invite/${code}/marker`, { method: 'POST', body: JSON.stringify(data) }),
     placeVfx: (campaignId: string, data: { type: string; from_x: number; from_z: number; to_x: number; to_z: number }) =>
