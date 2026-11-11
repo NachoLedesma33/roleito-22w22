@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Body, Depends, HTTPException, WebSocket, WebSocketDisconnect
+﻿from fastapi import APIRouter, Body, Depends, HTTPException, UploadFile, File, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import delete, select
@@ -32,6 +32,7 @@ from models import (
     SceneReveal,
     LightRequest,
 )
+from services.assets import save_campaign_file
 from schemas import (
     BulkDeleteRequest,
     BulkExportRequest,
@@ -379,6 +380,61 @@ async def place_marker_invite(
         "ttl_ms": data.ttl_ms,
     })
     return {"ok": True}
+
+
+@campaigns_router.post("/campaigns/{campaign_id}/assets")
+async def upload_asset(
+    campaign_id: str,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+):
+    """Sube un asset (imagen, video, modelo 3D) a la campaña."""
+    allowed_exts = {".png", ".jpg", ".jpeg", ".webp", ".mp4", ".webm", ".glb", ".gltf", ".fbx"}
+    ext = os.path.splitext(file.filename or "asset")[1].lower()
+    if ext not in allowed_exts:
+        raise HTTPException(status_code=400, detail=f"Extensión no permitida: {ext}")
+
+    content = await file.read()
+    max_size = 50 * 1024 * 1024  # 50MB
+    if len(content) > max_size:
+        raise HTTPException(status_code=413, detail="Archivo demasiado grande (max 50MB)")
+
+    import uuid
+    asset_id = str(uuid.uuid4())
+    filename = f"{asset_id}{ext}"
+    file_path = save_campaign_file(campaign_id, "uploads", filename=filename, content=content)
+
+    # Determine type
+    if ext in {".png", ".jpg", ".jpeg", ".webp"}:
+        asset_type = "image"
+    elif ext in {".mp4", ".webm"}:
+        asset_type = "video"
+    else:
+        asset_type = "model"
+
+    # Create Asset record
+    asset = Asset(
+        id=asset_id,
+        campaign_id=campaign_id,
+        name=file.filename or filename,
+        file_path=file_path,
+        asset_type=asset_type,
+    )
+    db.add(asset)
+    await db.commit()
+
+    rel_path = file_path.replace("\\", "/")
+    idx = rel_path.find("data/assets")
+    url = "/" + rel_path[idx:] if idx != -1 else f"/api/static/{campaign_id}/uploads/{filename}"
+
+    return {
+        "asset_id": asset_id,
+        "name": file.filename or filename,
+        "type": asset_type,
+        "url": url,
+        "size": len(content),
+    }
 
 
 class VfxRequest(BaseModel):

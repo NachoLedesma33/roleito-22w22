@@ -1,6 +1,7 @@
 import { Suspense, useMemo, useRef, useCallback, useEffect, useState, memo } from 'react';
-import { Canvas, useThree, useFrame } from '@react-three/fiber';
+import { Canvas, useThree, useFrame, useLoader } from '@react-three/fiber';
 import { Billboard, OrbitControls, Text, useGLTF } from '@react-three/drei';
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import * as THREE from 'three';
 import RoomBackground from './RoomBackground';
 import { VfxBurst } from './VfxBurst';
@@ -269,10 +270,14 @@ type DragStarter = (
 
 function SceneBackground({ url, mapScale = 1, modelYOffset = 0, offsetX = 0, offsetZ = 0 }: { url: string; mapScale?: number; modelYOffset?: number; offsetX?: number; offsetZ?: number }) {
   const isModel = /\.(glb|gltf)$/i.test(url);
+  const isFbx = /\.fbx$/i.test(url);
   const isVideo = /\.(mp4|webm|mov|ogg)$/i.test(url);
 
   if (isModel) {
     return <SceneBackgroundModel url={url} mapScale={mapScale} modelYOffset={modelYOffset} offsetX={offsetX} offsetZ={offsetZ} />;
+  }
+  if (isFbx) {
+    return <SceneBackgroundFbx url={url} mapScale={mapScale} modelYOffset={modelYOffset} offsetX={offsetX} offsetZ={offsetZ} />;
   }
   if (isVideo) {
     return <SceneBackgroundVideo url={url} mapScale={mapScale} offsetX={offsetX} offsetZ={offsetZ} offsetY={modelYOffset} />;
@@ -389,6 +394,31 @@ function SceneBackgroundModel({ url, mapScale = 1, modelYOffset = 0, offsetX = 0
     c.position.z = offsetZ;
     return c;
   }, [scene, modelYOffset, offsetX, offsetZ]);
+
+  return (
+    <group name="scene-background" scale={[mapScale, mapScale, mapScale]}>
+      <primitive object={cloned} />
+    </group>
+  );
+}
+
+function SceneBackgroundFbx({ url, mapScale = 1, modelYOffset = 0, offsetX = 0, offsetZ = 0 }: { url: string; mapScale?: number; modelYOffset?: number; offsetX?: number; offsetZ?: number }) {
+  const fbx = useLoader(FBXLoader, url) as THREE.Group;
+  const cloned = useMemo(() => {
+    const c = fbx.clone(true);
+    const box = new THREE.Box3().setFromObject(c);
+    const minY = box.min.y;
+    c.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    c.position.y = -minY + modelYOffset;
+    c.position.x = offsetX;
+    c.position.z = offsetZ;
+    return c;
+  }, [fbx, modelYOffset, offsetX, offsetZ]);
 
   return (
     <group name="scene-background" scale={[mapScale, mapScale, mapScale]}>
