@@ -449,7 +449,7 @@ async def list_assets(
     for a in assets:
         rel = a.file_path.replace("\\", "/")
         idx = rel.find("data/assets")
-        url = "/" + rel[idx:] if idx != -1 else f"/api/static/{campaign_id}/uploads/{os.path.basename(a.file_path)}"
+        url = "/api/static/" + rel[idx + len("data/assets/"):].lstrip("/") if idx != -1 else f"/api/static/{campaign_id}/uploads/{os.path.basename(a.file_path)}"
         out.append({
             "asset_id": a.id,
             "name": a.name,
