@@ -542,6 +542,11 @@ async def deliver_asset(
     # Mark asset as shared with the player (not a handout)
     asset.shared_with = player_id
     await db.commit()
+    await ws_manager.broadcast(campaign_id, {
+        "type": "asset_shared",
+        "asset_id": asset.id,
+        "player_id": player_id,
+    })
     return {"ok": True, "asset_id": asset.id, "shared_with": player_id}
 
 class VfxRequest(BaseModel):

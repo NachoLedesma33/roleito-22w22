@@ -47,7 +47,7 @@ const VIDA_LABELS: Record<string, string> = {
 
 function abilityIconChip(icon: string | null, name: string) {
   const view = abilityIconView(icon);
-  if (!view) return <span className="text-[var(--text-secondary)]">{abilityFallbackGlyph(name)}</span>;
+  if (!view) return <span className="text-white">{abilityFallbackGlyph(name)}</span>;
   if (view.kind === 'glyph') return <span>{view.glyph}</span>;
   return <img src={view.url} alt="" className="w-full h-full object-cover" />;
 }
@@ -94,7 +94,7 @@ function StatBar({
   const pct = max > 0 ? Math.min(100, Math.max(0, (current / max) * 100)) : 0;
   return (
     <div className="flex items-center gap-2">
-      <span className="w-5 text-[10px] text-[var(--text-secondary)] shrink-0">{label}</span>
+      <span className="w-5 text-[10px] text-white shrink-0">{label}</span>
       <div className="flex-1 h-2 rounded bg-black/60 overflow-hidden border border-[var(--bg-tertiary)]">
         <div
           className="h-full rounded transition-all duration-500"
@@ -147,7 +147,10 @@ export default function PlayerView() {
   const [imageAspect, setImageAspect] = useState(1);
   const [markers, setMarkers] = useState<Array<{ id: number; x: number; z: number; color: string }>>([]);
   const [vfx, setVfx] = useState<Array<{ id: number; type: 'fire' | 'ice' | 'lightning' | 'heal' | 'void'; from: [number, number, number]; to: [number, number, number]; startedAt: number; duration: number }>>([]);
+
   const [pendingVfx, setPendingVfx] = useState<'fire' | 'ice' | 'lightning' | 'heal' | 'void' | null>(null);
+  const [assetsPanelOpen, setAssetsPanelOpen] = useState(false);
+  const [assetRefreshKey, setAssetRefreshKey] = useState(0);
   const handleAspectChange = useCallback((a: number) => {
     if (Number.isFinite(a) && a > 0) setImageAspect(a);
   }, []);
@@ -173,7 +176,17 @@ export default function PlayerView() {
     const effect = { id: Date.now(), type: v.type as 'fire' | 'ice' | 'lightning' | 'heal' | 'void', from: v.from, to: v.to, startedAt: performance.now(), duration: 1500 };
     setVfx((prev) => [...prev, effect]);
     window.setTimeout(() => setVfx((prev) => prev.filter((e) => e.id !== effect.id)), 2000);
+  }, onAssetShared: () => {
+    void loadAssets();
   } });
+
+  const loadAssets = useCallback(() => {
+    setAssetRefreshKey((k) => k + 1);
+  }, []);
+
+  useEffect(() => {
+    void loadAssets();
+  }, [loadAssets]);
   const dataRef = useRef<typeof data>(null);
   const lastMoveAtRef = useRef(0);
   const lastMoveDirRef = useRef(0);
@@ -1151,7 +1164,7 @@ export default function PlayerView() {
 
   if (loading && !missingCode) {
     return (
-      <div className="h-screen flex items-center justify-center bg-black text-[var(--text-secondary)]">
+      <div className="h-screen flex items-center justify-center bg-black text-white">
         {t('pv.joining', 'Uniéndose a la campaÃ±a...')}
       </div>
     );
@@ -1191,7 +1204,7 @@ export default function PlayerView() {
         subtitle={data.scene_name}
         className="!bg-[var(--surface)] !border-[var(--bg-tertiary)]/50"
       >
-        <span className="text-xs text-[var(--text-secondary)] shrink-0" data-testid="player-role">
+        <span className="text-xs text-white shrink-0" data-testid="player-role">
           {choice?.kind === 'character'
             ? t('pv.viewingAs', 'Viendo como {{name}}', { name: myChar?.name ?? '...' })
             : t('pv.spectator', 'Espectador')}
@@ -1200,7 +1213,7 @@ export default function PlayerView() {
           <button
             type="button"
             onClick={changeCharacter}
-            className="text-[10px] px-2 py-1 rounded border border-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] transition-colors shrink-0"
+            className="text-[10px] px-2 py-1 rounded border border-[var(--bg-tertiary)] text-white hover:text-white hover:border-[var(--accent)] transition-colors shrink-0"
           >
             {choice.kind === 'character' ? t('pv.change', 'Cambiar') : t('pv.chooseChar', 'Elegir personaje')}
           </button>
@@ -1212,7 +1225,7 @@ export default function PlayerView() {
             className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${
               showDiceRoller
                 ? 'bg-[var(--accent)] text-white'
-                : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/70'
+                : 'bg-[var(--bg-tertiary)] text-white hover:text-white hover:bg-[var(--bg-tertiary)]/70'
             }`}
             title={t('pv.diceTitle', 'Tirar dados')}
           >
@@ -1226,7 +1239,7 @@ export default function PlayerView() {
             className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${
               shareLight
                 ? 'bg-[var(--accent)] text-white'
-                : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/70'
+                : 'bg-[var(--bg-tertiary)] text-white hover:text-white hover:bg-[var(--bg-tertiary)]/70'
             }`}
             title={shareLight ? t('pv.shareLightOn', 'Compartiendo luz con el grupo') : t('pv.shareLightOff', 'Solo tu luz + luces del DM')}
           >
@@ -1240,7 +1253,7 @@ export default function PlayerView() {
             className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${
               audioOn
                 ? 'bg-[var(--accent)] text-white'
-                : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/70'
+                : 'bg-[var(--bg-tertiary)] text-white hover:text-white hover:bg-[var(--bg-tertiary)]/70'
             }`}
             title={audioOn ? t('pv.audioMute', 'Silenciar ambiente') : t('pv.audioActivate', 'Activar ambiente')}
             data-testid="audio-toggle"
@@ -1254,7 +1267,7 @@ export default function PlayerView() {
             type="button"
             onClick={requestLight}
             disabled={askingLight}
-            className="text-xs px-2 py-1 rounded transition-colors shrink-0 bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/70 disabled:opacity-40"
+            className="text-xs px-2 py-1 rounded transition-colors shrink-0 bg-[var(--bg-tertiary)] text-white hover:text-white hover:bg-[var(--bg-tertiary)]/70 disabled:opacity-40"
             title={t('pv.askLight', 'Pedir luz al DM')}
           >
             <Flame className="h-3.5 w-3.5" />
@@ -1296,7 +1309,7 @@ export default function PlayerView() {
         {data.background_path ? (
           <Suspense
             fallback={
-              <div className="w-full h-full flex items-center justify-center text-[var(--text-secondary)]">
+              <div className="w-full h-full flex items-center justify-center text-white">
                 {t('pv.loadingScene', 'Cargando escena...')}
               </div>
             }
@@ -1427,7 +1440,7 @@ export default function PlayerView() {
             />
           </Suspense>
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-[var(--text-secondary)]">
+          <div className="w-full h-full flex items-center justify-center text-white">
             {t('pv.noSceneYet', 'El DM aÃºn no abriÃ³ una escena')}
           </div>
         )}
@@ -1448,14 +1461,25 @@ export default function PlayerView() {
         />
 
         {choice?.kind === 'character' && data.campaign_id && (
-          <div className="absolute top-4 right-4 z-10 bg-surface border border-subtle rounded-lg p-2 w-48 max-sm:top-16 max-sm:right-2" data-testid="pv-assets">
-            <AssetTray campaignId={data.campaign_id} playerId={choice.id} />
+          <button
+            onClick={() => setAssetsPanelOpen((v) => !v)}
+            className="absolute top-4 left-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-[var(--surface)] border border-[var(--bg-tertiary)] text-white hover:text-white hover:bg-[var(--bg-tertiary)] transition-colors"
+            title="Assets"
+            data-testid="pv-assets-toggle"
+          >
+            📦
+          </button>
+        )}
+
+        {choice?.kind === 'character' && data.campaign_id && assetsPanelOpen && (
+          <div className="absolute top-16 left-4 z-10 bg-surface border border-subtle rounded-lg p-2 w-48 max-sm:top-20 max-sm:left-2" data-testid="pv-assets">
+            <AssetTray campaignId={data.campaign_id} playerId={choice?.kind === 'character' ? choice.id : undefined} key={assetRefreshKey} />
           </div>
         )}
 
         {data.characters.length > 0 && (
           <div className="absolute bottom-4 right-4 z-10 bg-surface border border-subtle rounded-lg p-2 max-sm:bottom-auto max-sm:top-16 max-sm:right-2 max-sm:max-w-[140px]" data-testid="on-scene-list">
-            <p className="text-[10px] text-[var(--text-secondary)] mb-1 px-1">{t('dm.onScene', 'En escena ({{n}})', { n: data.characters.length })}</p>
+            <p className="text-[10px] text-white mb-1 px-1">{t('dm.onScene', 'En escena ({{n}})', { n: data.characters.length })}</p>
             <div className="space-y-0.5">
               {data.characters.map((c) => (
                 <div key={c.id} className="flex items-center gap-1.5 px-1.5 py-0.5 text-xs text-[var(--text-primary)]">
@@ -1474,19 +1498,19 @@ export default function PlayerView() {
 
         {choice?.kind === 'character' && data.player_characters.find((p) => p.id === choice.id)?.can_use_vfx && (
           <div className="absolute top-4 right-4 z-10 bg-surface border border-subtle rounded-lg p-2" data-testid="pv-vfx-menu">
-            <p className="text-[10px] text-[var(--text-secondary)] mb-1">VFX{pendingVfx ? `: ${pendingVfx}` : ''}</p>
+            <p className="text-[10px] text-white mb-1">VFX{pendingVfx ? `: ${pendingVfx}` : ''}</p>
             <div className="flex flex-wrap gap-1">
               {(['fire', 'ice', 'lightning', 'heal', 'void'] as const).map((type) => (
                 <button
                   key={type}
                   onClick={() => setPendingVfx((prev) => (prev === type ? null : type))}
-                  className={`text-[10px] px-2 py-0.5 rounded ${pendingVfx === type ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'}`}
+                  className={`text-[10px] px-2 py-0.5 rounded ${pendingVfx === type ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-white'}`}
                 >
                   {type}
                 </button>
               ))}
             </div>
-            {pendingVfx && <p className="text-[9px] text-[var(--text-secondary)] mt-1">Click en un token objetivo</p>}
+            {pendingVfx && <p className="text-[9px] text-white mt-1">Click en un token objetivo</p>}
           </div>
         )}
 
@@ -1544,7 +1568,7 @@ export default function PlayerView() {
               <div className="flex items-center gap-2.5">
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-[var(--text-primary)] truncate">{myChar.name}</p>
-                  <p className="text-[11px] text-[var(--text-secondary)] truncate">
+                  <p className="text-[11px] text-white truncate">
                     {[myChar.race, myChar.class_].filter(Boolean).join(' · ') || '\u00A0'}
                   </p>
                 </div>
@@ -1582,7 +1606,7 @@ export default function PlayerView() {
 
               {myStatuses.length > 0 && (
                 <div className="flex flex-wrap gap-1 items-center">
-                  <span className="text-[9px] text-[var(--text-secondary)] uppercase tracking-wide">{t('pv.status', 'Estado')}</span>
+                  <span className="text-[9px] text-white uppercase tracking-wide">{t('pv.status', 'Estado')}</span>
                   {myStatuses.map((s) => {
                     const opt = STATUS_OPTIONS.find((o) => o.id === s);
                     if (!opt) return null;
@@ -1606,7 +1630,7 @@ export default function PlayerView() {
                     className={`flex-1 py-1 rounded capitalize transition-colors ${
                       sheetTab === tab
                         ? 'bg-[var(--accent)] text-white'
-                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                        : 'text-white hover:text-white'
                     }`}
                   >
                     {tab === 'stats' ? t('pv.tabStats', 'Stats') : tab === 'inventory' ? t('pv.tabInv', 'Inv') : tab === 'spells' ? t('pv.tabSpells', 'Hech') : t('pv.tabNotes', 'Notas')}
@@ -1625,7 +1649,7 @@ export default function PlayerView() {
                         { label: t('pv.attrAstuc', 'Astuc'), value: myChar.cunning },
                       ].map((a) => (
                         <div key={a.label} className="text-center bg-[var(--bg-tertiary)]/50 rounded py-0.5 px-0.5">
-                          <p className="text-[8px] leading-none text-[var(--text-secondary)]">{a.label}</p>
+                          <p className="text-[8px] leading-none text-white">{a.label}</p>
                           <p className="text-xs leading-tight font-bold text-[var(--text-primary)]">{a.value === '-' ? 'âˆ’' : a.value}</p>
                         </div>
                       ))}
@@ -1633,19 +1657,19 @@ export default function PlayerView() {
                     <div className="grid grid-cols-3 gap-1 text-center">
                       <div className="bg-[var(--bg-tertiary)]/50 rounded py-1">
                         <p className="font-bold text-red-400">{myChar.max_pv}</p>
-                        <p className="text-[10px] text-[var(--text-secondary)]">{t('pv.pvMax', 'PV mÃ¡x.')}</p>
+                        <p className="text-[10px] text-white">{t('pv.pvMax', 'PV mÃ¡x.')}</p>
                       </div>
                       <div className="bg-[var(--bg-tertiary)]/50 rounded py-1">
                         <p className="font-bold text-blue-400">{myChar.max_pm}</p>
-                        <p className="text-[10px] text-[var(--text-secondary)]">{t('pv.pmMax', 'PM mÃ¡x.')}</p>
+                        <p className="text-[10px] text-white">{t('pv.pmMax', 'PM mÃ¡x.')}</p>
                       </div>
                       <div className="bg-[var(--bg-tertiary)]/50 rounded py-1">
                         <p className="font-bold text-green-400">{myChar.defense}</p>
-                        <p className="text-[9px] text-[var(--text-secondary)]">{t('pv.defense', 'Defensa')}</p>
+                        <p className="text-[9px] text-white">{t('pv.defense', 'Defensa')}</p>
                       </div>
                     </div>
                     {myChar.description && (
-                      <p className="text-[10px] text-[var(--text-secondary)] whitespace-pre-wrap">{myChar.description}</p>
+                      <p className="text-[10px] text-white whitespace-pre-wrap">{myChar.description}</p>
                     )}
                   </div>
                 )}
@@ -1653,7 +1677,7 @@ export default function PlayerView() {
                 {sheetTab === 'inventory' && (
                   <div className="space-y-1">
                     {invItems.length === 0 ? (
-                      <p className="text-[10px] text-[var(--text-secondary)]">{t('pv.empty', 'VacÃ­o')}</p>
+                      <p className="text-[10px] text-white">{t('pv.empty', 'VacÃ­o')}</p>
                     ) : (
                       invItems.map((item, i) => (
                         <div key={i} className="flex items-center gap-1.5">
@@ -1680,14 +1704,14 @@ export default function PlayerView() {
                         onClick={() => setGrimorioOpen(true)}
                         disabled={myChar.spells_json.length === 0}
                         data-testid="grimorio-toggle"
-                        className="shrink-0 text-[10px] px-1.5 py-0.5 rounded border border-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        className="shrink-0 text-[10px] px-1.5 py-0.5 rounded border border-[var(--bg-tertiary)] text-white hover:text-white hover:border-[var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                       >
                         <BookOpen className="h-3 w-3 mr-1 inline" />
                         {t('pv.grimorio', 'Grimorio')}
                       </button>
                     </div>
                     {myChar.spells_json.length === 0 ? (
-                      <p className="text-[10px] text-[var(--text-secondary)]">{t('pv.noSpells', 'No hay hechizos')}</p>
+                      <p className="text-[10px] text-white">{t('pv.noSpells', 'No hay hechizos')}</p>
                     ) : (
                       myChar.spells_json.map((spell) => (
                         <div
@@ -1716,7 +1740,7 @@ export default function PlayerView() {
                                 ? t('pv.pmNotEnough', 'PM insuficientes')
                                 : t('pv.spendPm', 'Gasta {{n}} PM', { n: spell.cost_pm })
                             }
-                            className="ml-auto shrink-0 text-[10px] px-1.5 py-0.5 rounded border border-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            className="ml-auto shrink-0 text-[10px] px-1.5 py-0.5 rounded border border-[var(--bg-tertiary)] text-white hover:text-white hover:border-[var(--accent)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                           >
                             {t('pv.use', 'Usar')}
                           </button>
@@ -1753,7 +1777,7 @@ export default function PlayerView() {
             <div className="bg-[var(--surface)] border border-[var(--bg-tertiary)]/60 rounded-xl p-4 sm:p-6 w-full max-w-md space-y-4">
               <div>
                 <h2 className="text-lg font-bold text-[var(--text-primary)]">{t('pv.whoAreYou', '¿Quién sos?')}</h2>
-                <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                <p className="text-xs text-white mt-0.5">
                   {t('pv.pickCharHint', 'ElegÃ­ tu personaje para ver tu ficha durante la sesiÃ³n.')}
                 </p>
               </div>
@@ -1768,7 +1792,7 @@ export default function PlayerView() {
                     {p.model_path ? (
                       <div className="w-10 h-10 rounded-full overflow-hidden border border-[var(--bg-tertiary)] bg-[var(--bg-tertiary)] shrink-0">
                         <Suspense fallback={
-                          <div className="w-full h-full flex items-center justify-center text-[8px] text-[var(--text-secondary)]">3D</div>
+                          <div className="w-full h-full flex items-center justify-center text-[8px] text-white">3D</div>
                         }>
                           <Canvas camera={{ position: [0, 0.5, 2], fov: 35 }}>
                             <ambientLight intensity={1.2} />
@@ -1790,7 +1814,7 @@ export default function PlayerView() {
                     )}
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-[var(--text-primary)] truncate">{p.name}</p>
-                  <p className="text-[10px] text-[var(--text-secondary)] truncate">
+                  <p className="text-[10px] text-white truncate">
                         {[p.race, p.class_name].filter(Boolean).join(' · ')}
                       </p>
                     </div>
@@ -1800,7 +1824,7 @@ export default function PlayerView() {
               <button
                 type="button"
                 onClick={chooseSpectator}
-                className="w-full py-2 rounded-lg border border-[var(--bg-tertiary)] text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] transition-colors"
+                className="w-full py-2 rounded-lg border border-[var(--bg-tertiary)] text-xs text-white hover:text-white hover:border-[var(--accent)] transition-colors"
               >
                 {t('pv.enterSpectator', 'Entrar como espectador')}
               </button>
@@ -1877,7 +1901,7 @@ export default function PlayerView() {
                   <p className="text-sm font-semibold text-[var(--text-primary)] leading-tight">
                     {grimorioDetail.name}
                   </p>
-                  <p className="text-[10px] text-[var(--text-secondary)] mt-0.5">
+                  <p className="text-[10px] text-white mt-0.5">
                     Lv{grimorioDetail.level} · {grimorioDetail.cost_pm} PM
                     {grimorioDetail.audio_path && (
                       <span className="ml-1.5" title={t('pv.hasSound', 'Tiene sonido: suena al usar')}>
@@ -1889,14 +1913,14 @@ export default function PlayerView() {
                 <button
                   type="button"
                   onClick={() => setGrimorioDetail(null)}
-                  className="shrink-0 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                  className="shrink-0 text-white hover:text-white transition-colors"
                   aria-label={t('pv.closeGrimorio', 'Cerrar Grimorio')}
                 >
                   âœ•
                 </button>
               </div>
               <div className="h-px bg-[var(--bg-tertiary)]" />
-              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+              <p className="text-xs text-white leading-relaxed">
                 {grimorioDetail.description || t('pv.noDescription', 'Sin descripciÃ³n.')}
               </p>
               <button
