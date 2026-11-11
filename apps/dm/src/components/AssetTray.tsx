@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { Upload, Image, Film, Box, Star, Trash2 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/Dialog';
+import { Button } from '@/components/ui/Button';
 
 interface Asset {
   asset_id: string;
@@ -19,6 +28,7 @@ interface AssetTrayProps {
 export default function AssetTray({ campaignId, onAssetDragStart }: AssetTrayProps) {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Asset | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const loadAssets = useCallback(async () => {
@@ -56,7 +66,8 @@ export default function AssetTray({ campaignId, onAssetDragStart }: AssetTrayPro
   };
 
   return (
-    <div className="space-y-2">
+    <>
+      <div className="space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-[10px] text-white font-bold uppercase tracking-wide">Assets</span>
         <button
@@ -102,13 +113,9 @@ export default function AssetTray({ campaignId, onAssetDragStart }: AssetTrayPro
                 <Star size={10} fill={a.favorite ? 'currentColor' : 'none'} />
               </button>
               <button
-                onClick={async (e) => {
+                onClick={(e) => {
                   e.stopPropagation();
-                  if (!confirm('¿Eliminar asset?')) return;
-                  try {
-                    await api.campaigns.deleteAsset(campaignId, a.asset_id);
-                    await loadAssets();
-                  } catch { /* best-effort */ }
+                  setDeleteTarget(a);
                 }}
                 className="p-0.5 rounded bg-black/50 text-white hover:text-red-400"
                 title="Eliminar"
@@ -123,5 +130,32 @@ export default function AssetTray({ campaignId, onAssetDragStart }: AssetTrayPro
         <p className="text-[10px] text-[var(--text-secondary)]">Sin assets. Subí uno.</p>
       )}
     </div>
+
+    <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Eliminar asset</DialogTitle>
+          <DialogDescription>
+            ¿Eliminar "{deleteTarget?.name}"? Esta acción no se puede deshacer.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancelar</Button>
+          <Button
+            onClick={async () => {
+              if (!deleteTarget) return;
+              try {
+                await api.campaigns.deleteAsset(campaignId, deleteTarget.asset_id);
+                await loadAssets();
+              } catch { /* best-effort */ }
+              setDeleteTarget(null);
+            }}
+          >
+            Eliminar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
