@@ -150,8 +150,10 @@ export default function AssetTray({ campaignId }: AssetTrayProps) {
             >
               {a.type === 'image' ? (
                 <img src={a.url} alt={a.name} className="w-8 h-8 object-cover rounded" />
-              ) : (
-                iconFor(a.type)
+            ) : a.type === 'video' ? (
+              <video src={a.url} className="w-8 h-8 object-cover rounded" muted preload="metadata" />
+            ) : (
+              iconFor(a.type)
               )}
               <span className="truncate w-full text-center">{a.name}</span>
               <div className="absolute top-0 right-0 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
