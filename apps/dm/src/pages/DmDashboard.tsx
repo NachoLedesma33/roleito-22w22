@@ -2545,8 +2545,6 @@ const startFogMode = useCallback(() => {
             >
               <span className="flex-1 text-left">Marcar</span>
             </button>
-            <div className="border-t border-[var(--bg-tertiary)] my-1" />
-            <AssetTray campaignId={campaignId!} />
             <button
               onClick={() => { setMeasureMode(true); setMeasureA(null); setMeasureB(null); }}
               className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
@@ -2793,6 +2791,13 @@ const startFogMode = useCallback(() => {
             </Link>
           </div>
         </HudPanel>
+
+        {/* Asset Tray — panel dedicado para assets 2D/3D */}
+        {campaignId && (
+          <HudPanel title="Assets" panelId="dm-assets" onClose={() => {}} hideClose defaultX={8} defaultY={320} defaultWidth={200} defaultHeight={300} minWidth={180}>
+            <AssetTray campaignId={campaignId} />
+          </HudPanel>
+        )}
 
         {/* Hints de modo de dibujo + luz seleccionada — contextual arriba-centro */}
         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex flex-wrap items-center justify-center gap-2 max-w-[70%] pointer-events-none">
