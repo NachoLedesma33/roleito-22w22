@@ -312,8 +312,9 @@ async def claim_character(
     ch = result.scalar_one_or_none()
     if not ch:
         raise HTTPException(status_code=404, detail="Character not found")
-    if ch.claimed_by and ch.claimed_by != data.player_token:
-        raise HTTPException(status_code=409, detail="Character already claimed")
+    # Permitir re-claim: si el personaje está tomado por otro token, el nuevo
+    # jugador lo toma (exclusividad = último gana). Evita que personajes queden
+    # bloqueados por tokens de sesiones anteriores.
     ch.claimed_by = data.player_token
     await db.commit()
     return {"ok": True, "claimed_by": ch.claimed_by}
