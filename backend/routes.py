@@ -32,7 +32,7 @@ from models import (
     SceneReveal,
     LightRequest,
 )
-from services.assets import save_campaign_file
+from services.assets import remove_asset_file, save_campaign_file
 from schemas import (
     BulkDeleteRequest,
     BulkExportRequest,
@@ -456,10 +456,46 @@ async def list_assets(
             "type": a.asset_type or "image",
             "url": url,
             "size": 0,
+            "favorite": bool(a.favorite),
         })
     return {"assets": out}
 
 
+
+
+@campaigns_router.delete("/campaigns/{campaign_id}/assets/{asset_id}")
+async def delete_asset(
+    campaign_id: str,
+    asset_id: str,
+    db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+):
+    """Borra un asset (registro + archivo)."""
+    result = await db.execute(select(Asset).where(Asset.id == asset_id, Asset.campaign_id == campaign_id))
+    asset = result.scalar_one_or_none()
+    if not asset:
+        raise HTTPException(status_code=404, detail="asset not found")
+    remove_asset_file(asset.file_path)
+    await db.delete(asset)
+    await db.commit()
+    return {"ok": True}
+
+
+@campaigns_router.put("/campaigns/{campaign_id}/assets/{asset_id}/favorite")
+async def toggle_favorite(
+    campaign_id: str,
+    asset_id: str,
+    db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+):
+    """Toggle favorite flag on an asset."""
+    result = await db.execute(select(Asset).where(Asset.id == asset_id, Asset.campaign_id == campaign_id))
+    asset = result.scalar_one_or_none()
+    if not asset:
+        raise HTTPException(status_code=404, detail="asset not found")
+    asset.favorite = not asset.favorite
+    await db.commit()
+    return {"asset_id": asset.id, "favorite": asset.favorite}
 
 class VfxRequest(BaseModel):
     type: str

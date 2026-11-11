@@ -685,7 +685,11 @@ export const api = {
       });
     },
     listAssets: (campaignId: string) =>
-      request<{ assets: Array<{ asset_id: string; name: string; type: string; url: string; size: number }> }>(`/campaigns/${campaignId}/assets`),
+      request<{ assets: Array<{ asset_id: string; name: string; type: string; url: string; size: number; favorite?: boolean }> }>(`/campaigns/${campaignId}/assets`),
+    deleteAsset: (campaignId: string, assetId: string) =>
+      request<{ ok: boolean }>(`/campaigns/${campaignId}/assets/${assetId}`, { method: 'DELETE' }),
+    toggleFavorite: (campaignId: string, assetId: string) =>
+      request<{ asset_id: string; favorite: boolean }>(`/campaigns/${campaignId}/assets/${assetId}/favorite`, { method: 'PUT' }),
     placeMarkerByInvite: (code: string, data: { x: number; z: number; color?: string; ttl_ms?: number }) =>
       request<{ ok: boolean }>(`/campaigns/invite/${code}/marker`, { method: 'POST', body: JSON.stringify(data) }),
     placeVfx: (campaignId: string, data: { type: string; from_x: number; from_z: number; to_x: number; to_z: number }) =>

@@ -265,6 +265,7 @@ class Asset(Base):
     name = Column(String, nullable=False)
     file_path = Column(String, nullable=False)
     asset_type = Column(String, default="image")
+    favorite = Column(Boolean, default=False)
     entity_type = Column(String, nullable=True)
     entity_id = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)

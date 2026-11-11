@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
-import { Upload, Image, Film, Box } from 'lucide-react';
+import { Upload, Image, Film, Box, Star, Trash2 } from 'lucide-react';
 
 interface Asset {
   asset_id: string;
@@ -8,6 +8,7 @@ interface Asset {
   type: string;
   url: string;
   size: number;
+  favorite?: boolean;
 }
 
 interface AssetTrayProps {
@@ -69,7 +70,7 @@ export default function AssetTray({ campaignId, onAssetDragStart }: AssetTrayPro
       <input ref={fileInput} type="file" className="hidden" onChange={handleUpload} accept="image/*,video/*,.glb,.gltf,.fbx" />
       {loading && <p className="text-[10px] text-[var(--text-secondary)]">Cargando...</p>}
       <div className="grid grid-cols-3 gap-1 max-h-40 overflow-y-auto">
-        {assets.map((a) => (
+        {[...assets].sort((a, b) => (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0)).map((a) => (
           <div
             key={a.asset_id}
             draggable
@@ -77,7 +78,7 @@ export default function AssetTray({ campaignId, onAssetDragStart }: AssetTrayPro
               e.dataTransfer.setData('application/json', JSON.stringify(a));
               onAssetDragStart?.(a);
             }}
-            className="flex flex-col items-center gap-0.5 p-1 rounded bg-[var(--bg-tertiary)] hover:bg-[var(--bg-secondary)] cursor-grab text-[9px] text-[var(--text-secondary)] truncate"
+            className="flex flex-col items-center gap-0.5 p-1 rounded bg-[var(--bg-tertiary)] hover:bg-[var(--bg-secondary)] cursor-grab text-[9px] text-white truncate relative group"
             title={a.name}
           >
             {a.type === 'image' ? (
@@ -86,6 +87,35 @@ export default function AssetTray({ campaignId, onAssetDragStart }: AssetTrayPro
               iconFor(a.type)
             )}
             <span className="truncate w-full text-center">{a.name}</span>
+            <div className="absolute top-0 right-0 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  try {
+                    await api.campaigns.toggleFavorite(campaignId, a.asset_id);
+                    await loadAssets();
+                  } catch { /* best-effort */ }
+                }}
+                className="p-0.5 rounded bg-black/50 text-white hover:text-yellow-400"
+                title="Favorito"
+              >
+                <Star size={10} fill={a.favorite ? 'currentColor' : 'none'} />
+              </button>
+              <button
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  if (!confirm('¿Eliminar asset?')) return;
+                  try {
+                    await api.campaigns.deleteAsset(campaignId, a.asset_id);
+                    await loadAssets();
+                  } catch { /* best-effort */ }
+                }}
+                className="p-0.5 rounded bg-black/50 text-white hover:text-red-400"
+                title="Eliminar"
+              >
+                <Trash2 size={10} />
+              </button>
+            </div>
           </div>
         ))}
       </div>
