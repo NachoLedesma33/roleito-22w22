@@ -55,7 +55,7 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
-    allowedHosts: HOSTS_PERMITIDOS,
+    allowedHosts: true,
     proxy: apiProxy,
   },
   // El build de produccion (`npm run build` + `npm run serve:prod`): sirve los
@@ -65,7 +65,7 @@ export default defineConfig({
   preview: {
     host: true,
     port: 5173,
-    allowedHosts: HOSTS_PERMITIDOS,
+    allowedHosts: true,
     proxy: apiProxy,
   },
 })
