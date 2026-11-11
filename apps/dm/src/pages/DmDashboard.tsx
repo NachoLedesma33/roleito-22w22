@@ -229,6 +229,7 @@ export default function DmDashboard() {
   // Los menús de clima y lighting abren con click, no con hover: en táctil el
   // hover no existe y el menú era inalcanzable.
   const [openMenu, setOpenMenu] = useState<'lighting' | 'weather' | null>(null);
+  const weatherJustClosedRef = useRef(false);
   const [showZones, setShowZones] = useState(true);
   // Aspect real del fondo (lo reporta SceneRenderer; 1 = cuadrado). Alinea
   // dibujo y colisión con el render en mapas no-cuadrados.
@@ -2642,7 +2643,19 @@ const startFogMode = useCallback(() => {
             </div>
             <div className="relative shrink-0" data-anchor="weather">
               <button
-                onClick={(e) => toggleMenu('weather', e.currentTarget)}
+                onMouseDown={() => {
+                  if (openMenu === 'weather') {
+                    weatherJustClosedRef.current = true;
+                    setOpenMenu(null);
+                  }
+                }}
+                onClick={(e) => {
+                  if (weatherJustClosedRef.current) {
+                    weatherJustClosedRef.current = false;
+                    return;
+                  }
+                  toggleMenu('weather', e.currentTarget);
+                }}
                 aria-expanded={openMenu === 'weather'}
                 aria-haspopup="menu"
                 className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--bg-tertiary)] px-2 py-1.5 text-xs text-[var(--text-secondary)] transition-colors duration-[var(--dur-fast)] hover:text-[var(--text-primary)]"
