@@ -24,6 +24,7 @@ const HOSTS_PERMITIDOS = [
   '.trycloudflare.com', // Cloudflare quick tunnel (gratis, sin cuenta)
   '.tunnelmole.net', // tunnelmole (gratis, open source, sin cuenta)
   '.ts.net', // Tailscale Funnel (gratis, URL fija)
+  'nacholedesma.tailb2c840.ts.net', // Tailscale Funnel (hostname completo)
 ];
 
 /**
