@@ -30,7 +30,7 @@ export interface DmDockProps {
 }
 
 const IDLE =
-  'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]';
+  'text-white hover:text-white hover:bg-[var(--bg-tertiary)]';
 const ACTIVE = 'bg-[var(--accent)] text-white';
 
 /**
@@ -53,7 +53,7 @@ export default function DmDock({ expanded, onExpand, groups }: DmDockProps) {
         {!expanded ? (
           <button
             onClick={onExpand}
-            className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-full text-white hover:text-white hover:bg-[var(--bg-tertiary)] transition-colors"
             title={t('dm.dmActions', 'Acciones del DM')}
             aria-label={t('dm.dmActions', 'Acciones del DM')}
           >

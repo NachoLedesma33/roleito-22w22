@@ -70,7 +70,7 @@ import AssetTray from '@/components/AssetTray';
 import ToolButton from '@/components/ui/ToolButton';
 import IconButton from '@/components/ui/IconButton';
 import { staticUrl } from '@/lib/staticUrl';
-import { Dices, Swords, NotebookPen, ClipboardList, CalendarDays, ScrollText, FolderOpen, Map as MapIcon, Bot, MessageCircle, Zap, BookOpen, StickyNote, LayoutGrid, Brush, SquareDashed, PaintBucket, Undo2, Redo2, CloudSun, Settings, ImagePlus, Wand2, Square, Mountain, ChevronDown, Users, Layers, Lightbulb, Trash, Sparkles, CircleDot, Eye, EyeOff } from 'lucide-react';
+import { Dices, Swords, NotebookPen, ClipboardList, CalendarDays, ScrollText, FolderOpen, Map as MapIcon, Bot, MessageCircle, Zap, BookOpen, StickyNote, LayoutGrid, Brush, SquareDashed, PaintBucket, Undo2, Redo2, CloudSun, Settings, ImagePlus, Wand2, Square, Mountain, ChevronDown, Users, Layers, Lightbulb, Trash, Sparkles, CircleDot, Eye, EyeOff, Package } from 'lucide-react';
 
 export default function DmDashboard() {
   const { t } = useTranslation();
@@ -2167,7 +2167,7 @@ const startFogMode = useCallback(() => {
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-black text-[var(--text-secondary)]">
+      <div className="h-screen flex items-center justify-center bg-black text-white">
         {t('dm.loadingCampaign', 'Cargando campaña...')}
       </div>
     );
@@ -2194,7 +2194,7 @@ const startFogMode = useCallback(() => {
           <>
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-1.5 rounded hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0"
+              className="p-1.5 rounded hover:bg-[var(--bg-tertiary)] text-white hover:text-white transition-colors shrink-0"
               title={t('dm.toggleSidebar', 'Alternar barra lateral')}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -2215,7 +2215,7 @@ const startFogMode = useCallback(() => {
                 </option>
               ))}
             </select>
-            <span className="text-xs text-[var(--text-secondary)] shrink-0">
+            <span className="text-xs text-white shrink-0">
               {sceneIndex}/{scenes.length}
             </span>
             <span
@@ -2269,7 +2269,7 @@ const startFogMode = useCallback(() => {
               className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${
                 activeScene?.status === 'active'
                   ? 'bg-green-600/20 text-green-400 border border-green-600/40'
-                  : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                  : 'bg-[var(--bg-tertiary)] text-white hover:text-white'
               }`}
               title={t('dm.syncTitle', 'Sincronizar esta escena con todos los jugadores')}
             >
@@ -2281,7 +2281,7 @@ const startFogMode = useCallback(() => {
               className={`shrink-0 p-1.5 rounded transition-colors ${
                 seeHiddenPlayers
                   ? 'bg-green-600/20 text-green-400 border border-green-600/40'
-                  : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-transparent'
+                  : 'bg-[var(--bg-tertiary)] text-white hover:text-white border border-transparent'
               }`}
               title={
                 seeHiddenPlayers
@@ -2352,7 +2352,7 @@ const startFogMode = useCallback(() => {
                   buildMenu.anchorFrom(e.currentTarget);
                   setBuildMenuOpen(!buildMenuOpen);
                 }}
-                className={`flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs ${drawState || zoneDraft || portalDraft || fogMode || rectFogMode || zoneFogActive || lightPlaceMode || attachLightMode ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                className={`flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs ${drawState || zoneDraft || portalDraft || fogMode || rectFogMode || zoneFogActive || lightPlaceMode || attachLightMode ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-white hover:text-white'}`}
               >
                 <Mountain aria-hidden="true" className="h-4 w-4 shrink-0" />
                 <span className="flex-1 text-left">{t('dm.build', 'Construir')}</span>
@@ -2361,43 +2361,43 @@ const startFogMode = useCallback(() => {
               <AnchoredMenu open={buildMenuOpen} rect={buildMenu.rect} anchorId="build" testId="build-menu" minWidth={180}>
                   <button
                     onClick={() => startDrawMode('wall')}
-                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawState?.mode === 'wall' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
+                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawState?.mode === 'wall' ? 'text-amber-400' : 'text-white'}`}
                   >
                     {t('dm.drawWall', 'Dibujar pared')}
                   </button>
                   <button
                     onClick={() => startDrawMode('door')}
-                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawState?.mode === 'door' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
+                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${drawState?.mode === 'door' ? 'text-amber-400' : 'text-white'}`}
                   >
                     {t('dm.placeDoor', 'Colocar puerta')}
                   </button>
                   <button
                     onClick={() => startZoneMode('rect')}
-                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${zoneDraft?.mode === 'rect' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
+                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${zoneDraft?.mode === 'rect' ? 'text-amber-400' : 'text-white'}`}
                   >
                     {t('dm.zoneRect', 'Zona (rect)')}
                   </button>
                   <button
                     onClick={() => startZoneMode('polygon')}
-                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${zoneDraft?.mode === 'polygon' ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
+                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${zoneDraft?.mode === 'polygon' ? 'text-amber-400' : 'text-white'}`}
                   >
                     {t('dm.zonePolygon', 'Zona (polígono)')}
                   </button>
                   <button
                     onClick={handleStartPortal}
-                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${portalDraft ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
+                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${portalDraft ? 'text-amber-400' : 'text-white'}`}
                   >
                     {t('dm.portalZone', 'Portal (zona↔zona)')}
                   </button>
                   <button
                     onClick={startLightPlaceMode}
-                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${lightPlaceMode ? 'text-amber-400' : 'text-[var(--text-secondary)]'}`}
+                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${lightPlaceMode ? 'text-amber-400' : 'text-white'}`}
                   >
                     {t('dm.lightPlace', 'Luz (colocar)')}
                   </button>
                   <div className="border-t border-[var(--bg-tertiary)] my-1" />
                   <div className="px-3 py-1">
-                    <p className="text-[10px] text-[var(--text-secondary)] mb-1">{t('dm.zoneColor', 'Color de zona')}</p>
+                    <p className="text-[10px] text-white mb-1">{t('dm.zoneColor', 'Color de zona')}</p>
                     <div className="flex gap-1">
                       {Object.entries(ZONE_COLORS).map(([name, hex]) => (
                         <button
@@ -2413,19 +2413,19 @@ const startFogMode = useCallback(() => {
                   <div className="flex gap-1 px-3 py-1">
                     <button
                       onClick={() => setDetectionMode('blueprint')}
-                      className={`flex-1 text-[10px] px-2 py-1 rounded transition-colors ${detectionMode === 'blueprint' ? 'bg-blue-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'}`}
+                      className={`flex-1 text-[10px] px-2 py-1 rounded transition-colors ${detectionMode === 'blueprint' ? 'bg-blue-600 text-white' : 'bg-[var(--bg-tertiary)] text-white hover:bg-[var(--bg-secondary)]'}`}
                     >
                       {t('dm.detectionBlueprint', 'Plano')}
                     </button>
                     <button
                       onClick={() => setDetectionMode('textured')}
-                      className={`flex-1 text-[10px] px-2 py-1 rounded transition-colors ${detectionMode === 'textured' ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'}`}
+                      className={`flex-1 text-[10px] px-2 py-1 rounded transition-colors ${detectionMode === 'textured' ? 'bg-amber-600 text-white' : 'bg-[var(--bg-tertiary)] text-white hover:bg-[var(--bg-secondary)]'}`}
                     >
                       {t('dm.detectionTextured', 'Texturizado')}
                     </button>
                     <button
                       onClick={toggleAi}
-                      className={`flex-1 text-[10px] px-2 py-1 rounded transition-colors ${useAi ? 'bg-purple-600 text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'}`}
+                      className={`flex-1 text-[10px] px-2 py-1 rounded transition-colors ${useAi ? 'bg-purple-600 text-white' : 'bg-[var(--bg-tertiary)] text-white hover:bg-[var(--bg-secondary)]'}`}
                     >
                       {t('dm.detectionAi', 'IA')}
                     </button>
@@ -2433,7 +2433,7 @@ const startFogMode = useCallback(() => {
                   <button
                     onClick={handleDetectClick}
                     disabled={detectingWalls}
-                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${detectingWalls ? 'text-amber-400 animate-pulse' : 'text-[var(--text-secondary)]'}`}
+                    className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${detectingWalls ? 'text-amber-400 animate-pulse' : 'text-white'}`}
                   >
                     {detectingWalls ? t('dm.detecting', 'Detectando...') : t('dm.detectWalls', 'Detectar paredes')}
                   </button>
@@ -2441,7 +2441,7 @@ const startFogMode = useCallback(() => {
                     <button
                       onClick={handleDetectAllClick}
                       disabled={detectingWalls}
-                      className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${detectingWalls ? 'text-amber-400 animate-pulse' : 'text-[var(--text-secondary)]'}`}
+                      className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${detectingWalls ? 'text-amber-400 animate-pulse' : 'text-white'}`}
                     >
                       {t('dm.detectWallsAll', 'Detectar en todas las escenas ({n})', { n: scenesConFondo.length })}
                     </button>
@@ -2468,7 +2468,7 @@ const startFogMode = useCallback(() => {
 
                   <div className="border-t border-[var(--bg-tertiary)] my-1" />
                   <div className="px-3 py-1">
-                    <p className="text-[10px] text-[var(--text-secondary)] mb-1">{t('dm.wallMaterial', 'Material de paredes')}</p>
+                    <p className="text-[10px] text-white mb-1">{t('dm.wallMaterial', 'Material de paredes')}</p>
                     <div className="flex gap-1">
                       {(['stone', 'wood', 'metal', 'glass', 'magic'] as const).map((m) => (
                         <button
@@ -2482,7 +2482,7 @@ const startFogMode = useCallback(() => {
                     </div>
                   </div>
                   <div className="px-3 py-1">
-                    <p className="text-[10px] text-[var(--text-secondary)] mb-1">{t('dm.doorMaterial', 'Material de puertas')}</p>
+                    <p className="text-[10px] text-white mb-1">{t('dm.doorMaterial', 'Material de puertas')}</p>
                     <div className="flex gap-1">
                       {(['wood', 'metal', 'glass', 'magic'] as const).map((m) => (
                         <button
@@ -2504,7 +2504,7 @@ const startFogMode = useCallback(() => {
                   vfxMenu.anchorFrom(e.currentTarget);
                   setVfxMenuOpen(!vfxMenuOpen);
                 }}
-                className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] text-white hover:text-white"
               >
                 <span className="flex-1 text-left">Habilidades VFX</span>
               </button>
@@ -2513,7 +2513,7 @@ const startFogMode = useCallback(() => {
                   <button
                     key={type}
                     onClick={() => { setPendingVfx(type); setVfxMenuOpen(false); }}
-                    className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-[var(--text-secondary)]"
+                    className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-white"
                   >
                     {type === 'fire' ? 'Fuego' : type === 'ice' ? 'Hielo' : type === 'lightning' ? 'Rayo' : type === 'heal' ? 'Sanación' : 'Vacío'}
                   </button>
@@ -2530,7 +2530,7 @@ const startFogMode = useCallback(() => {
                 a.download = `roleito-map-${Date.now()}.png`;
                 a.click();
               }}
-              className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] text-white hover:text-white"
               title="Exportar mapa como PNG"
             >
               <span className="flex-1 text-left">Exportar mapa</span>
@@ -2541,30 +2541,24 @@ const startFogMode = useCallback(() => {
                 const z = selectedTokenId ? (sceneChars.find((s) => s.id === selectedTokenId)?.z ?? 0) : 0;
                 api.campaigns.placeMarker(campaignId!, { x, z, color: '#facc15', ttl_ms: 3000 }).catch(() => {});
               }}
-              className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] text-white hover:text-white"
               title="Colocar marcador en el mapa"
             >
               <span className="flex-1 text-left">Marcar</span>
             </button>
             <button
-              onClick={() => setAssetsPanelOpen((v) => !v)}
-              className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] text-white font-bold hover:text-white"
-            >
-              <span className="flex-1 text-left">Assets</span>
-            </button>
-            <button
               onClick={() => { setMeasureMode(true); setMeasureA(null); setMeasureB(null); }}
-              className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] text-white hover:text-white"
               title="Medir distancia entre dos puntos"
             >
               <span className="flex-1 text-left">Medir{measureA && !measureB ? ' (punto A)' : ''}</span>
             </button>
-            <p className="px-3 py-1 text-[10px] text-[var(--text-secondary)] uppercase tracking-wide">AoE</p>
+            <p className="px-3 py-1 text-[10px] text-white uppercase tracking-wide">AoE</p>
             {(['circle', 'cone', 'cube'] as const).map((shape) => (
               <button
                 key={shape}
                 onClick={() => { setAoeMode((prev) => (prev === shape ? null : shape)); setMeasureMode(false); }}
-                className={`flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs ${aoeMode === shape ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                className={`flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs ${aoeMode === shape ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-white hover:text-white'}`}
               >
                 <span className="flex-1 text-left">{shape === 'circle' ? 'Círculo' : shape === 'cone' ? 'Cono' : 'Cubo'}</span>
               </button>
@@ -2604,7 +2598,7 @@ const startFogMode = useCallback(() => {
             )}
             <button
               onClick={() => fileInput.current?.click()}
-              className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--bg-tertiary)] px-2 py-1.5 text-xs text-[var(--text-secondary)] transition-colors duration-[var(--dur-fast)] hover:text-[var(--text-primary)] shrink-0"
+              className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--bg-tertiary)] px-2 py-1.5 text-xs text-white transition-colors duration-[var(--dur-fast)] hover:text-white shrink-0"
               title={t('dm.uploadBgTitle', 'Subir fondo de mapa')}
             >
               <ImagePlus aria-hidden="true" className="h-4 w-4 shrink-0" />
@@ -2614,7 +2608,7 @@ const startFogMode = useCallback(() => {
             <button
               onClick={handleClassifyBackground}
               disabled={!activeScene?.background_path}
-              className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--bg-tertiary)] px-2 py-1.5 text-xs text-[var(--text-secondary)] transition-colors duration-[var(--dur-fast)] hover:text-[var(--text-primary)] shrink-0 disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--bg-tertiary)] px-2 py-1.5 text-xs text-white transition-colors duration-[var(--dur-fast)] hover:text-white shrink-0 disabled:cursor-not-allowed disabled:opacity-40"
               title={t('dm.suggestBgTitle', 'Sugerir fondo para el mapa actual')}
             >
               <Wand2 aria-hidden="true" className="h-4 w-4 shrink-0" />
@@ -2626,7 +2620,7 @@ const startFogMode = useCallback(() => {
                 aria-expanded={openMenu === 'lighting'}
                 aria-haspopup="menu"
                 data-testid="lighting-select"
-                className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--bg-tertiary)] px-2 py-1.5 text-xs text-[var(--text-secondary)] transition-colors duration-[var(--dur-fast)] hover:text-[var(--text-primary)]"
+                className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--bg-tertiary)] px-2 py-1.5 text-xs text-white transition-colors duration-[var(--dur-fast)] hover:text-white"
               >
                 <Square aria-hidden="true" className="h-4 w-4 shrink-0" />
                 <span className="flex-1 text-left">
@@ -2641,7 +2635,7 @@ const startFogMode = useCallback(() => {
                     role="menuitem"
                     onClick={() => handleToggleLighting(mode)}
                     className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${
-                      activeScene?.lighting === mode ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'
+                      activeScene?.lighting === mode ? 'text-[var(--accent)]' : 'text-white'
                     }`}
                   >
                     {{ neutral: t('dm.lightNeutral', 'Neutra'), dark: t('dm.lightDark', 'Oscura'), dim: t('dm.lightDim', 'Tenue'), bright: t('dm.lightBright', 'Brillante'), torchlight: t('dm.lightTorch', 'Antorcha') }[mode] || mode}
@@ -2666,7 +2660,7 @@ const startFogMode = useCallback(() => {
                 }}
                 aria-expanded={openMenu === 'weather'}
                 aria-haspopup="menu"
-                className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--bg-tertiary)] px-2 py-1.5 text-xs text-[var(--text-secondary)] transition-colors duration-[var(--dur-fast)] hover:text-[var(--text-primary)]"
+                className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--bg-tertiary)] px-2 py-1.5 text-xs text-white transition-colors duration-[var(--dur-fast)] hover:text-white"
                 data-testid="weather-select"
                 title={t('dm.weatherTitle', 'Clima de la escena')}
               >
@@ -2681,7 +2675,7 @@ const startFogMode = useCallback(() => {
                   role="menuitem"
                   onClick={() => handleChangeWeather(null)}
                   className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${
-                    !activeScene?.weather ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'
+                    !activeScene?.weather ? 'text-[var(--accent)]' : 'text-white'
                   }`}
                 >
                   {t('dm.weather.none', WEATHER_NONE_LABEL)}
@@ -2691,7 +2685,7 @@ const startFogMode = useCallback(() => {
                   if (!entries.length) return null;
                   return (
                     <div key={kind}>
-                      <div className="px-3 pt-2 pb-0.5 text-[10px] uppercase tracking-wide text-[var(--text-secondary)] opacity-60">
+                      <div className="px-3 pt-2 pb-0.5 text-[10px] uppercase tracking-wide text-white opacity-60">
                         {t(`dm.weather.kind.${kind}`, WEATHER_KIND_LABEL[kind])}
                       </div>
                       {entries.map(([key, meta]) => (
@@ -2700,7 +2694,7 @@ const startFogMode = useCallback(() => {
                           role="menuitem"
                           onClick={() => handleChangeWeather(key)}
                           className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${
-                            activeScene?.weather === key ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'
+                            activeScene?.weather === key ? 'text-[var(--accent)]' : 'text-white'
                           }`}
                         >
                           {t(`dm.weather.${key}`, meta.label)}
@@ -2714,7 +2708,7 @@ const startFogMode = useCallback(() => {
                     className="border-t border-[var(--bg-tertiary)] mt-0.5 px-3 pt-1.5 pb-2"
                     onPointerDown={(e) => e.stopPropagation()}
                   >
-                    <div className="flex items-center justify-between text-[10px] text-[var(--text-secondary)] mb-1">
+                    <div className="flex items-center justify-between text-[10px] text-white mb-1">
                       <span>{t('dm.weatherIntensity', 'Intensidad')}</span>
                       <span className="text-[var(--accent)]" data-testid="weather-intensity-value">
                         {weatherIntensityK.toFixed(2)}×
@@ -2731,7 +2725,7 @@ const startFogMode = useCallback(() => {
                       className="w-full h-1 cursor-pointer"
                       title={t('dm.weatherIntensityTitle', 'Intensidad del clima ({{v}}x)', { v: weatherIntensityK.toFixed(2) })}
                     />
-                    <div className="flex justify-between text-[9px] text-[var(--text-secondary)] mt-0.5">
+                    <div className="flex justify-between text-[9px] text-white mt-0.5">
                       <span>{t('dm.weatherMild', 'Tenue')}</span>
                       <span>{t('dm.weatherStrong', 'Fuerte')}</span>
                       <span>{t('dm.weatherTorrential', 'Torrencial')}</span>
@@ -2747,7 +2741,7 @@ const startFogMode = useCallback(() => {
                     mapMenu.anchorFrom(e.currentTarget);
                     setShowMapMenu((v) => !v);
                   }}
-                  className={`w-full text-[10px] px-1.5 py-1 rounded transition-colors ${showMapMenu ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)]' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                  className={`w-full text-[10px] px-1.5 py-1 rounded transition-colors ${showMapMenu ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)]' : 'bg-[var(--bg-tertiary)] text-white hover:text-white'}`}
                 >
                   {t('dm.mapBtn', 'Mapa ▾')}
                 </button>
@@ -2777,7 +2771,7 @@ const startFogMode = useCallback(() => {
                           setShowMapMenu(false);
                         }}
                         className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors ${
-                          activeScene?.map_id === m.id ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'
+                          activeScene?.map_id === m.id ? 'text-[var(--accent)]' : 'text-white'
                         }`}
                       >
                         {activeScene?.map_id === m.id ? '✓ ' : ''}{m.name}
@@ -2790,7 +2784,7 @@ const startFogMode = useCallback(() => {
             )}
             <Link
               to={`/campaigns/${campaignId}/scenes`}
-              className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0"
+              className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-white hover:text-white transition-colors shrink-0"
               title={t('dm.sceneMgmtTitle', 'Gestión de escenas')}
               aria-label={t('dm.sceneMgmtTitle', 'Gestión de escenas')}
             >
@@ -2845,7 +2839,7 @@ const startFogMode = useCallback(() => {
                 className="h-1 w-20 cursor-pointer"
                 title={t('dm.brushSize', 'Tamaño del pincel')}
               />
-              <span className="w-8 text-[11px] tabular-nums text-[var(--text-secondary)]">
+              <span className="w-8 text-[11px] tabular-nums text-white">
                 {(fogMode.radius * 100).toFixed(0)}%
               </span>
             </div>
@@ -2899,7 +2893,7 @@ const startFogMode = useCallback(() => {
                 onClick={() => setLightPlaceMode({ ...lightPlaceMode, fx: undefined, fxRadius: undefined })}
                 title={t('dm.fxNone', 'Sin fuego: solo la luz')}
                 data-testid="light-fx-none"
-                className={`w-6 h-5 rounded text-[10px] transition-colors ${!lightPlaceMode.fx ? 'bg-amber-600 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                className={`w-6 h-5 rounded text-[10px] transition-colors ${!lightPlaceMode.fx ? 'bg-amber-600 text-white' : 'text-white hover:text-white'}`}
               >
                 —
               </button>
@@ -2907,7 +2901,7 @@ const startFogMode = useCallback(() => {
                 onClick={() => setLightPlaceMode({ ...lightPlaceMode, fx: 'flame' })}
                 title={t('dm.fxFlame', 'Llama (la misma del status Ardiendo)')}
                 data-testid="light-fx-flame"
-                className={`w-6 h-5 rounded text-[10px] transition-colors ${lightPlaceMode.fx === 'flame' ? 'bg-orange-600 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                className={`w-6 h-5 rounded text-[10px] transition-colors ${lightPlaceMode.fx === 'flame' ? 'bg-orange-600 text-white' : 'text-white hover:text-white'}`}
               >
                 🔥
               </button>
@@ -2915,7 +2909,7 @@ const startFogMode = useCallback(() => {
                 onClick={() => setLightPlaceMode({ ...lightPlaceMode, fx: 'embers' })}
                 title={t('dm.fxEmbers', 'Solo brasas ascendentes')}
                 data-testid="light-fx-embers"
-                className={`w-6 h-5 rounded text-[10px] transition-colors ${lightPlaceMode.fx === 'embers' ? 'bg-orange-600 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                className={`w-6 h-5 rounded text-[10px] transition-colors ${lightPlaceMode.fx === 'embers' ? 'bg-orange-600 text-white' : 'text-white hover:text-white'}`}
               >
                 ✨
               </button>
@@ -3049,7 +3043,7 @@ const startFogMode = useCallback(() => {
                 />
                 <span className="w-8">{(selectedLight.source.falloff ?? (selectedLight.source.mode === 'hard' ? 1 : 0.6)).toFixed(2)}</span>
               </label>
-              <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
+              <label className="flex items-center gap-1 text-[10px] text-white">
                 <span
                   onClick={() => handleLightSourceChange(selectedLight.source.flicker?.enabled
                     ? { flicker: undefined }
@@ -3085,7 +3079,7 @@ const startFogMode = useCallback(() => {
                   </>
                 )}
               </label>
-              <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
+              <label className="flex items-center gap-1 text-[10px] text-white">
                 <span
                   onClick={() => handleLightSourceChange(selectedLight.source.pulse?.enabled
                     ? { pulse: undefined }
@@ -3123,7 +3117,7 @@ const startFogMode = useCallback(() => {
               </label>
               {selectedLight.source.mode === 'directional' && (
                 <>
-                  <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
+                  <label className="flex items-center gap-1 text-[10px] text-white">
                     {t('dm.lightAngle', 'angle')}
                     <input
                       type="range"
@@ -3137,7 +3131,7 @@ const startFogMode = useCallback(() => {
                     />
                     <span className="w-8">{selectedLight.source.angle ?? 90}°</span>
                   </label>
-                  <label className="flex items-center gap-1 text-[10px] text-[var(--text-secondary)]">
+                  <label className="flex items-center gap-1 text-[10px] text-white">
                     {t('dm.lightDir', 'dir')}
                     <input
                       type="range"
@@ -3167,7 +3161,7 @@ const startFogMode = useCallback(() => {
           defaultWidth={360}
           defaultHeight={380}
         >
-          <div className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--text-secondary)]">
+          <div className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-white">
             {t('dm.layers', 'Capas')}
           </div>
           <ToolButton
@@ -3179,7 +3173,7 @@ const startFogMode = useCallback(() => {
             onClick={() => setShowZones((v) => !v)}
           />
           <div className="my-2 border-t border-[var(--bg-tertiary)]" />
-          <div className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--text-secondary)]">
+          <div className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-white">
             {t('dm.fog', 'Niebla')}
           </div>
           <ToolButton
@@ -3228,6 +3222,7 @@ const startFogMode = useCallback(() => {
                 ? [{ key: 'map', label: t('dm.openMapTitle', 'Abrir mapa'), icon: MapIcon, onClick: openActiveSceneMap }]
                 : []),
               { key: 'fichas', label: t('dm.tokenTrayTitle', 'Fichas'), icon: Users, onClick: () => setShowTokenTray((v) => !v), active: showTokenTray, testId: 'fichas-toggle' },
+               { key: 'assets', label: 'Assets', icon: Package, onClick: () => setAssetsPanelOpen((v) => !v), active: assetsPanelOpen },
             ],
             [
               { key: 'ai', label: t('dm.aiPanelTitle', 'Configuración de IA'), icon: Bot, onClick: () => setShowAIPanel(!showAIPanel), active: showAIPanel, testId: 'ai-panel-button' },
@@ -3245,7 +3240,7 @@ const startFogMode = useCallback(() => {
             data-testid="detect-review"
             className="absolute bottom-16 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] shadow-xl text-xs whitespace-nowrap"
           >
-            <span className="text-[var(--text-secondary)]">
+            <span className="text-white">
               {t('dm.detectReviewTitle', 'Revisar detección')}:{' '}
               {t('dm.detectReviewCounts', '{walls} muros · {doors} puertas · {rooms} salas', {
                 walls: detectProposal.walls,
@@ -3265,7 +3260,7 @@ const startFogMode = useCallback(() => {
               type="button"
               data-testid="detect-discard"
               onClick={handleDetectDiscard}
-              className="px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+              className="px-2 py-1 rounded bg-[var(--bg-tertiary)] text-white hover:text-white transition-colors"
             >
               {t('dm.detectDiscard', 'Descartar')}
             </button>
@@ -3283,7 +3278,7 @@ const startFogMode = useCallback(() => {
                 <Link
                   to={`/campaigns/${campaignId}`}
                   onClick={() => setSidebarOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 rounded text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/50 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 rounded text-sm text-white hover:text-white hover:bg-[var(--bg-tertiary)]/50 transition-colors"
                 >
                   <span className="text-xs opacity-60">◆</span>
                   {t('dm.sideSummary', 'Resumen')}
@@ -3291,7 +3286,7 @@ const startFogMode = useCallback(() => {
                 <Link
                   to={`/campaigns/${campaignId}/characters`}
                   onClick={() => setSidebarOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 rounded text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/50 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 rounded text-sm text-white hover:text-white hover:bg-[var(--bg-tertiary)]/50 transition-colors"
                 >
                   <span className="text-xs opacity-60">♦</span>
                   {t('dm.sideCharacters', 'Personajes')}
@@ -3299,7 +3294,7 @@ const startFogMode = useCallback(() => {
                 <Link
                   to={`/campaigns/${campaignId}/sessions`}
                   onClick={() => setSidebarOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 rounded text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/50 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 rounded text-sm text-white hover:text-white hover:bg-[var(--bg-tertiary)]/50 transition-colors"
                 >
                   <span className="text-xs opacity-60">♠</span>
                   {t('dm.sideSessions', 'Sesiones')}
@@ -3307,7 +3302,7 @@ const startFogMode = useCallback(() => {
                 <Link
                   to={`/campaigns/${campaignId}/scenes`}
                   onClick={() => setSidebarOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 rounded text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/50 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 rounded text-sm text-white hover:text-white hover:bg-[var(--bg-tertiary)]/50 transition-colors"
                 >
                   <span className="text-xs opacity-60">▣</span>
                   {t('dm.sideScenes', 'Escenas')}
@@ -3315,7 +3310,7 @@ const startFogMode = useCallback(() => {
                 <Link
                   to={`/campaigns/${campaignId}/events`}
                   onClick={() => setSidebarOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 rounded text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/50 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 rounded text-sm text-white hover:text-white hover:bg-[var(--bg-tertiary)]/50 transition-colors"
                 >
                   <span className="text-xs opacity-60">•</span>
                   {t('dm.sideEvents', 'Eventos')}
@@ -3323,7 +3318,7 @@ const startFogMode = useCallback(() => {
                 <Link
                   to={`/campaigns/${campaignId}/players`}
                   onClick={() => setSidebarOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 rounded text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/50 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 rounded text-sm text-white hover:text-white hover:bg-[var(--bg-tertiary)]/50 transition-colors"
                 >
                   <span className="text-xs opacity-60">○</span>
                   {t('dm.sidePlayers', 'Jugadores')}
@@ -3331,7 +3326,7 @@ const startFogMode = useCallback(() => {
                 <Link
                   to={`/campaigns/${campaignId}/maps`}
                   onClick={() => setSidebarOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 rounded text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/50 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 rounded text-sm text-white hover:text-white hover:bg-[var(--bg-tertiary)]/50 transition-colors"
                 >
                   <span className="text-xs opacity-60">◇</span>
                   {t('dm.sideMaps', 'Imágenes')}
@@ -3339,14 +3334,14 @@ const startFogMode = useCallback(() => {
                 <Link
                   to={`/campaigns/${campaignId}/assets`}
                   onClick={() => setSidebarOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 rounded text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/50 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 rounded text-sm text-white hover:text-white hover:bg-[var(--bg-tertiary)]/50 transition-colors"
                 >
                   <span className="text-xs opacity-60">□</span>
                   {t('dm.sideAssets', 'Recursos')}
                 </Link>
               </nav>
               <div className="px-4 py-3 border-t border-[var(--bg-tertiary)]">
-                <p className="text-[10px] text-[var(--text-secondary)] opacity-60">{t('dm.dmPanel', 'Panel del DM')}</p>
+                <p className="text-[10px] text-white opacity-60">{t('dm.dmPanel', 'Panel del DM')}</p>
               </div>
             </aside>
           </>
@@ -3365,7 +3360,7 @@ const startFogMode = useCallback(() => {
           )}
           {activeScene?.background_path ? (
             <Suspense fallback={
-              <div className="w-full h-full flex items-center justify-center text-[var(--text-secondary)]">
+              <div className="w-full h-full flex items-center justify-center text-white">
                 {t('dm.loadingScene3d', 'Cargando escena 3D...')}
               </div>
             }>
@@ -3476,7 +3471,7 @@ const startFogMode = useCallback(() => {
               />
             </Suspense>
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-[var(--text-secondary)]">
+            <div className="w-full h-full flex items-center justify-center text-white">
               <div className="text-center">
                 <p className="text-lg mb-2">{t('dm.noSceneSelected', 'Sin escena seleccionada')}</p>
                 <p className="text-sm">
@@ -3492,7 +3487,7 @@ const startFogMode = useCallback(() => {
               <p className="text-xs font-medium text-[var(--text-primary)] mb-1.5 px-1">{t('dm.lightRequests', '🕯️ Peticiones de luz')}</p>
               <ul className="space-y-1.5">
                 {lightRequests.map((r) => (
-                  <li key={r.id} className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+                  <li key={r.id} className="flex items-center gap-2 text-xs text-white">
                     <span className="truncate flex-1" title={t('dm.lightRequestTitle', '{{name}} pide luz', { name: r.character_name })}>{r.character_name}</span>
                     <button onClick={() => handleGrantLight(r)} className="px-1.5 py-0.5 rounded bg-emerald-600/80 text-white hover:bg-emerald-500 transition-colors" title={t('dm.grantTorch', 'Entregar antorcha')}>🔦</button>
                     <button onClick={() => handleDenyLight(r)} className="px-1.5 py-0.5 rounded bg-gray-700 text-secondary hover:text-primary transition-colors" title={t('dm.deny', 'Denegar')}>✕</button>
@@ -3528,11 +3523,11 @@ const startFogMode = useCallback(() => {
               );
             })()}
             {distanceFrom && !distanceTo && (
-              <div className="mb-2 px-2 py-1 bg-[var(--bg-tertiary)] rounded text-[10px] text-[var(--text-secondary)] text-center">
+              <div className="mb-2 px-2 py-1 bg-[var(--bg-tertiary)] rounded text-[10px] text-white text-center">
                 {t('dm.measureHint', 'Shift+clic en otro token para medir')}
               </div>
             )}
-            <p className="text-[10px] text-[var(--text-secondary)] mb-1 px-1">{t('dm.onScene', 'En escena ({{n}})', { n: sceneChars.length })}</p>
+            <p className="text-[10px] text-white mb-1 px-1">{t('dm.onScene', 'En escena ({{n}})', { n: sceneChars.length })}</p>
             {sceneChars.length > 0 ? (
               <div className="space-y-0.5 mb-2">
                 {sceneChars.map((sc) => {
@@ -3548,7 +3543,7 @@ const startFogMode = useCallback(() => {
                       className={`flex items-center gap-1 px-1.5 py-1 rounded text-xs transition-colors cursor-default ${
                         isSelected
                           ? 'bg-[var(--accent)]/20 text-[var(--accent)]'
-                          : 'text-[var(--text-secondary)]'
+                          : 'text-white'
                       }`}
                     >
                       <button
@@ -3587,13 +3582,13 @@ const startFogMode = useCallback(() => {
                 })}
               </div>
             ) : (
-              <p className="text-[10px] text-[var(--text-secondary)] px-1 mb-2">{t('dm.noTokens', 'Sin tokens colocados')}</p>
+              <p className="text-[10px] text-white px-1 mb-2">{t('dm.noTokens', 'Sin tokens colocados')}</p>
             )}
 
             {/* Disponibles entities to add */}
             {allEntities.filter((e) => !new Set(sceneChars.map((sc) => sc.entity_id)).has(e.id)).length > 0 && (
               <>
-                <p className="text-[10px] text-[var(--text-secondary)] mb-1 px-1">{t('dm.available', 'Disponibles')}</p>
+                <p className="text-[10px] text-white mb-1 px-1">{t('dm.available', 'Disponibles')}</p>
                 {placingToken && (
                   <p className="text-[9px] text-amber-400 mb-1 px-1">{t('dm.placeHint', 'Hacé clic en el mapa para colocar (Esc cancela)')}</p>
                 )}
@@ -3610,7 +3605,7 @@ const startFogMode = useCallback(() => {
                         }}
                         onClick={() => setPlacingToken({ entity_type: ent.type, entity_id: ent.id })}
                         className={`w-full flex items-center gap-1.5 px-1.5 py-1 rounded text-[10px] hover:bg-[var(--bg-tertiary)] transition-colors text-left ${
-                          placingToken?.entity_id === ent.id ? 'text-amber-400 bg-[var(--bg-tertiary)]' : 'text-[var(--text-secondary)]'
+                          placingToken?.entity_id === ent.id ? 'text-amber-400 bg-[var(--bg-tertiary)]' : 'text-white'
                         }`}
                       >
                         <span className="text-[var(--accent)]">+</span>
@@ -3625,7 +3620,7 @@ const startFogMode = useCallback(() => {
             {/* Recursos del DM — arrastrá al mapa para colocar */}
             {assets.length > 0 && (
               <>
-                <p className="text-[10px] text-[var(--text-secondary)] mb-1 px-1 mt-2">{t('dm.assets', 'Recursos ({{n}})', { n: assets.length })}</p>
+                <p className="text-[10px] text-white mb-1 px-1 mt-2">{t('dm.assets', 'Recursos ({{n}})', { n: assets.length })}</p>
                 <div className="grid grid-cols-4 gap-1 max-h-24 overflow-y-auto">
                   {assets.map((a) => (
                     <div
@@ -3817,7 +3812,7 @@ const startFogMode = useCallback(() => {
             {quickEditEntity?.name || t('dm.unknown', 'Desconocido')}
           </p>
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] text-[var(--text-secondary)]">{t('dm.tokenSize', 'Tamaño')}</span>
+            <span className="text-[10px] text-white">{t('dm.tokenSize', 'Tamaño')}</span>
             <span className="text-[10px] text-[var(--accent)] font-mono">{(quickEditChar.token_scale ?? 1).toFixed(1)}x</span>
           </div>
           <input
@@ -3830,7 +3825,7 @@ const startFogMode = useCallback(() => {
             className="w-full h-1 accent-[var(--accent)]"
           />
           <div className="flex items-center justify-between mb-1 mt-2">
-            <span className="text-[10px] text-[var(--text-secondary)]">{t('dm.tokenFacing', 'Orientación')}</span>
+            <span className="text-[10px] text-white">{t('dm.tokenFacing', 'Orientación')}</span>
             <span className="text-[10px] text-[var(--accent)] font-mono">{Math.round(((quickEditChar.facing_offset ?? 0) * 180) / Math.PI)}°</span>
           </div>
           <input
@@ -3844,7 +3839,7 @@ const startFogMode = useCallback(() => {
           />
           <div className="mt-2">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] text-[var(--text-secondary)]">{t('dm.visionType', 'Tipo de visión')}</span>
+              <span className="text-[10px] text-white">{t('dm.visionType', 'Tipo de visión')}</span>
               <span className="text-[10px] text-[var(--accent)] font-mono">{quickEditChar.vision_type ?? 'normal'}</span>
             </div>
             <select
@@ -3861,7 +3856,7 @@ const startFogMode = useCallback(() => {
           </div>
           <div className="mt-2">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] text-[var(--text-secondary)]">{t('dm.visionRange', 'Alcance de visión')}</span>
+              <span className="text-[10px] text-white">{t('dm.visionRange', 'Alcance de visión')}</span>
               <span className="text-[10px] text-[var(--accent)] font-mono">{(quickEditChar.vision_range ?? 6.0).toFixed(1)}</span>
             </div>
             <input
