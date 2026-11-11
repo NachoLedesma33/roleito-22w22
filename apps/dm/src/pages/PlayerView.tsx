@@ -114,7 +114,7 @@ export default function PlayerView() {
   const [audioOn, setAudioOn] = useState(true);
   const audioRef = useRef<HTMLAudioElement>(null);
   const audioStartedRef = useRef(false);
-  const [sheetTab, setSheetTab] = useState<'stats' | 'inventory' | 'spells' | 'notes'>('stats');
+  const [sheetTab, setSheetTab] = useState<'stats' | 'inventory' | 'spells' | 'notes' | 'assets'>('stats');
   const [grimorioOpen, setGrimorioOpen] = useState(false);
   const [grimorioDetail, setGrimorioDetail] = useState<Spell | null>(null);
   const [notesSaving, setNotesSaving] = useState(false);
@@ -149,7 +149,6 @@ export default function PlayerView() {
   const [vfx, setVfx] = useState<Array<{ id: number; type: 'fire' | 'ice' | 'lightning' | 'heal' | 'void'; from: [number, number, number]; to: [number, number, number]; startedAt: number; duration: number }>>([]);
 
   const [pendingVfx, setPendingVfx] = useState<'fire' | 'ice' | 'lightning' | 'heal' | 'void' | null>(null);
-  const [assetsPanelOpen, setAssetsPanelOpen] = useState(false);
   const [assetRefreshKey, setAssetRefreshKey] = useState(0);
   const handleAspectChange = useCallback((a: number) => {
     if (Number.isFinite(a) && a > 0) setImageAspect(a);
@@ -1461,19 +1460,8 @@ export default function PlayerView() {
         />
 
         {choice?.kind === 'character' && data.campaign_id && (
-          <button
-            onClick={() => setAssetsPanelOpen((v) => !v)}
-            className="absolute top-4 left-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-[var(--surface)] border border-[var(--bg-tertiary)] text-white hover:text-white hover:bg-[var(--bg-tertiary)] transition-colors"
-            title="Assets"
-            data-testid="pv-assets-toggle"
-          >
+          <div className="absolute top-4 left-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-[var(--surface)] border border-[var(--bg-tertiary)] text-white hover:text-white hover:bg-[var(--bg-tertiary)] transition-colors" title="Assets" data-testid="pv-assets-toggle">
             📦
-          </button>
-        )}
-
-        {choice?.kind === 'character' && data.campaign_id && assetsPanelOpen && (
-          <div className="absolute top-16 left-4 z-10 bg-surface border border-subtle rounded-lg p-2 w-48 max-sm:top-20 max-sm:left-2" data-testid="pv-assets">
-            <AssetTray campaignId={data.campaign_id} playerId={choice?.kind === 'character' ? choice.id : undefined} key={assetRefreshKey} />
           </div>
         )}
 
@@ -1623,17 +1611,17 @@ export default function PlayerView() {
               )}
 
               <div className="flex gap-0.5 bg-[var(--bg-tertiary)]/50 rounded p-0.5 text-[10px]">
-                {(['stats', 'inventory', 'spells', 'notes'] as const).map((tab) => (
+                {(['stats', 'inventory', 'spells', 'notes', 'assets'] as const).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setSheetTab(tab)}
-                    className={`flex-1 py-1 rounded capitalize transition-colors ${
+                    className={`flex-1 py-1 rounded capitalize transition-colors flex items-center justify-center gap-1 ${
                       sheetTab === tab
                         ? 'bg-[var(--accent)] text-white'
                         : 'text-white hover:text-white'
                     }`}
                   >
-                    {tab === 'stats' ? t('pv.tabStats', 'Stats') : tab === 'inventory' ? t('pv.tabInv', 'Inv') : tab === 'spells' ? t('pv.tabSpells', 'Hech') : t('pv.tabNotes', 'Notas')}
+                    {tab === 'stats' ? t('pv.tabStats', 'Stats') : tab === 'inventory' ? t('pv.tabInv', 'Inv') : tab === 'spells' ? t('pv.tabSpells', 'Hech') : tab === 'notes' ? t('pv.tabNotes', 'Notas') : '📦'}
                   </button>
                 ))}
               </div>
@@ -1765,6 +1753,11 @@ export default function PlayerView() {
                     >
                       {notesSaving ? t('pv.saving', 'Guardando...') : t('pv.saveNotes', 'Guardar notas')}
                     </button>
+                  </div>
+                )}
+                {sheetTab === 'assets' && (
+                  <div className="space-y-2">
+                    <AssetTray campaignId={data.campaign_id} playerId={choice?.kind === 'character' ? choice.id : undefined} key={assetRefreshKey} />
                   </div>
                 )}
               </div>
