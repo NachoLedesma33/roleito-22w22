@@ -25,8 +25,8 @@ export default function AssetTray({ campaignId, onAssetDragStart }: AssetTrayPro
     try {
       const data = await api.campaigns.listAssets(campaignId);
       setAssets(data.assets ?? []);
-    } catch {
-      // best-effort
+    } catch (e) {
+      console.error('List assets failed:', e);
     } finally {
       setLoading(false);
     }
@@ -42,8 +42,8 @@ export default function AssetTray({ campaignId, onAssetDragStart }: AssetTrayPro
     try {
       await api.campaigns.uploadAsset(campaignId, file);
       await loadAssets();
-    } catch {
-      // best-effort
+    } catch (e) {
+      console.error('Upload failed:', e);
     }
     if (fileInput.current) fileInput.current.value = '';
   }, [campaignId, loadAssets]);
