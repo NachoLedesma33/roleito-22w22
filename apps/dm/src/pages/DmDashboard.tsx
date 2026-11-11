@@ -66,6 +66,7 @@ import { usePendingDigest } from '@/lib/usePendingDigest';
 import TopBar from '@/components/TopBar';
 import MinimizedBar from '@/components/MinimizedBar';
 import HudPanel from '@/components/HudPanel';
+import AssetTray from '@/components/AssetTray';
 import ToolButton from '@/components/ui/ToolButton';
 import IconButton from '@/components/ui/IconButton';
 import { staticUrl } from '@/lib/staticUrl';
@@ -2544,6 +2545,8 @@ const startFogMode = useCallback(() => {
             >
               <span className="flex-1 text-left">Marcar</span>
             </button>
+            <div className="border-t border-[var(--bg-tertiary)] my-1" />
+            <AssetTray campaignId={campaignId!} />
             <button
               onClick={() => { setMeasureMode(true); setMeasureA(null); setMeasureB(null); }}
               className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
@@ -3424,9 +3427,9 @@ const startFogMode = useCallback(() => {
                 lightAttach={attachLightMode}
                 tokenPlace={placingToken}
                 onTokenPlace={handleTokenPlace}
-                onAssetDrop={handleAssetDrop}
                 onTokenClick={handleTokenClick}
                 onTokenDrop={handleTokenDrop}
+                onAssetDrop={handleAssetDrop}
                 onTokenDrag={handleTokenDrag}
                 onTokenContextMenu={handleTokenContextMenu}
                 onTokenDoubleClick={handleTokenDoubleClick}
