@@ -426,7 +426,7 @@ async def upload_asset(
 
     rel_path = file_path.replace("\\", "/")
     idx = rel_path.find("data/assets")
-    url = "/" + rel_path[idx:] if idx != -1 else f"/api/static/{campaign_id}/uploads/{filename}"
+    url = "/api/static/" + rel_path[idx + len("data/assets/"):].lstrip("/") if idx != -1 else f"/api/static/{campaign_id}/uploads/{filename}"
 
     return {
         "asset_id": asset_id,
@@ -435,6 +435,30 @@ async def upload_asset(
         "url": url,
         "size": len(content),
     }
+
+@campaigns_router.get("/campaigns/{campaign_id}/assets")
+async def list_assets(
+    campaign_id: str,
+    db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+):
+    """Lista los assets de una campaña."""
+    result = await db.execute(select(Asset).where(Asset.campaign_id == campaign_id))
+    assets = result.scalars().all()
+    out = []
+    for a in assets:
+        rel = a.file_path.replace("\\", "/")
+        idx = rel.find("data/assets")
+        url = "/" + rel[idx:] if idx != -1 else f"/api/static/{campaign_id}/uploads/{os.path.basename(a.file_path)}"
+        out.append({
+            "asset_id": a.id,
+            "name": a.name,
+            "type": a.asset_type or "image",
+            "url": url,
+            "size": 0,
+        })
+    return {"assets": out}
+
 
 
 class VfxRequest(BaseModel):

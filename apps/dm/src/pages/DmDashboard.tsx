@@ -100,6 +100,7 @@ export default function DmDashboard() {
   const [vfx, setVfx] = useState<Array<{ id: number; type: 'fire' | 'ice' | 'lightning' | 'heal' | 'void'; from: [number, number, number]; to: [number, number, number]; startedAt: number; duration: number }>>([]);
   const [pendingVfx, setPendingVfx] = useState<'fire' | 'ice' | 'lightning' | 'heal' | 'void' | null>(null);
   const [vfxMenuOpen, setVfxMenuOpen] = useState(false);
+  const [assetsPanelOpen, setAssetsPanelOpen] = useState(true);
   const [measureMode, setMeasureMode] = useState(false);
   const [measureA, setMeasureA] = useState<[number, number] | null>(null);
   const [measureB, setMeasureB] = useState<[number, number] | null>(null);
@@ -2546,6 +2547,12 @@ const startFogMode = useCallback(() => {
               <span className="flex-1 text-left">Marcar</span>
             </button>
             <button
+              onClick={() => setAssetsPanelOpen((v) => !v)}
+              className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] text-white font-bold hover:text-white"
+            >
+              <span className="flex-1 text-left">Assets</span>
+            </button>
+            <button
               onClick={() => { setMeasureMode(true); setMeasureA(null); setMeasureB(null); }}
               className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
               title="Medir distancia entre dos puntos"
@@ -2793,8 +2800,8 @@ const startFogMode = useCallback(() => {
         </HudPanel>
 
         {/* Asset Tray — panel dedicado para assets 2D/3D */}
-        {campaignId && (
-          <HudPanel title="Assets" panelId="dm-assets" onClose={() => {}} hideClose defaultX={8} defaultY={320} defaultWidth={200} defaultHeight={300} minWidth={180}>
+        {campaignId && assetsPanelOpen && (
+          <HudPanel title="Assets" panelId="dm-assets" onClose={() => setAssetsPanelOpen(false)} defaultX={8} defaultY={320} defaultWidth={200} defaultHeight={300} minWidth={180}>
             <AssetTray campaignId={campaignId} />
           </HudPanel>
         )}
