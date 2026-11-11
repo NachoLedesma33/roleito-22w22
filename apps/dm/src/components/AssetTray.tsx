@@ -89,7 +89,11 @@ export default function AssetTray({ campaignId, onAssetDragStart }: AssetTrayPro
             className="flex flex-col items-center gap-0.5 p-1 rounded bg-[var(--bg-tertiary)] hover:bg-[var(--bg-secondary)] cursor-grab text-[9px] text-[var(--text-secondary)] truncate"
             title={a.name}
           >
-            {iconFor(a.type)}
+            {a.type === 'image' ? (
+              <img src={a.url} alt={a.name} className="w-8 h-8 object-cover rounded" />
+            ) : (
+              iconFor(a.type)
+            )}
             <span className="truncate w-full text-center">{a.name}</span>
           </div>
         ))}
