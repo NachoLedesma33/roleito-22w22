@@ -1631,6 +1631,9 @@ export default function PlayerView() {
                     {tab === 'spells' && <Sparkles size={12} />}
                     {tab === 'notes' && <StickyNote size={12} />}
                     {tab === 'assets' && <ImageIcon size={12} />}
+                    <span className="sr-only">
+                      {tab === 'stats' ? 'Stats' : tab === 'inventory' ? 'Inv' : tab === 'spells' ? 'Hech' : tab === 'notes' ? 'Notas' : 'Assets'}
+                    </span>
                   </button>
                 ))}
               </div>

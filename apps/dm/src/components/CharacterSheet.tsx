@@ -615,6 +615,9 @@ export default function CharacterSheet({
               {t === 'inventory' && <Package size={12} />}
               {t === 'spells' && <Sparkles size={12} />}
               {t === 'assets' && <ImageIcon size={12} />}
+            <span className="sr-only">
+              {t === 'stats' ? 'Stats' : t === 'inventory' ? 'Inventario' : t === 'spells' ? 'Conjuros' : 'Assets'}
+            </span>
             </button>
           ))}
         </div>

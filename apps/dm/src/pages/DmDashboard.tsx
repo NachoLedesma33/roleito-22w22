@@ -100,7 +100,7 @@ export default function DmDashboard() {
   const [vfx, setVfx] = useState<Array<{ id: number; type: 'fire' | 'ice' | 'lightning' | 'heal' | 'void'; from: [number, number, number]; to: [number, number, number]; startedAt: number; duration: number }>>([]);
   const [pendingVfx, setPendingVfx] = useState<'fire' | 'ice' | 'lightning' | 'heal' | 'void' | null>(null);
   const [vfxMenuOpen, setVfxMenuOpen] = useState(false);
-  const [assetsPanelOpen, setAssetsPanelOpen] = useState(true);
+  const [assetsPanelOpen, setAssetsPanelOpen] = useState(false);
   const [measureMode, setMeasureMode] = useState(false);
   const [measureA, setMeasureA] = useState<[number, number] | null>(null);
   const [measureB, setMeasureB] = useState<[number, number] | null>(null);
@@ -306,7 +306,7 @@ export default function DmDashboard() {
         setCharacters(chars);
         setNpcs(npcList);
         setMaps(mapList);
-        setAssets(assetList);
+        setAssets((assetList as { assets?: Asset[] })?.assets ?? []);
         const active = sc.find((s) => s.status === 'active') || sc[0] || null;
         setActiveScene(active);
       })
