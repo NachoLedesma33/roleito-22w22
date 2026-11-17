@@ -311,7 +311,13 @@
     "zonesBtn": "Zones",
     "inviteNoTunnel": "No tunnel: the URL above is this machine. Start one with npm run tunnel or paste the tunnel URL.",
     "seeHiddenPlayersStart": "Show players without light",
-    "seeHiddenPlayersStop": "Stop showing players without light"
+    "seeHiddenPlayersStop": "Stop showing players without light",
+    "fogCover": "Cover",
+    "fogCoverHint": "Penumbra: the player sees what their character perceives",
+    "fogSecret": "Secret",
+    "fogSecretHint": "The player does NOT see this area, even if lit",
+    "fogReveal": "Reveal",
+    "fogRevealHint": "The player sees this area, whether lit or not"
   },
   "dmConfirm": {
     "clearWalls": "Delete ALL walls and doors?"
@@ -411,7 +417,23 @@
     },
     "featuresIntro": "Six pieces that build themselves as you play: everything the table needs, without configuring anything twice.",
     "featuresTitle": "Everything on a single table",
-    "footer": "local-first RPG engine",
+    "footer": {
+      "blurb": "Local-first engine for your D&D campaigns. The world remembers every session.",
+      "product": "Product",
+      "productFeatures": "Features",
+      "productLook": "How it works",
+      "productNews": "News",
+      "resources": "Resources",
+      "resourcesDocs": "Documentation",
+      "resourcesGuide": "DM Guide",
+      "resourcesFaq": "FAQ",
+      "community": "Community",
+      "communityDiscord": "Discord",
+      "communityBlog": "Blog",
+      "communityContact": "Contact",
+      "contact": "Contact",
+      "rights": "Made for D&D tables."
+    },
     "login": "Sign in",
     "subtitle": "A persistent engine for your campaign."
   },

@@ -311,7 +311,13 @@
     "zoneRect": "Zona (rect)",
     "zonesBtn": "Zonas",
     "seeHiddenPlayersStart": "Ver a los jugadores sin luz",
-    "seeHiddenPlayersStop": "Dejar de ver a los jugadores sin luz"
+    "seeHiddenPlayersStop": "Dejar de ver a los jugadores sin luz",
+    "fogCover": "Cubrir",
+    "fogCoverHint": "Penumbra: el jugador ve lo que su personaje percibe",
+    "fogSecret": "Secreto",
+    "fogSecretHint": "El jugador NO ve esta zona, aunque la ilumine",
+    "fogReveal": "Revelar",
+    "fogRevealHint": "El jugador ve esta zona, este o no iluminada"
   },
   "dmConfirm": {
     "clearWalls": "¿Eliminar TODAS las paredes y puertas?"
@@ -411,7 +417,23 @@
     },
     "featuresIntro": "Seis piezas que se construyen solas mientras jugás: todo lo que la mesa necesita, sin configurar nada dos veces.",
     "featuresTitle": "Todo en una sola mesa",
-    "footer": "engine local-first para RPGs",
+    "footer": {
+      "blurb": "Engine local-first para tus campañas de D&D. El mundo recuerda cada sesión.",
+      "product": "Producto",
+      "productFeatures": "Características",
+      "productLook": "Cómo funciona",
+      "productNews": "Novedades",
+      "resources": "Recursos",
+      "resourcesDocs": "Documentación",
+      "resourcesGuide": "Guía del DM",
+      "resourcesFaq": "Preguntas frecuentes",
+      "community": "Comunidad",
+      "communityDiscord": "Discord",
+      "communityBlog": "Blog",
+      "communityContact": "Contacto",
+      "contact": "Contacto",
+      "rights": "Hecho para mesas de D&D."
+    },
     "login": "Ingresar",
     "subtitle": "Un engine persistente para tu campaña."
   },
