@@ -2656,7 +2656,7 @@ const SceneRendererImpl = function SceneRenderer({
         </mesh>
       ))}
       {(vfx ?? []).map((e) => (
-        <VfxBurst key={e.id} effect={e} />
+        <VfxBurst key={e.id} effect={e} offsetY={tokenOffY} />
       ))}
       {visibleCharsVisual.map((ch) => {
         const isMovable = movableEntityIds
