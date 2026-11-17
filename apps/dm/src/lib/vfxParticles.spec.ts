@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { layerCount, sampleVfx, seededRandom } from './vfxParticles'
+import { layerCount, memoByKey, sampleVfx, seededRandom } from './vfxParticles'
 
 const LAYERS = ['core', 'trail', 'motes', 'impact', 'aftermath'] as const
 
@@ -60,5 +60,15 @@ describe('sampleVfx', () => {
       )
     }
     expect(LAYERS.reduce((sum, l) => sum + layerCount(l), 0)).toBe(192)
+  })
+})
+
+describe('memoByKey', () => {
+  it('reutiliza el valor por clave', () => {
+    let calls = 0
+    const make = () => ({ n: ++calls })
+    expect(memoByKey('vfx-test-fire', make)).toBe(memoByKey('vfx-test-fire', make))
+    expect(memoByKey('vfx-test-ice', make)).not.toBe(memoByKey('vfx-test-fire', make))
+    expect(calls).toBe(2)
   })
 })

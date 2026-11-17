@@ -94,6 +94,15 @@ export function layerCount(layer: VfxLayer): number {
   return COUNTS[layer]
 }
 
+const MEMO_CACHE = new Map<string, unknown>()
+
+export function memoByKey<T>(key: string, make: () => T): T {
+  if (MEMO_CACHE.has(key)) return MEMO_CACHE.get(key) as T
+  const value = make()
+  MEMO_CACHE.set(key, value)
+  return value
+}
+
 export function seededRandom(seed: number): () => number {
   let a = seed >>> 0
   return () => {
