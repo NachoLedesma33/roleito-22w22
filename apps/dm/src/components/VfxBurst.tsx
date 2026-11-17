@@ -1,7 +1,7 @@
 import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { layerCount, sampleVfx, type VfxLayer, type VfxType } from '../lib/vfxParticles';
+import { layerCount, memoByKey, sampleVfx, type VfxLayer, type VfxType } from '../lib/vfxParticles';
 
 export interface VfxEffect {
   id: number;
@@ -13,8 +13,6 @@ export interface VfxEffect {
 }
 
 const LAYERS: VfxLayer[] = ['core', 'trail', 'motes', 'impact', 'aftermath'];
-
-const TEXTURE_CACHE = new Map<VfxType, THREE.Texture>();
 
 function makeTexture(): THREE.Texture {
   const canvas = document.createElement('canvas');
@@ -33,12 +31,7 @@ function makeTexture(): THREE.Texture {
 }
 
 function getTexture(type: VfxType): THREE.Texture {
-  let tex = TEXTURE_CACHE.get(type);
-  if (!tex) {
-    tex = makeTexture();
-    TEXTURE_CACHE.set(type, tex);
-  }
-  return tex;
+  return memoByKey(`vfx-texture-${type}`, makeTexture);
 }
 
 interface LayerBuffers {
