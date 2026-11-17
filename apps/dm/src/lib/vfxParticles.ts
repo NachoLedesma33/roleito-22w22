@@ -32,14 +32,18 @@ const SPREAD: Record<VfxLayer, number> = {
   aftermath: 0.42,
 }
 
+type VfxShape = 'plume' | 'shards' | 'bolt' | 'bloom' | 'vortex'
+
 interface Recipe {
   core: [number, number, number]
   mid: [number, number, number]
   hot: [number, number, number]
+  shape: VfxShape
   rise: number
   lateral: number
-  arc: boolean
-  implosion: boolean
+  radial: number
+  size: number
+  impactAt: [number, number]
 }
 
 const RECIPES: Record<VfxType, Recipe> = {
@@ -47,46 +51,56 @@ const RECIPES: Record<VfxType, Recipe> = {
     core: [1, 0.96, 0.82],
     mid: [1, 0.55, 0.12],
     hot: [0.92, 0.16, 0.05],
-    rise: 0.5,
+    shape: 'plume',
+    rise: 0.6,
     lateral: 0.3,
-    arc: false,
-    implosion: false,
+    radial: 1,
+    size: 1,
+    impactAt: [0.55, 0.78],
   },
   ice: {
     core: [0.88, 1, 1],
     mid: [0.42, 0.86, 1],
     hot: [0.18, 0.5, 0.92],
-    rise: -0.18,
-    lateral: 0.22,
-    arc: false,
-    implosion: false,
+    shape: 'shards',
+    rise: -0.1,
+    lateral: 0,
+    radial: 1.1,
+    size: 0.55,
+    impactAt: [0.45, 0.7],
   },
   lightning: {
     core: [1, 1, 0.88],
     mid: [1, 0.88, 0.28],
     hot: [0.82, 0.68, 1],
+    shape: 'bolt',
     rise: 0,
-    lateral: 0.12,
-    arc: true,
-    implosion: false,
+    lateral: 0,
+    radial: 0.1,
+    size: 0.7,
+    impactAt: [0.1, 0.72],
   },
   heal: {
     core: [0.92, 1, 0.92],
     mid: [0.42, 1, 0.58],
     hot: [0.16, 0.82, 0.4],
-    rise: 0.8,
-    lateral: 0.18,
-    arc: false,
-    implosion: false,
+    shape: 'bloom',
+    rise: 1,
+    lateral: 0.12,
+    radial: 0.7,
+    size: 1.25,
+    impactAt: [0.82, 0.98],
   },
   void: {
     core: [0.9, 0.82, 1],
     mid: [0.6, 0.32, 0.95],
     hot: [0.34, 0.08, 0.68],
+    shape: 'vortex',
     rise: 0,
-    lateral: 0.28,
-    arc: false,
-    implosion: true,
+    lateral: 0,
+    radial: 1.5,
+    size: 0.9,
+    impactAt: [0.55, 0.78],
   },
 }
 
@@ -129,13 +143,14 @@ function mix(a: [number, number, number], b: [number, number, number], t: number
   return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k]
 }
 
-function layerAlpha(layer: VfxLayer, tc: number): number {
+function layerAlpha(layer: VfxLayer, tc: number, impactAt: [number, number]): number {
   if (layer === 'aftermath') {
     if (tc >= 1) return 0
     return tc < 0.78 ? 0 : clamp01(1 - (tc - 0.78) / 0.22)
   }
   if (layer === 'impact') {
-    return tc < 0.55 || tc >= 0.78 ? 0 : clamp01(1 - (tc - 0.55) / 0.23)
+    const [a, b] = impactAt
+    return tc < a || tc >= b ? 0 : clamp01((tc - a) / (b - a))
   }
   return tc <= 0.55 ? 1 : tc >= 0.78 ? 0 : clamp01(1 - (tc - 0.55) / 0.23)
 }
@@ -145,7 +160,7 @@ export function sampleVfx(layer: VfxLayer, input: VfxSampleInput): VfxParticle[]
   const speed = 1500 / Math.max(1, input.duration)
   const recipe = RECIPES[input.type]
   const rnd = seededRandom((input.seed >>> 0) ^ hashType(input.type))
-  const phase = layerAlpha(layer, tc)
+  const phase = layerAlpha(layer, tc, recipe.impactAt)
   const spread = SPREAD[layer]
   const count = COUNTS[layer]
   const out: VfxParticle[] = []
@@ -158,17 +173,50 @@ export function sampleVfx(layer: VfxLayer, input: VfxSampleInput): VfxParticle[]
     const r5 = rnd()
 
     const angle = r1 * Math.PI * 2
-    const rad = Math.sqrt(r2) * spread
-    const lateral = (r3 - 0.5) * recipe.lateral
-    const arc = recipe.arc ? Math.round(r4 * 3) * 0.16 * (r5 < 0.5 ? -1 : 1) : 0
-    const implosion = recipe.implosion ? Math.max(0, 1 - tc * 1.25) : 1
-    const fall = layer === 'aftermath' ? -tc * 0.55 : 0
-    const rise = layer === 'aftermath' ? 0 : recipe.rise * tc * 0.35
+    const rad = Math.sqrt(r2) * spread * recipe.radial
     const verticalScale = layer === 'core' ? 0.4 : 1
+    let ox: number
+    let oy: number
+    let oz: number
 
-    const ox = (Math.cos(angle) * rad + lateral + arc) * implosion
-    const oz = (Math.sin(angle) * rad + lateral * 0.6) * implosion
-    const oy = (rise + fall + (r4 - 0.5) * 0.12) * verticalScale
+    switch (recipe.shape) {
+      case 'plume':
+        ox = Math.cos(angle) * rad + (r3 - 0.5) * recipe.lateral
+        oz = Math.sin(angle) * rad
+        oy = recipe.rise * tc * 0.6 + (r4 - 0.5) * 0.12
+        break
+      case 'shards': {
+        const spoke = Math.floor(r1 * 6)
+        const a = spoke * (Math.PI / 3) + (r5 - 0.5) * 0.08
+        const shardRad = rad * (0.5 + tc * 1.1)
+        ox = Math.cos(a) * shardRad
+        oz = Math.sin(a) * shardRad
+        oy = recipe.rise * tc * 0.35 + (r4 - 0.5) * 0.05
+        break
+      }
+      case 'bolt':
+        ox = ((i % 5) - 2) * 0.022 + (r3 - 0.5) * 0.02
+        oz = Math.sin(i * 1.9) * 0.045 + (r4 - 0.5) * 0.02
+        oy = (r5 - 0.5) * 0.035
+        break
+      case 'bloom':
+        ox = Math.cos(angle) * rad * 0.75
+        oz = Math.sin(angle) * rad * 0.75
+        oy = recipe.rise * tc * 0.9 + (r4 - 0.5) * 0.1
+        break
+      case 'vortex': {
+        const a = angle + tc * 3.2
+        const swirlRad = rad * (1 - tc * 0.85)
+        ox = Math.cos(a) * swirlRad
+        oz = Math.sin(a) * swirlRad
+        oy =
+          layer === 'aftermath'
+            ? -tc * 0.6 - 0.05
+            : recipe.rise * tc * 0.35 + (r4 - 0.5) * 0.08
+        break
+      }
+    }
+    oy *= verticalScale
 
     let color: [number, number, number]
     if (layer === 'core') color = mix(recipe.core, recipe.mid, r2 * 0.4)
@@ -176,7 +224,7 @@ export function sampleVfx(layer: VfxLayer, input: VfxSampleInput): VfxParticle[]
     else color = mix(recipe.mid, recipe.hot, tc * 0.7 + r2 * 0.3)
 
     const sizeBase = layer === 'impact' ? 0.5 : layer === 'core' ? 0.35 : 0.25
-    const size = clamp01(sizeBase + r5 * (1 - sizeBase) * 0.9 + (1 - tc) * 0.1)
+    const size = clamp01((sizeBase + r5 * (1 - sizeBase) * 0.9 + (1 - tc) * 0.1) * recipe.size)
     const alpha = clamp01(phase * (0.55 + r3 * 0.45))
     const spin = r1 * Math.PI * 2 + tc * (r5 - 0.5) * 2 * speed
 

@@ -61,6 +61,54 @@ describe('sampleVfx', () => {
     }
     expect(LAYERS.reduce((sum, l) => sum + layerCount(l), 0)).toBe(192)
   })
+
+  it('cada familia tiene silueta propia, no la misma nube', () => {
+    const stat = (type: 'fire' | 'ice' | 'lightning' | 'heal' | 'void') => {
+      const ps = sampleVfx('motes', { type, t: 0.35, duration: 1500, seed: 11 })
+      const mean = (vals: number[]) => vals.reduce((a, b) => a + b, 0) / vals.length
+      return {
+        radial: mean(ps.map((p) => Math.hypot(p.offset[0], p.offset[2]))),
+        up: mean(ps.map((p) => p.offset[1])),
+        size: mean(ps.map((p) => p.size)),
+      }
+    }
+    const fire = stat('fire')
+    const ice = stat('ice')
+    const bolt = stat('lightning')
+    const heal = stat('heal')
+    const voidv = stat('void')
+    expect(bolt.radial).toBeLessThan(fire.radial * 0.5)
+    expect(heal.up).toBeGreaterThan(fire.up)
+    expect(ice.size).toBeLessThan(fire.size)
+    expect(voidv.radial).toBeGreaterThan(bolt.radial)
+  })
+
+  it('hielo usa direcciones angulares, no un disco continuo', () => {
+    const angles = sampleVfx('motes', { type: 'ice', t: 0.35, duration: 1500, seed: 5 }).map((p) =>
+      ((Math.round((Math.atan2(p.offset[2], p.offset[0]) / (Math.PI * 2)) * 12) % 12) + 12) % 12,
+    )
+    expect(new Set(angles).size).toBeLessThanOrEqual(6)
+  })
+
+  it('vacío implosiona: radio cae y el polvo baja', () => {
+    const radius = (t: number) => {
+      const ps = sampleVfx('motes', { type: 'void', t, duration: 1500, seed: 9 })
+      return ps.reduce((a, p) => a + Math.hypot(p.offset[0], p.offset[2]), 0) / ps.length
+    }
+    expect(radius(0.8)).toBeLessThan(radius(0.1))
+    expect(
+      sampleVfx('aftermath', { type: 'void', t: 0.85, duration: 1500, seed: 9 }).every(
+        (p) => p.offset[1] < 0,
+      ),
+    ).toBe(true)
+  })
+
+  it('rayo alcanza el impacto antes que sanación', () => {
+    const impactAlpha = (type: 'lightning' | 'heal') =>
+      sampleVfx('impact', { type, t: 0.6, duration: 1500, seed: 2 }).reduce((a, p) => a + p.alpha, 0)
+    expect(impactAlpha('lightning')).toBeGreaterThan(0)
+    expect(impactAlpha('heal')).toBe(0)
+  })
 })
 
 describe('memoByKey', () => {
