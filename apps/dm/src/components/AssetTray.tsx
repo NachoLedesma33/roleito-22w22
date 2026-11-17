@@ -155,6 +155,8 @@ export default function AssetTray({ campaignId, playerId, inviteCode }: AssetTra
               draggable
               onDragStart={(e) => {
                 e.dataTransfer.setData('application/json', JSON.stringify(a));
+                e.dataTransfer.setData('roleito/asset', JSON.stringify({ name: a.name, url: a.url, assetId: a.asset_id }));
+                e.dataTransfer.effectAllowed = 'copy';
               }}
               className="flex flex-col items-center gap-0.5 p-1 rounded bg-[var(--bg-tertiary)] hover:bg-[var(--bg-secondary)] cursor-grab text-[9px] text-white truncate relative group"
               title={a.name}
