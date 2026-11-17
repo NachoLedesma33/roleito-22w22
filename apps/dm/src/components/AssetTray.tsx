@@ -1,4 +1,5 @@
 import { api } from '@/lib/api';
+import type { Character } from '@/lib/api';
 import { Upload, Image, Film, Box, Star, Trash2, Search } from 'lucide-react';
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import {
@@ -71,7 +72,7 @@ export default function AssetTray({ campaignId, playerId, inviteCode }: AssetTra
     (async () => {
       try {
         const chars = await api.characters.list(campaignId);
-        const players = chars.filter((c: any) => c.type === 'player').map((c: any) => ({ id: c.id, name: c.name }));
+        const players = chars.filter((c: Character) => c.type === 'player').map((c: Character) => ({ id: c.id, name: c.name }));
         setPlayers(players);
         if (players.length > 0) setSelectedPlayer(players[0].id);
       } catch {

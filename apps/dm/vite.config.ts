@@ -20,12 +20,8 @@ import path from 'path'
  * Se listan los de los túneles gratis. Cuando tengas dominio propio, agregá
  * acá el tuyo (una línea).
  */
-const HOSTS_PERMITIDOS = [
-  '.trycloudflare.com', // Cloudflare quick tunnel (gratis, sin cuenta)
-  '.tunnelmole.net', // tunnelmole (gratis, open source, sin cuenta)
-  '.ts.net', // Tailscale Funnel (gratis, URL fija)
-  'nacholedesma.tailb2c840.ts.net', // Tailscale Funnel (hostname completo)
-];
+// Hosts permitidos: true = cualquier host (necesario para Tailscale Funnel,
+// cuyo hostname no matchea sufijos conocidos).
 
 /**
  * El backend al que se proxya el API.
