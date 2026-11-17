@@ -37,8 +37,6 @@ function getTexture(type: VfxType): THREE.Texture {
 interface LayerBuffers {
   positions: Float32Array;
   colors: Float32Array;
-  positionAttr: THREE.BufferAttribute;
-  colorAttr: THREE.BufferAttribute;
 }
 
 export function VfxBurst({ effect }: { effect: VfxEffect }) {
@@ -58,12 +56,7 @@ export function VfxBurst({ effect }: { effect: VfxEffect }) {
           positions[i * 3 + 1] = effect.from[1];
           positions[i * 3 + 2] = effect.from[2];
         }
-        return {
-          positions,
-          colors,
-          positionAttr: new THREE.BufferAttribute(positions, 3),
-          colorAttr: new THREE.BufferAttribute(colors, 3),
-        };
+        return { positions, colors };
       }),
     [effect.from],
   );
@@ -80,6 +73,9 @@ export function VfxBurst({ effect }: { effect: VfxEffect }) {
       const points = pointsRefs.current[li];
       const mat = materialRefs.current[li];
       if (!points || !mat) continue;
+      const posAttr = points.geometry.attributes.position as THREE.BufferAttribute | undefined;
+      const colAttr = points.geometry.attributes.color as THREE.BufferAttribute | undefined;
+      if (!posAttr || !colAttr) continue;
       const b = buffers[li];
       const particles = sampleVfx(LAYERS[li], {
         type: effect.type,
@@ -102,8 +98,8 @@ export function VfxBurst({ effect }: { effect: VfxEffect }) {
         alphaSum += p.alpha;
         sizeSum += p.size;
       }
-      b.positionAttr.needsUpdate = true;
-      b.colorAttr.needsUpdate = true;
+      posAttr.needsUpdate = true;
+      colAttr.needsUpdate = true;
       mat.opacity = Math.min(1, alphaSum / particles.length);
       mat.size = 0.25 + (sizeSum / particles.length) * 0.9;
       points.visible = alphaSum > 0;
