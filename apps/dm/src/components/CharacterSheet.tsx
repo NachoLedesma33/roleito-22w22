@@ -12,6 +12,8 @@ interface CharacterSheetProps {
   entity: Character | NPC;
   entityType: 'character' | 'npc';
   campaignId: string;
+  playerId?: string;
+  refreshKey?: number;
   onUpdate: (updated: Character | NPC) => void;
   onClose: () => void;
   statuses?: string[];
@@ -32,6 +34,8 @@ export default function CharacterSheet({
   entity,
   entityType,
   campaignId,
+  playerId,
+  refreshKey,
   onUpdate,
   onClose,
   statuses = [],
@@ -803,7 +807,7 @@ export default function CharacterSheet({
             )}
         {String(tab) === 'assets' && (
           <div className="space-y-2">
-            <AssetTray campaignId={campaignId} />
+            <AssetTray campaignId={campaignId} playerId={playerId} key={refreshKey} />
           </div>
         )}
           </div>

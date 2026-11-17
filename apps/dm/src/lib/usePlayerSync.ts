@@ -73,6 +73,7 @@ export interface UsePlayerSyncRefs {
   wasdTargetRef: MutableRefObject<{ x: number; z: number; rotation: number } | null>;
   onMarker?: (m: { x: number; z: number; color?: string; ttl_ms?: number }) => void;
   onVfx?: (v: { type: string; from: [number, number, number]; to: [number, number, number] }) => void;
+  onAssetShared?: () => void;
 }
 
 export interface UsePlayerSyncResult {
@@ -108,7 +109,7 @@ export interface UsePlayerSyncResult {
  * barato el poll.
  */
 export function usePlayerSync(code: string | undefined, refs: UsePlayerSyncRefs): UsePlayerSyncResult {
-  const { sceneIdRef, choiceRef, wasdTargetRef, onMarker, onVfx } = refs;
+  const { sceneIdRef, choiceRef, wasdTargetRef, onMarker, onVfx, onAssetShared } = refs;
 
   const [data, setData] = useState<JoinData | null>(null);
   const [myChar, setMyChar] = useState<Character | null>(null);
@@ -362,6 +363,9 @@ const applySceneCharacters = useCallback((sceneId: string, incoming: unknown[]) 
           } else if (msg.type === 'vfx') {
             setLive(true);
             onVfx?.({ type: (msg as { vfx_type?: string }).vfx_type ?? 'fire', from: (msg as { from?: [number, number, number] }).from ?? [0, 0.6, 0], to: (msg as { to?: [number, number, number] }).to ?? [0, 0.6, 0] });
+          } else if (msg.type === 'asset_shared') {
+            setLive(true);
+            onAssetShared?.();
           }
         } catch {
           // mensaje no JSON: ignorar
