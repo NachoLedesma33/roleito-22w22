@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import type { AmbientScene } from './ambientAudio';
 
 /**
  * Regulador de volumen de audio, compartido por DM y jugador.
@@ -14,18 +15,21 @@ import { useSyncExternalStore } from 'react';
  * Volumen efectivo = capa compartida (si `sync`) o local. Dentro de la capa
  * activa, volumen del canal = master × canal (ver getEffectiveVolume).
  */
-export type AudioSettingKey = 'master' | 'weather' | 'dice';
-export type AudioChannel = 'weather' | 'dice';
+export type AudioSettingKey = 'master' | 'weather' | 'dice' | 'ambience';
+export type AudioChannel = 'weather' | 'dice' | 'ambience';
 
 export interface AudioSettings {
   master: number;
   weather: number;
   dice: number;
+  ambience: number;
 }
 
 /** Volumen que el DM manda al resto de los POV (se guarda en la campaña). */
 export interface SharedAudioSettings extends AudioSettings {
   sync: boolean;
+  /** Escena de ambiente elegida por el DM; null = sin ambiente. */
+  scene?: AmbientScene | null;
 }
 
 export interface AudioState extends AudioSettings {
@@ -37,9 +41,10 @@ const KEYS: Record<AudioSettingKey, string> = {
   master: 'roleito:audio:master',
   weather: 'roleito:audio:weather',
   dice: 'roleito:audio:dice',
+  ambience: 'roleito:audio:ambience',
 };
 
-const DEFAULTS: AudioSettings = { master: 1, weather: 0.8, dice: 0.8 };
+const DEFAULTS: AudioSettings = { master: 1, weather: 0.8, dice: 0.8, ambience: 0.6 };
 
 function clamp01(v: number): number {
   if (!Number.isFinite(v)) return 0;
@@ -57,7 +62,7 @@ function readKey(key: AudioSettingKey): number {
 }
 
 function readLocal(): AudioSettings {
-  return { master: readKey('master'), weather: readKey('weather'), dice: readKey('dice') };
+  return { master: readKey('master'), weather: readKey('weather'), dice: readKey('dice'), ambience: readKey('ambience') };
 }
 
 /** Volumen propio de este POV (persistido). */
@@ -67,14 +72,14 @@ let shared: SharedAudioSettings | null = null;
 
 function effectiveVolume(): AudioSettings {
   if (shared?.sync) {
-    return { master: shared.master, weather: shared.weather, dice: shared.dice };
+    return { master: shared.master, weather: shared.weather, dice: shared.dice, ambience: shared.ambience };
   }
   return local;
 }
 
 function buildState(): AudioState {
   const e = effectiveVolume();
-  return { master: e.master, weather: e.weather, dice: e.dice, synced: !!shared?.sync };
+  return { master: e.master, weather: e.weather, dice: e.dice, ambience: e.ambience, synced: !!shared?.sync };
 }
 
 let cache: AudioState = buildState();
@@ -107,10 +112,12 @@ export function getSharedAudio(): SharedAudioSettings | null {
   return shared;
 }
 
+const AMBIENT_SCENES: readonly AmbientScene[] = ['medieval', 'sci-fi', 'combat', 'suspense', 'campaign'];
+
 function sameShared(a: SharedAudioSettings | null, b: SharedAudioSettings | null): boolean {
   if (a === b) return true;
   if (!a || !b) return false;
-  return a.sync === b.sync && a.master === b.master && a.weather === b.weather && a.dice === b.dice;
+  return a.sync === b.sync && a.master === b.master && a.weather === b.weather && a.dice === b.dice && a.ambience === b.ambience && (a.scene ?? null) === (b.scene ?? null);
 }
 
 /**
@@ -135,6 +142,8 @@ export function normalizeSharedAudio(raw: unknown): SharedAudioSettings | null {
     master: num(o.master, 1),
     weather: num(o.weather, 0.8),
     dice: num(o.dice, 0.8),
+    ambience: num(o.ambience, 0.6),
+    scene: AMBIENT_SCENES.find((s) => s === o.scene) ?? null,
   };
 }
 
@@ -159,7 +168,7 @@ export function useAudioSettings(): AudioState {
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (e) => {
     if (e.key && !Object.values(KEYS).includes(e.key)) return;
-    local = { master: readLocal().master, weather: readLocal().weather, dice: readLocal().dice };
+    local = readLocal();
     emit();
   });
 }
