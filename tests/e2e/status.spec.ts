@@ -201,4 +201,40 @@ test.describe('Status markers', () => {
     expect(ch.statuses).toContain('bleeding');
     expect(ch.statuses).toContain('invisible');
   });
+
+  test('S4: marca maldito renderiza sin errores de shader', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    const scene = await createScene(request, campaign.id, 'Escena Cursed');
+    const aria = await createCharacter(request, campaign.id, { name: 'Aria Cursed' });
+    await seedTokens(request, campaign.id, scene.id, [
+      { entityType: 'character', entityId: aria.id, x: 0, z: 0 },
+    ]);
+    await uploadBackground(request, campaign.id, scene.id, {
+      name: 'bg.png', mimeType: 'image/png', buffer: PNG_1PX,
+    });
+    await updateScene(request, campaign.id, scene.id, { status: 'active' });
+    const chars = await (
+      await request.get(
+        `http://localhost:8000/api/campaigns/${campaign.id}/scenes/${scene.id}/characters`
+      )
+    ).json();
+    await request.put(
+      `http://localhost:8000/api/campaigns/${campaign.id}/scenes/${scene.id}/characters`,
+      { data: [{ ...chars[0], statuses: ['cursed'] }] },
+    );
+
+    const renderErrors: string[] = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') renderErrors.push(msg.text());
+    });
+    page.on('pageerror', (err) => renderErrors.push(err.message));
+
+    await page.goto(`/campaigns/${campaign.id}`);
+    await expect(page.locator('canvas').first()).toBeVisible({ timeout: 15_000 });
+    await page.waitForTimeout(1200);
+    expect(renderErrors.filter((msg) => /WebGL|shader|ERROR: 0:/i.test(msg))).toEqual([]);
+  });
 });
