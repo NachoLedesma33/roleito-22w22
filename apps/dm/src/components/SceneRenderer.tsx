@@ -2675,7 +2675,7 @@ const SceneRendererImpl = function SceneRenderer({
             isSelected={isMovable && selectedTokenId === ch.sceneCharId}
             isMovable={isMovable}
             sensed={!!sensedIds?.has(ch.sceneCharId)}
-            onClick={isMovable ? handleTokenClickWrap : undefined}
+            onClick={onTokenClick ? handleTokenClickWrap : undefined}
             onContextMenu={isMovable ? onTokenContextMenu : undefined}
             onDoubleClick={isMovable ? onTokenDoubleClick : undefined}
             livePositions={liveTokenPos}

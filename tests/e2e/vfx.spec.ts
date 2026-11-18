@@ -1,5 +1,5 @@
 import { expect, test } from '../fixtures/campaign-fixture';
-import { createCharacter, createScene, seedTokens } from '../helpers/api-helpers';
+import { createCharacter, createMapWithFile, createScene, generateInviteCode, PNG_1PX, seedTokens, updateScene } from '../helpers/api-helpers';
 
 test.describe('VFX', () => {
   test('VFX1: menú dispara ataque y hace POST /vfx con from/to', async ({
@@ -78,5 +78,67 @@ test.describe('VFX', () => {
 
     await page.waitForTimeout(600);
     expect(renderErrors.filter((msg) => /WebGL|shader|ERROR: 0:/i.test(msg))).toEqual([]);
+  });
+
+  test('VFX2: jugador dispara habilidad desde su POV', async ({
+    campaign,
+    request,
+    browser,
+  }) => {
+    const scene = await createScene(request, campaign.id, 'Escena VFX2');
+    const attacker = await createCharacter(request, campaign.id, { name: 'Jugador VFX' });
+    const target = await createCharacter(request, campaign.id, { name: 'Objetivo VFX POV' });
+    await seedTokens(request, campaign.id, scene.id, [
+      { entityType: 'character', entityId: attacker.id, x: 0, z: 0 },
+      { entityType: 'character', entityId: target.id, x: 2, z: 0 },
+    ]);
+    const map = await createMapWithFile(request, campaign.id, 'Mapa VFX2');
+    await updateScene(request, campaign.id, scene.id, { map_id: map.id, status: 'active' });
+    await request.post(
+      `http://localhost:8000/api/campaigns/${campaign.id}/scenes/${scene.id}/upload-background`,
+      { multipart: { file: { name: 'background.png', mimeType: 'image/png', buffer: PNG_1PX } } },
+    );
+    await request.post(`http://localhost:8000/api/campaigns/${campaign.id}/scenes/${scene.id}/sync`);
+    const code = await generateInviteCode(request, campaign.id);
+    await request.put(
+      `http://localhost:8000/api/campaigns/${campaign.id}/characters/${attacker.id}`,
+      { data: { name: attacker.name, can_use_vfx: true } },
+    );
+
+    const pctx = await browser.newContext();
+    const player = await pctx.newPage();
+    await player.goto(`/campaigns/join/${code}`);
+    await player.getByRole('button', { name: /Jugador VFX/ }).click();
+    await expect(player.getByTestId('pv-vfx-toggle')).toBeVisible({ timeout: 10_000 });
+
+    await player.getByTestId('pv-vfx-toggle').click();
+    const menu = player.getByTestId('pv-vfx-menu');
+    await expect(menu).toBeVisible();
+    await menu.getByRole('button', { name: 'Fuego' }).click();
+
+    let posted = false;
+    const vfxPost = player.waitForRequest(
+      (r) => r.url().includes(`/api/campaigns/invite/${code}/vfx`) && r.method() === 'POST',
+      { timeout: 15_000 },
+    ).then((r) => { posted = true; return r; });
+
+    const box = await player.locator('canvas').first().boundingBox();
+    expect(box).not.toBeNull();
+    for (const fx of [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8]) {
+      if (posted) break;
+      for (const fy of [0.4, 0.5, 0.6, 0.7]) {
+        if (posted) break;
+        await player.mouse.click(box!.x + box!.width * fx, box!.y + box!.height * fy);
+      }
+    }
+
+    const req = await vfxPost;
+    const body = req.postDataJSON() as { type: string; from_x: number; from_z: number; to_x: number; to_z: number };
+    expect(body.type).toBe('fire');
+    expect(body.from_x).toBe(0);
+    expect(body.from_z).toBe(0);
+    expect(body.to_x).toBe(2);
+    expect(body.to_z).toBe(0);
+    await pctx.close();
   });
 });
