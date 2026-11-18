@@ -99,7 +99,7 @@ Reference: `2D-TO-3D.md` (34,685 bytes), `3D-RENDERER.md` (118 bytes)
 | Environment | Implemented | BG, items, walls, fog en escena 3D |
 | Fog in 3D | Implemented | Overlay de niebla sobre escena (SceneRenderer) |
 | Weather/FX atmosphere | Implemented | `Scene.weather` (7 variantes: rain/rainDrizzle/rainStorm, snow/snowBlizzard, fog/fogDense) + `Scene.weather_intensity` (0.25×–4×) — partículas three.js en WeatherFX.tsx + filtro tint (SceneRenderer), switcher agrupado por tipo + slider en DmDashboard, sync a PlayerView vía snapshot+WS |
-| Ability VFX particles | Implemented | Evolución visual de los 5 VFX (`fire/ice/lightning/heal/void`): 192 partículas en 5 capas con seeds deterministas por familia (`lib/vfxParticles.ts`), renderer multicapa en `VfxBurst.tsx`, 1 textura compartida por familia vía `memoByKey`. Contrato y flujo DM→WS→jugador congelados; guardrail e2e `tests/e2e/vfx.spec.ts`. Detalle en `docs/system/VFX.md` |
+| Ability VFX particles | Implemented | Evolución visual de las 13 habilidades (`fire`, `ice`, `lightning`, `heal`, `void`, `flamethrower`, `thunder`, `meteor`, `frostnova`, `poison`, `holy`, `shadow`, `arcane`). Renderer `VfxBurst.tsx` con `THREE.Points` + `ShaderMaterial` propio, 6 sprites procedurales, cintas glow/core para rayos, luz/anillo/roca por efecto. `lib/vfxParticles.ts` aporta tipos, recetas, seeds y `vfxEmitterPose`; `sampleVfx` queda solo para specs. Contrato y flujo DM→WS→jugador congelados; guardrail e2e `tests/e2e/vfx.spec.ts`. Detalle en `docs/system/VFX.md` |
 
 > Nota: el render 3D vive DENTRO de `apps/dm` (decisión AGENTS.md). `apps/renderer` queda placeholder intencional.
 

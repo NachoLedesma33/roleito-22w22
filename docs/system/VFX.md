@@ -1,20 +1,20 @@
-# VFX de habilidades — partículas procedurales
+# VFX de habilidades — renderer procedural por habilidad
 
-> Estado: evolución visual de partículas implementada. Contrato funcional y flujo DM→WS→jugador **sin cambios**.
-> Alcance: solo representación visual de los 5 VFX existentes. Bibliotecas externas y catálogo ampliado: ver plan maestro, fuera de este alcance.
+> Estado: evolución visual de las 13 habilidades implementada en `VfxBurst.tsx`. Contrato funcional y flujo DM→WS→jugador **sin cambios**.
+> Alcance anterior (5 VFX, textura radial por familia, sin luces ni librerías externas): **RESUELTO / SUPERADO**. Se conserva aquí como registro histórico; ya no describe el renderer actual.
 
 ## Contrato `VfxEffect`
 
-Definido en `apps/dm/src/components/VfxBurst.tsx`. Es la fuente única de tipos TS del burst.
+Definido en `apps/dm/src/components/VfxBurst.tsx`. `VfxType` vive en `apps/dm/src/lib/vfxParticles.ts`.
 
 | Campo | Tipo | Valor / rango | Nota |
 |---|---|---|---|
-| `id` | `number` | `Date.now()` | Seed del burst; da identidad propia a cada disparo. |
-| `type` | `'fire' \| 'ice' \| 'lightning' \| 'heal' \| 'void'` | 5 variantes | No se agregan tipos nuevos en este alcance. |
+| `id` | `number` | `Date.now()` | Seed del burst; identidad propia por disparo. |
+| `type` | `VfxType` | 13 variantes | `fire`, `ice`, `lightning`, `heal`, `void`, `flamethrower`, `thunder`, `meteor`, `frostnova`, `poison`, `holy`, `shadow`, `arcane`. |
 | `from` | `[number, number, number]` | `[x, 0.6, z]` | `y=0.6` fijado por `backend/routes.py`. |
 | `to` | `[number, number, number]` | `[x, 0.6, z]` | Ídem. |
 | `duration` | `number` | `1500` ms | Fijado en `DmDashboard.tsx` / `PlayerView.tsx`. |
-| `startedAt` | `number \| undefined` | `performance.now()` | El renderer lo **ignora**: usa su primer frame para absorber latencia del WS. |
+| `startedAt` | `number \| undefined` | `performance.now()` | Renderer lo ignora: usa su primer frame para absorber latencia del WS. |
 
 ## Flujo (congelado, solo lectura)
 
@@ -34,37 +34,50 @@ Archivos funcionales del flujo, **no tocar** en este alcance:
 `apps/dm/src/lib/usePlayerSync.ts`, `apps/dm/src/pages/DmDashboard.tsx`,
 `apps/dm/src/pages/PlayerView.tsx`, `apps/dm/src/lib/api.ts`.
 
-Guardrail: `tests/e2e/vfx.spec.ts` intercepta el POST y fija `type` y `from/to`. Corre antes y después de cualquier cambio visual.
+Guardrail: `tests/e2e/vfx.spec.ts` intercepta el POST, fija `type` y `from/to` para `fire`, dispara `Rayo` y falla si aparecen errores `WebGL|shader|ERROR: 0:` en consola.
 
-## Capas y fases
+## Origen y movimiento
 
-`apps/dm/src/lib/vfxParticles.ts` es matemática pura: sin `three`, sin DOM, sin `Math.random`.
-`sampleVfx(layer, input)` devuelve partículas deterministas por `seed ^ hash(type)`.
+Origen centralizado en `vfxEmitterPose(type, t, from, to, offsetY)` (función pura en `VfxBurst.tsx`), usada por el renderer para posición y dirección del emisor.
 
-| Capa | Partículas | Rango `t` activo | Rol |
-|---|---|---|---|
-| `core` | 20 | `0 → 0.78` (fade desde `0.55`) | Núcleo blanco del color de la familia. |
-| `trail` | 48 | `0 → 0.78` (fade desde `0.55`) | Estela desde `from` hasta `to`. |
-| `motes` | 64 | `0 → 0.78` (fade desde `0.55`) | Chispas / fragmentos con ruido lateral. |
-| `impact` | 32 | `0.55 → 0.78` | Destello / implosión en el objetivo. |
-| `aftermath` | 28 | `0.78 → 1` | Residuo con fade lineal hasta `alpha=0`. |
-
-Total: **192 partículas por burst** (tope de coste: 220). Un `<points>` por capa, un `BufferAttribute` de posición y color por capa, reutilizados vía `useMemo`.
-
-Recetas por familia (tabla de datos, sin clases):
-
-| Familia | Núcleo | Movimiento distintivo |
+| Grupo | Tipos | Origen |
 |---|---|---|
-| `fire` | blanco-ámbar | brasas que suben (`+y`), motes naranja→rojo, ruido lateral. |
-| `ice` | cian | fragmentos angulares, polvo que desciende. |
-| `lightning` | amarillo | saltos laterales bruscos (arco ramificado), destello corto. |
-| `heal` | verde | motes ascendentes, aftermath suave, sin humo. |
-| `void` | violeta | motes absorbidos hacia el centro (offset decreciente), implosión. |
+| `projectile` | `fire`, `ice`, `lightning`, `meteor`, `poison` | Atacante (`from`) → objetivo (`to`), con arco por tipo (`ARC`). |
+| `stream` | `flamethrower` | Atacante, dirigido al objetivo. |
+| `strike` | `thunder` | Centrado en objetivo (rayo cae desde arriba). |
+| `impact` | `heal`, `void`, `frostnova`, `holy`, `shadow`, `arcane` | Centrado en objetivo. |
 
-## Límites y decisiones
+## Renderer actual
 
-- **1 textura por familia**, compartida entre todos los bursts y todas las capas vía `memoByKey('vfx-texture-' + type, ...)` en `VfxBurst.tsx`. Es un radial gradient blanco en `CanvasTexture`; el tinte por partícula lo da `vertexColors`. La caché es module-level: no se hace `dispose()` por burst.
-- **Sin `PointLight` por partícula.** Iluminación: `AdditiveBlending`, `depthWrite=false`, `sizeAttenuation`.
-- **Sin dependencias nuevas** (`three.quarks`, `postprocessing`, GPU particles quedan para el plan maestro).
-- **Sin `AbilityVFXConfig`, catálogo de habilidades ni nuevos `type`.** Esto es una evolución de las partículas existentes, no un sistema nuevo.
-- El timing interno (`startedRef` + `clock.elapsedTime`) se conserva: `performance.now()` y el reloj de R3F no comparten origen y este esquema absorbe la latencia del WS.
+`VfxBurst.tsx` no usa `three.quarks`. Dibuja cada burst con `THREE.Points` + `ShaderMaterial` propio.
+
+- **Sprites procedurales**: `soft`, `flame`, `smoke`, `spark`, `shard`, `rune`. Se generan en canvas 64×64 y se cachean module-level vía `memoByKey('vfx-sprite-...')`. No se hace `dispose()` por burst.
+- **Shader**: 3 paradas de color por capa (`uColorA/B/C`), rotación por `uSpin`, escala creciente por `uEndScale`, fade por edad, `uGlow > 1` con `toneMapped:false` y `AdditiveBlending`. Humo usa `additive:false`.
+- **Capas por habilidad** (`LOOKS`): combinan modos `head`, `trail`, `burst`, `stream`, `rise`, `implode`, `orbit`; parámetros `birth`, `life`, `size`, `speed`, `spread`, `rise`, `gravity`, `drag`, `radius`, `spin`, `glow`, `opacity`, `endScale`.
+- **Física**: avance con `speed` y `drag` opcional, gravedad, subida, estela con dirección inversa al movimiento, chispas alargadas y fragmentos angulares.
+- **Rayos**: `lightning` y `thunder` usan haces de cinta encarados a cámara (3 hebras principales + 2 ramas), con geometría de glow separada de la de núcleo y envolvente rápida (`t<0.28` sostén, fade hacia `t≈0.44`).
+- **Complementos**: `PointLight` dinámico por efecto (sigue la pose, fade tardío), `RingGeometry` expansivo en el impacto, roca visible hasta `t<0.76` en `meteor`, parpadeo de intensidad.
+
+Coste: una luz por burst, un anillo opcional, un mesh de roca opcional, un `<points>` por capa y hasta 5 cintas en rayos. Geometrías, materiales y luces se liberan al desmontar; las texturas cacheadas no.
+
+## `lib/vfxParticles.ts`
+
+Sigue siendo matemática pura: sin `three`, sin DOM, sin `Math.random`.
+
+- `VfxType`, `MOTION`, `ARC`, `RECIPES`, `memoByKey`, `seededRandom` y `vfxEmitterPose` alimentan el renderer.
+- `sampleVfx`, `layerCount` y las 5 capas históricas (`core`, `trail`, `motes`, `impact`, `aftermath`, 192 partículas) **quedan solo para specs deterministas**; el renderer actual ya no las consume.
+
+## Decisiones / deuda
+
+- `three.quarks@0.15.5` sigue instalado en `apps/dm/package.json` y `package-lock.json`, pero `VfxBurst.tsx` no lo importa. Pendiente decisión: removerlo o reservarlo para otra capa.
+- El catálogo de 13 entradas y sus etiquetas en español viven en el menú de `DmDashboard.tsx`.
+- Aesthetic final requiere QA visual humana: e2e cubre contrato y errores de shader, no realismo percibido.
+
+## Verificación
+
+```
+npm run typecheck
+npm run lint
+npm run test --workspace=apps/dm
+npm run test:e2e -- tests/e2e/vfx.spec.ts
+```

@@ -23,6 +23,7 @@ import DmDock from '@/components/dm/DmDock';
 import AnchoredMenu from '@/components/ui/AnchoredMenu';
 import { useAnchoredMenu } from '@/lib/useAnchoredMenu';
 import { extractZonePolygons, checkWallCollision, extractBlockingWallLines } from '@/lib/wall-collision';
+import type { VfxType } from '@/lib/vfxParticles';
 import { buildOccluders } from '@/lib/lightOcclusion';
 import { extractFogRegions } from '@/lib/fogMask';
 import { computeReachableCells } from '@/lib/movementRange';
@@ -97,8 +98,8 @@ export default function DmDashboard() {
    */
   const [sheetTokenId, setSheetTokenId] = useState<string | null>(null);
   const [markers, setMarkers] = useState<Array<{ id: number; x: number; z: number; color: string; ttl: number }>>([]);
-  const [vfx, setVfx] = useState<Array<{ id: number; type: 'fire' | 'ice' | 'lightning' | 'heal' | 'void'; from: [number, number, number]; to: [number, number, number]; startedAt: number; duration: number }>>([]);
-  const [pendingVfx, setPendingVfx] = useState<'fire' | 'ice' | 'lightning' | 'heal' | 'void' | null>(null);
+  const [vfx, setVfx] = useState<Array<{ id: number; type: VfxType; from: [number, number, number]; to: [number, number, number]; startedAt: number; duration: number }>>([]);
+  const [pendingVfx, setPendingVfx] = useState<VfxType | null>(null);
   const [vfxMenuOpen, setVfxMenuOpen] = useState(false);
   const [assetsPanelOpen, setAssetsPanelOpen] = useState(false);
   const [measureMode, setMeasureMode] = useState(false);
@@ -2509,13 +2510,27 @@ const startFogMode = useCallback(() => {
                 <span className="flex-1 text-left">Habilidades VFX</span>
               </button>
               <AnchoredMenu open={vfxMenuOpen} rect={vfxMenu.rect} anchorId="vfx" testId="vfx-menu" minWidth={180}>
-                {(['fire', 'ice', 'lightning', 'heal', 'void'] as const).map((type) => (
+                {([
+                  ['fire', 'Fuego'],
+                  ['ice', 'Hielo'],
+                  ['lightning', 'Rayo'],
+                  ['heal', 'Sanación'],
+                  ['void', 'Vacío'],
+                  ['flamethrower', 'Lanzallamas'],
+                  ['thunder', 'Trueno'],
+                  ['meteor', 'Meteoro'],
+                  ['frostnova', 'Nova de hielo'],
+                  ['poison', 'Veneno'],
+                  ['holy', 'Sagrado'],
+                  ['shadow', 'Sombra'],
+                  ['arcane', 'Arcano'],
+                ] as Array<[VfxType, string]>).map(([type, label]) => (
                   <button
                     key={type}
                     onClick={() => { setPendingVfx(type); setVfxMenuOpen(false); }}
                     className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-white"
                   >
-                    {type === 'fire' ? 'Fuego' : type === 'ice' ? 'Hielo' : type === 'lightning' ? 'Rayo' : type === 'heal' ? 'Sanación' : 'Vacío'}
+                    {label}
                   </button>
                 ))}
               </AnchoredMenu>

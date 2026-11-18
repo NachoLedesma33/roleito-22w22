@@ -1,4 +1,17 @@
-export type VfxType = 'fire' | 'ice' | 'lightning' | 'heal' | 'void'
+export type VfxType =
+  | 'fire'
+  | 'ice'
+  | 'lightning'
+  | 'heal'
+  | 'void'
+  | 'flamethrower'
+  | 'thunder'
+  | 'meteor'
+  | 'frostnova'
+  | 'poison'
+  | 'holy'
+  | 'shadow'
+  | 'arcane'
 export type VfxLayer = 'core' | 'trail' | 'motes' | 'impact' | 'aftermath'
 
 export interface VfxParticle {
@@ -101,6 +114,94 @@ const RECIPES: Record<VfxType, Recipe> = {
     radial: 1.5,
     size: 0.9,
     impactAt: [0.55, 0.78],
+  },
+  flamethrower: {
+    core: [1, 1, 0.82],
+    mid: [1, 0.66, 0.12],
+    hot: [0.85, 0.12, 0.03],
+    shape: 'plume',
+    rise: 0.25,
+    lateral: 0.12,
+    radial: 0.7,
+    size: 1.1,
+    impactAt: [0.55, 0.78],
+  },
+  thunder: {
+    core: [1, 1, 1],
+    mid: [0.78, 0.9, 1],
+    hot: [0.5, 0.35, 1],
+    shape: 'bolt',
+    rise: 0,
+    lateral: 0,
+    radial: 0.12,
+    size: 0.85,
+    impactAt: [0.05, 0.7],
+  },
+  meteor: {
+    core: [1, 1, 0.82],
+    mid: [1, 0.58, 0.1],
+    hot: [0.82, 0.14, 0.04],
+    shape: 'plume',
+    rise: 0.35,
+    lateral: 0.2,
+    radial: 0.9,
+    size: 1.4,
+    impactAt: [0.6, 0.85],
+  },
+  frostnova: {
+    core: [0.92, 1, 1],
+    mid: [0.45, 0.88, 1],
+    hot: [0.16, 0.52, 0.95],
+    shape: 'shards',
+    rise: 0,
+    lateral: 0,
+    radial: 1.4,
+    size: 0.7,
+    impactAt: [0.2, 0.7],
+  },
+  poison: {
+    core: [0.82, 1, 0.72],
+    mid: [0.5, 0.85, 0.2],
+    hot: [0.22, 0.5, 0.08],
+    shape: 'plume',
+    rise: 0.4,
+    lateral: 0.2,
+    radial: 1.1,
+    size: 1,
+    impactAt: [0.5, 0.8],
+  },
+  holy: {
+    core: [1, 1, 0.88],
+    mid: [1, 0.88, 0.42],
+    hot: [1, 0.72, 0.16],
+    shape: 'bloom',
+    rise: 1.2,
+    lateral: 0.08,
+    radial: 0.8,
+    size: 1.1,
+    impactAt: [0.4, 0.8],
+  },
+  shadow: {
+    core: [0.72, 0.6, 0.9],
+    mid: [0.38, 0.2, 0.62],
+    hot: [0.12, 0.04, 0.24],
+    shape: 'vortex',
+    rise: 0,
+    lateral: 0,
+    radial: 1.3,
+    size: 1,
+    impactAt: [0.45, 0.8],
+  },
+  arcane: {
+    core: [0.8, 0.95, 1],
+    mid: [0.4, 0.55, 1],
+    hot: [0.8, 0.25, 0.95],
+    shape: 'vortex',
+    rise: 0.2,
+    lateral: 0.15,
+    radial: 1.1,
+    size: 0.8,
+    impactAt: [0.4, 0.82],
   },
 }
 

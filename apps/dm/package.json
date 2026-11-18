@@ -36,7 +36,8 @@
     "react-router-dom": "^7.18.2",
     "sonner": "^2.0.8",
     "tailwind-merge": "^3.7.0",
-    "three": "^0.170.0"
+    "three": "^0.170.0",
+    "three.quarks": "^0.15.5"
   },
   "devDependencies": {
     "@storybook/addon-a11y": "^10.6.1",

@@ -130,6 +130,7 @@ data/canon/
 # Test artifacts
 backend/detection-result.json
 backend/test-dungeon.png
+vfx-quarks-*.png
 
 # Scripts de trabajo local (no van al repo): los usa para medir perf.
 # Estan ignorados a proposito para que `ruff check backend` no falle por ellos:

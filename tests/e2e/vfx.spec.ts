@@ -15,6 +15,12 @@ test.describe('VFX', () => {
       { entityType: 'character', entityId: target.id, x: 2, z: 0 },
     ]);
 
+    const renderErrors: string[] = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') renderErrors.push(msg.text());
+    });
+    page.on('pageerror', (err) => renderErrors.push(err.message));
+
     await page.goto(`/campaigns/${campaign.id}`);
     await expect(page.locator('header select')).toContainText('Escena VFX1', { timeout: 10_000 });
     await page.locator('header select').selectOption(scene.id);
@@ -49,5 +55,12 @@ test.describe('VFX', () => {
     expect(body.from_z).toBe(0);
     expect(body.to_x).toBe(2);
     expect(body.to_z).toBe(0);
+
+    await page.getByTestId(`hud-char-${target.id}`).getByRole('button', { name: 'Cerrar' }).click();
+    await page.locator('[data-anchor="vfx"] button').click();
+    await page.getByRole('button', { name: 'Rayo' }).click();
+    await tray.getByRole('button', { name: 'Objetivo VFX' }).click();
+    await page.waitForTimeout(600);
+    expect(renderErrors.filter((msg) => /WebGL|shader|ERROR: 0:/i.test(msg))).toEqual([]);
   });
 });

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { layerCount, memoByKey, sampleVfx, seededRandom } from './vfxParticles'
+import { vfxEmitterPose } from '../components/VfxBurst'
 
 const LAYERS = ['core', 'trail', 'motes', 'impact', 'aftermath'] as const
 
@@ -108,6 +109,38 @@ describe('sampleVfx', () => {
       sampleVfx('impact', { type, t: 0.6, duration: 1500, seed: 2 }).reduce((a, p) => a + p.alpha, 0)
     expect(impactAlpha('lightning')).toBeGreaterThan(0)
     expect(impactAlpha('heal')).toBe(0)
+  })
+})
+
+describe('vfxEmitterPose', () => {
+  const from: [number, number, number] = [2, 0.6, 3]
+  const to: [number, number, number] = [8, 0.6, -4]
+
+  it('proyectiles arrancan en el atacante y llegan al objetivo', () => {
+    for (const type of ['fire', 'ice', 'lightning', 'meteor', 'poison'] as const) {
+      expect(vfxEmitterPose(type, 0, from, to).position).toEqual([2, 0.6, 3])
+      const end = vfxEmitterPose(type, 1, from, to).position
+      expect(end[0]).toBeCloseTo(8)
+      expect(end[2]).toBeCloseTo(-4)
+    }
+  })
+
+  it('efectos de área aparecen en el objetivo', () => {
+    for (const type of ['heal', 'void', 'frostnova', 'holy', 'shadow', 'arcane'] as const) {
+      expect(vfxEmitterPose(type, 0, from, to).position).toEqual([8, 0.6, -4])
+    }
+  })
+
+  it('trueno cae sobre el objetivo (no es proyectil)', () => {
+    expect(vfxEmitterPose('thunder', 0, from, to).position).toEqual([8, 0.6, -4])
+    expect(vfxEmitterPose('thunder', 1, from, to).position).toEqual([8, 0.6, -4])
+  })
+
+  it('lanzallamas arranca en el atacante y apunta al objetivo', () => {
+    const pose = vfxEmitterPose('flamethrower', 0, from, to)
+    expect(pose.position).toEqual([2, 0.6, 3])
+    expect(pose.direction[0]).toBeGreaterThan(0)
+    expect(pose.direction[2]).toBeLessThan(0)
   })
 })
 

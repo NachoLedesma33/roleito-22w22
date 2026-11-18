@@ -4,7 +4,7 @@ import { Billboard, OrbitControls, Text, useGLTF } from '@react-three/drei';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import * as THREE from 'three';
 import RoomBackground from './RoomBackground';
-import { VfxBurst } from './VfxBurst';
+import { VfxBurst, type VfxEffect } from './VfxBurst';
 import { getRoomSkin } from '@/lib/roomSkins';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
@@ -204,7 +204,7 @@ interface SceneRendererProps {
   roomBackgroundSkin?: string;
   roomSkinId?: string;
   markers?: Array<{ id: number; x: number; z: number; color: string }>;
-  vfx?: Array<{ id: number; type: 'fire' | 'ice' | 'lightning' | 'heal' | 'void'; from: [number, number, number]; to: [number, number, number]; startedAt: number; duration: number }>;
+  vfx?: VfxEffect[];
   gridSize?: number;
   gridSnap?: boolean;
   movementRange?: {
@@ -2404,8 +2404,10 @@ const SceneRendererImpl = function SceneRenderer({
     });
 
   const hasGlow = useMemo(
-    () => visibleCharsVisual.some((c) => (c.statuses ?? []).some((s) => GLOW_STATUSES.has(s))),
-    [visibleCharsVisual],
+    () =>
+      (vfx?.length ?? 0) > 0 ||
+      visibleCharsVisual.some((c) => (c.statuses ?? []).some((s) => GLOW_STATUSES.has(s))),
+    [visibleCharsVisual, vfx],
   );
   // El token que sigue la camara, con la posicion YA interpolada (la misma
   // que dibuja el modelo): asi la camara y la ficha van pegadas.
