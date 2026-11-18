@@ -97,7 +97,7 @@ Sigue siendo matemática pura: sin `three`, sin DOM, sin `Math.random`.
 - `three.quarks@0.15.5` sigue instalado en `apps/dm/package.json` y `package-lock.json`, pero `VfxBurst.tsx` no lo importa. Pendiente decisión: removerlo o reservarlo para otra capa.
 - El catálogo de 36 entradas y sus etiquetas en español viven en los menús de `DmDashboard.tsx` y `PlayerView.tsx` (mismos 4 grupos). `lightning` y `thunder` se conservan sin cambios.
 - Aesthetic final requiere QA visual humana: e2e cubre contrato y errores de shader, no realismo percibido.
-- `Maldito` (`cursed`) no dispara `BloomPass` global: su estela aditiva tiene el núcleo acotado bajo el umbral bloom para no aclarar el mapa con niebla.
+- `Maldito` (`cursed`) no dispara `BloomPass` global. Estela de humo violeta tenue (`NormalBlending`, 120 puntos, alfa ×0.45) más una estela local de 48 puntos por cara, hija del grupo de la cara, así el humo la sigue. Vórtice de implosión tipo `void` (96 puntos sprite difuso, `NormalBlending`, alfa ×0.28) sin `PointLight` ni audio. 3 caras violeta intenso a 0.32× con deriva, bobdeo y fade suave en vez de espiral rígida; nacen arriba del token y no lo tapan. Icono de estado reducido a 0.42× en `SceneRenderer.tsx`.
 - Niebla del jugador: `PlayerView.tsx` pasa `fogColor="rgba(0, 0, 0, 0.98)"`. El DM conserva `rgba(15, 23, 42, 0.55)` en `DmDashboard.tsx`.
 
 ## Verificación
