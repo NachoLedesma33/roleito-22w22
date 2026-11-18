@@ -7,10 +7,11 @@ const ROWS: { key: AudioSettingKey; labelKey: string; fallback: string }[] = [
   { key: 'master', labelKey: 'audio.master', fallback: 'General' },
   { key: 'weather', labelKey: 'audio.weather', fallback: 'Clima' },
   { key: 'dice', labelKey: 'audio.dice', fallback: 'Dados' },
+  { key: 'ambience', labelKey: 'audio.ambience', fallback: 'Ambiente' },
 ];
 
 const PANEL_W = 224; // w-56
-const PANEL_H = 232;
+const PANEL_H = 276;
 
 interface AudioSettingsMenuProps {
   className?: string;

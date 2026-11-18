@@ -34,7 +34,8 @@ import type { VisionConfig } from '@core/domain/types';
 import type { FogRegion } from '@/lib/fogMask';
 import type { LosJob } from '@/lib/losWorker';
 import { DEFAULT_RENDER_MODE } from '@/lib/overlayY';
-import { normalizeSharedAudio, setSharedAudio } from '@/lib/audioSettings';
+import { getSharedAudio, normalizeSharedAudio, setSharedAudio, useAudioSettings } from '@/lib/audioSettings';
+import { AmbientMixer, AMBIENT_TRACKS, type AmbientScene } from '@/lib/ambientAudio';
 import { staticUrl } from '@/lib/staticUrl';
 import { type VfxType } from '@/lib/vfxParticles';
 
@@ -155,6 +156,12 @@ export default function PlayerView() {
   const [audioOn, setAudioOn] = useState(true);
   const audioRef = useRef<HTMLAudioElement>(null);
   const audioStartedRef = useRef(false);
+  // Ambiente compartido: mixer fuera del poll (POLL_MS). Se crea tras el gesto
+  // de elegir personaje y se apaga si no hay sesión activa.
+  const ambientMixerRef = useRef<AmbientMixer | null>(null);
+  const ambientSceneRef = useRef<AmbientScene | null>(null);
+  const [ambientScene, setAmbientScene] = useState<AmbientScene | null>(null);
+  const audioLevels = useAudioSettings();
   const [sheetTab, setSheetTab] = useState<'stats' | 'inventory' | 'spells' | 'notes' | 'assets'>('stats');
   const [grimorioOpen, setGrimorioOpen] = useState(false);
   const [grimorioDetail, setGrimorioDetail] = useState<Spell | null>(null);
@@ -303,6 +310,33 @@ export default function PlayerView() {
   useEffect(() => {
     setSharedAudio(normalizeSharedAudio(data?.audio));
   }, [data?.audio]);
+
+  // Ambiente: el mixer sigue la escena publicada por el DM. Sin sesión (join,
+  // personaje o WebSocket caído) o con el ambiente silenciado, se descarta.
+  useEffect(() => {
+    const scene = getSharedAudio()?.scene ?? null;
+    const active = !!live && !!choice && audioOn && audioStartedRef.current && scene !== null;
+    if (!active) {
+      ambientMixerRef.current?.dispose();
+      ambientMixerRef.current = null;
+      ambientSceneRef.current = null;
+      setAmbientScene(null);
+      return;
+    }
+    if (!ambientMixerRef.current) ambientMixerRef.current = new AmbientMixer(AMBIENT_TRACKS);
+    const mixer = ambientMixerRef.current;
+    mixer.setVolume(audioLevels.master * audioLevels.ambience);
+    if (ambientSceneRef.current !== scene) {
+      mixer.setScene(scene);
+      ambientSceneRef.current = scene;
+    }
+    setAmbientScene(scene);
+  }, [live, choice, audioOn, audioLevels]);
+
+  useEffect(() => () => {
+    ambientMixerRef.current?.dispose();
+    ambientMixerRef.current = null;
+  }, []);
 
   // Prompt de iniciativa para este jugador (si el DM lo agregÃ³ al combate)
   useEffect(() => {
@@ -1248,7 +1282,7 @@ export default function PlayerView() {
   });
 
   return (
-    <main className="h-screen flex flex-col bg-black overflow-hidden select-none">
+    <main data-ambient-scene={ambientScene ?? ''} className="h-screen flex flex-col bg-black overflow-hidden select-none">
       <h1 className="sr-only">{t('pv.srTitle', 'Vista de jugador')}</h1>
       <audio ref={audioRef} loop className="hidden" />
       <TopBar

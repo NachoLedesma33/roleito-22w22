@@ -51,8 +51,10 @@ import {
   getSharedAudio,
   normalizeSharedAudio,
   setSharedAudio,
+  useAudioSettings,
   type AudioSettingKey,
 } from '@/lib/audioSettings';
+import { AmbientMixer, AMBIENT_TRACKS, type AmbientScene } from '@/lib/ambientAudio';
 import SceneSettingsHud from '@/components/SceneSettingsHud';
 import type { ContextMenuItem } from '@/components/ContextMenu';
 import ToastContainer from '@/components/ToastContainer';
@@ -127,6 +129,21 @@ export default function DmDashboard() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [activeScene, setActiveScene] = useState<Scene | null>(null);
   const [sceneChars, setSceneChars] = useState<SceneCharacter[]>([]);
+
+  // Audio ambiente: mixer se crea en el primer cambio de escena (gesto del DM,
+  // necesario para desbloquear AudioContext). null = sin ambiente.
+  const mixerRef = useRef<AmbientMixer | null>(null);
+  const [ambientScene, setAmbientScene] = useState<AmbientScene | null>(null);
+  const audioLevels = useAudioSettings();
+
+  useEffect(() => {
+    mixerRef.current?.setVolume(audioLevels.master * audioLevels.ambience);
+  }, [audioLevels.master, audioLevels.ambience]);
+
+  useEffect(() => () => {
+    mixerRef.current?.dispose();
+    mixerRef.current = null;
+  }, []);
 
   // N3: que esta viendo cada jugador ahora. El jugador publica su mascara de
   // percepcion y el DM la consulta: asi ve a un jugador sin luz solo si esta
@@ -385,7 +402,9 @@ export default function DmDashboard() {
 
   useEffect(() => {
     if (!campaign) return;
-    setSharedAudio(normalizeSharedAudio(campaign.settings_json?.audio));
+    const audio = normalizeSharedAudio(campaign.settings_json?.audio);
+    setSharedAudio(audio);
+    setAmbientScene(audio?.scene ?? null);
   }, [campaign]);
 
   useEffect(() => {
@@ -1496,7 +1515,7 @@ const startFogMode = useCallback(() => {
     if (on) {
       // Al activar, empuja el volumen actual del DM a todos los POV.
       const local = getAudioSettings();
-      setSharedAudio({ sync: true, master: local.master, weather: local.weather, dice: local.dice });
+      setSharedAudio({ sync: true, master: local.master, weather: local.weather, dice: local.dice, ambience: local.ambience });
     } else {
       setSharedAudio(current ? { ...current, sync: false } : null);
     }
@@ -1504,10 +1523,29 @@ const startFogMode = useCallback(() => {
   }, [persistSharedAudio]);
 
   const handleSharedVolumeChange = useCallback((key: AudioSettingKey, value: number) => {
-    const base = getSharedAudio() ?? { sync: true, master: 1, weather: 0.8, dice: 0.8 };
+    const base = getSharedAudio() ?? { sync: true, master: 1, weather: 0.8, dice: 0.8, ambience: 0.6 };
     setSharedAudio({ ...base, [key]: value, sync: true });
     void persistSharedAudio();
   }, [persistSharedAudio]);
+
+  const handleAmbientScene = (value: string) => {
+    const scene = value === '' ? null : value as AmbientScene;
+    setAmbientScene(scene);
+    if (!scene) {
+      mixerRef.current?.dispose();
+      mixerRef.current = null;
+      const base = getSharedAudio() ?? { sync: false, master: 1, weather: 0.8, dice: 0.8, ambience: 0.6 };
+      setSharedAudio({ ...base, scene: null });
+      void persistSharedAudio();
+      return;
+    }
+    if (!mixerRef.current) mixerRef.current = new AmbientMixer(AMBIENT_TRACKS);
+    mixerRef.current.setVolume(audioLevels.master * audioLevels.ambience);
+    mixerRef.current.setScene(scene);
+    const base = getSharedAudio() ?? { sync: false, master: 1, weather: 0.8, dice: 0.8, ambience: 0.6 };
+    setSharedAudio({ ...base, scene });
+    void persistSharedAudio();
+  };
 
   const weatherIntensityTimerRef = useRef<number>(0);
 
@@ -2435,7 +2473,28 @@ const startFogMode = useCallback(() => {
           </>
         }
       >
-        <AudioSettingsMenu className="ml-auto" canSync onToggleSync={handleToggleAudioSync} onVolumeChange={handleSharedVolumeChange} />
+        <div className="ml-auto flex items-center gap-2">
+          <label className="flex items-center gap-1 shrink-0" title={t('audio.ambientScene', 'Escena de ambiente')}>
+            <span className="text-[10px] text-[var(--text-secondary)]">
+              {t('audio.ambientScene', 'Escena de ambiente')}
+            </span>
+            <select
+              value={ambientScene ?? ''}
+              onChange={(e) => handleAmbientScene(e.target.value)}
+              aria-label={t('audio.ambientScene', 'Escena de ambiente')}
+              data-testid="ambient-scene"
+              className="text-xs px-1 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-primary)]"
+            >
+              <option value="">{t('audio.ambientOff', 'Sin ambiente')}</option>
+              <option value="medieval">{t('audio.sceneMedieval', 'Medieval')}</option>
+              <option value="sci-fi">{t('audio.sceneSciFi', 'Ciencia ficción')}</option>
+              <option value="combat">{t('audio.sceneCombat', 'Combate')}</option>
+              <option value="suspense">{t('audio.sceneSuspense', 'Suspenso')}</option>
+              <option value="campaign">{t('audio.sceneCampaign', 'Campaña')}</option>
+            </select>
+          </label>
+          <AudioSettingsMenu canSync onToggleSync={handleToggleAudioSync} onVolumeChange={handleSharedVolumeChange} />
+        </div>
         
             
             
