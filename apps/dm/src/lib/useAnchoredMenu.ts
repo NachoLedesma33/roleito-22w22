@@ -72,7 +72,11 @@ export function useAnchoredMenu({
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
-    const onScroll = () => onClose();
+    const onScroll = (e: Event) => {
+      const target = e.target as Element | null;
+      if (target?.closest?.(`[data-anchored-menu="${anchorId}"]`)) return;
+      onClose();
+    };
     document.addEventListener('mousedown', onMouseDown);
     document.addEventListener('keydown', onKeyDown);
     window.addEventListener('scroll', onScroll, true);

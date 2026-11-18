@@ -22,6 +22,19 @@ export type VfxType =
   | 'burstfire'
   | 'punch'
   | 'slam'
+  | 'chainlightning'
+  | 'icespear'
+  | 'hail'
+  | 'earthquake'
+  | 'vines'
+  | 'bleed'
+  | 'toxiccloud'
+  | 'sonicwave'
+  | 'forcepush'
+  | 'gravityfield'
+  | 'barrier'
+  | 'lifedrain'
+  | 'hex'
 
 export const MELEE_VFX: ReadonlySet<VfxType> = new Set<VfxType>([
   'slash', 'cleave', 'punch', 'slam',
@@ -327,6 +340,149 @@ const RECIPES: Record<VfxType, Recipe> = {
     radial: 1.4,
     size: 1.2,
     impactAt: [0.5, 0.85],
+  },
+  chainlightning: {
+    core: [1, 1, 1],
+    mid: [0.38, 1, 0.88],
+    hot: [0.06, 0.24, 0.62],
+    shape: 'bolt',
+    rise: 0,
+    lateral: 0.25,
+    radial: 0.35,
+    size: 0.65,
+    impactAt: [0.15, 0.72],
+  },
+  icespear: {
+    core: [1, 1, 1],
+    mid: [0.5, 0.9, 1],
+    hot: [0.1, 0.42, 0.9],
+    shape: 'shards',
+    rise: -0.15,
+    lateral: 0,
+    radial: 0.45,
+    size: 0.7,
+    impactAt: [0.66, 0.92],
+  },
+  hail: {
+    core: [1, 1, 1],
+    mid: [0.55, 0.88, 1],
+    hot: [0.16, 0.48, 0.92],
+    shape: 'shards',
+    rise: -1.1,
+    lateral: 0.6,
+    radial: 1.9,
+    size: 0.4,
+    impactAt: [0.4, 0.96],
+  },
+  earthquake: {
+    core: [0.9, 0.8, 0.66],
+    mid: [0.55, 0.42, 0.3],
+    hot: [0.18, 0.12, 0.08],
+    shape: 'plume',
+    rise: -0.35,
+    lateral: 0.9,
+    radial: 2.2,
+    size: 1.4,
+    impactAt: [0.2, 0.85],
+  },
+  vines: {
+    core: [0.9, 1, 0.75],
+    mid: [0.3, 0.66, 0.16],
+    hot: [0.06, 0.22, 0.04],
+    shape: 'bloom',
+    rise: 1.4,
+    lateral: 0.25,
+    radial: 0.85,
+    size: 0.75,
+    impactAt: [0.12, 0.9],
+  },
+  bleed: {
+    core: [1, 0.65, 0.7],
+    mid: [0.7, 0.08, 0.16],
+    hot: [0.24, 0.02, 0.04],
+    shape: 'plume',
+    rise: -0.45,
+    lateral: 0.6,
+    radial: 1.1,
+    size: 0.6,
+    impactAt: [0.18, 0.8],
+  },
+  toxiccloud: {
+    core: [0.85, 1, 0.55],
+    mid: [0.36, 0.68, 0.12],
+    hot: [0.1, 0.24, 0.04],
+    shape: 'plume',
+    rise: 0.8,
+    lateral: 0.45,
+    radial: 1.8,
+    size: 1.3,
+    impactAt: [0.18, 0.92],
+  },
+  sonicwave: {
+    core: [1, 1, 1],
+    mid: [0.6, 0.9, 1],
+    hot: [0.16, 0.34, 0.7],
+    shape: 'bloom',
+    rise: 0.1,
+    lateral: 0.1,
+    radial: 2.3,
+    size: 0.5,
+    impactAt: [0.05, 0.6],
+  },
+  forcepush: {
+    core: [1, 1, 1],
+    mid: [0.55, 0.6, 1],
+    hot: [0.3, 0.12, 0.7],
+    shape: 'bolt',
+    rise: 0,
+    lateral: 0,
+    radial: 0.65,
+    size: 0.85,
+    impactAt: [0.5, 0.88],
+  },
+  gravityfield: {
+    core: [0.85, 0.75, 1],
+    mid: [0.32, 0.16, 0.72],
+    hot: [0.04, 0.02, 0.12],
+    shape: 'vortex',
+    rise: -0.25,
+    lateral: 0,
+    radial: 2.1,
+    size: 0.75,
+    impactAt: [0.25, 0.88],
+  },
+  barrier: {
+    core: [1, 1, 1],
+    mid: [0.4, 0.82, 1],
+    hot: [0.06, 0.26, 0.62],
+    shape: 'bloom',
+    rise: 1,
+    lateral: 0.1,
+    radial: 1.5,
+    size: 0.75,
+    impactAt: [0.05, 0.82],
+  },
+  lifedrain: {
+    core: [1, 0.9, 1],
+    mid: [0.64, 0.16, 0.86],
+    hot: [0.16, 0.02, 0.24],
+    shape: 'vortex',
+    rise: 0.35,
+    lateral: 0,
+    radial: 1.3,
+    size: 0.8,
+    impactAt: [0.12, 0.75],
+  },
+  hex: {
+    core: [0.9, 0.75, 1],
+    mid: [0.42, 0.1, 0.68],
+    hot: [0.06, 0, 0.14],
+    shape: 'vortex',
+    rise: -0.35,
+    lateral: 0.25,
+    radial: 1.6,
+    size: 0.85,
+    impactAt: [0.1, 0.92],
   },
 }
 

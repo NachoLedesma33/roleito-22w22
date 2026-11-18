@@ -73,6 +73,12 @@ import IconButton from '@/components/ui/IconButton';
 import { staticUrl } from '@/lib/staticUrl';
 import { Dices, Swords, NotebookPen, ClipboardList, CalendarDays, ScrollText, FolderOpen, Map as MapIcon, Bot, MessageCircle, Zap, BookOpen, StickyNote, LayoutGrid, Brush, SquareDashed, PaintBucket, Undo2, Redo2, CloudSun, Settings, ImagePlus, Wand2, Square, Mountain, ChevronDown, Users, Layers, Lightbulb, Trash, Sparkles, CircleDot, Eye, EyeOff, Package } from 'lucide-react';
 
+const MELEE_RANGE_SQUARES = 4;
+const MELEE_RANGE_FALLBACK = 20;
+const MELEE_LUNGE_MIN_MS = 320;
+const MELEE_LUNGE_MAX_MS = 780;
+const meleeRangeUnits = (gridSize: number) => gridSize > 0 ? gridSize * MELEE_RANGE_SQUARES : MELEE_RANGE_FALLBACK;
+
 const VFX_GROUPS: Array<{ label: string; color: string; items: Array<[VfxType, string]> }> = [
   {
     label: 'Elemental',
@@ -80,6 +86,8 @@ const VFX_GROUPS: Array<{ label: string; color: string; items: Array<[VfxType, s
     items: [
       ['fire', 'Fuego'], ['ice', 'Hielo'], ['lightning', 'Rayo'], ['thunder', 'Trueno'],
       ['flamethrower', 'Lanzallamas'], ['frostnova', 'Nova de hielo'], ['meteor', 'Meteoro'],
+      ['chainlightning', 'Rayo en cadena'], ['icespear', 'Lanza de hielo'], ['hail', 'Granizo'],
+      ['earthquake', 'Terremoto'], ['sonicwave', 'Onda sónica'],
     ],
   },
   {
@@ -88,6 +96,8 @@ const VFX_GROUPS: Array<{ label: string; color: string; items: Array<[VfxType, s
     items: [
       ['heal', 'Sanación'], ['poison', 'Veneno'], ['holy', 'Sagrado'],
       ['shadow', 'Sombra'], ['void', 'Vacío'], ['arcane', 'Arcano'],
+      ['vines', 'Enredaderas'], ['toxiccloud', 'Nube tóxica'], ['gravityfield', 'Campo de gravedad'],
+      ['barrier', 'Barrera de energía'], ['lifedrain', 'Drenaje de vida'], ['hex', 'Maldición'],
     ],
   },
   {
@@ -96,7 +106,7 @@ const VFX_GROUPS: Array<{ label: string; color: string; items: Array<[VfxType, s
     items: [
       ['arrow', 'Flecha'], ['arrowrain', 'Lluvia de flechas'],
       ['throwingknife', 'Cuchillo arrojadizo'], ['javelin', 'Jabalina'],
-      ['gunshot', 'Disparo'], ['burstfire', 'Ráfaga'],
+      ['gunshot', 'Disparo'], ['burstfire', 'Ráfaga'], ['forcepush', 'Empujón arcano'],
     ],
   },
   {
@@ -104,6 +114,7 @@ const VFX_GROUPS: Array<{ label: string; color: string; items: Array<[VfxType, s
     color: '#94a3b8',
     items: [
       ['slash', 'Cuchillazo'], ['cleave', 'Espadazo'], ['punch', 'Puñetazo'], ['slam', 'Martillazo'],
+      ['bleed', 'Hemorragia'],
     ],
   },
 ];
@@ -137,6 +148,8 @@ export default function DmDashboard() {
   const [pendingVfx, setPendingVfx] = useState<VfxType | null>(null);
   const [vfxMenuOpen, setVfxMenuOpen] = useState(false);
   const [lungeOverrides, setLungeOverrides] = useState<Record<string, { x: number; z: number; baseX: number; baseZ: number }>>({});
+  const lungeAnimRef = useRef<Record<string, { baseX: number; baseZ: number; endX: number; endZ: number; start: number; arriveAt: number; end: number }>>({});
+  const lastLungeStateRef = useRef(0);
   useEffect(() => {
     setLungeOverrides((prev) => {
       const next = { ...prev };
@@ -1306,6 +1319,25 @@ const startFogMode = useCallback(() => {
           prev.rotation += Math.atan2(Math.sin(dr), Math.cos(dr)) * k;
         }
       }
+      const lunges = lungeAnimRef.current;
+      const lungeIds = Object.keys(lunges);
+      if (lungeIds.length && now - lastLungeStateRef.current > 28) {
+        lastLungeStateRef.current = now;
+        const next: Record<string, { x: number; z: number; baseX: number; baseZ: number }> = {};
+        for (const id of lungeIds) {
+          const l = lunges[id];
+          if (now >= l.end) { delete lunges[id]; continue; }
+          const raw = Math.min(1, (now - l.start) / (l.arriveAt - l.start));
+          const e = 1 - Math.pow(1 - raw, 3);
+          next[id] = {
+            x: l.baseX + (l.endX - l.baseX) * e,
+            z: l.baseZ + (l.endZ - l.baseZ) * e,
+            baseX: l.baseX,
+            baseZ: l.baseZ,
+          };
+        }
+        setLungeOverrides(next);
+      }
       rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
@@ -1569,17 +1601,28 @@ const startFogMode = useCallback(() => {
       if (attacker && target) {
         const effect = { id: Date.now(), type: pendingVfx, from: [attacker.x, 0.6, attacker.z] as [number, number, number], to: [target.x, 0.6, target.z] as [number, number, number], startedAt: performance.now(), duration: 1500 };
         if (MELEE_VFX.has(pendingVfx)) {
+          const range = meleeRangeUnits(activeScene?.grid_size ?? 0);
+          const dist = Math.hypot(target.x - attacker.x, target.z - attacker.z);
+          if (dist > range) {
+            push({ id: `vfx-range-${Date.now()}`, rollerName: t('dm.unknown', 'Desconocido'), diceType: 1, count: 1, results: [1], total: 1, label: t('dm.vfxOutOfRange', 'Fuera de alcance'), timestamp: Date.now() });
+            setPendingVfx(null);
+            return;
+          }
           const dx = target.x - attacker.x;
           const dz = target.z - attacker.z;
-          const d = Math.hypot(dx, dz) || 1;
+          const d = dist || 1;
+          const advance = Math.max(0, Math.min(dist - 0.9, range * 0.8));
+          const now = performance.now();
+          const arriveAt = now + Math.min(MELEE_LUNGE_MAX_MS, Math.max(MELEE_LUNGE_MIN_MS, advance * 40));
+          lungeAnimRef.current[attacker.id] = {
+            baseX: attacker.x, baseZ: attacker.z,
+            endX: attacker.x + (dx / d) * advance,
+            endZ: attacker.z + (dz / d) * advance,
+            start: now, arriveAt, end: arriveAt + 700,
+          };
           setLungeOverrides((prev) => ({
             ...prev,
-            [attacker.id]: {
-              x: target.x - (dx / d) * 0.9,
-              z: target.z - (dz / d) * 0.9,
-              baseX: attacker.x,
-              baseZ: attacker.z,
-            },
+            [attacker.id]: { x: attacker.x, z: attacker.z, baseX: attacker.x, baseZ: attacker.z },
           }));
         }
         setVfx((prev) => [...prev, effect]);
@@ -1618,7 +1661,7 @@ const startFogMode = useCallback(() => {
     setDistanceFrom(null);
     setDistanceTo(null);
     setSelectedTokenId((prev) => prev === tokenId ? null : tokenId);
-  }, [distanceFrom, attachLightMode, handleAttachComplete, pendingVfx, selectedTokenId]);
+  }, [distanceFrom, attachLightMode, handleAttachComplete, pendingVfx, selectedTokenId, activeScene, push, t]);
 
   const handleTokenDrag = useCallback(async (sceneCharId: string, x: number, z: number) => {
     if (!campaignId || !activeScene) return;
@@ -1754,6 +1797,20 @@ const startFogMode = useCallback(() => {
     );
     return { tokenId: sc.id, cellSize, cells };
   }, [activeScene, selectedTokenId, sceneChars, sceneOccluders, mapAspect]);
+
+  const meleeRangeMarker = useMemo(() => {
+    if (!pendingVfx || !MELEE_VFX.has(pendingVfx) || !selectedTokenId) return null;
+    const sc = sceneChars.find((s) => s.id === selectedTokenId);
+    if (!sc) return null;
+    return {
+      id: -1,
+      shape: 'circle' as const,
+      x: sc.x,
+      z: sc.z,
+      size: meleeRangeUnits(activeScene?.grid_size ?? 0),
+      rotation: 0,
+    };
+  }, [pendingVfx, selectedTokenId, sceneChars, activeScene]);
 
   const handleTokenPlace = useCallback(async (entityType: string, entityId: string, x: number, z: number) => {
     if (!campaignId || !activeScene) return;
@@ -3560,7 +3617,7 @@ const startFogMode = useCallback(() => {
                   }
                 }}
                 measureLine={measureA && measureB ? { a: measureA, b: measureB } : null}
-                aoeMarkers={aoeMarkers}
+                aoeMarkers={meleeRangeMarker ? [...aoeMarkers, meleeRangeMarker] : aoeMarkers}
                 onItemClick={handleItemClickForAttach}
                 onItemContextMenu={(itemId, clientX, clientY) => {
                   const item = graphRef.getItem(itemId)

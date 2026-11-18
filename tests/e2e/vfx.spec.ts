@@ -58,14 +58,14 @@ test.describe('VFX', () => {
 
     await page.getByTestId(`hud-char-${target.id}`).getByRole('button', { name: 'Cerrar' }).click();
     await page.locator('[data-anchor="vfx"] button').click();
-    await page.getByRole('button', { name: 'Rayo' }).click();
+    await page.getByRole('button', { name: 'Rayo', exact: true }).click();
     await tray.getByRole('button', { name: 'Objetivo VFX' }).click();
     await page.waitForTimeout(600);
 
     await page.getByTestId(`hud-char-${target.id}`).getByRole('button', { name: 'Cerrar' }).click();
     await page.locator('[data-anchor="vfx"] button').click();
     const menu = page.getByTestId('vfx-menu');
-    await expect(menu.getByRole('button')).toHaveCount(23);
+    await expect(menu.getByRole('button')).toHaveCount(36);
     const meleePost = page.waitForRequest(
       (r) =>
         r.url().includes(`/api/campaigns/${campaign.id}/vfx`) && r.method() === 'POST',
@@ -140,5 +140,51 @@ test.describe('VFX', () => {
     expect(body.to_x).toBe(2);
     expect(body.to_z).toBe(0);
     await pctx.close();
+  });
+
+  test('VFX3: nuevas habilidades renderizan sin errores de shader', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    const scene = await createScene(request, campaign.id, 'Escena VFX3');
+    const attacker = await createCharacter(request, campaign.id, { name: 'Atacante VFX3' });
+    const target = await createCharacter(request, campaign.id, { name: 'Objetivo VFX3' });
+    await seedTokens(request, campaign.id, scene.id, [
+      { entityType: 'character', entityId: attacker.id, x: -1, z: 0 },
+      { entityType: 'character', entityId: target.id, x: 2, z: 0 },
+    ]);
+
+    const renderErrors: string[] = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') renderErrors.push(msg.text());
+    });
+    page.on('pageerror', (err) => renderErrors.push(err.message));
+
+    await page.goto(`/campaigns/${campaign.id}`);
+    await page.locator('header select').selectOption(scene.id);
+    await page.getByTestId('fichas-toggle').click();
+    const tray = page.getByTestId('hud-dm-token-tray-dock');
+    await expect(tray).toBeVisible();
+    await tray.getByRole('button', { name: 'Atacante VFX3' }).click();
+    await page.getByTestId(`hud-char-${attacker.id}`).getByRole('button', { name: 'Cerrar' }).click();
+
+    const posted: string[] = [];
+    page.on('request', (r) => {
+      if (r.url().includes(`/api/campaigns/${campaign.id}/vfx`) && r.method() === 'POST') {
+        posted.push((r.postDataJSON() as { type: string }).type);
+      }
+    });
+
+    for (const label of ['Rayo en cadena', 'Drenaje de vida', 'Maldición', 'Terremoto']) {
+      await page.locator('[data-anchor="vfx"] button').click();
+      await page.getByRole('button', { name: label, exact: true }).click();
+      await tray.getByRole('button', { name: 'Objetivo VFX3' }).click();
+      await page.getByTestId(`hud-char-${target.id}`).getByRole('button', { name: 'Cerrar' }).click();
+      await page.waitForTimeout(250);
+    }
+
+    expect(posted).toEqual(['chainlightning', 'lifedrain', 'hex', 'earthquake']);
+    expect(renderErrors.filter((msg) => /WebGL|shader|ERROR: 0:/i.test(msg))).toEqual([]);
   });
 });

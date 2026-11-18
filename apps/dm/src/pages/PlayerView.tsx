@@ -52,6 +52,8 @@ const VFX_GROUPS: Array<{ label: string; color: string; items: Array<[VfxType, s
     items: [
       ['fire', 'Fuego'], ['ice', 'Hielo'], ['lightning', 'Rayo'], ['thunder', 'Trueno'],
       ['flamethrower', 'Lanzallamas'], ['frostnova', 'Nova de hielo'], ['meteor', 'Meteoro'],
+      ['chainlightning', 'Rayo en cadena'], ['icespear', 'Lanza de hielo'], ['hail', 'Granizo'],
+      ['earthquake', 'Terremoto'], ['sonicwave', 'Onda sónica'],
     ],
   },
   {
@@ -60,6 +62,8 @@ const VFX_GROUPS: Array<{ label: string; color: string; items: Array<[VfxType, s
     items: [
       ['heal', 'Sanación'], ['poison', 'Veneno'], ['holy', 'Sagrado'],
       ['shadow', 'Sombra'], ['void', 'Vacío'], ['arcane', 'Arcano'],
+      ['vines', 'Enredaderas'], ['toxiccloud', 'Nube tóxica'], ['gravityfield', 'Campo de gravedad'],
+      ['barrier', 'Barrera de energía'], ['lifedrain', 'Drenaje de vida'], ['hex', 'Maldición'],
     ],
   },
   {
@@ -68,7 +72,7 @@ const VFX_GROUPS: Array<{ label: string; color: string; items: Array<[VfxType, s
     items: [
       ['arrow', 'Flecha'], ['arrowrain', 'Lluvia de flechas'],
       ['throwingknife', 'Cuchillo arrojadizo'], ['javelin', 'Jabalina'],
-      ['gunshot', 'Disparo'], ['burstfire', 'Ráfaga'],
+      ['gunshot', 'Disparo'], ['burstfire', 'Ráfaga'], ['forcepush', 'Empujón arcano'],
     ],
   },
   {
@@ -76,6 +80,7 @@ const VFX_GROUPS: Array<{ label: string; color: string; items: Array<[VfxType, s
     color: '#94a3b8',
     items: [
       ['slash', 'Cuchillazo'], ['cleave', 'Espadazo'], ['punch', 'Puñetazo'], ['slam', 'Martillazo'],
+      ['bleed', 'Hemorragia'],
     ],
   },
 ];
@@ -1459,7 +1464,7 @@ export default function PlayerView() {
               sensedIds={sensedIdSet(sensed)}
               showZones
               readOnly
-              fogColor="rgba(5, 5, 20, 0.82)"
+              fogColor="rgba(0, 0, 0, 0.98)"
               renderMode={DEFAULT_RENDER_MODE}
               selectedTokenId={
                 choice?.kind === 'character'

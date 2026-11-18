@@ -4,6 +4,7 @@ import { vfxEmitterPose } from '../components/VfxBurst'
 
 const LAYERS = ['core', 'trail', 'motes', 'impact', 'aftermath'] as const
 const NEW_TYPES: VfxType[] = ['arrow', 'arrowrain', 'throwingknife', 'javelin', 'slash', 'cleave', 'gunshot', 'burstfire', 'punch', 'slam']
+const EXTRA_TYPES: VfxType[] = ['chainlightning', 'icespear', 'hail', 'earthquake', 'vines', 'bleed', 'toxiccloud', 'sonicwave', 'forcepush', 'gravityfield', 'barrier', 'lifedrain', 'hex']
 
 describe('seededRandom', () => {
   it('mismo seed -> misma secuencia, seed distinto -> distinta', () => {
@@ -173,6 +174,28 @@ describe('catálogo ampliado', () => {
       const a = sampleVfx('impact', { type, t: 0.5, duration: 1500, seed: 4 })
       expect(a).toEqual(sampleVfx('impact', { type, t: 0.5, duration: 1500, seed: 4 }))
       expect(a.every((p) => [...p.offset, p.size, p.alpha, ...p.color].every(Number.isFinite))).toBe(true)
+    }
+  })
+
+  it('los 13 tipos adicionales muestrean finito y determinista', () => {
+    for (const type of EXTRA_TYPES) {
+      const a = sampleVfx('impact', { type, t: 0.5, duration: 1500, seed: 6 })
+      expect(a).toEqual(sampleVfx('impact', { type, t: 0.5, duration: 1500, seed: 6 }))
+      expect(a.every((p) => [...p.offset, p.size, p.alpha, ...p.color].every(Number.isFinite))).toBe(true)
+    }
+  })
+
+  it('origen de los tipos adicionales: proyectil, área y chorro', () => {
+    const from: [number, number, number] = [2, 0.6, 3]
+    const to: [number, number, number] = [8, 0.6, -4]
+    expect(vfxEmitterPose('icespear', 0, from, to).position).toEqual([2, 0.6, 3])
+    for (const type of ['hail', 'earthquake', 'vines', 'bleed', 'toxiccloud', 'sonicwave', 'gravityfield', 'barrier', 'lifedrain', 'hex'] as const) {
+      expect(vfxEmitterPose(type, 0, from, to).position).toEqual([8, 0.6, -4])
+    }
+    for (const type of ['chainlightning', 'forcepush'] as const) {
+      const pose = vfxEmitterPose(type, 0, from, to)
+      expect(pose.position).toEqual([2, 0.6, 3])
+      expect(pose.direction[0]).toBeGreaterThan(0)
     }
   })
 

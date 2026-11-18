@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { memoByKey, seededRandom, type VfxType } from '../lib/vfxParticles';
+import { MELEE_VFX, memoByKey, seededRandom, type VfxType } from '../lib/vfxParticles';
+import { playVfxSound } from '../lib/vfxSound';
 
 export interface VfxEffect {
   id: number;
@@ -58,6 +59,9 @@ const MOTION: Record<VfxType, 'projectile' | 'impact' | 'stream' | 'strike'> = {
   arrow: 'projectile', arrowrain: 'impact', throwingknife: 'projectile', javelin: 'projectile',
   slash: 'projectile', cleave: 'projectile', punch: 'projectile', slam: 'projectile',
   gunshot: 'stream', burstfire: 'stream',
+  chainlightning: 'stream', icespear: 'projectile', hail: 'impact', earthquake: 'impact',
+  vines: 'impact', bleed: 'impact', toxiccloud: 'impact', sonicwave: 'impact',
+  forcepush: 'stream', gravityfield: 'impact', barrier: 'impact', lifedrain: 'impact', hex: 'impact',
 };
 
 const ARC: Record<VfxType, number> = {
@@ -65,9 +69,11 @@ const ARC: Record<VfxType, number> = {
   thunder: 0, meteor: 2.6, frostnova: 0, poison: 0.7, holy: 0, shadow: 0, arcane: 0,
   arrow: 0.22, arrowrain: 0, throwingknife: 0.5, javelin: 1.3,
   slash: 0.1, cleave: 0.15, punch: 0.05, slam: 0.2, gunshot: 0, burstfire: 0,
+  chainlightning: 0, icespear: 0.7, hail: 0, earthquake: 0, vines: 0, bleed: 0,
+  toxiccloud: 0, sonicwave: 0, forcepush: 0, gravityfield: 0, barrier: 0, lifedrain: 0, hex: 0,
 };
 
-const FLIGHT: Partial<Record<VfxType, number>> = { arrow: 0.62, javelin: 0.7 };
+const FLIGHT: Partial<Record<VfxType, number>> = { arrow: 0.62, javelin: 0.7, icespear: 0.68 };
 
 type SpriteKind = 'soft' | 'flame' | 'smoke' | 'spark' | 'shard' | 'rune' | 'arrow' | 'blade' | 'bullet';
 
@@ -231,7 +237,7 @@ function getSprite(kind: SpriteKind): THREE.Texture {
   return memoByKey(`vfx-sprite-${kind}`, () => makeSprite(kind));
 }
 
-type Mode = 'head' | 'trail' | 'burst' | 'recoil' | 'stream' | 'rise' | 'implode' | 'orbit' | 'rain';
+type Mode = 'head' | 'trail' | 'burst' | 'recoil' | 'stream' | 'rise' | 'riseFrom' | 'implode' | 'orbit' | 'rain' | 'siphon' | 'chain';
 
 type LayerCfg = {
   kind: SpriteKind;
@@ -282,6 +288,16 @@ const STEEL = [0xffffff, 0xb8c6d4, 0x3a4452] as [number, number, number];
 const BRASS = [0xffffff, 0xd8b060, 0x4a3010] as [number, number, number];
 const IMPACT = [0xffffff, 0xffd0a0, 0x8a3018] as [number, number, number];
 const MUZZLE = [0xffffff, 0xffc860, 0x603010] as [number, number, number];
+const CHAIN = [0xffffff, 0x5fffd8, 0x08306e] as [number, number, number];
+const EARTH = [0xe0c4a0, 0x8a6848, 0x2a1c12] as [number, number, number];
+const DUST = [0xb09a78, 0x6a5642, 0x241a12] as [number, number, number];
+const VINE = [0xd8ffb0, 0x4aa020, 0x123808] as [number, number, number];
+const BLOOD = [0xff6070, 0xa81020, 0x300408] as [number, number, number];
+const BLOOD_MIST = [0x7a2028, 0x3a0c12, 0x140408] as [number, number, number];
+const SONIC = [0xffffff, 0xa8e4ff, 0x2a50a0] as [number, number, number];
+const GRAVITY = [0xc0a0ff, 0x4020a0, 0x060010] as [number, number, number];
+const DRAIN = [0xf0c8ff, 0x9020d0, 0x18002a] as [number, number, number];
+const HEX = [0xd0a0ff, 0x6a20a0, 0x080014] as [number, number, number];
 
 type Look = {
   layers: LayerCfg[];
@@ -493,7 +509,6 @@ const LOOKS: Record<VfxType, Look> = {
   },
   slash: {
     layers: [
-      def({ kind: 'blade', mode: 'head', count: 1, birth: [0, 0.62], life: [9, 9], size: [0.9, 0.9], speed: [0, 0], spread: 0, colors: [0xffffff, 0xdfefff, 0x506070], glow: 3, opacity: 1, endScale: 1, spin: 2 }),
       def({ kind: 'blade', mode: 'trail', count: 8, birth: [0, 0.6], life: [0.12, 0.26], size: [0.5, 0.9], speed: [0.5, 1.2], spread: 0.5, colors: [0xffffff, 0xcfe4f0, 0x405060], glow: 2.6, opacity: 0.7, endScale: 1.4, spin: 3 }),
       def({ kind: 'spark', mode: 'burst', count: 46, birth: [0.6, 0.72], life: [0.18, 0.42], size: [0.04, 0.13], speed: [4, 9], spread: 0.9, gravity: -4, colors: [0xffffff, 0xffd0a0, 0x8a3018], glow: 3.8, opacity: 0.95, spin: 13 }),
       def({ kind: 'shard', mode: 'burst', count: 22, birth: [0.61, 0.74], life: [0.24, 0.5], size: [0.1, 0.28], speed: [3, 7], spread: 0.8, gravity: -5, colors: IMPACT, glow: 2.4, opacity: 0.9, spin: 11 }),
@@ -505,7 +520,6 @@ const LOOKS: Record<VfxType, Look> = {
   },
   cleave: {
     layers: [
-      def({ kind: 'blade', mode: 'head', count: 1, birth: [0, 0.62], life: [9, 9], size: [1.3, 1.3], speed: [0, 0], spread: 0, colors: [0xffffff, 0xffdca0, 0x604010], glow: 3.2, opacity: 1, endScale: 1, spin: 1.5 }),
       def({ kind: 'blade', mode: 'trail', count: 12, birth: [0, 0.6], life: [0.14, 0.3], size: [0.7, 1.2], speed: [0.6, 1.4], spread: 0.7, colors: BRASS, glow: 2.8, opacity: 0.8, endScale: 1.6, spin: 2 }),
       def({ kind: 'spark', mode: 'burst', count: 64, birth: [0.58, 0.72], life: [0.22, 0.5], size: [0.05, 0.15], speed: [5, 11], spread: 1, gravity: -5, colors: [0xffffff, 0xffc890, 0x803010], glow: 4, opacity: 0.95, spin: 14 }),
       def({ kind: 'shard', mode: 'burst', count: 32, birth: [0.6, 0.74], life: [0.3, 0.6], size: [0.14, 0.4], speed: [4, 8], spread: 1, gravity: -6, colors: IMPACT, glow: 2.6, opacity: 0.92, spin: 12 }),
@@ -554,7 +568,6 @@ const LOOKS: Record<VfxType, Look> = {
   },
   punch: {
     layers: [
-      def({ kind: 'soft', mode: 'head', count: 1, birth: [0, 0.6], life: [9, 9], size: [0.4, 0.4], speed: [0, 0], spread: 0, colors: [0xffffff, 0xffd0a0, 0x8a5030], glow: 2.4, opacity: 0.9, endScale: 1 }),
       def({ kind: 'spark', mode: 'burst', count: 40, birth: [0.62, 0.74], life: [0.16, 0.38], size: [0.04, 0.12], speed: [3, 7], spread: 0.8, gravity: -4, colors: IMPACT, glow: 3.6, opacity: 0.95, spin: 12 }),
       def({ kind: 'smoke', mode: 'burst', count: 16, birth: [0.64, 0.78], life: [0.4, 0.8], size: [0.4, 1], speed: [1, 2.5], spread: 0.9, rise: 0.9, colors: FIRE_SMOKE, glow: 1, opacity: 0.3, additive: false, endScale: 2.4 }),
       def({ kind: 'spark', mode: 'recoil', count: 16, birth: [0.6, 0.72], life: [0.14, 0.32], size: [0.04, 0.1], speed: [1.5, 4], spread: 0.5, colors: IMPACT, glow: 3, opacity: 0.8, spin: 9 }),
@@ -565,7 +578,6 @@ const LOOKS: Record<VfxType, Look> = {
   },
   slam: {
     layers: [
-      def({ kind: 'soft', mode: 'head', count: 1, birth: [0, 0.58], life: [9, 9], size: [0.7, 0.7], speed: [0, 0], spread: 0, colors: [0xffffff, 0xffd0a0, 0x6a4020], glow: 2.6, opacity: 0.9, endScale: 1 }),
       def({ kind: 'spark', mode: 'burst', count: 80, birth: [0.66, 0.78], life: [0.22, 0.55], size: [0.05, 0.16], speed: [5, 12], spread: 1, gravity: -8, colors: [0xffffff, 0xffb070, 0x703010], glow: 4, opacity: 0.95, spin: 14 }),
       def({ kind: 'shard', mode: 'burst', count: 42, birth: [0.67, 0.8], life: [0.35, 0.75], size: [0.16, 0.46], speed: [4, 9], spread: 1, gravity: -12, colors: [0x8a7060, 0x40302a, 0x120c0a], glow: 1.4, opacity: 0.92, spin: 12 }),
       def({ kind: 'smoke', mode: 'burst', count: 40, birth: [0.68, 0.84], life: [0.7, 1.3], size: [0.9, 2.2], speed: [1.2, 3.4], spread: 1.1, rise: 1.3, colors: FIRE_SMOKE, glow: 1, opacity: 0.45, additive: false, endScale: 3.2 }),
@@ -574,6 +586,160 @@ const LOOKS: Record<VfxType, Look> = {
     ring: { color: 0xffa060, radius: 2.6, at: 0.68 },
     impactFrom: { color: 0xffb080, radius: 1, at: 0.66 },
     light: { color: 0xffa060, intensity: 2 },
+  },
+  chainlightning: {
+    layers: [
+      def({ kind: 'spark', mode: 'chain', count: 24, birth: [0, 0.08], life: [0.12, 0.3], size: [0.05, 0.16], speed: [3, 7], spread: 0.3, gravity: -3, colors: CHAIN, glow: 4.2, opacity: 1, spin: 14 }),
+      def({ kind: 'spark', mode: 'chain', count: 24, birth: [0.22, 0.32], life: [0.12, 0.3], size: [0.05, 0.16], speed: [3, 7], spread: 0.3, gravity: -3, colors: CHAIN, glow: 4.2, opacity: 1, spin: 14 }),
+      def({ kind: 'spark', mode: 'chain', count: 26, birth: [0.46, 0.56], life: [0.12, 0.3], size: [0.05, 0.16], speed: [3, 7], spread: 0.3, gravity: -3, colors: CHAIN, glow: 4.2, opacity: 1, spin: 14 }),
+      def({ kind: 'soft', mode: 'burst', count: 18, birth: [0, 0.6], life: [0.16, 0.38], size: [0.18, 0.5], speed: [1, 4], spread: 0.9, colors: [0xffffff, 0x5fffd8, 0x08306e], glow: 3.4, opacity: 0.6, endScale: 2 }),
+      def({ kind: 'spark', mode: 'trail', count: 40, birth: [0, 0.62], life: [0.12, 0.3], size: [0.03, 0.1], speed: [6, 13], spread: 0.8, gravity: -4, colors: [0xffffff, 0x9fffe8, 0x1040a0], glow: 4, opacity: 0.9, spin: 12 }),
+      def({ kind: 'smoke', mode: 'burst', count: 12, birth: [0.02, 0.1], life: [0.4, 0.8], size: [0.4, 1], speed: [0.6, 1.6], spread: 0.8, rise: 0.8, colors: [0x304048, 0x182028, 0x080c10], glow: 1, opacity: 0.24, additive: false, endScale: 2.4 }),
+    ],
+    ribbon: 'arc',
+    ring: { color: 0x5fffd8, radius: 2.2, at: 0.58 },
+    light: { color: 0x7fffe8, intensity: 3 },
+  },
+  icespear: {
+    layers: [
+      def({ kind: 'shard', mode: 'head', count: 1, birth: [0, 0.04], life: [9, 9], size: [0.85, 0.85], speed: [0, 0], spread: 0, colors: ICE, glow: 2.6, opacity: 1, endScale: 1, spin: 0, oriented: true }),
+      def({ kind: 'soft', mode: 'head', count: 1, birth: [0, 0.04], life: [9, 9], size: [0.26, 0.26], speed: [0, 0], spread: 0, colors: ICE, glow: 3, opacity: 0.55, endScale: 1 }),
+      def({ kind: 'shard', mode: 'trail', count: 16, birth: [0, 0.66], life: [0.3, 0.6], size: [0.16, 0.42], speed: [0.3, 0.9], spread: 0.55, colors: ICE, glow: 2.4, opacity: 0.9, spin: 8 }),
+      def({ kind: 'spark', mode: 'trail', count: 30, birth: [0, 0.68], life: [0.18, 0.44], size: [0.03, 0.11], speed: [1.5, 4], spread: 0.9, gravity: -2, colors: [0xffffff, 0x9fe8ff, 0x2050c0], glow: 3.6, opacity: 0.92, spin: 10 }),
+      def({ kind: 'shard', mode: 'burst', count: 42, birth: [0.66, 0.72], life: [0.38, 0.8], size: [0.2, 0.6], speed: [4, 9], spread: 0.9, gravity: -8, colors: ICE, glow: 2.5, opacity: 0.95, spin: 10 }),
+      def({ kind: 'spark', mode: 'burst', count: 36, birth: [0.67, 0.73], life: [0.2, 0.46], size: [0.04, 0.13], speed: [4, 9], spread: 1, gravity: -6, colors: [0xffffff, 0x9fe8ff, 0x2050c0], glow: 3.8, opacity: 0.95, spin: 12 }),
+      def({ kind: 'smoke', mode: 'burst', count: 24, birth: [0.68, 0.76], life: [0.6, 1.1], size: [0.6, 1.6], speed: [0.8, 2.2], spread: 1, rise: 0.5, colors: ICE_MIST, glow: 1, opacity: 0.32, additive: false, endScale: 2.8 }),
+    ],
+    ring: { color: 0x8fe8ff, radius: 1.8, at: 0.68 },
+    light: { color: 0x8fe8ff, intensity: 1.5 },
+  },
+  hail: {
+    layers: [
+      def({ kind: 'shard', mode: 'rain', count: 64, birth: [0, 0.6], life: [0.8, 0.8], size: [0.16, 0.34], speed: [3, 5], spread: 2.4, spawnHeight: 6.5, gravity: -16, colors: ICE, glow: 2.5, opacity: 0.95, spin: 6, oriented: true }),
+      def({ kind: 'shard', mode: 'rain', count: 36, birth: [0.2, 0.78], life: [0.7, 0.7], size: [0.12, 0.26], speed: [3.5, 5.5], spread: 2.8, spawnHeight: 6.5, gravity: -16, colors: [0xffffff, 0xcdeeff, 0x2050a0], glow: 2.3, opacity: 0.9, spin: 5, oriented: true }),
+      def({ kind: 'spark', mode: 'burst', count: 56, birth: [0.4, 0.95], life: [0.12, 0.3], size: [0.03, 0.1], speed: [2, 6], spread: 1.6, gravity: -7, colors: [0xffffff, 0x9fe8ff, 0x2050c0], glow: 3.6, opacity: 0.9, spin: 10 }),
+      def({ kind: 'shard', mode: 'burst', count: 34, birth: [0.42, 0.96], life: [0.2, 0.5], size: [0.08, 0.24], speed: [2, 5], spread: 1.5, gravity: -10, colors: ICE, glow: 2.2, opacity: 0.85, spin: 9 }),
+      def({ kind: 'smoke', mode: 'burst', count: 26, birth: [0.45, 0.97], life: [0.5, 0.9], size: [0.6, 1.4], speed: [0.6, 1.6], spread: 2, rise: 0.4, colors: ICE_MIST, glow: 1, opacity: 0.3, additive: false, endScale: 2.6 }),
+    ],
+    ring: { color: 0x9fe8ff, radius: 3, at: 0.06 },
+    light: { color: 0x9fe8ff, intensity: 1.2 },
+  },
+  earthquake: {
+    layers: [
+      def({ kind: 'shard', mode: 'burst', count: 54, birth: [0.02, 0.16], life: [0.4, 0.85], size: [0.2, 0.6], speed: [4, 9], spread: 1.2, rise: -0.4, gravity: -14, colors: EARTH, glow: 1.6, opacity: 0.95, spin: 9 }),
+      def({ kind: 'smoke', mode: 'burst', count: 48, birth: [0, 0.2], life: [0.7, 1.3], size: [0.9, 2.4], speed: [1.5, 4], spread: 2, rise: 0.4, colors: DUST, glow: 1, opacity: 0.5, additive: false, endScale: 3.2, spin: 1 }),
+      def({ kind: 'spark', mode: 'burst', count: 62, birth: [0.02, 0.3], life: [0.2, 0.5], size: [0.05, 0.15], speed: [5, 12], spread: 1.6, gravity: -9, colors: [0xffffff, 0xd8b890, 0x6a4020], glow: 3.4, opacity: 0.9, spin: 13 }),
+      def({ kind: 'shard', mode: 'orbit', count: 40, birth: [0, 0.2], life: [0.6, 1], size: [0.18, 0.5], speed: [0, 0], spread: 0, rise: 0.2, gravity: -4, colors: EARTH, glow: 1.3, opacity: 0.85, spin: 4, radius: 2.4 }),
+      def({ kind: 'smoke', mode: 'burst', count: 30, birth: [0.3, 0.7], life: [0.7, 1.2], size: [1, 2.6], speed: [1, 2.6], spread: 2.2, rise: 0.15, colors: DUST, glow: 1, opacity: 0.36, additive: false, endScale: 3.4 }),
+    ],
+    ring: { color: 0xc8a878, radius: 5, at: 0.02 },
+    light: { color: 0xd8b890, intensity: 1 },
+  },
+  vines: {
+    layers: [
+      def({ kind: 'shard', mode: 'rise', count: 52, birth: [0, 0.3], life: [0.55, 1], size: [0.14, 0.42], speed: [0.4, 1.2], spread: 1.2, rise: 2.6, colors: VINE, glow: 2, opacity: 0.95, spin: 7, radius: 1.4 }),
+      def({ kind: 'rune', mode: 'rise', count: 26, birth: [0.05, 0.4], life: [0.6, 1], size: [0.1, 0.26], speed: [0.3, 0.8], spread: 1, rise: 1.9, colors: [0xd8ffb0, 0x4aa020, 0x123808], glow: 2.4, opacity: 0.8, spin: 3, radius: 1.1 }),
+      def({ kind: 'soft', mode: 'rise', count: 24, birth: [0, 0.3], life: [0.6, 1.1], size: [0.2, 0.55], speed: [0.2, 0.7], spread: 1.1, rise: 1.4, colors: VINE, glow: 1.6, opacity: 0.3, additive: false, endScale: 2, radius: 1.3 }),
+      def({ kind: 'spark', mode: 'burst', count: 38, birth: [0.04, 0.14], life: [0.3, 0.6], size: [0.03, 0.1], speed: [1.5, 4], spread: 1, rise: 1.5, colors: [0xd8ffb0, 0x60c020, 0x103008], glow: 2.8, opacity: 0.85, spin: 9 }),
+      def({ kind: 'smoke', mode: 'burst', count: 20, birth: [0, 0.2], life: [0.6, 1], size: [0.5, 1.2], speed: [0.5, 1.4], spread: 1.2, rise: 0.4, colors: [0x3a5a28, 0x203818, 0x0a1408], glow: 1, opacity: 0.32, additive: false, endScale: 2.4 }),
+    ],
+    ring: { color: 0x60c020, radius: 2.2, at: 0.02 },
+    light: { color: 0x80d040, intensity: 0.9 },
+  },
+  bleed: {
+    layers: [
+      def({ kind: 'soft', mode: 'head', count: 1, birth: [0, 0.14], life: [9, 9], size: [0.24, 0.24], speed: [0, 0], spread: 0, colors: BLOOD, glow: 1.8, opacity: 0.7, additive: false, endScale: 1 }),
+      def({ kind: 'spark', mode: 'burst', count: 54, birth: [0.02, 0.16], life: [0.3, 0.7], size: [0.05, 0.15], speed: [2, 6], spread: 0.9, gravity: -12, colors: BLOOD, glow: 2.4, opacity: 0.95, spin: 10 }),
+      def({ kind: 'soft', mode: 'burst', count: 30, birth: [0.02, 0.2], life: [0.4, 0.9], size: [0.12, 0.36], speed: [1.5, 4], spread: 1, gravity: -9, colors: BLOOD, glow: 1.6, opacity: 0.75, additive: false, endScale: 1.6 }),
+      def({ kind: 'shard', mode: 'burst', count: 22, birth: [0.03, 0.18], life: [0.45, 0.9], size: [0.07, 0.2], speed: [2, 5], spread: 0.8, gravity: -14, colors: BLOOD, glow: 1.5, opacity: 0.85, spin: 11 }),
+      def({ kind: 'smoke', mode: 'burst', count: 16, birth: [0.06, 0.24], life: [0.5, 1], size: [0.4, 1], speed: [0.5, 1.5], spread: 0.9, rise: 0.3, colors: BLOOD_MIST, glow: 1, opacity: 0.3, additive: false, endScale: 2.2 }),
+    ],
+    ring: { color: 0xaa1020, radius: 1.4, at: 0.02 },
+    light: { color: 0xaa1020, intensity: 0.7 },
+  },
+  toxiccloud: {
+    layers: [
+      def({ kind: 'soft', mode: 'head', count: 1, birth: [0, 1], life: [9, 9], size: [0.85, 0.85], speed: [0, 0], spread: 0, colors: [0x2a5008, 0x183008, 0x081004], glow: 1, opacity: 0.8, additive: false, endScale: 1.4, radius: 1.2 }),
+      def({ kind: 'smoke', mode: 'orbit', count: 56, birth: [0, 0.5], life: [0.8, 1.3], size: [0.7, 1.8], speed: [0, 0], spread: 0, rise: 0.5, colors: POISON, glow: 1, opacity: 0.5, additive: false, endScale: 2.6, radius: 1.8, spin: 2 }),
+      def({ kind: 'smoke', mode: 'burst', count: 44, birth: [0, 0.6], life: [0.8, 1.4], size: [0.8, 2], speed: [0.6, 2], spread: 1.4, rise: 0.7, colors: POISON, glow: 1, opacity: 0.44, additive: false, endScale: 3, spin: 1 }),
+      def({ kind: 'soft', mode: 'orbit', count: 26, birth: [0, 0.5], life: [0.6, 1.1], size: [0.25, 0.7], speed: [0, 0], spread: 0, rise: 0.65, colors: [0xc8ff70, 0x58a018, 0x183008], glow: 1.4, opacity: 0.35, additive: false, endScale: 2.4, radius: 1.4 }),
+      def({ kind: 'spark', mode: 'orbit', count: 40, birth: [0, 0.7], life: [0.4, 0.9], size: [0.03, 0.1], speed: [0, 0], spread: 0, rise: 0.7, colors: [0xe0ff90, 0x80d020, 0x204008], glow: 2.6, opacity: 0.75, spin: 5, radius: 1.6 }),
+    ],
+    ring: { color: 0x60c020, radius: 3.2, at: 0.02 },
+    light: { color: 0x60c020, intensity: 1 },
+  },
+  sonicwave: {
+    layers: [
+      def({ kind: 'rune', mode: 'orbit', count: 40, birth: [0, 0.2], life: [0.35, 0.7], size: [0.12, 0.3], speed: [0, 0], spread: 0, rise: 0.15, colors: SONIC, glow: 3, opacity: 0.9, spin: 3, radius: 2.2 }),
+      def({ kind: 'spark', mode: 'burst', count: 76, birth: [0, 0.14], life: [0.22, 0.5], size: [0.03, 0.11], speed: [5, 11], spread: 1.5, rise: 0.2, gravity: -1.5, colors: [0xffffff, 0xa8e4ff, 0x2a50a0], glow: 4, opacity: 0.92, spin: 8 }),
+      def({ kind: 'soft', mode: 'burst', count: 24, birth: [0, 0.12], life: [0.2, 0.5], size: [0.2, 0.55], speed: [3, 7], spread: 1.3, rise: 0.2, colors: SONIC, glow: 2.6, opacity: 0.4, endScale: 2.6 }),
+      def({ kind: 'shard', mode: 'burst', count: 28, birth: [0.02, 0.16], life: [0.3, 0.65], size: [0.08, 0.24], speed: [4, 8], spread: 1.2, gravity: -3, colors: [0xffffff, 0xc0e8ff, 0x2040a0], glow: 2.4, opacity: 0.7, spin: 6 }),
+      def({ kind: 'smoke', mode: 'burst', count: 18, birth: [0.04, 0.2], life: [0.5, 0.9], size: [0.6, 1.4], speed: [1, 2.4], spread: 1.4, rise: 0.6, colors: [0x5070a0, 0x283860, 0x0c1020], glow: 1, opacity: 0.24, additive: false, endScale: 2.6 }),
+    ],
+    ring: { color: 0xa8e4ff, radius: 5, at: 0.02 },
+    light: { color: 0xa8e4ff, intensity: 1.4 },
+  },
+  forcepush: {
+    layers: [
+      def({ kind: 'soft', mode: 'head', count: 1, birth: [0, 0.3], life: [9, 9], size: [0.3, 0.3], speed: [0, 0], spread: 0, colors: [0xffffff, 0x8060ff, 0x3010a0], glow: 3, opacity: 0.6, endScale: 1 }),
+      def({ kind: 'rune', mode: 'stream', count: 44, birth: [0, 0.6], life: [0.14, 0.34], size: [0.16, 0.42], speed: [9, 15], spread: 0.8, colors: ARCANE, glow: 2.8, opacity: 0.85, spin: 4, oriented: true }),
+      def({ kind: 'spark', mode: 'stream', count: 62, birth: [0, 0.66], life: [0.16, 0.4], size: [0.04, 0.13], speed: [10, 18], spread: 1, colors: [0xffffff, 0x8060ff, 0xa020d0], glow: 3.8, opacity: 0.9, spin: 9 }),
+      def({ kind: 'soft', mode: 'stream', count: 28, birth: [0, 0.6], life: [0.12, 0.3], size: [0.2, 0.55], speed: [8, 14], spread: 0.7, colors: ARCANE, glow: 2.4, opacity: 0.45, endScale: 1.8 }),
+      def({ kind: 'spark', mode: 'recoil', count: 20, birth: [0, 0.1], life: [0.14, 0.34], size: [0.04, 0.12], speed: [2, 5], spread: 0.6, colors: ARCANE, glow: 3.2, opacity: 0.8, spin: 10 }),
+      def({ kind: 'shard', mode: 'burst', count: 36, birth: [0.5, 0.62], life: [0.24, 0.5], size: [0.1, 0.3], speed: [4, 9], spread: 1, gravity: -6, colors: ARCANE, glow: 2.6, opacity: 0.85, spin: 10 }),
+    ],
+    ring: { color: 0x8060ff, radius: 2.4, at: 0.55 },
+    impactFrom: { color: 0x8060ff, radius: 1.1, at: 0.02 },
+    light: { color: 0x8060ff, intensity: 1.8 },
+  },
+  gravityfield: {
+    layers: [
+      def({ kind: 'rune', mode: 'implode', count: 48, birth: [0, 0.6], life: [0.5, 0.95], size: [0.12, 0.34], speed: [1.6, 3.6], spread: 0.5, colors: GRAVITY, glow: 3, opacity: 0.9, spin: -9, radius: 2.6 }),
+      def({ kind: 'spark', mode: 'implode', count: 72, birth: [0, 0.6], life: [0.4, 0.85], size: [0.03, 0.12], speed: [2.5, 5.5], spread: 0.6, colors: [0xffffff, 0x8060ff, 0x100030], glow: 3.6, opacity: 0.9, spin: -12, radius: 2.4 }),
+      def({ kind: 'shard', mode: 'implode', count: 36, birth: [0.1, 0.65], life: [0.5, 1], size: [0.1, 0.32], speed: [1.4, 3], spread: 0.7, colors: [0x8a70b0, 0x302060, 0x080410], glow: 1.5, opacity: 0.85, spin: -7, radius: 2.8 }),
+      def({ kind: 'smoke', mode: 'implode', count: 32, birth: [0, 0.6], life: [0.7, 1.2], size: [0.6, 1.6], speed: [0.8, 2], spread: 0.7, colors: [0x201038, 0x0c0418, 0x000000], glow: 1, opacity: 0.5, additive: false, endScale: 1.4, radius: 2.6, spin: -4 }),
+      def({ kind: 'rune', mode: 'orbit', count: 26, birth: [0.1, 0.5], life: [0.5, 0.95], size: [0.1, 0.26], speed: [0, 0], spread: 0, rise: -0.4, colors: GRAVITY, glow: 2.6, opacity: 0.8, spin: -5, radius: 1.7 }),
+    ],
+    ring: { color: 0x8060ff, radius: 3.4, at: 0.02 },
+    light: { color: 0x8060ff, intensity: 1.3 },
+  },
+  barrier: {
+    layers: [
+      def({ kind: 'soft', mode: 'head', count: 1, birth: [0, 1], life: [9, 9], size: [0.9, 0.9], speed: [0, 0], spread: 0, colors: [0x184060, 0x2060a0, 0x081828], glow: 1.2, opacity: 0.35, additive: false, endScale: 1, radius: 1.2 }),
+      def({ kind: 'rune', mode: 'orbit', count: 44, birth: [0, 0.35], life: [0.7, 1.1], size: [0.12, 0.3], speed: [0, 0], spread: 0, rise: 1.5, colors: [0xffffff, 0x60d0ff, 0x1040a0], glow: 3, opacity: 0.9, spin: 2, radius: 1.5 }),
+      def({ kind: 'spark', mode: 'orbit', count: 66, birth: [0, 0.4], life: [0.5, 1], size: [0.03, 0.11], speed: [0, 0], spread: 0, rise: 1.9, colors: SONIC, glow: 3.6, opacity: 0.9, spin: 5, radius: 1.7 }),
+      def({ kind: 'shard', mode: 'orbit', count: 30, birth: [0, 0.3], life: [0.6, 1], size: [0.1, 0.3], speed: [0, 0], spread: 0, rise: 1.2, colors: [0xffffff, 0x90d8ff, 0x103880], glow: 2.4, opacity: 0.8, spin: 3, radius: 1.4 }),
+      def({ kind: 'soft', mode: 'orbit', count: 22, birth: [0, 0.35], life: [0.6, 1.1], size: [0.18, 0.5], speed: [0, 0], spread: 0, rise: 1.4, colors: [0xffffff, 0x60d0ff, 0x1040a0], glow: 2, opacity: 0.3, endScale: 2, radius: 1.3 }),
+    ],
+    ring: { color: 0x60d0ff, radius: 2.2, at: 0.02 },
+    light: { color: 0x60d0ff, intensity: 1.2 },
+  },
+  lifedrain: {
+    layers: [
+      def({ kind: 'soft', mode: 'siphon', count: 36, birth: [0, 0.45], life: [0.8, 1.1], size: [0.12, 0.32], speed: [0, 0], spread: 0.7, colors: DRAIN, glow: 2.6, opacity: 0.45, endScale: 1.6 }),
+      def({ kind: 'spark', mode: 'siphon', count: 86, birth: [0, 0.5], life: [0.8, 1.1], size: [0.04, 0.14], speed: [0, 0], spread: 0.9, colors: [0xffffff, 0xc060ff, 0x400080], glow: 3.8, opacity: 0.95, spin: 10 }),
+      def({ kind: 'spark', mode: 'implode', count: 52, birth: [0, 0.6], life: [0.4, 0.85], size: [0.03, 0.12], speed: [2, 4.5], spread: 0.6, colors: DRAIN, glow: 3, opacity: 0.9, spin: 11, radius: 1.6 }),
+      def({ kind: 'shard', mode: 'implode', count: 28, birth: [0.05, 0.6], life: [0.5, 0.95], size: [0.08, 0.25], speed: [1.5, 3.5], spread: 0.6, colors: [0xc090e0, 0x6020a0, 0x100020], glow: 2, opacity: 0.8, spin: 8, radius: 1.8 }),
+      def({ kind: 'smoke', mode: 'burst', count: 24, birth: [0, 0.2], life: [0.6, 1.1], size: [0.5, 1.3], speed: [0.5, 1.6], spread: 1, rise: 0.5, colors: [0x3a1850, 0x1c0830, 0x080010], glow: 1, opacity: 0.38, additive: false, endScale: 2.4 }),
+      def({ kind: 'rune', mode: 'riseFrom', count: 20, birth: [0.35, 0.9], life: [0.6, 1], size: [0.1, 0.26], speed: [0.3, 0.9], spread: 0.65, rise: 1.5, colors: DRAIN, glow: 2.8, opacity: 0.85, spin: -4 }),
+      def({ kind: 'spark', mode: 'riseFrom', count: 70, birth: [0.3, 0.95], life: [0.5, 0.9], size: [0.04, 0.13], speed: [0.8, 2.2], spread: 0.75, rise: 1.8, colors: [0xffffff, 0xc060ff, 0x400080], glow: 3.2, opacity: 0.95, spin: 7 }),
+      def({ kind: 'soft', mode: 'riseFrom', count: 28, birth: [0.3, 0.95], life: [0.6, 1.1], size: [0.15, 0.42], speed: [0.3, 0.9], spread: 0.6, rise: 1.3, colors: DRAIN, glow: 2.2, opacity: 0.32, endScale: 2.2 }),
+    ],
+    ring: { color: 0x9020d0, radius: 2.2, at: 0.02 },
+    impactFrom: { color: 0x9020d0, radius: 1.4, at: 0.45 },
+    light: { color: 0x9020d0, intensity: 1.4 },
+  },
+  hex: {
+    layers: [
+      def({ kind: 'rune', mode: 'rain', count: 34, birth: [0, 0.6], life: [0.75, 0.75], size: [0.18, 0.4], speed: [3, 5], spread: 1.4, spawnHeight: 5.5, gravity: -10, colors: HEX, glow: 2.8, opacity: 0.9, spin: 4, oriented: true }),
+      def({ kind: 'soft', mode: 'head', count: 1, birth: [0, 1], life: [9, 9], size: [0.55, 0.55], speed: [0, 0], spread: 0, colors: [0x180028, 0x2a0840, 0x080010], glow: 1, opacity: 0.8, additive: false, endScale: 1, radius: 0.8 }),
+      def({ kind: 'rune', mode: 'orbit', count: 32, birth: [0, 0.35], life: [0.6, 1], size: [0.12, 0.3], speed: [0, 0], spread: 0, rise: 0.4, colors: HEX, glow: 2.8, opacity: 0.88, spin: -4, radius: 1.6 }),
+      def({ kind: 'spark', mode: 'implode', count: 46, birth: [0.1, 0.7], life: [0.4, 0.85], size: [0.03, 0.12], speed: [2, 4.5], spread: 0.6, colors: [0xe0b0ff, 0x8a20d0, 0x100020], glow: 3.4, opacity: 0.9, spin: -10, radius: 1.8 }),
+      def({ kind: 'smoke', mode: 'implode', count: 30, birth: [0, 0.6], life: [0.7, 1.2], size: [0.5, 1.4], speed: [0.8, 2], spread: 0.7, colors: [0x241038, 0x10041c, 0x000000], glow: 1, opacity: 0.48, additive: false, endScale: 1.5, radius: 1.9, spin: -3 }),
+      def({ kind: 'shard', mode: 'burst', count: 24, birth: [0.05, 0.2], life: [0.35, 0.75], size: [0.08, 0.24], speed: [2, 5], spread: 1, gravity: -6, colors: HEX, glow: 1.8, opacity: 0.8, spin: 9 }),
+    ],
+    ring: { color: 0x8a20d0, radius: 2.6, at: 0.02 },
+    light: { color: 0x8a20d0, intensity: 1.2 },
   },
 };
 
@@ -687,17 +853,19 @@ function buildLayer(
     let dirX: number, dirY: number, dirZ: number;
 
     if (cfg.mode === 'trail' || cfg.mode === 'head') {
-      ox = pose.position[0]; oy = pose.position[1]; oz = pose.position[2];
+      const anchor = MELEE_VFX.has(type) ? to : pose.position;
+      ox = anchor[0]; oy = anchor[1]; oz = anchor[2];
       dirX = -pose.direction[0]; dirY = -pose.direction[1]; dirZ = -pose.direction[2];
     } else if (cfg.mode === 'stream') {
       ox = from[0] + flow[3] * jitterA;
       oy = from[1] + offsetY + jitterB * 0.35;
       oz = from[2] + flow[5] * jitterA;
       dirX = targetDir[0]; dirY = 0; dirZ = targetDir[2];
-    } else if (cfg.mode === 'rise') {
-      ox = to[0] + flow[3] * jitterA;
-      oy = to[1] + offsetY;
-      oz = to[2] + flow[5] * jitterA;
+    } else if (cfg.mode === 'rise' || cfg.mode === 'riseFrom') {
+      const anchor = cfg.mode === 'riseFrom' ? from : to;
+      ox = anchor[0] + flow[3] * jitterA;
+      oy = anchor[1] + offsetY;
+      oz = anchor[2] + flow[5] * jitterA;
       dirX = 0; dirY = 1; dirZ = 0;
     } else if (cfg.mode === 'rain') {
       const theta = rnd() * Math.PI * 2;
@@ -706,6 +874,19 @@ function buildLayer(
       oz = to[2] + Math.sin(theta) * r;
       oy = to[1] + offsetY + cfg.spawnHeight;
       dirX = 0; dirY = -1; dirZ = 0;
+    } else if (cfg.mode === 'siphon') {
+      const theta = rnd() * Math.PI * 2;
+      const r = Math.sqrt(rnd()) * cfg.spread;
+      ox = to[0] + Math.cos(theta) * r;
+      oz = to[2] + Math.sin(theta) * r;
+      oy = to[1] + offsetY + 0.35 + (rnd() - 0.5) * 0.7;
+      dirX = from[0] - to[0]; dirY = 0.25; dirZ = from[2] - to[2];
+    } else if (cfg.mode === 'chain') {
+      const node = (i % 4) / 3;
+      ox = from[0] + (to[0] - from[0]) * node;
+      oz = from[2] + (to[2] - from[2]) * node;
+      oy = from[1] + offsetY + (to[1] - from[1]) * node + 0.3 + (rnd() - 0.5) * 0.5;
+      dirX = to[0] - from[0]; dirY = 0; dirZ = to[2] - from[2];
     } else if (cfg.mode === 'implode') {
       const theta = rnd() * Math.PI * 2;
       const phi = Math.acos(2 * rnd() - 1);
@@ -832,6 +1013,7 @@ function buildRibbon(strand: number): Ribbon {
 
 export function VfxBurst({ effect, offsetY = 0 }: { effect: VfxEffect; offsetY?: number }) {
   const startedRef = useRef<number | null>(null);
+  const soundPlayedRef = useRef(false);
   const camera = useThree((s) => s.camera);
   const size = useThree((s) => s.size);
   const look = LOOKS[effect.type];
@@ -886,9 +1068,7 @@ export function VfxBurst({ effect, offsetY = 0 }: { effect: VfxEffect; offsetY?:
           }),
         )
       : null;
-    const light = look.light ? new THREE.PointLight(look.light.color, 0, 9) : null;
-    if (light) light.position.set(effect.to[0], effect.to[1] + offsetY + 0.5, effect.to[2]);
-    return { layers, ribbons, ring, impactFrom, rock, light, arrivalT };
+    return { layers, ribbons, ring, impactFrom, rock, arrivalT };
   }, [effect.id, effect.type, effect.from, effect.to, durationSec, look, offsetY]);
 
   useEffect(
@@ -912,6 +1092,12 @@ export function VfxBurst({ effect, offsetY = 0 }: { effect: VfxEffect; offsetY?:
     },
     [engine],
   );
+
+  useEffect(() => {
+    if (soundPlayedRef.current) return;
+    soundPlayedRef.current = true;
+    playVfxSound(effect.type);
+  }, [effect.type]);
 
   useFrame(() => {
     if (startedRef.current === null) startedRef.current = performance.now();
@@ -963,7 +1149,18 @@ export function VfxBurst({ effect, offsetY = 0 }: { effect: VfxEffect; offsetY?:
           x = p.ox + p.dx * travel + p.rx * wob + p.ux * wob2;
           y = p.oy + p.dy * travel + p.ry * wob + p.uy * wob2;
           z = p.oz + p.dz * travel + p.rz * wob + p.uz * wob2;
-        } else if (cfg.mode === 'rise') {
+        } else if (cfg.mode === 'siphon') {
+          const u = Math.max(0, Math.min(1, a));
+          const fan = 1 - u;
+          x = effect.to[0] + (effect.from[0] - effect.to[0]) * u + (p.ox - effect.to[0]) * fan + p.rx * wob + p.ux * wob2;
+          z = effect.to[2] + (effect.from[2] - effect.to[2]) * u + (p.oz - effect.to[2]) * fan + p.rz * wob + p.uz * wob2;
+          y = effect.to[1] + offsetY + 0.35 + Math.sin(u * Math.PI) * 0.35 +
+            (p.oy - effect.to[1] - offsetY - 0.35) * fan + p.ry * wob + p.uy * wob2;
+        } else if (cfg.mode === 'chain') {
+          x = p.ox + p.rx * wob + p.ux * wob2;
+          y = p.oy + p.ry * wob + p.uy * wob2;
+          z = p.oz + p.rz * wob + p.uz * wob2;
+        } else if (cfg.mode === 'rise' || cfg.mode === 'riseFrom') {
           x = p.ox + p.rx * wob * 1.4 + p.dx * travel * 0.35;
           y = p.oy + cfg.rise * ageSec + p.dy * travel * 0.35;
           z = p.oz + p.rz * wob * 1.4 + p.dz * travel * 0.35;
@@ -1103,11 +1300,6 @@ export function VfxBurst({ effect, offsetY = 0 }: { effect: VfxEffect; offsetY?:
       engine.rock.rotation.set(t * 7, t * 11, t * 5);
     }
 
-    if (engine.light && look.light) {
-      const flick = 0.78 + 0.22 * Math.sin(t * 91 + effect.id) * Math.sin(t * 47 + 1.3);
-      engine.light.intensity = look.light.intensity * flick * (t < 0.85 ? 1 : (1 - t) / 0.15);
-      engine.light.position.set(pose.position[0], pose.position[1] + 0.2, pose.position[2]);
-    }
   });
 
   return (
@@ -1122,7 +1314,6 @@ export function VfxBurst({ effect, offsetY = 0 }: { effect: VfxEffect; offsetY?:
       {engine.ring && <primitive object={engine.ring} />}
       {engine.impactFrom && <primitive object={engine.impactFrom} />}
       {engine.rock && <primitive object={engine.rock} />}
-      {engine.light && <primitive object={engine.light} />}
     </>
   );
 }

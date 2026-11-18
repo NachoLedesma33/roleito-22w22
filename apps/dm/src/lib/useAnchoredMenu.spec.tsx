@@ -118,6 +118,23 @@ describe('useAnchoredMenu', () => {
     expect(onClose).not.toHaveBeenCalled()
   })
 
+  it('scroll dentro del menú NO cierra; scroll afuera sí', () => {
+    const onClose = vi.fn()
+    renderHook(() => useAnchoredMenu({ open: true, onClose, anchorId: 'build' }))
+
+    const menu = document.createElement('div')
+    menu.setAttribute('data-anchored-menu', 'build')
+    const scroller = document.createElement('div')
+    menu.appendChild(scroller)
+    document.body.appendChild(menu)
+
+    fireEvent.scroll(scroller)
+    expect(onClose).not.toHaveBeenCalled()
+
+    fireEvent.scroll(document.body)
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
   it('Escape cierra solo con el menú abierto', () => {
     const onClose = vi.fn()
     const { rerender } = renderHook(
