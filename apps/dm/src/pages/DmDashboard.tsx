@@ -23,7 +23,7 @@ import DmDock from '@/components/dm/DmDock';
 import AnchoredMenu from '@/components/ui/AnchoredMenu';
 import { useAnchoredMenu } from '@/lib/useAnchoredMenu';
 import { extractZonePolygons, checkWallCollision, extractBlockingWallLines } from '@/lib/wall-collision';
-import type { VfxType } from '@/lib/vfxParticles';
+import { MELEE_VFX, type VfxType } from '@/lib/vfxParticles';
 import { buildOccluders } from '@/lib/lightOcclusion';
 import { extractFogRegions } from '@/lib/fogMask';
 import { computeReachableCells } from '@/lib/movementRange';
@@ -73,6 +73,41 @@ import IconButton from '@/components/ui/IconButton';
 import { staticUrl } from '@/lib/staticUrl';
 import { Dices, Swords, NotebookPen, ClipboardList, CalendarDays, ScrollText, FolderOpen, Map as MapIcon, Bot, MessageCircle, Zap, BookOpen, StickyNote, LayoutGrid, Brush, SquareDashed, PaintBucket, Undo2, Redo2, CloudSun, Settings, ImagePlus, Wand2, Square, Mountain, ChevronDown, Users, Layers, Lightbulb, Trash, Sparkles, CircleDot, Eye, EyeOff, Package } from 'lucide-react';
 
+const VFX_GROUPS: Array<{ label: string; color: string; items: Array<[VfxType, string]> }> = [
+  {
+    label: 'Elemental',
+    color: '#f97316',
+    items: [
+      ['fire', 'Fuego'], ['ice', 'Hielo'], ['lightning', 'Rayo'], ['thunder', 'Trueno'],
+      ['flamethrower', 'Lanzallamas'], ['frostnova', 'Nova de hielo'], ['meteor', 'Meteoro'],
+    ],
+  },
+  {
+    label: 'Soporte y sombra',
+    color: '#a78bfa',
+    items: [
+      ['heal', 'Sanación'], ['poison', 'Veneno'], ['holy', 'Sagrado'],
+      ['shadow', 'Sombra'], ['void', 'Vacío'], ['arcane', 'Arcano'],
+    ],
+  },
+  {
+    label: 'Proyectiles',
+    color: '#38bdf8',
+    items: [
+      ['arrow', 'Flecha'], ['arrowrain', 'Lluvia de flechas'],
+      ['throwingknife', 'Cuchillo arrojadizo'], ['javelin', 'Jabalina'],
+      ['gunshot', 'Disparo'], ['burstfire', 'Ráfaga'],
+    ],
+  },
+  {
+    label: 'Cuerpo a cuerpo',
+    color: '#94a3b8',
+    items: [
+      ['slash', 'Cuchillazo'], ['cleave', 'Espadazo'], ['punch', 'Puñetazo'], ['slam', 'Martillazo'],
+    ],
+  },
+];
+
 export default function DmDashboard() {
   const { t } = useTranslation();
   const { id: campaignId } = useParams<{ id: string }>();
@@ -101,6 +136,21 @@ export default function DmDashboard() {
   const [vfx, setVfx] = useState<Array<{ id: number; type: VfxType; from: [number, number, number]; to: [number, number, number]; startedAt: number; duration: number }>>([]);
   const [pendingVfx, setPendingVfx] = useState<VfxType | null>(null);
   const [vfxMenuOpen, setVfxMenuOpen] = useState(false);
+  const [lungeOverrides, setLungeOverrides] = useState<Record<string, { x: number; z: number; baseX: number; baseZ: number }>>({});
+  useEffect(() => {
+    setLungeOverrides((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      for (const [id, o] of Object.entries(next)) {
+        const sc = sceneChars.find((c) => c.id === id);
+        if (!sc || sc.x !== o.baseX || sc.z !== o.baseZ) {
+          delete next[id];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [sceneChars]);
   const [assetsPanelOpen, setAssetsPanelOpen] = useState(false);
   const [measureMode, setMeasureMode] = useState(false);
   const [measureA, setMeasureA] = useState<[number, number] | null>(null);
@@ -1518,6 +1568,20 @@ const startFogMode = useCallback(() => {
       const target = sceneCharsRef.current.find((s) => s.id === tokenId);
       if (attacker && target) {
         const effect = { id: Date.now(), type: pendingVfx, from: [attacker.x, 0.6, attacker.z] as [number, number, number], to: [target.x, 0.6, target.z] as [number, number, number], startedAt: performance.now(), duration: 1500 };
+        if (MELEE_VFX.has(pendingVfx)) {
+          const dx = target.x - attacker.x;
+          const dz = target.z - attacker.z;
+          const d = Math.hypot(dx, dz) || 1;
+          setLungeOverrides((prev) => ({
+            ...prev,
+            [attacker.id]: {
+              x: target.x - (dx / d) * 0.9,
+              z: target.z - (dz / d) * 0.9,
+              baseX: attacker.x,
+              baseZ: attacker.z,
+            },
+          }));
+        }
         setVfx((prev) => [...prev, effect]);
         window.setTimeout(() => setVfx((prev) => prev.filter((e) => e.id !== effect.id)), 2000);
         if (campaignId) {
@@ -1985,6 +2049,18 @@ const startFogMode = useCallback(() => {
       items: [
         { label: i18n.t('dmContext.selectToken', 'Seleccionar {{name}}', { name }), icon: '◉', onClick: () => setSelectedTokenId(sceneCharId) },
         { label: i18n.t('dmContext.openSheet', 'Ver ficha de {{name}}', { name }), icon: '📖', onClick: () => setSheetTokenId(sceneCharId) },
+        ...(sc && ent?.type === 'character' ? [{
+          label: ent.can_use_vfx
+            ? i18n.t('dmContext.disableVfx', 'Deshabilitar VFX')
+            : i18n.t('dmContext.enableVfx', 'Habilitar VFX'),
+          icon: '✨',
+          onClick: () => {
+            const patch = { name: ent.name, can_use_vfx: !ent.can_use_vfx };
+            api.characters.update(campaignId!, ent.id, patch)
+              .then((updated) => setCharacters((prev) => prev.map((c) => (c.id === updated.id ? updated : c))))
+              .catch((err) => console.error('Failed to toggle VFX:', err));
+          },
+        }] : []),
 
         { label: sc?.visible ? i18n.t('dmContext.hidePlayers', 'Ocultar a los jugadores') : i18n.t('dmContext.showPlayers', 'Mostrar a los jugadores'), icon: sc?.visible ? '👁' : '🚫', onClick: () => handleToggleVisibility(sceneCharId) },
         { label: '', separator: true, onClick: () => {} },
@@ -1996,7 +2072,7 @@ const startFogMode = useCallback(() => {
         { label: i18n.t('dmContext.removeFromScene', 'Quitar de la escena'), icon: '🗑', onClick: () => handleRemoveFromScene(sceneCharId), danger: true },
       ],
     });
-  }, [sceneChars, allEntities, handleToggleVisibility, handleRemoveFromScene, graphRef, handleTokenLightAttach, handleTokenLightDetach, handleCreateAndAttachLight, handleToggleStatus]);
+  }, [sceneChars, allEntities, handleToggleVisibility, handleRemoveFromScene, graphRef, handleTokenLightAttach, handleTokenLightDetach, handleCreateAndAttachLight, handleToggleStatus, campaignId]);
 
   const handleTokenDoubleClick = useCallback((sceneCharId: string, clientX: number, clientY: number) => {
     setTokenQuickEdit({ sceneCharId, x: clientX, y: clientY });
@@ -2509,30 +2585,39 @@ const startFogMode = useCallback(() => {
               >
                 <span className="flex-1 text-left">Habilidades VFX</span>
               </button>
-              <AnchoredMenu open={vfxMenuOpen} rect={vfxMenu.rect} anchorId="vfx" testId="vfx-menu" minWidth={180}>
-                {([
-                  ['fire', 'Fuego'],
-                  ['ice', 'Hielo'],
-                  ['lightning', 'Rayo'],
-                  ['heal', 'Sanación'],
-                  ['void', 'Vacío'],
-                  ['flamethrower', 'Lanzallamas'],
-                  ['thunder', 'Trueno'],
-                  ['meteor', 'Meteoro'],
-                  ['frostnova', 'Nova de hielo'],
-                  ['poison', 'Veneno'],
-                  ['holy', 'Sagrado'],
-                  ['shadow', 'Sombra'],
-                  ['arcane', 'Arcano'],
-                ] as Array<[VfxType, string]>).map(([type, label]) => (
-                  <button
-                    key={type}
-                    onClick={() => { setPendingVfx(type); setVfxMenuOpen(false); }}
-                    className="block w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--bg-tertiary)] transition-colors text-white"
-                  >
-                    {label}
-                  </button>
-                ))}
+              <AnchoredMenu open={vfxMenuOpen} rect={vfxMenu.rect} anchorId="vfx" testId="vfx-menu" minWidth={264}>
+                <div className="w-64">
+                  <div className="flex items-center gap-2 border-b border-[var(--bg-tertiary)] px-3 py-2">
+                    <Sparkles className="h-3.5 w-3.5 text-[var(--accent)]" />
+                    <span className="text-xs font-semibold text-white">Habilidades VFX</span>
+                    <span className="ml-auto text-[10px] text-[var(--text-secondary)]">{VFX_GROUPS.reduce((n, g) => n + g.items.length, 0)}</span>
+                  </div>
+                  <div className="px-2 py-1">
+                    {VFX_GROUPS.map((group) => (
+                      <div key={group.label} className="mb-2 last:mb-1">
+                        <div className="flex items-center gap-1.5 px-1 pb-1">
+                          <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: group.color }} />
+                          <span className="text-[9px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">{group.label}</span>
+                          <span className="ml-auto text-[9px] text-[var(--text-secondary)]">{group.items.length}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-1">
+                          {group.items.map(([type, label]) => (
+                            <button
+                              key={type}
+                              onClick={() => { setPendingVfx(type); setVfxMenuOpen(false); }}
+                              className="truncate rounded px-2 py-1.5 text-left text-xs text-white hover:bg-[var(--bg-tertiary)] transition-colors"
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="border-t border-[var(--bg-tertiary)] px-3 py-2 text-[10px] text-[var(--text-secondary)]">
+                    {pendingVfx ? 'Clic en un token objetivo' : 'Elige una habilidad y luego un token objetivo'}
+                  </div>
+                </div>
               </AnchoredMenu>
             </div>
             <button
@@ -3385,6 +3470,8 @@ const startFogMode = useCallback(() => {
                   .filter((sc) => !hiddenPlayerIds.has(sc.id))
                   .map((sc) => {
                   const ent = allEntities.find((e) => e.id === sc.entity_id);
+                  const lunge = lungeOverrides[sc.id];
+                  const lunging = lunge !== undefined && lunge.baseX === sc.x && lunge.baseZ === sc.z;
                   // Posiciones autoritativas (sin interpolar): la interpolación visual
                   // 60fps ahora vive en SceneRenderer via useFrame.
                   return {
@@ -3392,9 +3479,9 @@ const startFogMode = useCallback(() => {
                     sceneCharId: sc.id,
                     name: ent?.name || t('dm.unknown', 'Desconocido'),
                     type: sc.entity_type,
-                    x: sc.x,
+                    x: lunging ? lunge.x : sc.x,
                     y: sc.y,
-                    z: sc.z,
+                    z: lunging ? lunge.z : sc.z,
                     visible: !!sc.visible,
                     portraitUrl: staticUrl(ent?.portrait_path ?? null),
                     modelUrl: staticUrl(ent?.model_path ?? null),

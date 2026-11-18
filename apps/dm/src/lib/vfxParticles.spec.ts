@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { layerCount, memoByKey, sampleVfx, seededRandom } from './vfxParticles'
+import { layerCount, MELEE_VFX, memoByKey, sampleVfx, seededRandom, type VfxType } from './vfxParticles'
 import { vfxEmitterPose } from '../components/VfxBurst'
 
 const LAYERS = ['core', 'trail', 'motes', 'impact', 'aftermath'] as const
+const NEW_TYPES: VfxType[] = ['arrow', 'arrowrain', 'throwingknife', 'javelin', 'slash', 'cleave', 'gunshot', 'burstfire', 'punch', 'slam']
 
 describe('seededRandom', () => {
   it('mismo seed -> misma secuencia, seed distinto -> distinta', () => {
@@ -141,6 +142,42 @@ describe('vfxEmitterPose', () => {
     expect(pose.position).toEqual([2, 0.6, 3])
     expect(pose.direction[0]).toBeGreaterThan(0)
     expect(pose.direction[2]).toBeLessThan(0)
+  })
+
+  it('proyectiles nuevos arrancan en el atacante y llegan al objetivo', () => {
+    for (const type of ['arrow', 'throwingknife', 'javelin', 'slash', 'cleave', 'punch', 'slam'] as const) {
+      expect(vfxEmitterPose(type, 0, from, to).position).toEqual([2, 0.6, 3])
+      const end = vfxEmitterPose(type, 1, from, to).position
+      expect(end[0]).toBeCloseTo(8)
+      expect(end[2]).toBeCloseTo(-4)
+    }
+  })
+
+  it('disparos arrancan en el atacante y apuntan al objetivo', () => {
+    for (const type of ['gunshot', 'burstfire'] as const) {
+      const pose = vfxEmitterPose(type, 0, from, to)
+      expect(pose.position).toEqual([2, 0.6, 3])
+      expect(pose.direction[0]).toBeGreaterThan(0)
+      expect(pose.direction[2]).toBeLessThan(0)
+    }
+  })
+
+  it('lluvia de flechas aparece en el objetivo', () => {
+    expect(vfxEmitterPose('arrowrain', 0, from, to).position).toEqual([8, 0.6, -4])
+  })
+})
+
+describe('catálogo ampliado', () => {
+  it('los 10 tipos nuevos muestrean finito y determinista', () => {
+    for (const type of NEW_TYPES) {
+      const a = sampleVfx('impact', { type, t: 0.5, duration: 1500, seed: 4 })
+      expect(a).toEqual(sampleVfx('impact', { type, t: 0.5, duration: 1500, seed: 4 }))
+      expect(a.every((p) => [...p.offset, p.size, p.alpha, ...p.color].every(Number.isFinite))).toBe(true)
+    }
+  })
+
+  it('MELEE_VFX marca solo los cuatro golpes cuerpo a cuerpo', () => {
+    expect([...MELEE_VFX].sort()).toEqual(['cleave', 'punch', 'slam', 'slash'])
   })
 })
 

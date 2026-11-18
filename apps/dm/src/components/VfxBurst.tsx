@@ -25,7 +25,8 @@ export function vfxEmitterPose(
   offsetY = 0,
 ): VfxPose {
   const preset = MOTION[type];
-  const k = Math.min(1, Math.max(0, t));
+  const flight = FLIGHT[type] ?? 1;
+  const k = Math.min(1, Math.max(0, t / flight));
   const dx = to[0] - from[0];
   const dz = to[2] - from[2];
   if (preset === 'impact' || preset === 'strike') {
@@ -46,7 +47,7 @@ export function vfxEmitterPose(
       from[1] + offsetY + (to[1] - from[1]) * k + Math.sin(k * Math.PI) * arc,
       from[2] + dz * k,
     ],
-    direction: [dx / flat, (Math.cos(k * Math.PI) * arc * Math.PI) / flat, dz / flat],
+    direction: [dx / flat, (Math.cos(k * Math.PI) * arc * Math.PI) / (flat * flight), dz / flat],
   };
 }
 
@@ -54,14 +55,21 @@ const MOTION: Record<VfxType, 'projectile' | 'impact' | 'stream' | 'strike'> = {
   fire: 'projectile', ice: 'projectile', lightning: 'projectile', heal: 'impact', void: 'impact',
   flamethrower: 'stream', thunder: 'strike', meteor: 'projectile', frostnova: 'impact',
   poison: 'projectile', holy: 'impact', shadow: 'impact', arcane: 'impact',
+  arrow: 'projectile', arrowrain: 'impact', throwingknife: 'projectile', javelin: 'projectile',
+  slash: 'projectile', cleave: 'projectile', punch: 'projectile', slam: 'projectile',
+  gunshot: 'stream', burstfire: 'stream',
 };
 
 const ARC: Record<VfxType, number> = {
   fire: 1.6, ice: 0.9, lightning: 0.15, heal: 0, void: 0, flamethrower: 0,
   thunder: 0, meteor: 2.6, frostnova: 0, poison: 0.7, holy: 0, shadow: 0, arcane: 0,
+  arrow: 0.22, arrowrain: 0, throwingknife: 0.5, javelin: 1.3,
+  slash: 0.1, cleave: 0.15, punch: 0.05, slam: 0.2, gunshot: 0, burstfire: 0,
 };
 
-type SpriteKind = 'soft' | 'flame' | 'smoke' | 'spark' | 'shard' | 'rune';
+const FLIGHT: Partial<Record<VfxType, number>> = { arrow: 0.62, javelin: 0.7 };
+
+type SpriteKind = 'soft' | 'flame' | 'smoke' | 'spark' | 'shard' | 'rune' | 'arrow' | 'blade' | 'bullet';
 
 function makeSprite(kind: SpriteKind): THREE.Texture {
   const canvas = document.createElement('canvas');
@@ -141,6 +149,59 @@ function makeSprite(kind: SpriteKind): THREE.Texture {
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1.4;
     ctx.stroke();
+  } else if (kind === 'arrow') {
+    const shaft = ctx.createLinearGradient(0, -28, 0, 22);
+    shaft.addColorStop(0, '#ffffff');
+    shaft.addColorStop(0.55, '#ffffffcc');
+    shaft.addColorStop(1, '#ffffff44');
+    ctx.fillStyle = shaft;
+    ctx.fillRect(-2, -18, 4, 40);
+    ctx.beginPath();
+    ctx.moveTo(0, -31);
+    ctx.lineTo(7, -15);
+    ctx.lineTo(-7, -15);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-2, 16);
+    ctx.lineTo(-9, 24);
+    ctx.moveTo(2, 16);
+    ctx.lineTo(9, 24);
+    ctx.stroke();
+  } else if (kind === 'blade') {
+    const g = ctx.createLinearGradient(-24, -18, 24, 18);
+    g.addColorStop(0, '#ffffff44');
+    g.addColorStop(0.5, '#ffffff');
+    g.addColorStop(1, '#ffffff66');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(-25, 16);
+    ctx.quadraticCurveTo(0, -32, 25, 16);
+    ctx.quadraticCurveTo(0, -6, -25, 16);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  } else if (kind === 'bullet') {
+    const g = ctx.createLinearGradient(0, 30, 0, -16);
+    g.addColorStop(0, '#ffffff00');
+    g.addColorStop(0.6, '#ffffff66');
+    g.addColorStop(0.85, '#ffffff');
+    g.addColorStop(1, '#ffffffcc');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 4, 30, 0, 0, Math.PI * 2);
+    ctx.fill();
+    const h = ctx.createRadialGradient(0, -10, 0, 0, -10, 13);
+    h.addColorStop(0, '#ffffff');
+    h.addColorStop(1, '#ffffff00');
+    ctx.fillStyle = h;
+    ctx.beginPath();
+    ctx.arc(0, -10, 13, 0, Math.PI * 2);
+    ctx.fill();
   } else {
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 4;
@@ -170,7 +231,7 @@ function getSprite(kind: SpriteKind): THREE.Texture {
   return memoByKey(`vfx-sprite-${kind}`, () => makeSprite(kind));
 }
 
-type Mode = 'head' | 'trail' | 'burst' | 'stream' | 'rise' | 'implode' | 'orbit';
+type Mode = 'head' | 'trail' | 'burst' | 'recoil' | 'stream' | 'rise' | 'implode' | 'orbit' | 'rain';
 
 type LayerCfg = {
   kind: SpriteKind;
@@ -191,6 +252,9 @@ type LayerCfg = {
   opacity: number;
   endScale: number;
   additive: boolean;
+  oriented: boolean;
+  spawnHeight: number;
+  arrival: boolean;
 };
 
 type LayerInput = Partial<LayerCfg> & Pick<LayerCfg, 'kind' | 'mode' | 'count' | 'colors'>;
@@ -199,7 +263,7 @@ function def(input: LayerInput): LayerCfg {
   return {
     birth: [0, 0.45], life: [0.3, 0.65], size: [0.18, 0.45], speed: [0.8, 2],
     spread: 0.5, rise: 0, gravity: 0, drag: 0, radius: 0.6, spin: 0,
-    glow: 2.2, opacity: 0.85, endScale: 1.6, additive: true, ...input,
+    glow: 2.2, opacity: 0.85, endScale: 1.6, additive: true, oriented: false, spawnHeight: 0, arrival: false, ...input,
   };
 }
 
@@ -214,11 +278,17 @@ const POISON = [0xd8ff90, 0x60c020, 0x0b3008] as [number, number, number];
 const HOLY = [0xffffe0, 0xffd060, 0xa05000] as [number, number, number];
 const SHADOW = [0x8a70c0, 0x2a1040, 0x000000] as [number, number, number];
 const ARCANE = [0xd0f0ff, 0x6050ff, 0xa020d0] as [number, number, number];
+const STEEL = [0xffffff, 0xb8c6d4, 0x3a4452] as [number, number, number];
+const BRASS = [0xffffff, 0xd8b060, 0x4a3010] as [number, number, number];
+const IMPACT = [0xffffff, 0xffd0a0, 0x8a3018] as [number, number, number];
+const MUZZLE = [0xffffff, 0xffc860, 0x603010] as [number, number, number];
 
 type Look = {
   layers: LayerCfg[];
   ribbon?: 'arc' | 'strike';
+  arrivalRing?: boolean;
   ring?: { color: number; radius: number; at: number };
+  impactFrom?: { color: number; radius: number; at: number };
   light?: { color: number; intensity: number };
   rock?: boolean;
 };
@@ -371,19 +441,156 @@ const LOOKS: Record<VfxType, Look> = {
     ring: { color: 0x6050ff, radius: 2.8, at: 0.02 },
     light: { color: 0x6050ff, intensity: 1.6 },
   },
+  arrow: {
+    layers: [
+      def({ kind: 'arrow', mode: 'head', count: 1, birth: [0, 0.04], life: [9, 9], size: [0.5, 0.5], speed: [0, 0], spread: 0, colors: STEEL, glow: 2.4, opacity: 1, endScale: 1, spin: 0, oriented: true }),
+      def({ kind: 'soft', mode: 'head', count: 1, birth: [0, 0.04], life: [9, 9], size: [0.14, 0.14], speed: [0, 0], spread: 0, colors: [0xffffff, 0xffe0a0, 0x804010], glow: 2.6, opacity: 0.5, endScale: 1 }),
+      def({ kind: 'spark', mode: 'trail', count: 14, birth: [0, 0.6], life: [0.1, 0.26], size: [0.025, 0.07], speed: [0.5, 1.2], spread: 0.28, colors: BRASS, glow: 2.6, opacity: 0.65, spin: 6 }),
+      def({ kind: 'shard', mode: 'burst', count: 30, birth: [0.62, 0.68], life: [0.25, 0.5], size: [0.1, 0.3], speed: [3, 7], spread: 0.7, gravity: -7, colors: IMPACT, glow: 2.4, opacity: 0.9, spin: 9 }),
+      def({ kind: 'spark', mode: 'burst', count: 36, birth: [0.62, 0.69], life: [0.16, 0.4], size: [0.04, 0.12], speed: [4, 9], spread: 0.9, gravity: -6, colors: [0xffffff, 0xffd0a0, 0x803010], glow: 3.6, opacity: 0.95, spin: 12 }),
+      def({ kind: 'smoke', mode: 'burst', count: 14, birth: [0.62, 0.7], life: [0.5, 0.9], size: [0.4, 1], speed: [0.6, 1.6], spread: 0.8, rise: 0.8, colors: FIRE_SMOKE, glow: 1, opacity: 0.3, additive: false, endScale: 2.4 }),
+      def({ kind: 'smoke', mode: 'burst', count: 16, birth: [0.63, 0.7], life: [0.5, 0.9], size: [0.5, 1.1], speed: [1, 2.2], spread: 1.1, rise: 0.2, colors: FIRE_SMOKE, glow: 1, opacity: 0.34, additive: false, endScale: 2.6 }),
+    ],
+    ring: { color: 0xffc890, radius: 1.2, at: 0.63 },
+    light: { color: 0xffd0a0, intensity: 0.7 },
+  },
+  arrowrain: {
+    layers: [
+      def({ kind: 'arrow', mode: 'rain', count: 22, birth: [0, 0.55], life: [0.85, 0.85], size: [0.34, 0.5], speed: [3, 5], spread: 2.2, spawnHeight: 5.2, gravity: -12, colors: STEEL, glow: 2, opacity: 0.95, spin: 0, oriented: true }),
+      def({ kind: 'arrow', mode: 'rain', count: 12, birth: [0.12, 0.72], life: [0.75, 0.75], size: [0.28, 0.42], speed: [3, 5], spread: 2.6, spawnHeight: 5.2, gravity: -12, colors: BRASS, glow: 1.9, opacity: 0.9, spin: 0, oriented: true }),
+      def({ kind: 'spark', mode: 'burst', count: 54, birth: [0.44, 0.95], life: [0.2, 0.45], size: [0.035, 0.1], speed: [3, 7], spread: 1.5, gravity: -9, colors: IMPACT, glow: 3.2, opacity: 0.9, spin: 10 }),
+      def({ kind: 'shard', mode: 'burst', count: 30, birth: [0.45, 0.96], life: [0.28, 0.58], size: [0.09, 0.26], speed: [2, 5], spread: 1.3, gravity: -10, colors: STEEL, glow: 1.9, opacity: 0.85, spin: 9 }),
+      def({ kind: 'smoke', mode: 'burst', count: 26, birth: [0.46, 0.97], life: [0.7, 1.2], size: [0.6, 1.4], speed: [0.7, 1.8], spread: 1.4, rise: 1, colors: FIRE_SMOKE, glow: 1, opacity: 0.34, additive: false, endScale: 2.6 }),
+      def({ kind: 'smoke', mode: 'burst', count: 30, birth: [0.45, 0.97], life: [0.6, 1], size: [0.7, 1.5], speed: [1, 2.4], spread: 2, rise: 0.15, colors: FIRE_SMOKE, glow: 1, opacity: 0.36, additive: false, endScale: 2.8 }),
+    ],
+    ring: { color: 0xd8b070, radius: 2.8, at: 0.12 },
+    light: { color: 0xffc890, intensity: 1.1 },
+  },
+  throwingknife: {
+    layers: [
+      def({ kind: 'blade', mode: 'head', count: 1, birth: [0, 0.72], life: [9, 9], size: [0.5, 0.5], speed: [0, 0], spread: 0, colors: STEEL, glow: 2.8, opacity: 1, endScale: 1, spin: 18 }),
+      def({ kind: 'spark', mode: 'trail', count: 12, birth: [0, 0.7], life: [0.1, 0.26], size: [0.03, 0.09], speed: [0.8, 1.6], spread: 0.4, colors: STEEL, glow: 2.8, opacity: 0.7, spin: 10 }),
+      def({ kind: 'shard', mode: 'burst', count: 26, birth: [0.7, 0.78], life: [0.22, 0.46], size: [0.08, 0.24], speed: [3.5, 8], spread: 0.8, gravity: -6, colors: STEEL, glow: 2.4, opacity: 0.9, spin: 12 }),
+      def({ kind: 'spark', mode: 'burst', count: 34, birth: [0.7, 0.79], life: [0.16, 0.38], size: [0.03, 0.1], speed: [4, 9], spread: 0.9, gravity: -5, colors: IMPACT, glow: 3.6, opacity: 0.95, spin: 14 }),
+      def({ kind: 'smoke', mode: 'burst', count: 12, birth: [0.72, 0.82], life: [0.45, 0.85], size: [0.35, 0.9], speed: [0.6, 1.5], spread: 0.8, rise: 0.7, colors: FIRE_SMOKE, glow: 1, opacity: 0.28, additive: false, endScale: 2.2 }),
+    ],
+    ring: { color: 0xb8c6d4, radius: 1.1, at: 0.71 },
+    light: { color: 0xdfe8f0, intensity: 0.7 },
+  },
+  javelin: {
+    layers: [
+      def({ kind: 'arrow', mode: 'head', count: 1, birth: [0, 0.04], life: [9, 9], size: [0.85, 0.85], speed: [0, 0], spread: 0, colors: BRASS, glow: 2.4, opacity: 1, endScale: 1, spin: 0, oriented: true }),
+      def({ kind: 'soft', mode: 'head', count: 1, birth: [0, 0.04], life: [9, 9], size: [0.2, 0.2], speed: [0, 0], spread: 0, colors: [0xffffff, 0xffdca0, 0x804010], glow: 2.6, opacity: 0.45, endScale: 1 }),
+      def({ kind: 'spark', mode: 'trail', count: 20, birth: [0, 0.68], life: [0.14, 0.3], size: [0.035, 0.09], speed: [0.8, 1.6], spread: 0.4, colors: BRASS, glow: 2.8, opacity: 0.7, spin: 7 }),
+      def({ kind: 'shard', mode: 'burst', count: 38, birth: [0.7, 0.77], life: [0.32, 0.62], size: [0.14, 0.4], speed: [4, 8], spread: 0.9, gravity: -8, colors: IMPACT, glow: 2.6, opacity: 0.92, spin: 10 }),
+      def({ kind: 'spark', mode: 'burst', count: 44, birth: [0.7, 0.78], life: [0.2, 0.46], size: [0.04, 0.13], speed: [5, 10], spread: 1, gravity: -7, colors: [0xffffff, 0xffcf90, 0x803010], glow: 3.6, opacity: 0.95, spin: 13 }),
+      def({ kind: 'smoke', mode: 'burst', count: 20, birth: [0.7, 0.8], life: [0.6, 1], size: [0.6, 1.4], speed: [0.8, 2], spread: 1, rise: 1, colors: FIRE_SMOKE, glow: 1, opacity: 0.34, additive: false, endScale: 2.6 }),
+      def({ kind: 'shard', mode: 'burst', count: 24, birth: [0.71, 0.79], life: [0.4, 0.8], size: [0.12, 0.34], speed: [2, 5], spread: 1.3, gravity: -11, colors: [0x8a7060, 0x40302a, 0x120c0a], glow: 1.4, opacity: 0.92, spin: 12 }),
+      def({ kind: 'smoke', mode: 'burst', count: 22, birth: [0.71, 0.8], life: [0.6, 1.1], size: [0.7, 1.5], speed: [1.2, 2.6], spread: 1.3, rise: 0.15, colors: FIRE_SMOKE, glow: 1, opacity: 0.4, additive: false, endScale: 2.8 }),
+    ],
+    ring: { color: 0xffc080, radius: 1.7, at: 0.71 },
+    light: { color: 0xffcf90, intensity: 1 },
+  },
+  slash: {
+    layers: [
+      def({ kind: 'blade', mode: 'head', count: 1, birth: [0, 0.62], life: [9, 9], size: [0.9, 0.9], speed: [0, 0], spread: 0, colors: [0xffffff, 0xdfefff, 0x506070], glow: 3, opacity: 1, endScale: 1, spin: 2 }),
+      def({ kind: 'blade', mode: 'trail', count: 8, birth: [0, 0.6], life: [0.12, 0.26], size: [0.5, 0.9], speed: [0.5, 1.2], spread: 0.5, colors: [0xffffff, 0xcfe4f0, 0x405060], glow: 2.6, opacity: 0.7, endScale: 1.4, spin: 3 }),
+      def({ kind: 'spark', mode: 'burst', count: 46, birth: [0.6, 0.72], life: [0.18, 0.42], size: [0.04, 0.13], speed: [4, 9], spread: 0.9, gravity: -4, colors: [0xffffff, 0xffd0a0, 0x8a3018], glow: 3.8, opacity: 0.95, spin: 13 }),
+      def({ kind: 'shard', mode: 'burst', count: 22, birth: [0.61, 0.74], life: [0.24, 0.5], size: [0.1, 0.28], speed: [3, 7], spread: 0.8, gravity: -5, colors: IMPACT, glow: 2.4, opacity: 0.9, spin: 11 }),
+      def({ kind: 'spark', mode: 'recoil', count: 18, birth: [0.58, 0.7], life: [0.15, 0.35], size: [0.04, 0.1], speed: [2, 5], spread: 0.6, colors: IMPACT, glow: 3, opacity: 0.8, spin: 9 }),
+    ],
+    ring: { color: 0xdfefff, radius: 1.4, at: 0.62 },
+    impactFrom: { color: 0xffd0a0, radius: 0.7, at: 0.6 },
+    light: { color: 0xdfefff, intensity: 1.2 },
+  },
+  cleave: {
+    layers: [
+      def({ kind: 'blade', mode: 'head', count: 1, birth: [0, 0.62], life: [9, 9], size: [1.3, 1.3], speed: [0, 0], spread: 0, colors: [0xffffff, 0xffdca0, 0x604010], glow: 3.2, opacity: 1, endScale: 1, spin: 1.5 }),
+      def({ kind: 'blade', mode: 'trail', count: 12, birth: [0, 0.6], life: [0.14, 0.3], size: [0.7, 1.2], speed: [0.6, 1.4], spread: 0.7, colors: BRASS, glow: 2.8, opacity: 0.8, endScale: 1.6, spin: 2 }),
+      def({ kind: 'spark', mode: 'burst', count: 64, birth: [0.58, 0.72], life: [0.22, 0.5], size: [0.05, 0.15], speed: [5, 11], spread: 1, gravity: -5, colors: [0xffffff, 0xffc890, 0x803010], glow: 4, opacity: 0.95, spin: 14 }),
+      def({ kind: 'shard', mode: 'burst', count: 32, birth: [0.6, 0.74], life: [0.3, 0.6], size: [0.14, 0.4], speed: [4, 8], spread: 1, gravity: -6, colors: IMPACT, glow: 2.6, opacity: 0.92, spin: 12 }),
+      def({ kind: 'smoke', mode: 'burst', count: 18, birth: [0.62, 0.78], life: [0.5, 0.95], size: [0.6, 1.4], speed: [0.8, 2], spread: 1, rise: 1, colors: FIRE_SMOKE, glow: 1, opacity: 0.3, additive: false, endScale: 2.6 }),
+      def({ kind: 'spark', mode: 'recoil', count: 24, birth: [0.56, 0.68], life: [0.16, 0.38], size: [0.05, 0.12], speed: [2.5, 6], spread: 0.7, colors: IMPACT, glow: 3.2, opacity: 0.85, spin: 11 }),
+    ],
+    ring: { color: 0xffd090, radius: 2, at: 0.6 },
+    impactFrom: { color: 0xffb070, radius: 0.9, at: 0.58 },
+    light: { color: 0xffd090, intensity: 1.6 },
+  },
+  gunshot: {
+    layers: [
+      def({ kind: 'bullet', mode: 'stream', count: 18, birth: [0, 0.12], life: [0.12, 0.24], size: [0.34, 0.55], speed: [28, 36], spread: 0.12, colors: MUZZLE, glow: 3.8, opacity: 0.95, endScale: 1.3, oriented: true }),
+      def({ kind: 'soft', mode: 'recoil', count: 14, birth: [0, 0.06], life: [0.07, 0.16], size: [0.3, 0.7], speed: [1.5, 3.5], spread: 0.45, colors: [0xffffff, 0xffd070, 0x603010], glow: 4.4, opacity: 0.95, endScale: 1.9 }),
+      def({ kind: 'spark', mode: 'recoil', count: 22, birth: [0, 0.09], life: [0.12, 0.28], size: [0.035, 0.1], speed: [4, 8], spread: 0.6, gravity: -5, colors: MUZZLE, glow: 4, opacity: 0.95, spin: 13 }),
+      def({ kind: 'shard', mode: 'recoil', count: 10, birth: [0.03, 0.12], life: [0.35, 0.6], size: [0.06, 0.14], speed: [2.5, 4.5], spread: 0.9, gravity: -12, colors: BRASS, glow: 1.6, opacity: 0.9, spin: 16 }),
+      def({ kind: 'smoke', mode: 'recoil', count: 10, birth: [0.04, 0.16], life: [0.4, 0.8], size: [0.3, 0.75], speed: [0.7, 1.6], spread: 0.6, rise: 1.1, colors: FIRE_SMOKE, glow: 1, opacity: 0.3, additive: false, endScale: 2.4 }),
+      def({ kind: 'spark', mode: 'burst', count: 40, birth: [0.52, 0.62], life: [0.14, 0.34], size: [0.035, 0.11], speed: [4, 9], spread: 0.75, gravity: -6, colors: IMPACT, glow: 3.8, opacity: 0.95, spin: 13, arrival: true }),
+      def({ kind: 'shard', mode: 'burst', count: 18, birth: [0.53, 0.64], life: [0.2, 0.42], size: [0.07, 0.2], speed: [3, 6], spread: 0.75, gravity: -7, colors: [0xffffff, 0xffc890, 0x603010], glow: 2.3, opacity: 0.88, spin: 10, arrival: true }),
+      def({ kind: 'smoke', mode: 'burst', count: 12, birth: [0.55, 0.66], life: [0.5, 0.9], size: [0.4, 0.9], speed: [0.6, 1.4], spread: 0.8, rise: 0.8, colors: FIRE_SMOKE, glow: 1, opacity: 0.3, additive: false, endScale: 2.2, arrival: true }),
+      def({ kind: 'smoke', mode: 'burst', count: 12, birth: [0.55, 0.66], life: [0.5, 0.9], size: [0.45, 1], speed: [1, 2], spread: 1, rise: 0.15, colors: FIRE_SMOKE, glow: 1, opacity: 0.32, additive: false, endScale: 2.4, arrival: true }),
+    ],
+    arrivalRing: true,
+    ring: { color: 0xffb070, radius: 1, at: 0.55 },
+    impactFrom: { color: 0xffd070, radius: 0.7, at: 0.02 },
+    light: { color: 0xffc060, intensity: 1.6 },
+  },
+  burstfire: {
+    layers: [
+      def({ kind: 'bullet', mode: 'stream', count: 50, birth: [0, 0.68], life: [0.11, 0.23], size: [0.32, 0.52], speed: [27, 36], spread: 0.28, colors: MUZZLE, glow: 3.8, opacity: 0.95, endScale: 1.3, oriented: true }),
+      def({ kind: 'soft', mode: 'recoil', count: 10, birth: [0.02, 0.06], life: [0.06, 0.13], size: [0.28, 0.6], speed: [1.5, 3.5], spread: 0.4, colors: [0xffffff, 0xffd070, 0x603010], glow: 4.4, opacity: 0.95, endScale: 1.9 }),
+      def({ kind: 'soft', mode: 'recoil', count: 10, birth: [0.24, 0.28], life: [0.06, 0.13], size: [0.28, 0.6], speed: [1.5, 3.5], spread: 0.4, colors: [0xffffff, 0xffd070, 0x603010], glow: 4.4, opacity: 0.95, endScale: 1.9 }),
+      def({ kind: 'soft', mode: 'recoil', count: 10, birth: [0.46, 0.5], life: [0.06, 0.13], size: [0.28, 0.6], speed: [1.5, 3.5], spread: 0.4, colors: [0xffffff, 0xffd070, 0x603010], glow: 4.4, opacity: 0.95, endScale: 1.9 }),
+      def({ kind: 'spark', mode: 'recoil', count: 52, birth: [0, 0.7], life: [0.12, 0.3], size: [0.035, 0.11], speed: [4, 9], spread: 0.85, gravity: -5, colors: MUZZLE, glow: 4, opacity: 0.95, spin: 14 }),
+      def({ kind: 'shard', mode: 'recoil', count: 30, birth: [0.03, 0.72], life: [0.35, 0.65], size: [0.06, 0.15], speed: [2.5, 5], spread: 1.1, gravity: -12, colors: BRASS, glow: 1.6, opacity: 0.9, spin: 16 }),
+      def({ kind: 'smoke', mode: 'recoil', count: 22, birth: [0.04, 0.74], life: [0.45, 0.9], size: [0.3, 0.9], speed: [0.8, 2.2], spread: 0.9, rise: 1.3, colors: FIRE_SMOKE, glow: 1, opacity: 0.34, additive: false, endScale: 2.6 }),
+      def({ kind: 'spark', mode: 'burst', count: 72, birth: [0.5, 0.84], life: [0.16, 0.42], size: [0.04, 0.13], speed: [5, 11], spread: 1.1, gravity: -6, colors: IMPACT, glow: 4, opacity: 0.95, spin: 14, arrival: true }),
+      def({ kind: 'shard', mode: 'burst', count: 34, birth: [0.52, 0.86], life: [0.22, 0.48], size: [0.08, 0.26], speed: [4, 8], spread: 1, gravity: -7, colors: [0xffffff, 0xffc890, 0x603010], glow: 2.4, opacity: 0.88, spin: 12, arrival: true }),
+      def({ kind: 'smoke', mode: 'burst', count: 20, birth: [0.54, 0.88], life: [0.5, 1], size: [0.5, 1.1], speed: [0.8, 1.8], spread: 1.1, rise: 1, colors: FIRE_SMOKE, glow: 1, opacity: 0.32, additive: false, endScale: 2.4, arrival: true }),
+      def({ kind: 'smoke', mode: 'burst', count: 18, birth: [0.54, 0.88], life: [0.5, 1], size: [0.5, 1], speed: [1, 2.2], spread: 1.2, rise: 0.15, colors: FIRE_SMOKE, glow: 1, opacity: 0.32, additive: false, endScale: 2.4, arrival: true }),
+    ],
+    arrivalRing: true,
+    ring: { color: 0xffb070, radius: 1.5, at: 0.55 },
+    impactFrom: { color: 0xffd070, radius: 0.9, at: 0.02 },
+    light: { color: 0xffc060, intensity: 2 },
+  },
+  punch: {
+    layers: [
+      def({ kind: 'soft', mode: 'head', count: 1, birth: [0, 0.6], life: [9, 9], size: [0.4, 0.4], speed: [0, 0], spread: 0, colors: [0xffffff, 0xffd0a0, 0x8a5030], glow: 2.4, opacity: 0.9, endScale: 1 }),
+      def({ kind: 'spark', mode: 'burst', count: 40, birth: [0.62, 0.74], life: [0.16, 0.38], size: [0.04, 0.12], speed: [3, 7], spread: 0.8, gravity: -4, colors: IMPACT, glow: 3.6, opacity: 0.95, spin: 12 }),
+      def({ kind: 'smoke', mode: 'burst', count: 16, birth: [0.64, 0.78], life: [0.4, 0.8], size: [0.4, 1], speed: [1, 2.5], spread: 0.9, rise: 0.9, colors: FIRE_SMOKE, glow: 1, opacity: 0.3, additive: false, endScale: 2.4 }),
+      def({ kind: 'spark', mode: 'recoil', count: 16, birth: [0.6, 0.72], life: [0.14, 0.32], size: [0.04, 0.1], speed: [1.5, 4], spread: 0.5, colors: IMPACT, glow: 3, opacity: 0.8, spin: 9 }),
+    ],
+    ring: { color: 0xffc090, radius: 1, at: 0.63 },
+    impactFrom: { color: 0xffb080, radius: 0.6, at: 0.62 },
+    light: { color: 0xffc090, intensity: 0.8 },
+  },
+  slam: {
+    layers: [
+      def({ kind: 'soft', mode: 'head', count: 1, birth: [0, 0.58], life: [9, 9], size: [0.7, 0.7], speed: [0, 0], spread: 0, colors: [0xffffff, 0xffd0a0, 0x6a4020], glow: 2.6, opacity: 0.9, endScale: 1 }),
+      def({ kind: 'spark', mode: 'burst', count: 80, birth: [0.66, 0.78], life: [0.22, 0.55], size: [0.05, 0.16], speed: [5, 12], spread: 1, gravity: -8, colors: [0xffffff, 0xffb070, 0x703010], glow: 4, opacity: 0.95, spin: 14 }),
+      def({ kind: 'shard', mode: 'burst', count: 42, birth: [0.67, 0.8], life: [0.35, 0.75], size: [0.16, 0.46], speed: [4, 9], spread: 1, gravity: -12, colors: [0x8a7060, 0x40302a, 0x120c0a], glow: 1.4, opacity: 0.92, spin: 12 }),
+      def({ kind: 'smoke', mode: 'burst', count: 40, birth: [0.68, 0.84], life: [0.7, 1.3], size: [0.9, 2.2], speed: [1.2, 3.4], spread: 1.1, rise: 1.3, colors: FIRE_SMOKE, glow: 1, opacity: 0.45, additive: false, endScale: 3.2 }),
+      def({ kind: 'spark', mode: 'recoil', count: 28, birth: [0.64, 0.76], life: [0.18, 0.42], size: [0.05, 0.13], speed: [2, 6], spread: 0.8, colors: IMPACT, glow: 3.4, opacity: 0.85, spin: 11 }),
+    ],
+    ring: { color: 0xffa060, radius: 2.6, at: 0.68 },
+    impactFrom: { color: 0xffb080, radius: 1, at: 0.66 },
+    light: { color: 0xffa060, intensity: 2 },
+  },
 };
 
 const VERTEX = `
 attribute float aAge;
 attribute float aSize;
 attribute float aSeed;
+attribute float aRot;
 uniform float uPixelScale;
 uniform float uEndScale;
 varying float vAge;
 varying float vSeed;
+varying float vRot;
 void main() {
   vAge = aAge;
   vSeed = aSeed;
+  vRot = aRot;
   vec4 mv = modelViewMatrix * vec4(position, 1.0);
   float s = aSize * mix(1.0, uEndScale, clamp(aAge, 0.0, 1.0));
   gl_PointSize = clamp(s * uPixelScale / max(0.25, -mv.z), 1.0, 120.0);
@@ -400,10 +607,11 @@ uniform float uGlow;
 uniform float uSpin;
 varying float vAge;
 varying float vSeed;
+varying float vRot;
 void main() {
   if (vAge < 0.0 || vAge > 1.0) discard;
   vec2 p = gl_PointCoord - 0.5;
-  float a = vSeed * 6.2831853 + vAge * uSpin;
+  float a = vRot + vAge * uSpin;
   float ca = cos(a), sa = sin(a);
   vec2 uv = vec2(ca * p.x - sa * p.y, sa * p.x + ca * p.y) + 0.5;
   if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) discard;
@@ -438,6 +646,7 @@ type Layer = {
   ages: Float32Array;
   sizes: Float32Array;
   seeds: Float32Array;
+  rots: Float32Array;
 };
 
 function basis(dx: number, dy: number, dz: number): [number, number, number, number, number, number, number, number, number] {
@@ -461,13 +670,16 @@ function buildLayer(
   from: [number, number, number],
   to: [number, number, number],
   offsetY: number,
+  arrivalT: number,
 ): Layer {
   const particles: Particle[] = [];
   const flow = basis(to[0] - from[0], 0, to[2] - from[2]);
   const targetDir = basis(flow[0], 0, flow[2]);
   for (let i = 0; i < cfg.count; i++) {
     const rnd = seededRandom((seed ^ Math.imul(i + 1, 2654435761)) >>> 0);
-    const birth = cfg.birth[0] + (cfg.birth[1] - cfg.birth[0]) * rnd();
+    const birth = cfg.arrival
+      ? Math.min(0.94, Math.max(0.04, arrivalT + (rnd() - 0.5) * 0.05))
+      : cfg.birth[0] + (cfg.birth[1] - cfg.birth[0]) * rnd();
     const pose = vfxEmitterPose(type, birth, from, to, offsetY);
     const jitterA = (rnd() - 0.5) * cfg.spread;
     const jitterB = (rnd() - 0.5) * cfg.spread;
@@ -487,6 +699,13 @@ function buildLayer(
       oy = to[1] + offsetY;
       oz = to[2] + flow[5] * jitterA;
       dirX = 0; dirY = 1; dirZ = 0;
+    } else if (cfg.mode === 'rain') {
+      const theta = rnd() * Math.PI * 2;
+      const r = Math.sqrt(rnd()) * cfg.spread;
+      ox = to[0] + Math.cos(theta) * r;
+      oz = to[2] + Math.sin(theta) * r;
+      oy = to[1] + offsetY + cfg.spawnHeight;
+      dirX = 0; dirY = -1; dirZ = 0;
     } else if (cfg.mode === 'implode') {
       const theta = rnd() * Math.PI * 2;
       const phi = Math.acos(2 * rnd() - 1);
@@ -503,7 +722,9 @@ function buildLayer(
     } else {
       const theta = rnd() * Math.PI * 2;
       const phi = Math.acos(2 * rnd() - 1);
-      ox = to[0]; oy = to[1] + offsetY; oz = to[2];
+      ox = cfg.mode === 'recoil' ? from[0] : to[0];
+      oy = (cfg.mode === 'recoil' ? from[1] : to[1]) + offsetY;
+      oz = cfg.mode === 'recoil' ? from[2] : to[2];
       dirX = Math.sin(phi) * Math.cos(theta);
       dirY = Math.cos(phi) * 0.75 + 0.25;
       dirZ = Math.sin(phi) * Math.sin(theta);
@@ -527,12 +748,17 @@ function buildLayer(
   const ages = new Float32Array(count).fill(-1);
   const sizes = new Float32Array(count);
   const seeds = new Float32Array(count);
-  for (let i = 0; i < count; i++) seeds[i] = particles[i].seed;
+  const rots = new Float32Array(count);
+  for (let i = 0; i < count; i++) {
+    seeds[i] = particles[i].seed;
+    rots[i] = particles[i].seed * Math.PI * 2;
+  }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute('aAge', new THREE.BufferAttribute(ages, 1));
   geometry.setAttribute('aSize', new THREE.BufferAttribute(sizes, 1));
   geometry.setAttribute('aSeed', new THREE.BufferAttribute(seeds, 1));
+  geometry.setAttribute('aRot', new THREE.BufferAttribute(rots, 1));
   const material = new THREE.ShaderMaterial({
     uniforms: {
       uMap: { value: getSprite(cfg.kind) },
@@ -555,7 +781,7 @@ function buildLayer(
   });
   const points = new THREE.Points(geometry, material);
   points.frustumCulled = false;
-  return { cfg, particles, geometry, material, points, positions, ages, sizes, seeds };
+  return { cfg, particles, geometry, material, points, positions, ages, sizes, seeds, rots };
 }
 
 type Ribbon = {
@@ -613,8 +839,12 @@ export function VfxBurst({ effect, offsetY = 0 }: { effect: VfxEffect; offsetY?:
 
   const engine = useMemo(() => {
     const seed = effect.id >>> 0;
+    const bullet = look.layers.find((cfg) => cfg.kind === 'bullet');
+    const bulletSpeed = bullet ? (bullet.speed[0] + bullet.speed[1]) / 2 : 0;
+    const streamDist = Math.hypot(effect.to[0] - effect.from[0], effect.to[2] - effect.from[2]);
+    const arrivalT = bulletSpeed ? Math.min(0.92, streamDist / (bulletSpeed * durationSec)) : 1;
     const layers = look.layers.map((cfg, i) =>
-      buildLayer(cfg, (seed ^ Math.imul(i + 1, 40503)) >>> 0, durationSec, effect.type, effect.from, effect.to, offsetY),
+      buildLayer(cfg, (seed ^ Math.imul(i + 1, 40503)) >>> 0, durationSec, effect.type, effect.from, effect.to, offsetY, arrivalT),
     );
     const ribbons = look.ribbon
       ? [buildRibbon(0), buildRibbon(1), buildRibbon(2), buildRibbon(3), buildRibbon(4)]
@@ -633,6 +863,20 @@ export function VfxBurst({ effect, offsetY = 0 }: { effect: VfxEffect; offsetY?:
       ring.position.set(effect.to[0], offsetY + 0.04, effect.to[2]);
       ring.frustumCulled = false;
     }
+    const impactFrom = look.impactFrom
+      ? new THREE.Mesh(
+          new THREE.RingGeometry(0.82, 1, 48),
+          new THREE.MeshBasicMaterial({
+            color: look.impactFrom.color, transparent: true, opacity: 0,
+            blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false,
+          }),
+        )
+      : null;
+    if (impactFrom) {
+      impactFrom.rotation.x = -Math.PI / 2;
+      impactFrom.position.set(effect.from[0], offsetY + 0.05, effect.from[2]);
+      impactFrom.frustumCulled = false;
+    }
     const rock = look.rock
       ? new THREE.Mesh(
           new THREE.IcosahedronGeometry(0.26, 1),
@@ -644,7 +888,7 @@ export function VfxBurst({ effect, offsetY = 0 }: { effect: VfxEffect; offsetY?:
       : null;
     const light = look.light ? new THREE.PointLight(look.light.color, 0, 9) : null;
     if (light) light.position.set(effect.to[0], effect.to[1] + offsetY + 0.5, effect.to[2]);
-    return { layers, ribbons, ring, rock, light };
+    return { layers, ribbons, ring, impactFrom, rock, light, arrivalT };
   }, [effect.id, effect.type, effect.from, effect.to, durationSec, look, offsetY]);
 
   useEffect(
@@ -661,6 +905,8 @@ export function VfxBurst({ effect, offsetY = 0 }: { effect: VfxEffect; offsetY?:
       }
       engine.ring?.geometry.dispose();
       (engine.ring?.material as THREE.Material | undefined)?.dispose();
+      engine.impactFrom?.geometry.dispose();
+      (engine.impactFrom?.material as THREE.Material | undefined)?.dispose();
       engine.rock?.geometry.dispose();
       (engine.rock?.material as THREE.Material | undefined)?.dispose();
     },
@@ -677,9 +923,11 @@ export function VfxBurst({ effect, offsetY = 0 }: { effect: VfxEffect; offsetY?:
     const pixelScale = size.height / (2 * Math.tan(THREE.MathUtils.degToRad(fov) / 2));
 
     const streamDist = Math.hypot(effect.to[0] - effect.from[0], effect.to[2] - effect.from[2]);
+    const pa = new THREE.Vector3();
+    const pb = new THREE.Vector3();
 
     for (const layer of engine.layers) {
-      const { cfg, particles, positions, ages, sizes } = layer;
+      const { cfg, particles, positions, ages, sizes, rots } = layer;
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
         const ageSec = tSec - p.birth;
@@ -711,7 +959,7 @@ export function VfxBurst({ effect, offsetY = 0 }: { effect: VfxEffect; offsetY?:
           x = p.ox + p.dx * reach + p.rx * wob + p.ux * wob2;
           y = p.oy + p.dy * reach + p.ry * wob + p.uy * wob2;
           z = p.oz + p.dz * reach + p.rz * wob + p.uz * wob2;
-        } else if (cfg.mode === 'burst') {
+        } else if (cfg.mode === 'burst' || cfg.mode === 'recoil') {
           x = p.ox + p.dx * travel + p.rx * wob + p.ux * wob2;
           y = p.oy + p.dy * travel + p.ry * wob + p.uy * wob2;
           z = p.oz + p.dz * travel + p.rz * wob + p.uz * wob2;
@@ -719,6 +967,10 @@ export function VfxBurst({ effect, offsetY = 0 }: { effect: VfxEffect; offsetY?:
           x = p.ox + p.rx * wob * 1.4 + p.dx * travel * 0.35;
           y = p.oy + cfg.rise * ageSec + p.dy * travel * 0.35;
           z = p.oz + p.rz * wob * 1.4 + p.dz * travel * 0.35;
+        } else if (cfg.mode === 'rain') {
+          x = p.ox + p.rx * wob * 0.4;
+          z = p.oz + p.rz * wob * 0.4;
+          y = p.oy + p.dy * travel;
         } else if (cfg.mode === 'implode') {
           const k = Math.max(0, 1 - a);
           const spin = a * cfg.spin;
@@ -735,6 +987,29 @@ export function VfxBurst({ effect, offsetY = 0 }: { effect: VfxEffect; offsetY?:
           y = effect.to[1] + offsetY + cfg.rise * ageSec + Math.sin(ageSec * 4 + p.seed * 9) * 0.1;
         }
         if (cfg.gravity) y += cfg.gravity * ageSec * ageSec * 0.5;
+        if (cfg.mode === 'rain' && y < effect.to[1] + offsetY) y = effect.to[1] + offsetY;
+        if (cfg.oriented) {
+          let vx: number, vy: number, vz: number;
+          if (cfg.mode === 'head' || cfg.mode === 'trail') {
+            vx = pose.direction[0]; vy = pose.direction[1]; vz = pose.direction[2];
+          } else if (cfg.mode === 'stream') {
+            vx = p.dx; vy = 0; vz = p.dz;
+          } else if (cfg.mode === 'rain') {
+            vx = 0; vy = -1; vz = 0;
+          } else {
+            vx = p.dx; vy = p.dy; vz = p.dz;
+          }
+          pa.set(x, y, z).project(camera);
+          pb.set(x + vx, y + vy, z + vz).project(camera);
+          rots[i] = Math.atan2(-(pb.x - pa.x), pb.y - pa.y);
+          const flight = FLIGHT[effect.type];
+          if (cfg.mode === 'head' && flight !== undefined && t > flight) {
+            const q = Math.min(1, (t - flight) / (1 - flight));
+            const damp = 1 - q;
+            rots[i] += Math.sin(q * 34) * 0.11 * damp;
+            y += Math.sin(q * 26) * 0.035 * damp;
+          }
+        }
         positions[i * 3] = x;
         positions[i * 3 + 1] = y;
         positions[i * 3 + 2] = z;
@@ -744,6 +1019,7 @@ export function VfxBurst({ effect, offsetY = 0 }: { effect: VfxEffect; offsetY?:
       layer.geometry.attributes.position.needsUpdate = true;
       layer.geometry.attributes.aAge.needsUpdate = true;
       layer.geometry.attributes.aSize.needsUpdate = true;
+      layer.geometry.attributes.aRot.needsUpdate = true;
       layer.material.uniforms.uPixelScale.value = pixelScale;
     }
 
@@ -804,11 +1080,20 @@ export function VfxBurst({ effect, offsetY = 0 }: { effect: VfxEffect; offsetY?:
     }
 
     if (engine.ring && look.ring) {
-      const u = Math.max(0, (t - look.ring.at) / (1 - look.ring.at));
+      const ringAt = look.arrivalRing ? engine.arrivalT : look.ring.at;
+      const u = Math.max(0, (t - ringAt) / (1 - ringAt));
       const s = 0.2 + look.ring.radius * u;
       engine.ring.scale.set(s, s, s);
       (engine.ring.material as THREE.MeshBasicMaterial).opacity =
         u <= 0 ? 0 : 0.85 * (1 - Math.min(1, u * 1.35)) * Math.min(1, u * 12);
+    }
+
+    if (engine.impactFrom && look.impactFrom) {
+      const u = Math.max(0, (t - look.impactFrom.at) / (1 - look.impactFrom.at));
+      const s = 0.2 + look.impactFrom.radius * u;
+      engine.impactFrom.scale.set(s, s, s);
+      (engine.impactFrom.material as THREE.MeshBasicMaterial).opacity =
+        u <= 0 ? 0 : 0.7 * (1 - Math.min(1, u * 1.4)) * Math.min(1, u * 12);
     }
 
     if (engine.rock) {
@@ -835,6 +1120,7 @@ export function VfxBurst({ effect, offsetY = 0 }: { effect: VfxEffect; offsetY?:
         </group>
       ))}
       {engine.ring && <primitive object={engine.ring} />}
+      {engine.impactFrom && <primitive object={engine.impactFrom} />}
       {engine.rock && <primitive object={engine.rock} />}
       {engine.light && <primitive object={engine.light} />}
     </>

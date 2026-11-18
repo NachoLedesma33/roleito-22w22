@@ -36,6 +36,7 @@ import type { LosJob } from '@/lib/losWorker';
 import { DEFAULT_RENDER_MODE } from '@/lib/overlayY';
 import { normalizeSharedAudio, setSharedAudio } from '@/lib/audioSettings';
 import { staticUrl } from '@/lib/staticUrl';
+import { type VfxType } from '@/lib/vfxParticles';
 
 const API_BASE = '/api';
 const VIDA_LABELS: Record<string, string> = {
@@ -44,6 +45,41 @@ const VIDA_LABELS: Record<string, string> = {
   dexterity: 'D',
   cunning: 'A',
 };
+const VFX_GROUPS: Array<{ label: string; color: string; items: Array<[VfxType, string]> }> = [
+  {
+    label: 'Elemental',
+    color: '#f97316',
+    items: [
+      ['fire', 'Fuego'], ['ice', 'Hielo'], ['lightning', 'Rayo'], ['thunder', 'Trueno'],
+      ['flamethrower', 'Lanzallamas'], ['frostnova', 'Nova de hielo'], ['meteor', 'Meteoro'],
+    ],
+  },
+  {
+    label: 'Soporte y sombra',
+    color: '#a78bfa',
+    items: [
+      ['heal', 'Sanación'], ['poison', 'Veneno'], ['holy', 'Sagrado'],
+      ['shadow', 'Sombra'], ['void', 'Vacío'], ['arcane', 'Arcano'],
+    ],
+  },
+  {
+    label: 'Proyectiles',
+    color: '#38bdf8',
+    items: [
+      ['arrow', 'Flecha'], ['arrowrain', 'Lluvia de flechas'],
+      ['throwingknife', 'Cuchillo arrojadizo'], ['javelin', 'Jabalina'],
+      ['gunshot', 'Disparo'], ['burstfire', 'Ráfaga'],
+    ],
+  },
+  {
+    label: 'Cuerpo a cuerpo',
+    color: '#94a3b8',
+    items: [
+      ['slash', 'Cuchillazo'], ['cleave', 'Espadazo'], ['punch', 'Puñetazo'], ['slam', 'Martillazo'],
+    ],
+  },
+];
+const VFX_LABELS = VFX_GROUPS.flatMap((g) => g.items);
 
 function abilityIconChip(icon: string | null, name: string) {
   const view = abilityIconView(icon);
@@ -146,9 +182,9 @@ export default function PlayerView() {
   const [askingLight, setAskingLight] = useState(false);
   const [imageAspect, setImageAspect] = useState(1);
   const [markers, setMarkers] = useState<Array<{ id: number; x: number; z: number; color: string }>>([]);
-  const [vfx, setVfx] = useState<Array<{ id: number; type: 'fire' | 'ice' | 'lightning' | 'heal' | 'void'; from: [number, number, number]; to: [number, number, number]; startedAt: number; duration: number }>>([]);
-
-  const [pendingVfx, setPendingVfx] = useState<'fire' | 'ice' | 'lightning' | 'heal' | 'void' | null>(null);
+  const [vfx, setVfx] = useState<Array<{ id: number; type: VfxType; from: [number, number, number]; to: [number, number, number]; startedAt: number; duration: number }>>([]);
+  const [vfxMenuOpen, setVfxMenuOpen] = useState(false);
+  const [pendingVfx, setPendingVfx] = useState<VfxType | null>(null);
   const [assetRefreshKey, setAssetRefreshKey] = useState(0);
   const handleAspectChange = useCallback((a: number) => {
     if (Number.isFinite(a) && a > 0) setImageAspect(a);
@@ -172,12 +208,15 @@ export default function PlayerView() {
     setMarkers((prev) => [...prev, { id, x: m.x, z: m.z, color: m.color ?? '#facc15' }]);
     window.setTimeout(() => setMarkers((prev) => prev.filter((p) => p.id !== id)), m.ttl_ms ?? 3000);
   }, onVfx: (v) => {
-    const effect = { id: Date.now(), type: v.type as 'fire' | 'ice' | 'lightning' | 'heal' | 'void', from: v.from, to: v.to, startedAt: performance.now(), duration: 1500 };
+    const effect = { id: Date.now(), type: v.type as VfxType, from: v.from, to: v.to, startedAt: performance.now(), duration: 1500 };
     setVfx((prev) => [...prev, effect]);
     window.setTimeout(() => setVfx((prev) => prev.filter((e) => e.id !== effect.id)), 2000);
   }, onAssetShared: () => {
     void loadAssets();
   } });
+
+  const vfxAllowed = choice?.kind === 'character'
+    && !!data?.player_characters.find((p) => p.id === choice.id)?.can_use_vfx;
 
   const loadAssets = useCallback(() => {
     setAssetRefreshKey((k) => k + 1);
@@ -1240,6 +1279,22 @@ export default function PlayerView() {
             <Dices className="h-3.5 w-3.5" />
           </button>
         )}
+        {vfxAllowed && (
+          <button
+            type="button"
+            onClick={() => setVfxMenuOpen((open) => !open)}
+            className={`text-xs px-2 py-1 rounded transition-colors shrink-0 ${
+              vfxMenuOpen || pendingVfx
+                ? 'bg-[var(--accent)] text-white'
+                : 'bg-[var(--bg-tertiary)] text-white hover:text-white hover:bg-[var(--bg-tertiary)]/70'
+            }`}
+            title={t('pv.vfxTitle', 'Habilidades VFX')}
+            aria-label={t('pv.vfxTitle', 'Habilidades VFX')}
+            data-testid="pv-vfx-toggle"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+          </button>
+        )}
         {choice?.kind === 'character' && (
           <button
             type="button"
@@ -1489,21 +1544,47 @@ export default function PlayerView() {
           </div>
         )}
 
-        {choice?.kind === 'character' && data.player_characters.find((p) => p.id === choice.id)?.can_use_vfx && (
-          <div className="absolute top-4 right-4 z-10 bg-surface border border-subtle rounded-lg p-2" data-testid="pv-vfx-menu">
-            <p className="text-[10px] text-white mb-1">VFX{pendingVfx ? `: ${pendingVfx}` : ''}</p>
-            <div className="flex flex-wrap gap-1">
-              {(['fire', 'ice', 'lightning', 'heal', 'void'] as const).map((type) => (
-                <button
-                  key={type}
-                  onClick={() => setPendingVfx((prev) => (prev === type ? null : type))}
-                  className={`text-[10px] px-2 py-0.5 rounded ${pendingVfx === type ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-tertiary)] text-white'}`}
-                >
-                  {type}
-                </button>
+        {vfxAllowed && vfxMenuOpen && (
+          <div className="absolute top-4 right-4 z-10 w-64 bg-surface border border-subtle rounded-lg shadow-lg" data-testid="pv-vfx-menu">
+            <div className="flex items-center gap-2 border-b border-subtle px-3 py-2">
+              <Sparkles className="h-3.5 w-3.5 text-[var(--accent)]" />
+              <span className="text-xs font-semibold text-white">Habilidades VFX</span>
+              <span className="ml-auto text-[10px] text-[var(--text-secondary)]">{VFX_LABELS.length}</span>
+            </div>
+            <div className="max-h-[58vh] overflow-y-auto px-2 py-1">
+              {VFX_GROUPS.map((group) => (
+                <div key={group.label} className="mb-2 last:mb-1">
+                  <div className="flex items-center gap-1.5 px-1 pb-1">
+                    <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: group.color }} />
+                    <span className="text-[9px] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">{group.label}</span>
+                    <span className="ml-auto text-[9px] text-[var(--text-secondary)]">{group.items.length}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1">
+                    {group.items.map(([type, label]) => (
+                      <button
+                        key={type}
+                        onClick={() => {
+                          setPendingVfx((prev) => (prev === type ? null : type));
+                          setVfxMenuOpen(false);
+                        }}
+                        className={`truncate rounded px-2 py-1 text-left text-[10px] transition-colors ${
+                          pendingVfx === type
+                            ? 'bg-[var(--accent)] text-white'
+                            : 'bg-[var(--bg-tertiary)] text-white hover:brightness-110'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
-            {pendingVfx && <p className="text-[9px] text-white mt-1">Click en un token objetivo</p>}
+            <div className="border-t border-subtle px-3 py-2 text-[10px] text-[var(--text-secondary)]">
+              {pendingVfx
+                ? <>Objetivo: <span className="text-white">{VFX_LABELS.find(([t]) => t === pendingVfx)?.[1]}</span> · clic en token</>
+                : 'Elige una habilidad y luego un token objetivo'}
+            </div>
           </div>
         )}
 

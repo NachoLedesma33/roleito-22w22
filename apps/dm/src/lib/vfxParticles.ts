@@ -12,6 +12,21 @@ export type VfxType =
   | 'holy'
   | 'shadow'
   | 'arcane'
+  | 'arrow'
+  | 'arrowrain'
+  | 'throwingknife'
+  | 'javelin'
+  | 'slash'
+  | 'cleave'
+  | 'gunshot'
+  | 'burstfire'
+  | 'punch'
+  | 'slam'
+
+export const MELEE_VFX: ReadonlySet<VfxType> = new Set<VfxType>([
+  'slash', 'cleave', 'punch', 'slam',
+]);
+
 export type VfxLayer = 'core' | 'trail' | 'motes' | 'impact' | 'aftermath'
 
 export interface VfxParticle {
@@ -202,6 +217,116 @@ const RECIPES: Record<VfxType, Recipe> = {
     radial: 1.1,
     size: 0.8,
     impactAt: [0.4, 0.82],
+  },
+  arrow: {
+    core: [1, 0.96, 0.8],
+    mid: [0.8, 0.62, 0.3],
+    hot: [0.32, 0.16, 0.06],
+    shape: 'bolt',
+    rise: 0.1,
+    lateral: 0,
+    radial: 0.2,
+    size: 0.7,
+    impactAt: [0.68, 0.9],
+  },
+  arrowrain: {
+    core: [1, 0.96, 0.8],
+    mid: [0.7, 0.55, 0.3],
+    hot: [0.25, 0.14, 0.06],
+    shape: 'plume',
+    rise: -0.2,
+    lateral: 0.3,
+    radial: 1.6,
+    size: 0.8,
+    impactAt: [0.35, 0.85],
+  },
+  throwingknife: {
+    core: [1, 1, 0.95],
+    mid: [0.72, 0.82, 0.9],
+    hot: [0.2, 0.24, 0.3],
+    shape: 'shards',
+    rise: 0,
+    lateral: 0,
+    radial: 0.4,
+    size: 0.6,
+    impactAt: [0.7, 0.92],
+  },
+  javelin: {
+    core: [1, 0.95, 0.85],
+    mid: [0.72, 0.6, 0.4],
+    hot: [0.25, 0.18, 0.1],
+    shape: 'shards',
+    rise: 0.2,
+    lateral: 0.1,
+    radial: 0.5,
+    size: 0.9,
+    impactAt: [0.72, 0.94],
+  },
+  slash: {
+    core: [1, 1, 0.95],
+    mid: [0.85, 0.9, 1],
+    hot: [0.3, 0.4, 0.6],
+    shape: 'shards',
+    rise: 0.1,
+    lateral: 0.2,
+    radial: 1.2,
+    size: 0.7,
+    impactAt: [0.4, 0.7],
+  },
+  cleave: {
+    core: [1, 1, 0.9],
+    mid: [0.9, 0.7, 0.4],
+    hot: [0.4, 0.2, 0.1],
+    shape: 'shards',
+    rise: 0.15,
+    lateral: 0.3,
+    radial: 1.5,
+    size: 1,
+    impactAt: [0.4, 0.75],
+  },
+  gunshot: {
+    core: [1, 1, 0.9],
+    mid: [1, 0.75, 0.3],
+    hot: [0.35, 0.25, 0.15],
+    shape: 'bolt',
+    rise: 0,
+    lateral: 0,
+    radial: 0.1,
+    size: 0.6,
+    impactAt: [0.55, 0.8],
+  },
+  burstfire: {
+    core: [1, 1, 0.9],
+    mid: [1, 0.7, 0.25],
+    hot: [0.3, 0.2, 0.12],
+    shape: 'bolt',
+    rise: 0,
+    lateral: 0.1,
+    radial: 0.2,
+    size: 0.6,
+    impactAt: [0.5, 0.85],
+  },
+  punch: {
+    core: [1, 0.92, 0.8],
+    mid: [0.85, 0.6, 0.4],
+    hot: [0.4, 0.2, 0.15],
+    shape: 'plume',
+    rise: 0.1,
+    lateral: 0.2,
+    radial: 0.9,
+    size: 0.9,
+    impactAt: [0.5, 0.8],
+  },
+  slam: {
+    core: [1, 0.9, 0.7],
+    mid: [0.7, 0.5, 0.3],
+    hot: [0.25, 0.15, 0.1],
+    shape: 'plume',
+    rise: -0.1,
+    lateral: 0.3,
+    radial: 1.4,
+    size: 1.2,
+    impactAt: [0.5, 0.85],
   },
 }
 

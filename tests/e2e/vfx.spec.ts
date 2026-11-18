@@ -61,6 +61,22 @@ test.describe('VFX', () => {
     await page.getByRole('button', { name: 'Rayo' }).click();
     await tray.getByRole('button', { name: 'Objetivo VFX' }).click();
     await page.waitForTimeout(600);
+
+    await page.getByTestId(`hud-char-${target.id}`).getByRole('button', { name: 'Cerrar' }).click();
+    await page.locator('[data-anchor="vfx"] button').click();
+    const menu = page.getByTestId('vfx-menu');
+    await expect(menu.getByRole('button')).toHaveCount(23);
+    const meleePost = page.waitForRequest(
+      (r) =>
+        r.url().includes(`/api/campaigns/${campaign.id}/vfx`) && r.method() === 'POST',
+      { timeout: 15_000 },
+    );
+    await menu.getByRole('button', { name: 'Cuchillazo' }).click();
+    await tray.getByRole('button', { name: 'Objetivo VFX' }).click();
+    const meleeReq = await meleePost;
+    expect((meleeReq.postDataJSON() as { type: string }).type).toBe('slash');
+
+    await page.waitForTimeout(600);
     expect(renderErrors.filter((msg) => /WebGL|shader|ERROR: 0:/i.test(msg))).toEqual([]);
   });
 });
