@@ -157,6 +157,8 @@ Catálogo enorme de música de fantasía, suspenso, sci-fi. Solo usar si se acep
 
 Los loops iniciales de Tallbeard se eligieron por nombre de archivo, no por contenido: metadata real muestra `GENRE=Electronic` en 29/29. `DEEP WELL` (medieval) era drone, `Magnetic Tape SCUFFED` (taberna) era ruido, `Vacation Day ADVENTURE` (campaña) era vacaciones, `SHROUDED FUTURE` + `computerNoise_000` (sci-fi) era chirrido, y `combat` no tenía track `music` (solo `lowFrequency_explosion` a gain 0.12) con `playStinger` sin caller en runtime. Reemplazo con CC0 de OpenGameArt con título de género explícito: `medieval-tower-inn`, `medieval-market-loop`, `medieval-exploration`, `medieval-battle` (RandomMind), `scifi-echoes` (Sorth); `computerNoise` bajado a 0.08; `combat-battle` añadido; jingle de campaña cambiado de Sax a Steel. Test de regresión: cada escena expone loop `music` con `gain >= 0.25`. Fuentes en `CREDITS.md`.
 
+Segunda tanda (mismo día, commit `0357f74`): cuatro pistas más cambiadas por ambient/música épica no electrónica — `sci-fi-computer` → `crashed-ship.ogg` (Wolfgang_, CC BY 3.0), `suspense-theme` → `dark-cavern-1.ogg` y `suspense-noise` → `dark-cavern-2.ogg` (Paul Wortmann, CC0), `campaign-theme` → `epic-orchestral-fantasy.mp3` (linxiaoma, CC BY 4.0). Diez assets nuevos en `data/assets/audio/oga/music/` con `filter=lfs`. Licencias y créditos en `CREDITS.md`.
+
 ### Suspenso / horror
 - ObsydianX Horror SFX Volume 1 (drones + stingers).
 - Freesound InspectorJ `Heartbeat LOOP`, zorros/ranas nocturnas (verificar CC BY).
@@ -302,6 +304,21 @@ Regla del repo: **una fase = un tema = 1 commit + CI verde**. Orden de verificac
 - **Archivos**: `docs/roadmap/IMPLEMENTATION-STATUS.md`, `docs/audio/AMBIENT-AUDIO-PLAN.md`, `docs/audio/CREDITS.md`.
 - **Verificación**: `npm run lint` → `npm run typecheck` → `npm run test --workspace=apps/dm` → pytest si tocó backend → e2e completo → `python scripts/check-docs-consistency.py`. Un commit, CI verde.
 - **Commit**: `docs(audio): sync status and close ambient audio phase`.
+
+## 9. Pistas subidas por el usuario (2026-11-18) — ✅ CERRADA
+
+Extensión posterior a las fases 0–6. Pedido: "crear la opción de tipo input para agregar archivo de música desde la máquina de cada uno y poder agregar las pistas que quieran". El DM sube pistas propias, quedan en su máquina y las publica al servidor si quiere.
+
+- **Storage dual (decisión del usuario: "Ambas")**:
+  - Local por usuario: IndexedDB `roleito-audio` / store `tracks`, con `Blob` + nombre. `apps/dm/src/lib/customAudio.ts` (`addLocalTrack`, `listLocalTracks`, `deleteLocalTrack`, `getLocalTrackUrl`, `publishLocalTrack`). Las URLs se crean con `URL.createObjectURL` y se revocan al desmontar.
+  - Publicada al servidor: `campaign.settings_json.audio.custom_tracks` (sin cambio de schema). El mismo dict ya viaja al jugador en el snapshot, así que no hicieron falta nuevos campos de transporte.
+- **Contrato backend** (`backend/routes.py`, bajo `campaigns_router`, `require_dm`): `POST /campaigns/{id}/audio/tracks` (multipart `file` + query `name?`) y `DELETE /campaigns/{id}/audio/tracks/{track_id}`. Whitelist `.mp3/.ogg/.wav/.m4a/.flac`, id `secrets.token_hex(8)`, archivo en `data/assets/<campaign>/audio/tracks/<id>.<ext>` servido por `/api/static/`. Ambos emiten `broadcast_revision`.
+- **Cliente** (`apps/dm/src/lib/api.ts`): `SharedAudioTrack { id, name, src, path? }`, `api.campaigns.uploadAudioTrack` / `deleteAudioTrack`. `normalizeSharedAudio` filtra tracks publicados: exige `id` string, `src` string con prefijo `/api/static/`; `sameShared` compara por ids para no re-renderizar en cada poll.
+- **UI**: `AudioSettingsMenu` ganó input `audio/*` (`data-testid="custom-audio-file"`) y lista con elegir / publicar (↑) / quitar (×); `campaignId` y `onSelectTrack` son props nuevas. El DM ve la pista activa (`data-testid="custom-audio-active"`). La vista jugador no expone controles nuevos: sigue el mixer.
+- **Reproducción**: `AmbientMixer.playCustom({ id, src, gain? })` detiene los loops de escena y toca la pista en loop como `kind: 'music'` (gain default 0.5). Elegir escena limpia la pista elegida; en el jugador, una pista publicada tiene prioridad sobre la escena. `publishLocalTrack` llama `setSharedAudio` con lo devuelto para que el POV reaccione sin esperar al snapshot.
+- **Tests**: `audioSettings.spec.ts` (+3: normaliza/filtra tracks, ignora republish, reacciona a cambio de ids) y `ambientAudio.spec.ts` (+2: `playCustom` para loops y arranca source en loop, y no-op sin AudioContext). Suite 357/357.
+- **Commits**: `4aea159` (endpoints) · `9bea3ed` (catálogo local + cliente) · `ed77e3e` (input y lista) · `c76cc08` (playback DM) · `4620be1` (playback jugador) · `e48d83f` (publicar actualiza estado).
+- **Sin push** (no autorizado). E2E no corrido localmente (webServer chocaría con 5173/8000); CI corre la suite completa.
 
 ### Decisiones ya tomadas (defaults, no requieren aprobación por fase)
 

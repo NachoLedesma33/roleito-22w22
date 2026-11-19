@@ -95,8 +95,9 @@ class FakeSource extends FakeNode {
   loop = false
   buffer: unknown = null
   onended: (() => void) | null = null
+  stopCalls = 0
   start() {}
-  stop() {}
+  stop() { this.stopCalls += 1 }
 }
 
 const createdCtx: FakeCtx[] = []
@@ -113,6 +114,42 @@ class FakeCtx {
   async resume() {}
   async close() {}
 }
+
+describe('AmbientMixer.playCustom', () => {
+  it('stops scene loops and starts the custom track as a looping source', async () => {
+    createdCtx.length = 0
+    vi.stubGlobal('window', { AudioContext: FakeCtx })
+    vi.stubGlobal('fetch', async () => ({ arrayBuffer: async () => new ArrayBuffer(0) }))
+    const mixer = new AmbientMixer(AMBIENT_TRACKS)
+    try {
+      mixer.setScene('medieval')
+      await new Promise((r) => setTimeout(r, 0))
+      const ctx = createdCtx[0]
+      const sceneSources = [...ctx.sources]
+      expect(sceneSources.length).toBeGreaterThan(0)
+
+      mixer.playCustom({ id: 'x1', src: '/api/static/x1.mp3', gain: 0.7 })
+      await new Promise((r) => setTimeout(r, 0))
+
+      for (const s of sceneSources) expect(s.stopCalls).toBeGreaterThan(0)
+      const custom = ctx.sources[ctx.sources.length - 1]
+      expect(custom.loop).toBe(true)
+      const customGain = custom.connections[0] as FakeNode
+      expect((customGain.gain as FakeParam).calls[(customGain.gain as FakeParam).calls.length - 1]).toBe(0.7)
+    } finally {
+      mixer.dispose()
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('does nothing without an available AudioContext', () => {
+    vi.stubGlobal('window', {})
+    const mixer = new AmbientMixer(AMBIENT_TRACKS)
+    expect(() => mixer.playCustom({ id: 'x', src: '/api/static/x.mp3' })).not.toThrow()
+    mixer.dispose()
+    vi.unstubAllGlobals()
+  })
+})
 
 describe('AmbientMixer stinger ducking', () => {
   it('lowers looping music while a stinger plays and restores it after', async () => {

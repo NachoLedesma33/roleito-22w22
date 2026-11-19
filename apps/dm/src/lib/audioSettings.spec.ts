@@ -63,3 +63,48 @@ describe('shared ambient scene', () => {
     expect(audio.getSharedAudio()?.scene).toBe('sci-fi');
   });
 });
+
+describe('shared custom tracks', () => {
+  const valid = { id: 'abc', name: 'Mi pista', src: '/api/static/c1/audio/tracks/abc.mp3' };
+
+  it('normalizes valid published tracks', async () => {
+    const audio = await freshAudio();
+    expect(audio.normalizeSharedAudio({ custom_tracks: [valid] })?.custom_tracks).toEqual([valid]);
+    expect(audio.normalizeSharedAudio({})?.custom_tracks).toEqual([]);
+  });
+
+  it('drops tracks with missing id/src, foreign src or wrong shape', async () => {
+    const audio = await freshAudio();
+    const raw = {
+      custom_tracks: [
+        valid,
+        { name: 'sin id', src: '/api/static/x.mp3' },
+        { id: 'n', name: 'src externo', src: 'https://evil/x.mp3' },
+        { id: 'p', src: '/api/static/p.mp3' },
+        null,
+        'no-object',
+      ],
+    };
+    expect(audio.normalizeSharedAudio(raw)?.custom_tracks).toEqual([
+      valid,
+      { id: 'p', name: 'Pista', src: '/api/static/p.mp3' },
+    ]);
+  });
+
+  it('reacts to a change in track ids and ignores equal republishes', async () => {
+    const audio = await freshAudio();
+    let emits = 0;
+    const unsub = audio.subscribeAudioSettings(() => { emits += 1; });
+    try {
+      audio.setSharedAudio({ sync: true, master: 1, weather: 0.8, dice: 0.8, ambience: 0.6, custom_tracks: [valid] });
+      expect(audio.getSharedAudio()?.custom_tracks).toEqual([valid]);
+      const afterFirst = emits;
+      audio.setSharedAudio({ sync: true, master: 1, weather: 0.8, dice: 0.8, ambience: 0.6, custom_tracks: [{ ...valid, name: 'renombrada' }] });
+      expect(emits).toBe(afterFirst);
+      audio.setSharedAudio({ sync: true, master: 1, weather: 0.8, dice: 0.8, ambience: 0.6, custom_tracks: [{ ...valid, id: 'otra' }] });
+      expect(emits).toBe(afterFirst + 1);
+    } finally {
+      unsub();
+    }
+  });
+});
