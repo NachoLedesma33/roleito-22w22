@@ -45,7 +45,7 @@ import MapViewer from '@/components/MapViewer';
 import DMNotebookHud from '@/components/DMNotebookHud';
 import AISettingsPanel from '@/components/AISettingsPanel';
 import DMAssistant from '@/components/DMAssistant';
-import AudioSettingsMenu from '@/components/AudioSettingsMenu';
+import AudioSettingsMenu, { type CustomAudioSelection } from '@/components/AudioSettingsMenu';
 import {
   getAudioSettings,
   getSharedAudio,
@@ -134,6 +134,7 @@ export default function DmDashboard() {
   // necesario para desbloquear AudioContext). null = sin ambiente.
   const mixerRef = useRef<AmbientMixer | null>(null);
   const [ambientScene, setAmbientScene] = useState<AmbientScene | null>(null);
+  const [customTrack, setCustomTrack] = useState<CustomAudioSelection | null>(null);
   const audioLevels = useAudioSettings();
 
   useEffect(() => {
@@ -2493,7 +2494,18 @@ const startFogMode = useCallback(() => {
               <option value="campaign">{t('audio.sceneCampaign', 'Campaña')}</option>
             </select>
           </label>
-          <AudioSettingsMenu canSync onToggleSync={handleToggleAudioSync} onVolumeChange={handleSharedVolumeChange} />
+          {customTrack && (
+            <span data-testid="custom-audio-active" className="max-w-32 truncate text-[10px] text-[var(--accent)]" title={customTrack.name}>
+              {customTrack.name}
+            </span>
+          )}
+          <AudioSettingsMenu
+            canSync
+            campaignId={campaignId}
+            onSelectTrack={setCustomTrack}
+            onToggleSync={handleToggleAudioSync}
+            onVolumeChange={handleSharedVolumeChange}
+          />
         </div>
         
             
