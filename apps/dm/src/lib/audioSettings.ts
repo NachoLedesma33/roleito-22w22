@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import type { SharedAudioTrack } from './api';
 import type { AmbientScene } from './ambientAudio';
 
 /**
@@ -30,6 +31,8 @@ export interface SharedAudioSettings extends AudioSettings {
   sync: boolean;
   /** Escena de ambiente elegida por el DM; null = sin ambiente. */
   scene?: AmbientScene | null;
+  /** Pistas que el DM publicó para toda la campaña. */
+  custom_tracks?: SharedAudioTrack[];
 }
 
 export interface AudioState extends AudioSettings {
@@ -117,7 +120,8 @@ const AMBIENT_SCENES: readonly AmbientScene[] = ['medieval', 'sci-fi', 'combat',
 function sameShared(a: SharedAudioSettings | null, b: SharedAudioSettings | null): boolean {
   if (a === b) return true;
   if (!a || !b) return false;
-  return a.sync === b.sync && a.master === b.master && a.weather === b.weather && a.dice === b.dice && a.ambience === b.ambience && (a.scene ?? null) === (b.scene ?? null);
+  const trackIds = (s: SharedAudioSettings | null) => s?.custom_tracks?.map((t) => t.id).join(',') ?? '';
+  return a.sync === b.sync && a.master === b.master && a.weather === b.weather && a.dice === b.dice && a.ambience === b.ambience && (a.scene ?? null) === (b.scene ?? null) && trackIds(a) === trackIds(b);
 }
 
 /**
@@ -137,6 +141,14 @@ export function normalizeSharedAudio(raw: unknown): SharedAudioSettings | null {
   const o = raw as Record<string, unknown>;
   const num = (v: unknown, fallback: number) =>
     v == null || v === '' ? fallback : Math.min(1, Math.max(0, Number(v) || 0));
+  const custom_tracks: SharedAudioTrack[] = Array.isArray(o.custom_tracks)
+    ? o.custom_tracks.flatMap((raw): SharedAudioTrack[] => {
+        if (!raw || typeof raw !== 'object') return [];
+        const t = raw as Record<string, unknown>;
+        if (typeof t.id !== 'string' || typeof t.src !== 'string' || !t.src.startsWith('/api/static/')) return [];
+        return [{ id: t.id, name: typeof t.name === 'string' ? t.name : 'Pista', src: t.src }];
+      })
+    : [];
   return {
     sync: !!o.sync,
     master: num(o.master, 1),
@@ -144,6 +156,7 @@ export function normalizeSharedAudio(raw: unknown): SharedAudioSettings | null {
     dice: num(o.dice, 0.8),
     ambience: num(o.ambience, 0.6),
     scene: AMBIENT_SCENES.find((s) => s === o.scene) ?? null,
+    custom_tracks,
   };
 }
 

@@ -20,7 +20,7 @@ import { Island, type IslandItem } from '@/components/ui/Island';
 import { AnimatePresence, motion } from 'motion/react';
 import ToastContainer from '@/components/ToastContainer';
 import { rollToToast, useToastQueue } from '@/lib/toastQueue';
-import { api, type Character, type DiceRollResponse, type Spell } from '@/lib/api';
+import { api, type Character, type DiceRollResponse, type SharedAudioTrack, type Spell } from '@/lib/api';
 import { checkWallCollision, extractZonePolygons, extractPortals, crossZoneBorder, extractBlockingWallLines } from '@/lib/wall-collision';
 import { sceneWorldHeight, sceneWorldSize } from '@/lib/sceneWorld';
 import { usePlayerSync, type Choice } from '@/lib/usePlayerSync';
@@ -160,6 +160,7 @@ export default function PlayerView() {
   // de elegir personaje y se apaga si no hay sesión activa.
   const ambientMixerRef = useRef<AmbientMixer | null>(null);
   const ambientSceneRef = useRef<AmbientScene | null>(null);
+  const ambientCustomRef = useRef<SharedAudioTrack | null>(null);
   const [ambientScene, setAmbientScene] = useState<AmbientScene | null>(null);
   const audioLevels = useAudioSettings();
   const [sheetTab, setSheetTab] = useState<'stats' | 'inventory' | 'spells' | 'notes' | 'assets'>('stats');
@@ -314,20 +315,25 @@ export default function PlayerView() {
   // Ambiente: el mixer sigue la escena publicada por el DM. Sin sesión (join,
   // personaje o WebSocket caído) o con el ambiente silenciado, se descarta.
   useEffect(() => {
-    const scene = getSharedAudio()?.scene ?? null;
-    const active = !!live && !!choice && audioOn && audioStartedRef.current && scene !== null;
+    const shared = getSharedAudio();
+    const scene = shared?.scene ?? null;
+    const custom = shared?.custom_tracks?.[0] ?? null;
+    const active = !!live && !!choice && audioOn && audioStartedRef.current && (scene !== null || !!custom);
     if (!active) {
       ambientMixerRef.current?.dispose();
       ambientMixerRef.current = null;
       ambientSceneRef.current = null;
+      ambientCustomRef.current = null;
       setAmbientScene(null);
       return;
     }
     if (!ambientMixerRef.current) ambientMixerRef.current = new AmbientMixer(AMBIENT_TRACKS);
     const mixer = ambientMixerRef.current;
     mixer.setVolume(audioLevels.master * audioLevels.ambience);
-    if (ambientSceneRef.current !== scene) {
-      mixer.setScene(scene);
+    if (ambientCustomRef.current?.id !== custom?.id || ambientSceneRef.current !== scene) {
+      if (custom) mixer.playCustom(custom);
+      else if (scene) mixer.setScene(scene);
+      ambientCustomRef.current = custom;
       ambientSceneRef.current = scene;
     }
     setAmbientScene(scene);
