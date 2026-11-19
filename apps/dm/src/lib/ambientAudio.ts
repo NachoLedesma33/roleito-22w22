@@ -110,19 +110,39 @@ export class AmbientMixer {
     }
   }
 
-  setScene(scene: AmbientScene): void {
-    const ctx = this.audio();
-    if (!ctx) return;
+  private stopLoops(ctx: AudioContext): void {
     for (const [id, p] of this.playing) {
       if (!p.source.loop) continue;
       p.gain.gain.setTargetAtTime(0, ctx.currentTime, 0.15);
       p.source.stop(ctx.currentTime + 0.5);
       this.playing.delete(id);
     }
+  }
+
+  setScene(scene: AmbientScene): void {
+    const ctx = this.audio();
+    if (!ctx) return;
+    this.stopLoops(ctx);
     for (const t of resolveSceneTracks(scene, this.tracks)) {
       if (!t.loop || t.kind === 'stinger') continue;
       void this.start(ctx, t, true);
     }
+  }
+
+  /** Reproduce una pista del catálogo del usuario en lugar de la escena. */
+  playCustom(track: { id: string; src: string; gain?: number }): void {
+    const ctx = this.audio();
+    if (!ctx) return;
+    this.stopLoops(ctx);
+    const custom: AmbientTrack = {
+      id: `custom-${track.id}`,
+      src: track.src,
+      scene: 'campaign',
+      kind: 'music',
+      loop: true,
+      gain: track.gain ?? 0.5,
+    };
+    void this.start(ctx, custom, true);
   }
 
   setVolume(v: number): void {

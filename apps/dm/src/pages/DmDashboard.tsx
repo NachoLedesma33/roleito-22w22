@@ -1529,9 +1529,17 @@ const startFogMode = useCallback(() => {
     void persistSharedAudio();
   }, [persistSharedAudio]);
 
+  const handleCustomTrack = (track: CustomAudioSelection) => {
+    setCustomTrack(track);
+    if (!mixerRef.current) mixerRef.current = new AmbientMixer(AMBIENT_TRACKS);
+    mixerRef.current.setVolume(audioLevels.master * audioLevels.ambience);
+    mixerRef.current.playCustom(track);
+  };
+
   const handleAmbientScene = (value: string) => {
     const scene = value === '' ? null : value as AmbientScene;
     setAmbientScene(scene);
+    setCustomTrack(null);
     if (!scene) {
       mixerRef.current?.dispose();
       mixerRef.current = null;
@@ -2502,7 +2510,7 @@ const startFogMode = useCallback(() => {
           <AudioSettingsMenu
             canSync
             campaignId={campaignId}
-            onSelectTrack={setCustomTrack}
+            onSelectTrack={handleCustomTrack}
             onToggleSync={handleToggleAudioSync}
             onVolumeChange={handleSharedVolumeChange}
           />
