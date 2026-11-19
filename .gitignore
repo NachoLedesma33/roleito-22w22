@@ -108,7 +108,7 @@ data/roleito.db
 # Playwright
 test-results/
 playwright-report/
-
+.playwright-mcp/
 
 # Playwright
 test-results/
