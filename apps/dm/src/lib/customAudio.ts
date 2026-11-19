@@ -1,4 +1,5 @@
 import { api, type SharedAudioTrack } from './api';
+import { getSharedAudio, setSharedAudio } from './audioSettings';
 
 export interface LocalAudioTrack {
   id: string;
@@ -68,5 +69,7 @@ export async function publishLocalTrack(campaignId: string, id: string): Promise
   if (!track) throw new Error('Track not found');
   const file = new File([track.blob], track.fileName, { type: track.blob.type });
   const res = await api.campaigns.uploadAudioTrack(campaignId, file, track.name);
+  const base = getSharedAudio() ?? { sync: false, master: 1, weather: 0.8, dice: 0.8, ambience: 0.6 };
+  setSharedAudio({ ...base, custom_tracks: res.tracks });
   return res.tracks;
 }
