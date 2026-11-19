@@ -17,22 +17,23 @@ export function resolveSceneTracks(
 }
 
 export const AMBIENT_TRACKS: readonly AmbientTrack[] = [
-  { id: 'medieval-theme', src: '/api/static/audio/tallbeard/loops/Week%2024%20-%20Pull%20Me%20Down%20DEEP%20WELL.ogg', scene: 'medieval', kind: 'music', loop: true, gain: 0.5 },
-  { id: 'medieval-tavern', src: '/api/static/audio/tallbeard/loops/Week%2020.1%20-%20Magnetic%20Tape%20SCUFFED.ogg', scene: 'medieval', kind: 'ambience', loop: true, gain: 0.35 },
+  { id: 'medieval-theme', src: '/api/static/audio/oga/music/medieval-tower-inn.mp3', scene: 'medieval', kind: 'music', loop: true, gain: 0.5 },
+  { id: 'medieval-tavern', src: '/api/static/audio/oga/music/medieval-market-loop.mp3', scene: 'medieval', kind: 'ambience', loop: true, gain: 0.35 },
   { id: 'medieval-jingle', src: '/api/static/audio/kenney/music-jingles/Pizzicato%20jingles/jingles_PIZZI00.ogg', scene: 'medieval', kind: 'stinger', loop: false, gain: 0.7 },
-  { id: 'sci-fi-theme', src: '/api/static/audio/tallbeard/loops/Week%2019%20-%20Dark%20Portents%20SHROUDED%20FUTURE.ogg', scene: 'sci-fi', kind: 'music', loop: true, gain: 0.5 },
-  { id: 'sci-fi-computer', src: '/api/static/audio/kenney/sci-fi-sounds/computerNoise_000.ogg', scene: 'sci-fi', kind: 'ambience', loop: true, gain: 0.2 },
+  { id: 'sci-fi-theme', src: '/api/static/audio/oga/music/scifi-echoes.mp3', scene: 'sci-fi', kind: 'music', loop: true, gain: 0.5 },
+  { id: 'sci-fi-computer', src: '/api/static/audio/oga/music/crashed-ship.ogg', scene: 'sci-fi', kind: 'ambience', loop: true, gain: 0.25 },
   { id: 'sci-fi-jingle', src: '/api/static/audio/kenney/music-jingles/8-Bit%20jingles/jingles_NES00.ogg', scene: 'sci-fi', kind: 'stinger', loop: false, gain: 0.6 },
+  { id: 'combat-battle', src: '/api/static/audio/oga/music/medieval-battle.mp3', scene: 'combat', kind: 'music', loop: true, gain: 0.5 },
   { id: 'combat-rumble', src: '/api/static/audio/kenney/sci-fi-sounds/lowFrequency_explosion_000.ogg', scene: 'combat', kind: 'ambience', loop: true, gain: 0.12 },
   { id: 'combat-hit', src: '/api/static/audio/oga/medieval-impacts/Axe%20Katana%20Blade%20on%20Blade.wav', scene: 'combat', kind: 'stinger', loop: false, gain: 0.8 },
   { id: 'combat-metal', src: '/api/static/audio/kenney/impact-sounds/impactMetal_heavy_000.ogg', scene: 'combat', kind: 'stinger', loop: false, gain: 0.7 },
   { id: 'combat-jingle', src: '/api/static/audio/kenney/music-jingles/Hit%20jingles/jingles_HIT00.ogg', scene: 'combat', kind: 'stinger', loop: false, gain: 0.7 },
-  { id: 'suspense-theme', src: '/api/static/audio/tallbeard/loops/Week%2019%20-%20Dark%20Portents%20MYSTERIOUS%20TRAVELER.ogg', scene: 'suspense', kind: 'music', loop: true, gain: 0.5 },
-  { id: 'suspense-noise', src: '/api/static/audio/kenney/digital-audio/phaserDown1.ogg', scene: 'suspense', kind: 'ambience', loop: true, gain: 0.2 },
+  { id: 'suspense-theme', src: '/api/static/audio/oga/music/dark-cavern-1.ogg', scene: 'suspense', kind: 'music', loop: true, gain: 0.5 },
+  { id: 'suspense-noise', src: '/api/static/audio/oga/music/dark-cavern-2.ogg', scene: 'suspense', kind: 'ambience', loop: true, gain: 0.2 },
   { id: 'suspense-jingle', src: '/api/static/audio/kenney/music-jingles/Steel%20jingles/jingles_STEEL00.ogg', scene: 'suspense', kind: 'stinger', loop: false, gain: 0.6 },
-  { id: 'campaign-theme', src: '/api/static/audio/tallbeard/loops/Week%2016%20-%20Vacation%20Day%20ADVENTURE.ogg', scene: 'campaign', kind: 'music', loop: true, gain: 0.5 },
+  { id: 'campaign-theme', src: '/api/static/audio/oga/music/epic-orchestral-fantasy.mp3', scene: 'campaign', kind: 'music', loop: true, gain: 0.5 },
   { id: 'campaign-steps', src: '/api/static/audio/kenney/rpg-audio/footstep00.ogg', scene: 'campaign', kind: 'ambience', loop: true, gain: 0.15 },
-  { id: 'campaign-jingle', src: '/api/static/audio/kenney/music-jingles/Sax%20jingles/jingles_SAX00.ogg', scene: 'campaign', kind: 'stinger', loop: false, gain: 0.6 },
+  { id: 'campaign-jingle', src: '/api/static/audio/kenney/music-jingles/Steel%20jingles/jingles_STEEL00.ogg', scene: 'campaign', kind: 'stinger', loop: false, gain: 0.6 },
 ];
 
 interface Playing {

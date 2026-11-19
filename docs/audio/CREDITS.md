@@ -30,6 +30,14 @@ Columnas: `título | autor | fuente | licencia | URL | atribución requerida | a
 | medieval_village_atmosphere (0:40, loop) | ramonmineiro | Freesound | CC0 | https://freesound.org/s/578072/ | No | `data/assets/audio/freesound/medieval-village.ogg` |
 | Big Medieval Door — open and close (0:13) | McDrok_the_RhythmDoc | Freesound | CC0 | https://freesound.org/s/673462/ | No | `data/assets/audio/freesound/medieval-door.ogg` |
 | Troubadour_01B (4:39) | cormi | Freesound | CC0 | https://freesound.org/s/101981/ | No | `data/assets/audio/freesound/troubadour.ogg` |
+| Medieval: The Old Tower Inn | RandomMind | OpenGameArt | CC0 | https://opengameart.org/content/medieval-the-old-tower-inn | No (crédito sugerido: RandomMind) | `data/assets/audio/oga/music/medieval-tower-inn.mp3` |
+| Medieval: Market Day (loop) | RandomMind | OpenGameArt | CC0 | https://opengameart.org/content/medieval-market-day | No (crédito sugerido: RandomMind) | `data/assets/audio/oga/music/medieval-market-loop.mp3` |
+| Medieval: Exploration | RandomMind | OpenGameArt | CC0 | https://opengameart.org/content/medieval-exploration | No (crédito sugerido: RandomMind) | `data/assets/audio/oga/music/medieval-exploration.mp3` |
+| Medieval: Battle | RandomMind | OpenGameArt | CC0 | https://opengameart.org/content/medieval-battle | No (crédito sugerido: RandomMind) | `data/assets/audio/oga/music/medieval-battle.mp3` |
+| Battle Theme | Wolfgang_ | OpenGameArt | CC0 | https://opengameart.org/content/battle-theme-0 | No (crédito sugerido: Wolfgang_) | `data/assets/audio/oga/music/battle-wolfgang.mp3` |
+| Echoes of a Space Age — Slow Sci-Fi Music | Sorth | OpenGameArt | CC0 | https://opengameart.org/content/echoes-of-a-space-age-slow-sci-fi-music | No (crédito sugerido: Sorth) | `data/assets/audio/oga/music/scifi-echoes.mp3` |
+| Dark Cavern Ambient 001 | Paul Wortmann | OpenGameArt | CC0 | https://opengameart.org/content/dark-cavern-ambient | No (crédito sugerido: Paul Wortmann) | `data/assets/audio/oga/music/dark-cavern-1.ogg` |
+| Dark Cavern Ambient 002 | Paul Wortmann | OpenGameArt | CC0 | https://opengameart.org/content/dark-cavern-ambient | No (crédito sugerido: Paul Wortmann) | `data/assets/audio/oga/music/dark-cavern-2.ogg` |
 
 ## Aprobados — licencia con atribución obligatoria
 
@@ -44,6 +52,8 @@ Columnas: `título | autor | fuente | licencia | URL | atribución requerida | a
 | Radio, Noise, Long-Wave, LOOP (0:04) | InspectorJ | Freesound | CC BY 4.0 | https://freesound.org/s/485420/ | Sí — `"Radio, Noise, Long-Wave, 01-01 LOOP.wav" by InspectorJ (www.jshaw.co.uk) of Freesound.org, CC BY 4.0` | `data/assets/audio/freesound/radio-noise.ogg` |
 | Cualquier tema de Kevin MacLeod | Kevin MacLeod | incompetech | CC BY 4.0 | https://incompetech.com/music/royalty-free/faq.html | Sí — bloque exacto: `Title Kevin MacLeod (incompetech.com) / Licensed under Creative Commons: By Attribution 4.0 / https://creativecommons.org/licenses/by/4.0/` | `data/assets/audio/incompetech/<tema>.ogg` |
 | Ambiences Music Pack (10 temas, 40 archivos) | JDSherbert | itch.io | Royalty-free propio — **MUST credit** | https://jdsherbert.itch.io/ambiences-music-pack | Sí — `© JDSherbert, Ambiences Music Pack, <URL>`; commercial/non-commercial OK | `data/assets/audio/jdsherbert/ambiences/` |
+| Epic Orchestral Fantasy Theme | linxiaoma | OpenGameArt | CC BY 4.0 | https://opengameart.org/content/epic-orchestral-fantasy-theme | Sí — `© linxiaoma, CC BY 4.0, <URL>` | `data/assets/audio/oga/music/epic-orchestral-fantasy.mp3` |
+| Sci-Fi Ambient — Crashed Ship | Wolfgang_ | OpenGameArt | CC BY 3.0 | https://opengameart.org/content/sci-fi-ambient-crashed-ship | Sí — `© Wolfgang_, CC BY 3.0, <URL>` | `data/assets/audio/oga/music/crashed-ship.ogg` |
 
 ## Aprobados — licencia propia verificada (comercial OK, atribución opcional)
 

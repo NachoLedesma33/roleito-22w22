@@ -153,6 +153,10 @@ Catálogo enorme de música de fantasía, suspenso, sci-fi. Solo usar si se acep
 - Mezcla sugerida: capa de impacto (Kenney/OGA) + stinger (Jingles/Mixkit) + ducking de música.
 - **Usado en Fase 5 (CC0 verificado)**: `combat-rumble` = Kenney Sci-Fi `lowFrequency_explosion_000.ogg` (ambience loop, gain 0.12); `combat-hit` = OGA medieval impact; `combat-metal` = Kenney Impact `impactMetal_heavy_000.ogg`; `combat-jingle` = Kenney Music Jingles. Ducking de música al stinger: ×0.3, restaura ×1 en `onended`.
 
+### Reemplazo de pistas 2026-11-18 (root cause)
+
+Los loops iniciales de Tallbeard se eligieron por nombre de archivo, no por contenido: metadata real muestra `GENRE=Electronic` en 29/29. `DEEP WELL` (medieval) era drone, `Magnetic Tape SCUFFED` (taberna) era ruido, `Vacation Day ADVENTURE` (campaña) era vacaciones, `SHROUDED FUTURE` + `computerNoise_000` (sci-fi) era chirrido, y `combat` no tenía track `music` (solo `lowFrequency_explosion` a gain 0.12) con `playStinger` sin caller en runtime. Reemplazo con CC0 de OpenGameArt con título de género explícito: `medieval-tower-inn`, `medieval-market-loop`, `medieval-exploration`, `medieval-battle` (RandomMind), `scifi-echoes` (Sorth); `computerNoise` bajado a 0.08; `combat-battle` añadido; jingle de campaña cambiado de Sax a Steel. Test de regresión: cada escena expone loop `music` con `gain >= 0.25`. Fuentes en `CREDITS.md`.
+
 ### Suspenso / horror
 - ObsydianX Horror SFX Volume 1 (drones + stingers).
 - Freesound InspectorJ `Heartbeat LOOP`, zorros/ranas nocturnas (verificar CC BY).

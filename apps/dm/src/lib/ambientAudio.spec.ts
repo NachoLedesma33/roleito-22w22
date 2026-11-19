@@ -55,6 +55,15 @@ describe('AMBIENT_TRACKS', () => {
 })
 
 describe('combat and suspense layers', () => {
+  it('every scene has an audible music loop', () => {
+    const scenes: AmbientScene[] = ['medieval', 'sci-fi', 'combat', 'suspense', 'campaign']
+    for (const scene of scenes) {
+      const music = resolveSceneTracks(scene, AMBIENT_TRACKS).filter((t) => t.kind === 'music')
+      expect(music.length, `${scene} music`).toBeGreaterThan(0)
+      expect(music.every((t) => t.loop && t.gain >= 0.25), `${scene} gain`).toBe(true)
+    }
+  })
+
   it('both scenes expose an ambience layer and a stinger', () => {
     for (const scene of ['combat', 'suspense'] as AmbientScene[]) {
       const rows = resolveSceneTracks(scene, AMBIENT_TRACKS)
