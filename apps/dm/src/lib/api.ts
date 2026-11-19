@@ -638,6 +638,13 @@ export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
   return res.json();
 }
 
+export interface SharedAudioTrack {
+  id: string;
+  name: string;
+  src: string;
+  path?: string;
+}
+
 export const api = {
   campaigns: {
     /**
@@ -673,6 +680,16 @@ export const api = {
       }),
     placeMarker: (campaignId: string, data: { x: number; z: number; color?: string; ttl_ms?: number }) =>
       request<{ ok: boolean }>(`/campaigns/${campaignId}/marker`, { method: 'POST', body: JSON.stringify(data) }),
+    uploadAudioTrack: async (campaignId: string, file: File, name?: string) => {
+      const form = new FormData();
+      form.append('file', file);
+      const query = name ? `?name=${encodeURIComponent(name)}` : '';
+      const res = await apiFetch(`/campaigns/${campaignId}/audio/tracks${query}`, { method: 'POST', body: form });
+      if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+      return res.json() as Promise<{ tracks: SharedAudioTrack[] }>;
+    },
+    deleteAudioTrack: (campaignId: string, trackId: string) =>
+      request<{ tracks: SharedAudioTrack[] }>(`/campaigns/${campaignId}/audio/tracks/${trackId}`, { method: 'DELETE' }),
     uploadAsset: (campaignId: string, file: File) => {
       const form = new FormData();
       form.append('file', file);
