@@ -54,6 +54,14 @@ describe('AMBIENT_TRACKS', () => {
   })
 })
 
+describe('ambience layers are continuous beds', () => {
+  it('no looping ambience layer is a short SFX', () => {
+    const loops = AMBIENT_TRACKS.filter((t) => t.kind === 'ambience' && t.loop)
+    expect(loops.map((t) => t.id)).not.toContain('campaign-steps')
+    expect(loops.some((t) => /footstep|rpg-audio/.test(t.src))).toBe(false)
+  })
+})
+
 describe('combat and suspense layers', () => {
   it('every scene has an audible music loop', () => {
     const scenes: AmbientScene[] = ['medieval', 'sci-fi', 'combat', 'suspense', 'campaign']

@@ -32,7 +32,6 @@ export const AMBIENT_TRACKS: readonly AmbientTrack[] = [
   { id: 'suspense-noise', src: '/api/static/audio/oga/music/dark-cavern-2.ogg', scene: 'suspense', kind: 'ambience', loop: true, gain: 0.2 },
   { id: 'suspense-jingle', src: '/api/static/audio/kenney/music-jingles/Steel%20jingles/jingles_STEEL00.ogg', scene: 'suspense', kind: 'stinger', loop: false, gain: 0.6 },
   { id: 'campaign-theme', src: '/api/static/audio/oga/music/epic-orchestral-fantasy.mp3', scene: 'campaign', kind: 'music', loop: true, gain: 0.5 },
-  { id: 'campaign-steps', src: '/api/static/audio/kenney/rpg-audio/footstep00.ogg', scene: 'campaign', kind: 'ambience', loop: true, gain: 0.15 },
   { id: 'campaign-jingle', src: '/api/static/audio/kenney/music-jingles/Steel%20jingles/jingles_STEEL00.ogg', scene: 'campaign', kind: 'stinger', loop: false, gain: 0.6 },
 ];
 

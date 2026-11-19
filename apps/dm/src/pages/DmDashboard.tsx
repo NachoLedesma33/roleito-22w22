@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, Suspense, useCallback, useMemo } from 'rea
 import { useTranslation } from 'react-i18next';
 import i18n from '@/lib/i18n';
 import { useParams, Link } from 'react-router-dom';
-import { api, Campaign, Scene, SceneCharacter, Character, NPC, Map as GameMap, LightRequest, Asset } from '@/lib/api';
+import { api, Campaign, Scene, SceneCharacter, Character, NPC, Map as GameMap, LightRequest, Asset, type SharedAudioTrack } from '@/lib/api';
 import { SceneItem, ZoneMetadata, SceneLayer, PortalRef } from '@core/domain/types';
 import { useSceneGraph } from '@/lib/useSceneGraph';
 import { useWallDetection } from '@/lib/useWallDetection';
@@ -55,6 +55,7 @@ import {
   type AudioSettingKey,
 } from '@/lib/audioSettings';
 import { AmbientMixer, AMBIENT_TRACKS, type AmbientScene } from '@/lib/ambientAudio';
+import { publishLocalTrack } from '@/lib/customAudio';
 import SceneSettingsHud from '@/components/SceneSettingsHud';
 import type { ContextMenuItem } from '@/components/ContextMenu';
 import ToastContainer from '@/components/ToastContainer';
@@ -1516,7 +1517,7 @@ const startFogMode = useCallback(() => {
     if (on) {
       // Al activar, empuja el volumen actual del DM a todos los POV.
       const local = getAudioSettings();
-      setSharedAudio({ sync: true, master: local.master, weather: local.weather, dice: local.dice, ambience: local.ambience });
+      setSharedAudio({ ...(current ?? {}), sync: true, master: local.master, weather: local.weather, dice: local.dice, ambience: local.ambience });
     } else {
       setSharedAudio(current ? { ...current, sync: false } : null);
     }
@@ -1529,11 +1530,51 @@ const startFogMode = useCallback(() => {
     void persistSharedAudio();
   }, [persistSharedAudio]);
 
-  const handleCustomTrack = (track: CustomAudioSelection) => {
+  const handleCustomTrack = async (track: CustomAudioSelection) => {
     setCustomTrack(track);
+    setAmbientScene(null);
+    if (!mixerRef.current) mixerRef.current = new AmbientMixer(AMBIENT_TRACKS);
+    mixerRef.current.setVolume(audioLevels.master * audioLevels.ambience);
+    if (!campaignId) {
+      mixerRef.current.playCustom(track);
+      return;
+    }
+    try {
+      const tracks = await publishLocalTrack(campaignId, track.id);
+      const published = tracks[tracks.length - 1];
+      const base = getSharedAudio() ?? { sync: false, master: 1, weather: 0.8, dice: 0.8, ambience: 0.6 };
+      setSharedAudio({ ...base, scene: null, custom_tracks: published ? [published] : [] });
+      void persistSharedAudio();
+      mixerRef.current.playCustom(published ?? track);
+    } catch {
+      push({
+        id: `audio-track-${Date.now()}`,
+        rollerName: i18n.t('dmToast.rollerSystem', 'Sistema'),
+        diceType: 1, count: 1, results: [1], total: 1,
+        label: i18n.t('audio.publishError', 'No se pudo publicar la pista'),
+        timestamp: Date.now(),
+      });
+      mixerRef.current.playCustom(track);
+    }
+  };
+
+  const handlePublishTrack = (track: SharedAudioTrack) => {
+    const base = getSharedAudio() ?? { sync: false, master: 1, weather: 0.8, dice: 0.8, ambience: 0.6 };
+    setSharedAudio({ ...base, scene: null, custom_tracks: [track] });
+    void persistSharedAudio();
     if (!mixerRef.current) mixerRef.current = new AmbientMixer(AMBIENT_TRACKS);
     mixerRef.current.setVolume(audioLevels.master * audioLevels.ambience);
     mixerRef.current.playCustom(track);
+  };
+
+  const handleRemoveTrack = (id: string) => {
+    if (customTrack?.id !== id) return;
+    setCustomTrack(null);
+    mixerRef.current?.dispose();
+    mixerRef.current = null;
+    const base = getSharedAudio() ?? { sync: false, master: 1, weather: 0.8, dice: 0.8, ambience: 0.6 };
+    setSharedAudio({ ...base, custom_tracks: [] });
+    void persistSharedAudio();
   };
 
   const handleAmbientScene = (value: string) => {
@@ -1544,7 +1585,7 @@ const startFogMode = useCallback(() => {
       mixerRef.current?.dispose();
       mixerRef.current = null;
       const base = getSharedAudio() ?? { sync: false, master: 1, weather: 0.8, dice: 0.8, ambience: 0.6 };
-      setSharedAudio({ ...base, scene: null });
+      setSharedAudio({ ...base, scene: null, custom_tracks: [] });
       void persistSharedAudio();
       return;
     }
@@ -1552,7 +1593,7 @@ const startFogMode = useCallback(() => {
     mixerRef.current.setVolume(audioLevels.master * audioLevels.ambience);
     mixerRef.current.setScene(scene);
     const base = getSharedAudio() ?? { sync: false, master: 1, weather: 0.8, dice: 0.8, ambience: 0.6 };
-    setSharedAudio({ ...base, scene });
+    setSharedAudio({ ...base, scene, custom_tracks: [] });
     void persistSharedAudio();
   };
 
@@ -2484,7 +2525,7 @@ const startFogMode = useCallback(() => {
       >
         <div className="ml-auto flex items-center gap-2">
           <label className="flex items-center gap-1 shrink-0" title={t('audio.ambientScene', 'Escena de ambiente')}>
-            <span className="text-[10px] text-[var(--text-secondary)]">
+            <span className="text-[10px] text-white">
               {t('audio.ambientScene', 'Escena de ambiente')}
             </span>
             <select
@@ -2511,6 +2552,8 @@ const startFogMode = useCallback(() => {
             canSync
             campaignId={campaignId}
             onSelectTrack={handleCustomTrack}
+            onPublishTrack={handlePublishTrack}
+            onRemoveTrack={handleRemoveTrack}
             onToggleSync={handleToggleAudioSync}
             onVolumeChange={handleSharedVolumeChange}
           />
@@ -3024,7 +3067,8 @@ const startFogMode = useCallback(() => {
               title={t('dm.sceneMgmtTitle', 'Gestión de escenas')}
               aria-label={t('dm.sceneMgmtTitle', 'Gestión de escenas')}
             >
-              ⚙
+              <span aria-hidden="true">⚙</span>
+              <span className="ml-1">{t('dm.sceneMgmtTitle', 'Gestión de escenas')}</span>
             </Link>
           </div>
         </HudPanel>

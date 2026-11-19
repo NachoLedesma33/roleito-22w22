@@ -42,7 +42,7 @@ export default function DmDock({ expanded, onExpand, groups }: DmDockProps) {
 
   return (
     <div
-      className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 max-w-[94vw]"
+      className="fixed bottom-3 left-1/2 -translate-x-1/2 z-50 max-w-[94vw]"
       onMouseEnter={onExpand}
       title={t('dm.dmActions', 'Acciones del DM')}
     >

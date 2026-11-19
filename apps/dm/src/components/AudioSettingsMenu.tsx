@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'reac
 import { useTranslation } from 'react-i18next';
 import { Volume2 } from 'lucide-react';
 import { setAudioVolume, useAudioSettings, type AudioSettingKey } from '@/lib/audioSettings';
+import type { SharedAudioTrack } from '@/lib/api';
 import {
   addLocalTrack,
   deleteLocalTrack,
@@ -39,6 +40,10 @@ interface AudioSettingsMenuProps {
   onVolumeChange?: (key: AudioSettingKey, value: number) => void;
   /** pista elegida para sonar como ambiente. */
   onSelectTrack?: (track: CustomAudioSelection) => void;
+  /** pista publicada: pasa a ser la activa compartida. */
+  onPublishTrack?: (track: SharedAudioTrack) => void;
+  /** pista activa quitada: el DM apaga el ambiente compartido. */
+  onRemoveTrack?: (id: string) => void;
 }
 
 /**
@@ -61,6 +66,8 @@ export default function AudioSettingsMenu({
   onToggleSync,
   onVolumeChange,
   onSelectTrack,
+  onPublishTrack,
+  onRemoveTrack,
 }: AudioSettingsMenuProps) {
   const { t } = useTranslation();
   const settings = useAudioSettings();
@@ -145,19 +152,21 @@ export default function AudioSettingsMenu({
     }
   };
 
-  const handleDelete = async (id: string) => {
-    await deleteLocalTrack(id).catch(() => {});
-    setLocalTracks((prev) => prev.filter((row) => row.id !== id));
-  };
-
   const handlePublish = async (id: string) => {
     if (!campaignId) return;
     try {
-      await publishLocalTrack(campaignId, id);
+      const tracks = await publishLocalTrack(campaignId, id);
+      onPublishTrack?.(tracks[tracks.length - 1]);
       setTrackError('');
     } catch {
       setTrackError(t('audio.publishError', 'No se pudo publicar la pista'));
     }
+  };
+
+  const handleDelete = async (id: string) => {
+    await deleteLocalTrack(id).catch(() => {});
+    setLocalTracks((prev) => prev.filter((row) => row.id !== id));
+    onRemoveTrack?.(id);
   };
 
   return (
@@ -176,7 +185,7 @@ export default function AudioSettingsMenu({
             : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]/70'
         }`}
       >
-        <Volume2 className="h-3.5 w-3.5" />
+        <Volume2 className="h-3.5 w-3.5 text-white" />
       </button>
       {pos && (
         <div

@@ -155,7 +155,7 @@ export default function PlayerView() {
   const { code } = useParams<{ code: string }>();
   const [audioOn, setAudioOn] = useState(true);
   const audioRef = useRef<HTMLAudioElement>(null);
-  const audioStartedRef = useRef(false);
+  const [audioStarted, setAudioStarted] = useState(false);
   // Ambiente compartido: mixer fuera del poll (POLL_MS). Se crea tras el gesto
   // de elegir personaje y se apaga si no hay sesión activa.
   const ambientMixerRef = useRef<AmbientMixer | null>(null);
@@ -287,6 +287,17 @@ export default function PlayerView() {
     };
   }, [code, data, pushMany]);
 
+  useEffect(() => {
+    if (audioStarted) return;
+    const unlock = () => setAudioStarted(true);
+    window.addEventListener('pointerdown', unlock, { once: true });
+    window.addEventListener('keydown', unlock, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+  }, [audioStarted]);
+
   // Ambiente: audio de la escena activa (loop). Arranca tras el gesto del jugador.
   useEffect(() => {
     if (!data) return;
@@ -301,10 +312,10 @@ export default function PlayerView() {
       el.src = url;
       el.load();
     }
-    if (audioStartedRef.current && audioOn) {
+    if (audioStarted && audioOn) {
       void el.play().catch(() => {});
     }
-  }, [data, choice, audioOn]);
+  }, [data, choice, audioOn, audioStarted]);
 
   // Volumen de audio publicado por el DM: si estÃ¡ sincronizado, todos los POV
   // siguen estos valores y los sliders del jugador quedan bloqueados.
@@ -318,7 +329,7 @@ export default function PlayerView() {
     const shared = getSharedAudio();
     const scene = shared?.scene ?? null;
     const custom = shared?.custom_tracks?.[0] ?? null;
-    const active = !!live && !!choice && audioOn && audioStartedRef.current && (scene !== null || !!custom);
+    const active = !!live && !!choice && audioOn && audioStarted && (scene !== null || !!custom);
     if (!active) {
       ambientMixerRef.current?.dispose();
       ambientMixerRef.current = null;
@@ -337,7 +348,7 @@ export default function PlayerView() {
       ambientSceneRef.current = scene;
     }
     setAmbientScene(scene);
-  }, [live, choice, audioOn, audioLevels]);
+  }, [live, choice, audioOn, audioLevels, audioStarted]);
 
   useEffect(() => () => {
     ambientMixerRef.current?.dispose();
@@ -1042,7 +1053,7 @@ export default function PlayerView() {
   const chooseCharacter = useCallback(
     (id: string) => {
       if (!data) return;
-      audioStartedRef.current = true;
+      setAudioStarted(true);
       const el = audioRef.current;
       if (el && el.getAttribute('src')) void el.play().catch(() => {});
       // Token de jugador por sesión (no compartido entre pestañas).
@@ -1080,7 +1091,7 @@ export default function PlayerView() {
   );
 
   const chooseSpectator = useCallback(() => {
-    audioStartedRef.current = true;
+    setAudioStarted(true);
     const el = audioRef.current;
     if (el && el.getAttribute('src')) void el.play().catch(() => {});
     localStorage.setItem(`roleito:pv:${code}`, 'spectator');

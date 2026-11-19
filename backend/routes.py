@@ -781,6 +781,7 @@ async def update_campaign(
 
     await db.commit()
     await db.refresh(campaign)
+    await broadcast_revision(db, campaign_id)
     return campaign
 
 

@@ -231,7 +231,7 @@ export default function InviteMenu({ campaign, onCampaignChange }: InviteMenuPro
         onClick={openMenu}
         data-anchor="invite"
         data-testid="invite-button"
-        className="text-xs px-2 py-1 rounded transition-colors shrink-0 bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+        className="text-xs px-2 py-1 rounded transition-colors shrink-0 bg-[var(--bg-tertiary)] text-white hover:text-white"
         title={t('dm.copyInviteTitle', 'Copiar link de invitación para jugadores')}
       >
         {code ? t('dm.invite', '🔗 Invitar') : t('dm.getInvite', '🔗 Obtener invitación')}
