@@ -784,6 +784,76 @@ async def update_campaign(
     return campaign
 
 
+@campaigns_router.post("/campaigns/{campaign_id}/audio/tracks")
+async def upload_audio_track(
+    campaign_id: str,
+    file: UploadFile = File(...),
+    name: str = "",
+    db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+):
+    """Guarda una pista subida por el DM y la publica en `settings_json.audio`."""
+    result = await db.execute(select(Campaign).where(Campaign.id == campaign_id))
+    campaign = result.scalar_one_or_none()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in {".mp3", ".ogg", ".wav", ".m4a", ".flac"}:
+        raise HTTPException(status_code=400, detail="Unsupported audio format")
+
+    track_id = secrets.token_hex(8)
+    filename = f"{track_id}{ext}"
+    file_path = save_campaign_file(
+        campaign_id, "audio", "tracks", filename=filename, content=await file.read()
+    )
+    settings = dict(campaign.settings_json or {})
+    audio = dict(settings.get("audio") or {})
+    tracks = list(audio.get("custom_tracks") or [])
+    tracks.append(
+        {
+            "id": track_id,
+            "name": name or file.filename or "Pista",
+            "src": f"/api/static/{campaign_id}/audio/tracks/{filename}",
+            "path": file_path,
+        }
+    )
+    audio["custom_tracks"] = tracks
+    settings["audio"] = audio
+    campaign.settings_json = settings
+    await db.commit()
+    await broadcast_revision(db, campaign_id)
+    return {"tracks": tracks}
+
+
+@campaigns_router.delete("/campaigns/{campaign_id}/audio/tracks/{track_id}")
+async def delete_audio_track(
+    campaign_id: str,
+    track_id: str,
+    db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+):
+    result = await db.execute(select(Campaign).where(Campaign.id == campaign_id))
+    campaign = result.scalar_one_or_none()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    settings = dict(campaign.settings_json or {})
+    audio = dict(settings.get("audio") or {})
+    tracks = list(audio.get("custom_tracks") or [])
+    track = next((t for t in tracks if t.get("id") == track_id), None)
+    if not track:
+        raise HTTPException(status_code=404, detail="Track not found")
+    remove_asset_file(track.get("path"))
+    tracks = [t for t in tracks if t.get("id") != track_id]
+    audio["custom_tracks"] = tracks
+    settings["audio"] = audio
+    campaign.settings_json = settings
+    await db.commit()
+    await broadcast_revision(db, campaign_id)
+    return {"tracks": tracks}
+
+
 @campaigns_router.delete("/campaigns/{campaign_id}")
 async def delete_campaign(
     campaign_id: str,
