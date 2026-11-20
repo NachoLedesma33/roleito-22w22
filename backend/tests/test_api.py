@@ -3319,3 +3319,21 @@ async def test_reveals_roundtrip(client, anon_client):
     # Un codigo de invitacion invalido no publica nada.
     res = await anon_client.post("/api/campaigns/invite/no-existe/reveals", json=payload)
     assert res.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_sube_marco_gif_como_asset_de_campania(client):
+    """Un GIF entra como imagen y queda en la categoria frames."""
+    camp = (await client.post("/api/campaigns", json={"name": "Marcos Camp"})).json()
+    cid = camp["id"]
+
+    res = await client.post(
+        f"/api/campaigns/{cid}/assets",
+        files={"file": ("marco.gif", b"GIF89a\x01\x00\x01\x00", "image/gif")},
+        data={"category": "frames"},
+    )
+    assert res.status_code == 200, res.text
+    assert res.json()["type"] == "image"
+
+    assets = (await client.get(f"/api/campaigns/{cid}/assets")).json()["assets"]
+    assert any(a["category"] == "frames" for a in assets)

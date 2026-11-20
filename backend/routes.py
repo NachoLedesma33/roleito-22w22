@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Body, Depends, HTTPException, UploadFile, File, WebSocket, WebSocketDisconnect
+﻿from fastapi import APIRouter, Body, Depends, Form, HTTPException, UploadFile, File, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import delete, select
@@ -387,11 +387,12 @@ async def place_marker_invite(
 async def upload_asset(
     campaign_id: str,
     file: UploadFile = File(...),
+    category: str = Form("general"),
     db: AsyncSession = Depends(get_session),
     _auth: AuthSession = Depends(require_dm),
 ):
     """Sube un asset (imagen, video, modelo 3D) a la campaña."""
-    allowed_exts = {".png", ".jpg", ".jpeg", ".webp", ".mp4", ".webm", ".glb", ".gltf", ".fbx"}
+    allowed_exts = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".mp4", ".webm", ".glb", ".gltf", ".fbx"}
     ext = os.path.splitext(file.filename or "asset")[1].lower()
     if ext not in allowed_exts:
         raise HTTPException(status_code=400, detail=f"Extensión no permitida: {ext}")
@@ -407,7 +408,7 @@ async def upload_asset(
     file_path = save_campaign_file(campaign_id, "uploads", filename=filename, content=content)
 
     # Determine type
-    if ext in {".png", ".jpg", ".jpeg", ".webp"}:
+    if ext in {".png", ".jpg", ".jpeg", ".webp", ".gif"}:
         asset_type = "image"
     elif ext in {".mp4", ".webm"}:
         asset_type = "video"
@@ -421,7 +422,7 @@ async def upload_asset(
         name=file.filename or filename,
         file_path=file_path,
         asset_type=asset_type,
-        category="general",
+        category=category,
     )
     db.add(asset)
     await db.commit()
