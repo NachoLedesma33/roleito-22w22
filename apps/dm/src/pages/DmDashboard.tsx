@@ -1980,6 +1980,7 @@ const startFogMode = useCallback(() => {
   }, [campaignId, activeScene, sceneChars, selectedTokenId]);
 
   const tokenPatchTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const frameScaleTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const handleTokenPatch = useCallback(
     (
       sceneCharId: string,
@@ -2343,6 +2344,36 @@ const startFogMode = useCallback(() => {
   const quickEditEntity = quickEditChar
     ? allEntities.find((e) => e.id === quickEditChar.entity_id)
     : null;
+  const quickEditFrameScale =
+    quickEditEntity && !quickEditEntity.model_path && quickEditEntity.frame && quickEditEntity.frame !== 'none'
+      ? (((quickEditEntity.visual_config_json?.frame as { scale?: number } | undefined)?.scale) ?? 1)
+      : null;
+
+  const handleFrameScalePatch = useCallback(
+    (scale: number) => {
+      if (!campaignId || !quickEditChar || !quickEditEntity) return;
+      const frame = (quickEditEntity.visual_config_json?.frame ?? {}) as Record<string, unknown>;
+      const visualConfig = {
+        ...(quickEditEntity.visual_config_json ?? {}),
+        frame: { ...frame, version: 1, scale },
+      };
+      const data = { name: quickEditEntity.name, visual_config_json: visualConfig };
+      if (quickEditChar.entity_type === 'npc') {
+        setNpcs((prev) => prev.map((n) => (n.id === quickEditChar.entity_id ? { ...n, visual_config_json: visualConfig } : n)));
+      } else {
+        setCharacters((prev) => prev.map((c) => (c.id === quickEditChar.entity_id ? { ...c, visual_config_json: visualConfig } : c)));
+      }
+      clearTimeout(frameScaleTimerRef.current);
+      frameScaleTimerRef.current = setTimeout(() => {
+        if (quickEditChar.entity_type === 'npc') {
+          api.npcs.update(campaignId, quickEditChar.entity_id, data).catch(() => {});
+        } else {
+          api.characters.update(campaignId, quickEditChar.entity_id, data).catch(() => {});
+        }
+      }, 300);
+    },
+    [campaignId, quickEditChar, quickEditEntity]
+  );
 
   const initiativeCombatants = sceneChars
     .map((sc) => {
@@ -3680,6 +3711,7 @@ const startFogMode = useCallback(() => {
                       const asset = frameAssets.find((item) => item.asset_id === cfg.assetId);
                       return asset?.type === 'video' ? null : (asset?.url ?? null);
                     })(),
+                    frameScale: ((ent?.visual_config_json?.frame as { scale?: number } | undefined)?.scale) ?? 1,
                     rotation: sc.rotation ?? 0,
                     tokenScale: sc.token_scale ?? 1,
                     brightness: sc.brightness ?? 0,
@@ -4101,7 +4133,7 @@ const startFogMode = useCallback(() => {
           className="fixed z-50 w-56 rounded-lg border border-[var(--bg-tertiary)] bg-[var(--bg-secondary)] px-3 py-2 shadow-xl animate-in fade-in"
           style={{
             left: Math.min(tokenQuickEdit.x, window.innerWidth - 240),
-            top: Math.max(8, Math.min(tokenQuickEdit.y, window.innerHeight - 320)),
+            top: Math.max(8, Math.min(tokenQuickEdit.y, window.innerHeight - 360)),
           }}
         >
           <p className="text-xs font-semibold text-[var(--text-primary)] mb-2 truncate">
@@ -4120,6 +4152,24 @@ const startFogMode = useCallback(() => {
             onChange={(e) => handleTokenPatch(tokenQuickEdit.sceneCharId, { token_scale: parseFloat(e.target.value) })}
             className="w-full h-1 accent-[var(--accent)]"
           />
+          {quickEditFrameScale !== null && (
+            <>
+              <div className="flex items-center justify-between mb-1 mt-2">
+                <span className="text-[10px] text-white">{t('dm.frameSize', 'Tamaño del marco')}</span>
+                <span className="text-[10px] text-[var(--accent)] font-mono">{quickEditFrameScale.toFixed(1)}x</span>
+              </div>
+              <input
+                type="range"
+                aria-label={t('dm.frameSize', 'Tamaño del marco')}
+                min={0.3}
+                max={3}
+                step={0.1}
+                value={quickEditFrameScale}
+                onChange={(e) => handleFrameScalePatch(parseFloat(e.target.value))}
+                className="w-full h-1 accent-[var(--accent)]"
+              />
+            </>
+          )}
           <div className="flex items-center justify-between mb-1 mt-2">
             <span className="text-[10px] text-white">{t('dm.tokenFacing', 'Orientación')}</span>
             <span className="text-[10px] text-[var(--accent)] font-mono">{Math.round(((quickEditChar.facing_offset ?? 0) * 180) / Math.PI)}°</span>

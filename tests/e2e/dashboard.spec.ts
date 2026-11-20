@@ -21,7 +21,7 @@ async function openSceneWithBackground(
   sceneId: string,
 ) {
   await page.goto(`/campaigns/${campaignId}`);
-  await page.locator('header select').selectOption(sceneId);
+  await page.getByLabel('Escena activa').selectOption(sceneId);
   const bg = assetExists(TAVERN_MAP) ? loadAsset(TAVERN_MAP) : null;
   await page.setInputFiles(
     '[data-testid="bg-upload-input"]',
@@ -93,7 +93,7 @@ test.describe('Dashboard VTT Core', () => {
     await page.goto(`/campaigns/${campaign.id}`);
 
     await expect(page.getByRole('link', { name: campaign.name })).toBeVisible();
-    await expect(page.locator('header select')).toContainText('Escena Uno');
+    await expect(page.getByLabel('Escena activa')).toContainText('Escena Uno');
     await expect(page.getByText('1/1')).toBeVisible();
   });
 
@@ -101,7 +101,7 @@ test.describe('Dashboard VTT Core', () => {
     const scene = await createScene(request, campaign.id, 'Escena Dos');
 
     await page.goto(`/campaigns/${campaign.id}`);
-    await page.locator('header select').selectOption(scene.id);
+    await page.getByLabel('Escena activa').selectOption(scene.id);
 
     await expect(page.getByText('Sin escena seleccionada')).toBeVisible();
 
@@ -298,7 +298,7 @@ test.describe('Dashboard VTT Core', () => {
     );
 
     await page.goto(`/campaigns/${campaign.id}`);
-    await page.locator('header select').selectOption(scene.id);
+    await page.getByLabel('Escena activa').selectOption(scene.id);
     await expect(page.locator('canvas').first()).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText('Sin escena seleccionada')).toHaveCount(0);
     await page.waitForTimeout(1500);
@@ -339,5 +339,50 @@ test.describe('Dashboard VTT Core', () => {
 
     expect(webglErrors, `errores WebGL: ${webglErrors.join(' | ')}`).toHaveLength(0);
     expect(staticFailures, `requests estáticos fallidos: ${staticFailures.join(' | ')}`).toHaveLength(0);
+  });
+
+  test('D20: ajusta el tamaño del marco desde doble clic en token 2D', async ({ page, campaign, request }) => {
+    const scene = await createScene(request, campaign.id, 'Escena Marco 2D');
+    const created = await request.post(`http://localhost:8000/api/campaigns/${campaign.id}/characters`, {
+      data: {
+        name: 'Marco2D',
+        frame: 'gold',
+        visual_config_json: { frame: { version: 1, scale: 1, x: 0, y: 0 } },
+      },
+    });
+    expect(created.ok()).toBeTruthy();
+    const char = (await created.json()) as { id: string };
+    await seedToken(request, campaign.id, scene.id, 'character', char.id, 0, 0);
+
+    await openSceneWithBackground(page, campaign.id, scene.id);
+    await page.getByTestId('fichas-toggle').click();
+    await expect(page.getByText('En escena (1)')).toBeVisible({ timeout: 10_000 });
+    await page.getByTestId('fichas-toggle').click();
+    const canvas = page.locator('canvas').first();
+    const box = await canvas.boundingBox();
+    if (!box) throw new Error('canvas sin boundingBox');
+    await canvas.dblclick({ position: { x: box.width / 2, y: box.height / 2 - 45 } });
+
+    const popup = page.getByTestId('token-quick-edit');
+    await expect(popup).toBeVisible({ timeout: 10_000 });
+    const slider = popup.getByLabel('Tamaño del marco');
+    await expect(slider).toBeVisible();
+
+    const putPromise = page.waitForResponse(
+      (res) => res.url().includes(`/characters/${char.id}`) && res.request().method() === 'PUT',
+      { timeout: 10_000 },
+    );
+    await slider.evaluate((el) => {
+      const input = el as HTMLInputElement;
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+      setter?.call(input, '1.6');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await putPromise;
+
+    const stored = await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/characters/${char.id}`);
+    const config = (await stored.json()) as { visual_config_json: { frame: { scale: number } } };
+    expect(config.visual_config_json.frame.scale).toBe(1.6);
   });
 });
