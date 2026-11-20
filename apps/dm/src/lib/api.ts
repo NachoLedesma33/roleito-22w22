@@ -690,9 +690,10 @@ export const api = {
     },
     deleteAudioTrack: (campaignId: string, trackId: string) =>
       request<{ tracks: SharedAudioTrack[] }>(`/campaigns/${campaignId}/audio/tracks/${trackId}`, { method: 'DELETE' }),
-    uploadAsset: (campaignId: string, file: File) => {
+    uploadAsset: (campaignId: string, file: File, category?: string) => {
       const form = new FormData();
       form.append('file', file);
+      if (category) form.append('category', category);
       return apiFetch(`/campaigns/${campaignId}/assets`, { method: 'POST', body: form }).then(async (res) => {
         if (!res.ok) {
           const body = await res.text();
