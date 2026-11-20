@@ -139,5 +139,14 @@ test.describe('Character CRUD', () => {
 
     await expect(dialog).toBeHidden();
     await expect(page.getByRole('button', { name: 'Abrir editor de marcos' })).toContainText('Oro');
+
+    await fillCharacterForm(page, { name: 'MarcoTest' });
+    const postPromise = page.waitForResponse(
+      (res) => res.url().includes(`/campaigns/${campaign.id}/characters`) && res.request().method() === 'POST',
+      { timeout: 10_000 },
+    );
+    await page.getByRole('button', { name: 'Crear personaje' }).click();
+    const res = await postPromise;
+    expect(((await res.json()) as { frame: string | null }).frame).toBe('gold');
   });
 });

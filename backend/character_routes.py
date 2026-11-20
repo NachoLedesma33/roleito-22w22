@@ -50,6 +50,7 @@ async def create_character(
         status=data.status,
         current_location_id=data.current_location_id,
         visual_config_json=data.visual_config_json,
+        frame=data.frame,
         knowledge_scope=data.knowledge_scope,
         vigor=data.vigor,
         intelligence=data.intelligence,
