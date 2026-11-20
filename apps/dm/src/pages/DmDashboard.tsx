@@ -128,6 +128,7 @@ export default function DmDashboard() {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [frameAssets, setFrameAssets] = useState<Array<{ asset_id: string; url: string; type: string; category?: string }>>([]);
   const [activeScene, setActiveScene] = useState<Scene | null>(null);
   const [sceneChars, setSceneChars] = useState<SceneCharacter[]>([]);
 
@@ -394,6 +395,13 @@ export default function DmDashboard() {
         setActiveScene(active);
       })
       .finally(() => setLoading(false));
+  }, [campaignId]);
+
+  useEffect(() => {
+    if (!campaignId) return;
+    api.campaigns.listAssets(campaignId)
+      .then((res) => setFrameAssets(res.assets.filter((asset) => asset.category === 'frames')))
+      .catch(() => setFrameAssets([]));
   }, [campaignId]);
 
   // Volumen de audio compartido: el DM lo publica en la campaña y llega acá al
@@ -3665,7 +3673,13 @@ const startFogMode = useCallback(() => {
                     visible: !!sc.visible,
                     portraitUrl: staticUrl(ent?.portrait_path ?? null),
                     modelUrl: staticUrl(ent?.model_path ?? null),
-                    frameUrl: ent?.frame ? `/frames/${ent.frame}.svg` : null,
+                    frameUrl: (() => {
+                      if (!ent?.frame || ent.frame === 'none') return null;
+                      if (ent.frame !== 'custom') return `/frames/${ent.frame}.svg`;
+                      const cfg = (ent.visual_config_json?.frame ?? {}) as { assetId?: string };
+                      const asset = frameAssets.find((item) => item.asset_id === cfg.assetId);
+                      return asset?.type === 'video' ? null : (asset?.url ?? null);
+                    })(),
                     rotation: sc.rotation ?? 0,
                     tokenScale: sc.token_scale ?? 1,
                     brightness: sc.brightness ?? 0,
