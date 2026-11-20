@@ -139,6 +139,21 @@ Reference: `2D-TO-3D.md` (34,685 bytes), `3D-RENDERER.md` (118 bytes)
 | Asset List | Implemented | `pages/AssetList.tsx` |
 | DM Dashboard | Implemented | `pages/DmDashboard.tsx` |
 
+### Marcos de personaje (2026-11-20)
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Catálogo visual base | Implemented | `CharacterForm.tsx` + `public/frames/catalog.json` (5 marcos propios) |
+| Persistencia | Implemented | `frame` + `visual_config_json.frame` versionado (`cd9ef18`, `c9978ce`) |
+| Ajuste del marco | Implemented | Escala/X/Y con preview en vivo (`c9978ce`) |
+| Ajuste del retrato | Planned | Sin controles independientes de escala/X/Y |
+| Marcos propios animados | Implemented | Assets `category='frames'`, PNG/JPG/WebP/GIF/MP4/WebM; `<img>`/`<video>` en 2D |
+| Tablero 3D | Implemented | `DmDashboard` resuelve `assetId` → URL; vídeo se omite para no romper `TokenSprite` (`f7ed952`) |
+| Verificación POV/permisos | Planned | No cubierta por esta entrega |
+| Asset referenciado | Planned | El delete de assets no impide borrar un marco en uso |
+
+Plan y criterios: `PLAN_EDITOR_MARCOS_PERSONAJES_ROLEITO.md`.
+
 ### Components (Implemented)
 | Component | Status | Path |
 |-----------|--------|------|
@@ -472,7 +487,7 @@ Based on dependency analysis and documentation completeness:
 
 # 9. Last Updated
 
-- **Date**: 2026-10-17
-- **Updated By**: cierre del plan de modularización (11 fases completas) — ver sección 7
-- **Trigger**: 22 commits, de `e41729b` a `ee83e07`, todos con CI verde
-- **Nota de verificación**: las cifras de la tabla de la sección 7 salen de conteos reales (líneas por archivo, vitest/pytest ejecutados, e2e por spec). Las tres regresiones se verificaron **fallando sin el fix**, no por inspección.
+- **Date**: 2026-11-20
+- **Updated By**: cierre de marcos de personaje + cierre del plan de modularización (11 fases completas) — ver sección 7
+- **Trigger**: commits de marcos `1321851` a `c9978ce`, todos con CI verde; 22 commits previos de `e41729b` a `ee83e07`
+- **Nota de verificación**: las cifras de la tabla de la sección 7 salen de conteos reales (líneas por archivo, vitest/pytest ejecutados, e2e por spec). Las tres regresiones se verificaron **fallando sin el fix**, no por inspección. Los ítems marcados `Planned` en marcos no están implementados.

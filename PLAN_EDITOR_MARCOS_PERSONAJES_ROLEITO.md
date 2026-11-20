@@ -438,6 +438,8 @@ Fase 0 cerrada (sección 3). Cada fase siguiente = un tema = 1 commit + CI verde
 
 **Criterio de salida:** en «Nuevo personaje» se puede elegir/quitar marco sin perder datos del formulario.
 
+**RESUELTO (2026-11-20, `1321851`, `cd9ef18`):** dialog visual con catálogo base y persistencia de `frame` al crear/editar.
+
 ### Fase 2 — Persistencia de la configuración
 
 - Escribir `frame` + `visual_config_json.frame` en `CharacterCreate`/`CharacterUpdate` existentes.
@@ -446,6 +448,8 @@ Fase 0 cerrada (sección 3). Cada fase siguiente = un tema = 1 commit + CI verde
 - Compatibilidad con personajes sin `visual_config_json`.
 
 **Criterio de salida:** marco y ajustes sobreviven a guardar, recargar y reabrir.
+
+**RESUELTO (2026-11-20, `e0009b6`, `c9978ce`):** `frame` + `visual_config_json.frame` versionado, escala/X/Y del marco con preview en vivo y carga al editar. Queda fuera: controles independientes del retrato.
 
 ### Fase 3 — Marcos propios y animados
 
@@ -456,13 +460,15 @@ Fase 0 cerrada (sección 3). Cada fase siguiente = un tema = 1 commit + CI verde
 
 **Criterio de salida:** un DM importa un GIF o MP4, lo selecciona y se ve animado en ficha y formulario.
 
+**RESUELTO (2026-11-20, `a561217`, `53dbbbb`, `1f37f75`, `f83f073`, `63eceaa`, `f7ed952`):** `.gif` y `category='frames'` en assets; import/preview animado; `assetId` resuelto en ficha, formulario y tablero. `TokenSprite` sigue con marco estático: vídeo se omite en 3D sin URL rota.
+
 ### Fase 4 — Robustez y docs
 
 - Errores de upload, asset huérfano/referenciado, POV y permisos.
 - Locators e2e si cambia texto visible o nombre accesible.
 - `docs/roadmap/IMPLEMENTATION-STATUS.md`, doc de la feature y `check-docs-consistency.py`.
 
-**Criterio de salida:** CI verde y docs sin afirmaciones viejas.
+**RESUELTO (2026-11-20):** e2e CH6-CH8 + CS20, lint/typecheck/vitest/pytest verdes, `check-docs-consistency.py` OK. Pendiente documentado, no implementado: verificación de POV/permisos y guard de asset referenciado.
 
 ---
 
@@ -470,34 +476,34 @@ Fase 0 cerrada (sección 3). Cada fase siguiente = un tema = 1 commit + CI verde
 
 ### Funcionales
 
-- [ ] «Marco» aparece en «Nuevo personaje» y en «Editar personaje».
-- [ ] El panel abre sin navegar y conserva todos los campos del formulario.
-- [ ] Se ven los 5 marcos base con miniaturas reales.
-- [ ] Se puede seleccionar y quitar un marco.
-- [ ] Escala/X/Y de retrato y marco son independientes y se ven en vivo.
-- [ ] Se puede importar PNG/WebP/GIF/MP4/WebM como marco de campaña.
-- [ ] El marco importado aparece en el catálogo y se puede seleccionar.
-- [ ] GIF y MP4/WebM se animan en ficha y formulario.
-- [ ] Configuración y selección se guardan y se recuperan.
-- [ ] Cambiar el retrato no destruye marco ni configuración.
-- [ ] Personajes antiguos sin configuración siguen funcionando.
-- [ ] Modelo 3D y retrato original intactos.
+- [x] «Marco» aparece en «Nuevo personaje» y en «Editar personaje».
+- [x] El panel abre sin navegar y conserva todos los campos del formulario.
+- [x] Se ven los 5 marcos base con miniaturas reales.
+- [x] Se puede seleccionar y quitar un marco (`none`).
+- [ ] Escala/X/Y de retrato y marco son independientes y se ven en vivo. **Parcial**: solo marco (`c9978ce`); retrato sigue sin controles.
+- [x] Se puede importar PNG/WebP/GIF/MP4/WebM como marco de campaña (`a561217`).
+- [x] El marco importado aparece en el catálogo y se puede seleccionar (`1f37f75`).
+- [x] GIF y MP4/WebM se animan en ficha y formulario (`<img>`/`<video>`; GIF verificado en CH7).
+- [x] Configuración y selección se guardan y se recuperan (`cd9ef18`, `c9978ce`).
+- [x] Cambiar el retrato no destruye marco ni configuración (endpoints separados).
+- [x] Personajes antiguos sin configuración siguen funcionando (fallbacks).
+- [x] Modelo 3D y retrato original intactos.
 
 ### Seguridad y datos
 
-- [ ] Solo DM administra el catálogo; endpoints existentes no relajados.
-- [ ] DM no altera assets de otra campaña.
-- [ ] Archivos inválidos o >50 MB se rechazan.
-- [ ] No se borra un asset referenciado por un personaje.
-- [ ] SVG no se acepta sin sanitización.
+- [x] Solo DM administra el catálogo; endpoints existentes no relajados (`require_dm`).
+- [x] DM no altera assets de otra campaña (filtro por `campaign_id`).
+- [x] Archivos inválidos o >50 MB se rechazan (`routes.py:395-403`).
+- [ ] No se borra un asset referenciado por un personaje. **Pendiente**: el delete existente no chequea referencias.
+- [x] SVG no se acepta sin sanitización (no está en `allowed_exts`).
 
 ### Visuales y rendimiento
 
-- [ ] Catálogo responsive, transparencia visible, selección clara.
-- [ ] `object-contain` en marcos, sin deformación.
-- [ ] `<video>` con `loop muted playsInline`; sin autoplay con sonido.
-- [ ] Sin saltos de layout al cargar miniaturas.
-- [ ] Sin bloqueos al mover sliders.
+- [x] Catálogo responsive, transparencia visible, selección clara.
+- [x] `object-contain` en marcos, sin deformación.
+- [x] `<video>` con `loop muted playsInline`; sin autoplay con sonido.
+- [x] Sin saltos de layout al cargar miniaturas (contenedores de tamaño fijo).
+- [x] Sin bloqueos al mover sliders (N/A: inputs numéricos, no sliders).
 
 ---
 
