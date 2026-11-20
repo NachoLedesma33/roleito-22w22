@@ -383,4 +383,29 @@ test.describe('Character Sheet HUD', () => {
       expect((await stored.json()).spells_json).toHaveLength(0);
     }
   });
+
+  test('CS20: muestra el marco propio animado en la ficha del tablero', async ({ page, campaign, request }) => {
+    const scene = await createScene(request, campaign.id, 'Escena Marco');
+    const uploaded = await request.post(`http://localhost:8000/api/campaigns/${campaign.id}/assets`, {
+      multipart: {
+        file: { name: 'aur.gif', mimeType: 'image/gif', buffer: Buffer.from('GIF89a\x01\x00\x01\x00', 'binary') },
+        category: 'frames',
+      },
+    });
+    expect(uploaded.ok()).toBeTruthy();
+    const assetId = (await uploaded.json()).asset_id as string;
+
+    const created = await request.post(`http://localhost:8000/api/campaigns/${campaign.id}/characters`, {
+      data: {
+        name: 'Mara',
+        frame: 'custom',
+        visual_config_json: { frame: { version: 1, assetId, scale: 1, x: 0, y: 0 } },
+      },
+    });
+    expect(created.ok()).toBeTruthy();
+    const char = (await created.json()) as { id: string; name: string };
+
+    await openSheet(page, campaign.id, scene.id, request, char);
+    await expect(page.locator('img[alt="marco"]')).toHaveAttribute('src', /\/api\/static\//);
+  });
 });

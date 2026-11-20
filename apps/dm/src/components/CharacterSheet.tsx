@@ -24,6 +24,8 @@ function portraitUrl(path: string | null): string | null {
   return `/api/static/${path.replace(/\\/g, '/').split('/assets/')[1]}`;
 }
 
+type FrameAsset = { asset_id: string; name: string; url: string; type: string; category?: string };
+
 function genId(): string {
   return crypto.randomUUID();
 }
@@ -59,6 +61,7 @@ export default function CharacterSheet({
   const pUrl = portraitUrl(entity.portrait_path);
 
   const [catalog, setCatalog] = useState<CampaignAbility[]>([]);
+  const [frameAssets, setFrameAssets] = useState<FrameAsset[]>([]);
   const reloadCatalog = useCallback(async () => {
     try {
       setCatalog(await api.abilities.list(campaignId));
@@ -70,6 +73,12 @@ export default function CharacterSheet({
   useEffect(() => {
     reloadCatalog();
   }, [reloadCatalog]);
+
+  useEffect(() => {
+    api.campaigns.listAssets(campaignId)
+      .then((res) => setFrameAssets(res.assets.filter((asset) => asset.category === 'frames')))
+      .catch(() => setFrameAssets([]));
+  }, [campaignId]);
 
   const handlePortraitUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -87,6 +96,11 @@ export default function CharacterSheet({
     }
     e.target.value = '';
   }, [campaignId, entity.id, entityType, onUpdate]);
+
+  const frameCfg = (entity.visual_config_json?.frame ?? {}) as { assetId?: string };
+  const frameAsset = entity.frame === 'custom'
+    ? frameAssets.find((asset) => asset.asset_id === frameCfg.assetId)
+    : undefined;
 
   const handleFrameChange = useCallback(async (frame: string) => {
     if (entityType !== 'character') return;
@@ -455,8 +469,18 @@ export default function CharacterSheet({
               <option value="silver">Plata</option>
               <option value="iron">Hierro</option>
               <option value="magical">Mágico</option>
+              {frameAsset && <option value="custom">{frameAsset.name}</option>}
             </select>
           </div>
+          {frameAsset && (
+            <div className="flex justify-center">
+              {frameAsset.type === 'video' ? (
+                <video src={frameAsset.url} aria-label="marco" autoPlay loop muted playsInline className="w-24 h-24 object-contain" />
+              ) : (
+                <img src={frameAsset.url} alt="marco" className="w-24 h-24 object-contain" />
+              )}
+            </div>
+          )}
           <div className="flex items-start gap-3">
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold truncate">{entity.name}</p>
