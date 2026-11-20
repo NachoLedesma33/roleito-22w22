@@ -23,6 +23,7 @@ function useVisualInterpolation(
   const serverPosRef = useRef<Map<string, { x: number; z: number; rotation: number }>>(new Map());
   const serverPosAtRef = useRef<Map<string, number>>(new Map());
   const velocitiesRef = useRef<Map<string, { vx: number; vz: number; vrot: number }>>(new Map());
+  const velocityAtRef = useRef<Map<string, number>>(new Map());
   const lastFrameRef = useRef<number>(0);
   const rafRef = useRef<number>(0);
 
@@ -30,6 +31,25 @@ function useVisualInterpolation(
   useEffect(() => {
     const now = performance.now();
     for (const c of characters) {
+      const prev = serverPosRef.current.get(c.sceneCharId);
+      if (prev) {
+        const dtSec = Math.max((now - (serverPosAtRef.current.get(c.sceneCharId) ?? now)) / 1000, 0.001);
+        const delX = c.x - prev.x;
+        const delZ = c.z - prev.z;
+        const delR = (c.rotation ?? 0) - prev.rotation;
+        const movingPos = Math.hypot(delX, delZ) >= 0.0005;
+        const movingRot = Math.abs(Math.atan2(Math.sin(delR), Math.cos(delR))) >= 0.001;
+        if (movingPos || movingRot) {
+          velocitiesRef.current.set(c.sceneCharId, {
+            vx: movingPos ? (Math.abs(delX / dtSec) > 0.001 ? delX / dtSec : 0) : 0,
+            vz: movingPos ? (Math.abs(delZ / dtSec) > 0.001 ? delZ / dtSec : 0) : 0,
+            vrot: movingRot ? (Math.abs(delR / dtSec) > 0.001 ? delR / dtSec : 0) : 0,
+          });
+          velocityAtRef.current.set(c.sceneCharId, now);
+        } else if (now - (velocityAtRef.current.get(c.sceneCharId) ?? 0) > 150) {
+          velocitiesRef.current.set(c.sceneCharId, { vx: 0, vz: 0, vrot: 0 });
+        }
+      }
       serverPosRef.current.set(c.sceneCharId, { x: c.x, z: c.z, rotation: c.rotation ?? 0 });
       serverPosAtRef.current.set(c.sceneCharId, now);
     }
@@ -39,6 +59,7 @@ function useVisualInterpolation(
         serverPosRef.current.delete(id);
         serverPosAtRef.current.delete(id);
         velocitiesRef.current.delete(id);
+        velocityAtRef.current.delete(id);
         visualPosRef.current.delete(id);
       }
     }
@@ -59,9 +80,11 @@ function useVisualInterpolation(
 
       for (const [id, target] of serverPosRef.current.entries()) {
         if (id === draggingId) continue;
-        const vel = velocitiesRef.current.get(id);
+        const vel = now - (velocityAtRef.current.get(id) ?? 0) < 160
+          ? velocitiesRef.current.get(id)
+          : undefined;
         const t0 = serverPosAtRef.current.get(id) ?? now;
-        const el = Math.min((now - t0) / 1000, 0.05);
+        const el = Math.min((now - t0) / 1000, 0.1);
 
         let px = target.x;
         let pz = target.z;
@@ -87,27 +110,6 @@ function useVisualInterpolation(
     rafRef.current = requestAnimationFrame(tick);
     return () => { running = false; cancelAnimationFrame(rafRef.current); };
   }, [draggingId]);
-
-  // Calcular velocidades cuando llegan nuevas posiciones autoritativas
-  useEffect(() => {
-    const now = performance.now();
-    for (const c of characters) {
-      const prev = serverPosRef.current.get(c.sceneCharId);
-      if (prev) {
-        const dtSec = Math.max((now - (serverPosAtRef.current.get(c.sceneCharId) ?? now)) / 1000, 0.001);
-        const delX = c.x - prev.x;
-        const delZ = c.z - prev.z;
-        const delR = (c.rotation ?? 0) - prev.rotation;
-        const movingPos = Math.hypot(delX, delZ) >= 0.0005;
-        const movingRot = Math.abs(Math.atan2(Math.sin(delR), Math.cos(delR))) >= 0.001;
-        velocitiesRef.current.set(c.sceneCharId, {
-          vx: movingPos ? (Math.abs(delX / dtSec) > 0.001 ? delX / dtSec : 0) : 0,
-          vz: movingPos ? (Math.abs(delZ / dtSec) > 0.001 ? delZ / dtSec : 0) : 0,
-          vrot: movingRot ? (Math.abs(delR / dtSec) > 0.001 ? delR / dtSec : 0) : 0,
-        });
-      }
-    }
-  }, [characters]);
 
   return visualPosRef.current;
 }

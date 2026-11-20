@@ -865,7 +865,7 @@ export default function PlayerView() {
   // continuo; 40 ms era tan rapido que solo servia para saturar el backend, y con
   // el PATCH a 130 ms terminaba generando trabajo que no salia (ver `sendMove`).
   const MOVE_TICK_MS = 90;
-  const MOVE_SPEED = 0.34;
+  const MOVE_SPEED = 0.7;
 
   useEffect(() => {
     const c = choiceRef.current;
