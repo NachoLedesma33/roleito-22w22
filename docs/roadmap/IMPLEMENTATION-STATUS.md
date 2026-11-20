@@ -146,6 +146,7 @@ Reference: `2D-TO-3D.md` (34,685 bytes), `3D-RENDERER.md` (118 bytes)
 | Catálogo visual base | Implemented | `CharacterForm.tsx` + `public/frames/catalog.json` (5 marcos propios) |
 | Persistencia | Implemented | `frame` + `visual_config_json.frame` versionado (`cd9ef18`, `c9978ce`) |
 | Ajuste del marco | Implemented | Escala/X/Y con preview en vivo (`c9978ce`) |
+| Ajuste del marco en tablero | Implemented | Doble clic en token 2D → `visual_config_json.frame.scale`; oculto en 3D (`6a508d9`, `f5ba4d6`) |
 | Ajuste del retrato | Planned | Sin controles independientes de escala/X/Y |
 | Marcos propios animados | Implemented | Assets `category='frames'`, PNG/JPG/WebP/GIF/MP4/WebM; `<img>`/`<video>` en 2D |
 | Tablero 3D | Implemented | `DmDashboard` resuelve `assetId` → URL; vídeo se omite para no romper `TokenSprite` (`f7ed952`) |
@@ -489,5 +490,5 @@ Based on dependency analysis and documentation completeness:
 
 - **Date**: 2026-11-20
 - **Updated By**: cierre de marcos de personaje + cierre del plan de modularización (11 fases completas) — ver sección 7
-- **Trigger**: commits de marcos `1321851` a `c9978ce`, todos con CI verde; 22 commits previos de `e41729b` a `ee83e07`
+- **Trigger**: commits de marcos `1321851` a `f5ba4d6`, todos con CI verde; 22 commits previos de `e41729b` a `ee83e07`
 - **Nota de verificación**: las cifras de la tabla de la sección 7 salen de conteos reales (líneas por archivo, vitest/pytest ejecutados, e2e por spec). Las tres regresiones se verificaron **fallando sin el fix**, no por inspección. Los ítems marcados `Planned` en marcos no están implementados.

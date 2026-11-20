@@ -470,6 +470,8 @@ Fase 0 cerrada (sección 3). Cada fase siguiente = un tema = 1 commit + CI verde
 
 **RESUELTO (2026-11-20):** e2e CH6-CH8 + CS20, lint/typecheck/vitest/pytest verdes, `check-docs-consistency.py` OK. Pendiente documentado, no implementado: verificación de POV/permisos y guard de asset referenciado.
 
+**AJUSTE EN TABLERO (2026-11-20, `6a508d9`, `f5ba4d6`):** slider «Tamaño del marco» en el popup de doble clic. Edita `visual_config_json.frame.scale` — el mismo campo que el formulario — con preview en vivo en `TokenSprite` vía `frameScale`. Solo aparece en tokens 2D con marco; tokens 3D (`model_path`) no ofrecen el control. E2E D20 verifica persistencia; spec completa de dashboard 12/12.
+
 ---
 
 ## 12. Pruebas y criterios de aceptación
