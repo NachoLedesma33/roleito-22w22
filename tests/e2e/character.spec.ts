@@ -149,4 +149,27 @@ test.describe('Character CRUD', () => {
     const res = await postPromise;
     expect(((await res.json()) as { frame: string | null }).frame).toBe('gold');
   });
+
+  test('CH7: importa un marco GIF propio y lo aplica', async ({ page, campaign }) => {
+    await page.goto(`/campaigns/${campaign.id}/characters/new`);
+
+    await page.getByRole('button', { name: 'Abrir editor de marcos' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Marco del personaje' });
+    await expect(dialog).toBeVisible();
+
+    await dialog.getByLabel('Importar marco').setInputFiles({
+      name: 'marco.gif',
+      mimeType: 'image/gif',
+      buffer: Buffer.from('GIF89a\x01\x00\x01\x00', 'binary'),
+    });
+
+    const imported = dialog.getByRole('button', { name: 'marco.gif' });
+    await expect(imported).toBeVisible();
+    await expect(imported.locator('img')).toHaveAttribute('src', /\/api\/static\//);
+    await imported.click();
+    await dialog.getByRole('button', { name: 'Aplicar' }).click();
+
+    await expect(dialog).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Abrir editor de marcos' })).toContainText('marco.gif');
+  });
 });

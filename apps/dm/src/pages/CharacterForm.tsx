@@ -10,7 +10,17 @@ import { VidaAttrsInput, NumberInput } from '@/components/VidaInputs';
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 
-type FrameOption = { id: string; name: string; url: string | null };
+type FrameOption = { id: string; name: string; url: string | null; type?: string };
+
+function FrameThumb({ option, className = 'h-20 w-20' }: { option: FrameOption; className?: string }) {
+  if (!option.url) {
+    return <span className="text-xs text-[var(--text-secondary)]">—</span>;
+  }
+  if (option.type === 'video') {
+    return <video src={option.url} autoPlay loop muted playsInline className={`${className} object-contain`} />;
+  }
+  return <img src={option.url} alt="" className={`${className} object-contain`} />;
+}
 
 function ModelPreview({ url }: { url: string }) {
   const groupRef = useRef<THREE.Group>(null);
@@ -56,6 +66,9 @@ export default function CharacterForm() {
   const [frameDraft, setFrameDraft] = useState('none');
   const [frameOptions, setFrameOptions] = useState<FrameOption[]>([]);
   const [frameError, setFrameError] = useState<string | null>(null);
+  const [frameAssetId, setFrameAssetId] = useState<string | null>(null);
+  const [visualConfig, setVisualConfig] = useState<Record<string, unknown>>({});
+  const frameFileInput = useRef<HTMLInputElement>(null);
   const [canUseVfx, setCanUseVfx] = useState(false);
   const [modelPreviewUrl, setModelPreviewUrl] = useState<string | null>(null);
   const modelFileInput = useRef<HTMLInputElement>(null);
@@ -82,6 +95,9 @@ export default function CharacterForm() {
           setDefense(c.defense);
           setFrame(c.frame ?? 'none');
           setCanUseVfx(c.can_use_vfx ?? false);
+          setVisualConfig(c.visual_config_json ?? {});
+          const frameCfg = (c.visual_config_json?.frame ?? {}) as { assetId?: string };
+          setFrameAssetId(frameCfg.assetId ?? null);
         })
         .catch((e) => setError(e.message))
         .finally(() => setLoading(false));
@@ -92,13 +108,26 @@ export default function CharacterForm() {
     if (!frameDialogOpen) return;
     let cancelled = false;
     setFrameError(null);
-    fetch('/frames/catalog.json')
-      .then((res) => {
+    Promise.all([
+      fetch('/frames/catalog.json').then((res) => {
         if (!res.ok) throw new Error('catalog');
         return res.json() as Promise<FrameOption[]>;
-      })
-      .then((options) => {
-        if (!cancelled) setFrameOptions(options);
+      }),
+      campaignId
+        ? api.campaigns.listAssets(campaignId).then((res) =>
+            res.assets
+              .filter((asset) => asset.category === 'frames')
+              .map((asset) => ({
+                id: `asset:${asset.asset_id}`,
+                name: asset.name,
+                url: asset.url,
+                type: asset.type,
+              })),
+          )
+        : Promise.resolve([] as FrameOption[]),
+    ])
+      .then(([base, own]) => {
+        if (!cancelled) setFrameOptions([...base, ...own]);
       })
       .catch(() => {
         if (!cancelled) setFrameError(t('characterForm.frameCatalogError', 'No se pudo cargar el catálogo de marcos'));
@@ -106,16 +135,45 @@ export default function CharacterForm() {
     return () => {
       cancelled = true;
     };
-  }, [frameDialogOpen, t]);
+  }, [frameDialogOpen, campaignId, t]);
 
   const openFrameEditor = () => {
-    setFrameDraft(frame);
+    setFrameDraft(frame === 'custom' && frameAssetId ? `asset:${frameAssetId}` : frame);
     setFrameDialogOpen(true);
   };
 
   const applyFrame = () => {
-    setFrame(frameDraft);
+    if (frameDraft.startsWith('asset:')) {
+      setFrame('custom');
+      setFrameAssetId(frameDraft.slice('asset:'.length));
+    } else {
+      setFrame(frameDraft);
+      setFrameAssetId(null);
+    }
     setFrameDialogOpen(false);
+  };
+
+  const importFrame = async (file: File) => {
+    if (!campaignId) return;
+    setFrameError(null);
+    try {
+      const uploaded = (await api.campaigns.uploadAsset(campaignId, file, 'frames')) as {
+        asset_id: string;
+        name: string;
+        url: string;
+        type: string;
+      };
+      const option: FrameOption = {
+        id: `asset:${uploaded.asset_id}`,
+        name: uploaded.name,
+        url: uploaded.url,
+        type: uploaded.type,
+      };
+      setFrameOptions((prev) => [...prev, option]);
+      setFrameDraft(option.id);
+    } catch (e: unknown) {
+      setFrameError(e instanceof Error ? e.message : t('characterForm.frameImportError', 'No se pudo importar el marco'));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -141,6 +199,10 @@ export default function CharacterForm() {
         max_pm: maxPm,
         defense,
         frame: frame === 'none' ? null : frame,
+        visual_config_json: {
+          ...visualConfig,
+          frame: { version: 1, assetId: frameAssetId ?? undefined, scale: 1, x: 0, y: 0 },
+        },
         can_use_vfx: canUseVfx,
       };
       if (isEdit) {
@@ -343,14 +405,20 @@ export default function CharacterForm() {
               onClick={openFrameEditor}
               className="flex items-center gap-3 rounded border border-[var(--bg-tertiary)] bg-[var(--bg-secondary)] px-3 py-2 text-sm hover:border-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
             >
-              {frame === 'none' ? (
-                <span className="grid h-10 w-10 place-items-center rounded bg-[var(--bg-tertiary)] text-xs text-[var(--text-secondary)]">—</span>
-              ) : (
-                <img src={`/frames/${frame}.svg`} alt="" className="h-10 w-10 object-contain" />
-              )}
+              {(() => {
+                const selected = frameOptions.find((option) =>
+                  frame === 'custom' ? option.id === `asset:${frameAssetId}` : option.id === frame,
+                );
+                if (selected) return <FrameThumb option={selected} className="h-10 w-10" />;
+                if (frame !== 'none' && !frame.startsWith('asset:')) {
+                  return <img src={`/frames/${frame}.svg`} alt="" className="h-10 w-10 object-contain" />;
+                }
+                return <span className="grid h-10 w-10 place-items-center rounded bg-[var(--bg-tertiary)] text-xs text-[var(--text-secondary)]">—</span>;
+              })()}
               <span>
-                {frameOptions.find((option) => option.id === frame)?.name ??
-                  (frame === 'none' ? t('characterForm.frameNone', 'Sin marco') : frame)}
+                {frameOptions.find((option) =>
+                  frame === 'custom' ? option.id === `asset:${frameAssetId}` : option.id === frame,
+                )?.name ?? (frame === 'none' ? t('characterForm.frameNone', 'Sin marco') : frame)}
               </span>
             </button>
             <span className="text-xs text-[var(--text-secondary)]">
@@ -424,26 +492,39 @@ export default function CharacterForm() {
                   }`}
                 >
                   <span className="grid h-24 w-24 place-items-center rounded bg-[var(--bg-tertiary)]">
-                    {option.url ? (
-                      <img src={option.url} alt="" className="h-20 w-20 object-contain" />
-                    ) : (
-                      <span className="text-xs text-[var(--text-secondary)]">
-                        {t('characterForm.frameNone', 'Sin marco')}
-                      </span>
-                    )}
+                    <FrameThumb option={option} />
                   </span>
                   <span>{option.name}</span>
                 </button>
               ))}
             </div>
           )}
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" type="button" onClick={() => setFrameDialogOpen(false)}>
-              {t('common.cancel')}
-            </Button>
-            <Button type="button" onClick={applyFrame}>
-              {t('characterForm.frameApply', 'Aplicar')}
-            </Button>
+          <div className="flex justify-between gap-2">
+            <div>
+              <input
+                ref={frameFileInput}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm"
+                aria-label={t('characterForm.frameImport', 'Importar marco')}
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void importFrame(file);
+                  e.target.value = '';
+                }}
+              />
+              <Button variant="outline" type="button" onClick={() => frameFileInput.current?.click()}>
+                {t('characterForm.frameImport', 'Importar marco')}
+              </Button>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" type="button" onClick={() => setFrameDialogOpen(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button type="button" onClick={applyFrame}>
+                {t('characterForm.frameApply', 'Aplicar')}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
