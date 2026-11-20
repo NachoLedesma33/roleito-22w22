@@ -171,5 +171,11 @@ test.describe('Character CRUD', () => {
 
     await expect(dialog).toBeHidden();
     await expect(page.getByRole('button', { name: 'Abrir editor de marcos' })).toContainText('marco.gif');
+
+    await fillCharacterForm(page, { name: 'MarcoGif' });
+    await page.getByRole('button', { name: 'Crear personaje' }).click();
+
+    await expect(page.getByRole('heading', { name: 'MarcoGif' })).toBeVisible();
+    await expect(page.locator('img[alt="marco"]')).toHaveAttribute('src', /\/api\/static\//);
   });
 });

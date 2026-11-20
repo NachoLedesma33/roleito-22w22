@@ -52,6 +52,7 @@ export default function CharacterDetail() {
   const [character, setCharacter] = useState<Character | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [frameAssets, setFrameAssets] = useState<Array<{ asset_id: string; name: string; url: string; type: string }>>([]);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const modelFileInput = useRef<HTMLInputElement>(null);
@@ -63,6 +64,13 @@ export default function CharacterDetail() {
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [campaignId, characterId]);
+
+  useEffect(() => {
+    if (!campaignId) return;
+    api.campaigns.listAssets(campaignId)
+      .then((res) => setFrameAssets(res.assets.filter((asset) => asset.category === 'frames')))
+      .catch(() => setFrameAssets([]));
+  }, [campaignId]);
 
   const handleDelete = async () => {
     if (!campaignId || !characterId) return;
@@ -105,6 +113,10 @@ export default function CharacterDetail() {
   if (!character) return <p className="text-[var(--text-secondary)]">Personaje no encontrado</p>;
 
   const pUrl = portraitUrl(character.portrait_path);
+  const frameCfg = (character.visual_config_json?.frame ?? {}) as { assetId?: string };
+  const frameAsset = character.frame === 'custom'
+    ? frameAssets.find((asset) => asset.asset_id === frameCfg.assetId)
+    : undefined;
   const mUrl = portraitUrl(character.model_path);
 
   return (
@@ -221,11 +233,22 @@ export default function CharacterDetail() {
           <option value="silver">Plata</option>
           <option value="iron">Hierro</option>
           <option value="magical">Mágico</option>
+          {frameAsset && <option value="custom">{frameAsset.name}</option>}
         </select>
-        {character.frame && character.frame !== 'none' && (
+        {frameAsset ? (
           <div className="mt-3 flex justify-center">
-            <img src={`/frames/${character.frame}.svg`} alt="marco" className="w-24 h-24" />
+            {frameAsset.type === 'video' ? (
+              <video src={frameAsset.url} aria-label="marco" autoPlay loop muted playsInline className="w-24 h-24 object-contain" />
+            ) : (
+              <img src={frameAsset.url} alt="marco" className="w-24 h-24 object-contain" />
+            )}
           </div>
+        ) : (
+          character.frame && character.frame !== 'none' && character.frame !== 'custom' && (
+            <div className="mt-3 flex justify-center">
+              <img src={`/frames/${character.frame}.svg`} alt="marco" className="w-24 h-24" />
+            </div>
+          )
         )}
       </div>
 
