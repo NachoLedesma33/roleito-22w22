@@ -1814,6 +1814,8 @@ async def join_by_invite_code(
         **{c.id: c for c in all_chars},
         **{n.id: n for n in npcs_r.scalars().all()},
     }
+    assets_r = await db.execute(select(Asset).where(Asset.campaign_id == campaign.id))
+    assets_by_id = {a.id: a for a in assets_r.scalars().all()}
 
     player_characters = [
         {
@@ -1846,6 +1848,28 @@ async def join_by_invite_code(
         for sc in sc_r.scalars().all():
             ent = all_entities.get(sc.entity_id)
             if ent:
+                frame = getattr(ent, 'frame', None)
+                frame_url = None
+                frame_scale = 1.0
+                if frame and frame != 'none':
+                    frame_cfg = ((getattr(ent, 'visual_config_json', None) or {}).get('frame') or {})
+                    if not isinstance(frame_cfg, dict):
+                        frame_cfg = {}
+                    if frame != 'custom':
+                        frame_url = f"/frames/{frame}.svg"
+                    else:
+                        asset = assets_by_id.get(frame_cfg.get('assetId'))
+                        if asset and (asset.asset_type or 'image') not in ('video', 'model'):
+                            rel = (asset.file_path or '').replace('\\', '/')
+                            idx = rel.find('data/assets')
+                            frame_url = (
+                                '/api/static/' + rel[idx + len('data/assets/'):].lstrip('/')
+                                if idx != -1
+                                else f"/api/static/{campaign.id}/uploads/{os.path.basename(asset.file_path)}"
+                            )
+                    scale = frame_cfg.get('scale')
+                    if isinstance(scale, (int, float)) and not isinstance(scale, bool):
+                        frame_scale = float(scale)
                 scene_chars.append({
                     "id": sc.id,
                     "entity_id": sc.entity_id,
@@ -1857,6 +1881,8 @@ async def join_by_invite_code(
                     "rotation": getattr(sc, 'rotation', 0.0),
                     "portrait_path": ent.portrait_path,
                     "model_path": getattr(ent, 'model_path', None),
+                    "frame_url": frame_url,
+                    "frame_scale": frame_scale,
                     "move_speed": getattr(sc, 'move_speed', 1.0),
                     "token_scale": getattr(sc, 'token_scale', 1.0),
                     "brightness": getattr(sc, 'brightness', 0.0),

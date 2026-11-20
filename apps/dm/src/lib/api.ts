@@ -591,7 +591,10 @@ export type PlayerSceneToken = Pick<
   | 'vision_type'
   | 'vision_range'
 > &
-  Pick<Character, 'name' | 'type' | 'portrait_path' | 'model_path'>;
+  Pick<Character, 'name' | 'type' | 'portrait_path' | 'model_path'> & {
+    frame_url?: string | null;
+    frame_scale?: number;
+  };
 
 type EventCreateFields = {
   session_id: string;
