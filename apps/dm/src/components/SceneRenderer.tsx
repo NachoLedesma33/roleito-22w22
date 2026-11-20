@@ -147,6 +147,7 @@ interface SceneEntity {
   portraitUrl?: string | null;
   modelUrl?: string | null;
   frameUrl?: string | null;
+  frameScale?: number;
   rotation?: number;
   tokenScale?: number;
   brightness?: number;
@@ -927,6 +928,7 @@ function DraggableToken({
           position={[0, 0, 0]}
           portraitUrl={entity.portraitUrl}
           frameUrl={entity.frameUrl}
+          frameScale={entity.frameScale ?? 1}
           isSelected={isSelected}
           tokenScale={entity.tokenScale ?? 1}
           invisible={invisible}

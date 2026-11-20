@@ -16,6 +16,7 @@ interface TokenSpriteProps {
   position: [number, number, number];
   portraitUrl?: string | null;
   frameUrl?: string | null;
+  frameScale?: number;
   isSelected?: boolean;
   isDragging?: boolean;
   tokenScale?: number;
@@ -32,6 +33,7 @@ export default function TokenSprite({
   position,
   portraitUrl,
   frameUrl,
+  frameScale = 1,
   isSelected,
   isDragging,
   tokenScale = 1,
@@ -97,7 +99,7 @@ export default function TokenSprite({
             </mesh>
           )}
           {frameTexture && (
-            <mesh position={[0, 0.6 * tokenScale, 0.05]} renderOrder={10}>
+            <mesh position={[0, 0.6 * tokenScale, 0.05]} renderOrder={10} scale={frameScale}>
               <circleGeometry args={[radius + 0.15, 32]} />
               <meshBasicMaterial map={frameTexture} transparent depthWrite={false} depthTest={false} alphaTest={0.05} />
             </mesh>
