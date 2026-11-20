@@ -178,4 +178,27 @@ test.describe('Character CRUD', () => {
     await expect(page.getByRole('heading', { name: 'MarcoGif' })).toBeVisible();
     await expect(page.locator('img[alt="marco"]')).toHaveAttribute('src', /\/api\/static\//);
   });
+
+  test('CH8: guarda escala y desplazamiento del marco', async ({ page, campaign }) => {
+    await page.goto(`/campaigns/${campaign.id}/characters/new`);
+
+    await page.getByRole('button', { name: 'Abrir editor de marcos' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Marco del personaje' });
+    await dialog.getByRole('button', { name: 'Oro' }).click();
+    await dialog.getByLabel('Escala del marco').fill('1.5');
+    await dialog.getByLabel('Desplazamiento X del marco').fill('12');
+    await dialog.getByLabel('Desplazamiento Y del marco').fill('-4');
+    await dialog.getByRole('button', { name: 'Aplicar' }).click();
+
+    await fillCharacterForm(page, { name: 'MarcoAjustes' });
+    const postPromise = page.waitForResponse(
+      (res) => res.url().includes(`/campaigns/${campaign.id}/characters`) && res.request().method() === 'POST',
+      { timeout: 10_000 },
+    );
+    await page.getByRole('button', { name: 'Crear personaje' }).click();
+    const res = await postPromise;
+
+    const frame = ((await res.json()) as { visual_config_json: { frame: Record<string, number> } }).visual_config_json.frame;
+    expect(frame).toMatchObject({ scale: 1.5, x: 12, y: -4 });
+  });
 });

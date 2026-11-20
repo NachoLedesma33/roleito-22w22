@@ -11,6 +11,12 @@ import { Button } from '@/components/ui/Button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 
 type FrameOption = { id: string; name: string; url: string | null; type?: string };
+type FrameLayout = { scale: number; x: number; y: number };
+
+function frameLayoutOf(config: Record<string, unknown>): FrameLayout {
+  const cfg = (config.frame ?? {}) as Partial<FrameLayout>;
+  return { scale: cfg.scale ?? 1, x: cfg.x ?? 0, y: cfg.y ?? 0 };
+}
 
 function FrameThumb({ option, className = 'h-20 w-20' }: { option: FrameOption; className?: string }) {
   if (!option.url) {
@@ -76,6 +82,13 @@ export default function CharacterForm() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(!!isEdit);
   const [error, setError] = useState<string | null>(null);
+
+  const frameLayout = frameLayoutOf(visualConfig);
+  const updateFrameLayout = (patch: Partial<FrameLayout>) =>
+    setVisualConfig((prev) => ({
+      ...prev,
+      frame: { ...((prev.frame ?? {}) as Record<string, unknown>), ...patch },
+    }));
 
   useEffect(() => {
     if (isEdit && campaignId && characterId) {
@@ -201,7 +214,7 @@ export default function CharacterForm() {
         frame: frame === 'none' ? null : frame,
         visual_config_json: {
           ...visualConfig,
-          frame: { version: 1, assetId: frameAssetId ?? undefined, scale: 1, x: 0, y: 0 },
+          frame: { version: 1, assetId: frameAssetId ?? undefined, ...frameLayout },
         },
         can_use_vfx: canUseVfx,
       };
@@ -499,6 +512,62 @@ export default function CharacterForm() {
               ))}
             </div>
           )}
+          {frameDraft !== 'none' && (
+            <div className="flex justify-center py-2">
+              <div style={{ transform: `translate(${frameLayout.x}px, ${frameLayout.y}px) scale(${frameLayout.scale})` }}>
+                {(() => {
+                  const selected = frameOptions.find((option) => option.id === frameDraft);
+                  return selected ? (
+                    <FrameThumb option={selected} />
+                  ) : (
+                    <img src={`/frames/${frameDraft}.svg`} alt="" className="h-20 w-20 object-contain" />
+                  );
+                })()}
+              </div>
+            </div>
+          )}
+          <div className="grid grid-cols-3 gap-3 border-t border-[var(--bg-tertiary)] pt-3">
+            <div>
+              <label htmlFor="frame-scale" className="block text-xs text-[var(--text-secondary)] mb-1">
+                {t('characterForm.frameScale', 'Escala del marco')}
+              </label>
+              <input
+                id="frame-scale"
+                type="number"
+                step="0.1"
+                min="0.1"
+                value={frameLayout.scale}
+                onChange={(e) => updateFrameLayout({ scale: Number(e.target.value) })}
+                className="w-full text-sm bg-[var(--bg-tertiary)] border border-[var(--bg-tertiary)] rounded px-2 py-1"
+              />
+            </div>
+            <div>
+              <label htmlFor="frame-x" className="block text-xs text-[var(--text-secondary)] mb-1">
+                {t('characterForm.frameX', 'Desplazamiento X del marco')}
+              </label>
+              <input
+                id="frame-x"
+                type="number"
+                step="1"
+                value={frameLayout.x}
+                onChange={(e) => updateFrameLayout({ x: Number(e.target.value) })}
+                className="w-full text-sm bg-[var(--bg-tertiary)] border border-[var(--bg-tertiary)] rounded px-2 py-1"
+              />
+            </div>
+            <div>
+              <label htmlFor="frame-y" className="block text-xs text-[var(--text-secondary)] mb-1">
+                {t('characterForm.frameY', 'Desplazamiento Y del marco')}
+              </label>
+              <input
+                id="frame-y"
+                type="number"
+                step="1"
+                value={frameLayout.y}
+                onChange={(e) => updateFrameLayout({ y: Number(e.target.value) })}
+                className="w-full text-sm bg-[var(--bg-tertiary)] border border-[var(--bg-tertiary)] rounded px-2 py-1"
+              />
+            </div>
+          </div>
           <div className="flex justify-between gap-2">
             <div>
               <input
