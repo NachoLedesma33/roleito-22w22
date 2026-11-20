@@ -124,4 +124,20 @@ test.describe('Character CRUD', () => {
     expect(saved.max_pm).toBe(8);
     expect(saved.defense).toBe(7);
   });
+
+  test('CH6: abre catálogo visual de marcos y aplica la selección', async ({ page, campaign }) => {
+    await page.goto(`/campaigns/${campaign.id}/characters/new`);
+
+    await page.getByRole('button', { name: 'Abrir editor de marcos' }).click();
+
+    const dialog = page.getByRole('dialog', { name: 'Marco del personaje' });
+    await expect(dialog).toBeVisible();
+    const gold = dialog.getByRole('button', { name: 'Oro' });
+    await gold.click();
+    await expect(gold).toHaveAttribute('aria-pressed', 'true');
+    await dialog.getByRole('button', { name: 'Aplicar' }).click();
+
+    await expect(dialog).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Abrir editor de marcos' })).toContainText('Oro');
+  });
 });

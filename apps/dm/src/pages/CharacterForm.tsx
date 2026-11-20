@@ -8,6 +8,9 @@ import { useTranslation } from 'react-i18next';
 import type { VidaAttr } from '@/lib/api';
 import { VidaAttrsInput, NumberInput } from '@/components/VidaInputs';
 import { Button } from '@/components/ui/Button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
+
+type FrameOption = { id: string; name: string; url: string | null };
 
 function ModelPreview({ url }: { url: string }) {
   const groupRef = useRef<THREE.Group>(null);
@@ -49,6 +52,10 @@ export default function CharacterForm() {
   const [portraitPreview, setPortraitPreview] = useState<string | null>(null);
   const [modelFile, setModelFile] = useState<File | null>(null);
   const [frame, setFrame] = useState('none');
+  const [frameDialogOpen, setFrameDialogOpen] = useState(false);
+  const [frameDraft, setFrameDraft] = useState('none');
+  const [frameOptions, setFrameOptions] = useState<FrameOption[]>([]);
+  const [frameError, setFrameError] = useState<string | null>(null);
   const [canUseVfx, setCanUseVfx] = useState(false);
   const [modelPreviewUrl, setModelPreviewUrl] = useState<string | null>(null);
   const modelFileInput = useRef<HTMLInputElement>(null);
@@ -80,6 +87,36 @@ export default function CharacterForm() {
         .finally(() => setLoading(false));
     }
   }, [campaignId, characterId, isEdit]);
+
+  useEffect(() => {
+    if (!frameDialogOpen) return;
+    let cancelled = false;
+    setFrameError(null);
+    fetch('/frames/catalog.json')
+      .then((res) => {
+        if (!res.ok) throw new Error('catalog');
+        return res.json() as Promise<FrameOption[]>;
+      })
+      .then((options) => {
+        if (!cancelled) setFrameOptions(options);
+      })
+      .catch(() => {
+        if (!cancelled) setFrameError(t('characterForm.frameCatalogError', 'No se pudo cargar el catálogo de marcos'));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [frameDialogOpen, t]);
+
+  const openFrameEditor = () => {
+    setFrameDraft(frame);
+    setFrameDialogOpen(true);
+  };
+
+  const applyFrame = () => {
+    setFrame(frameDraft);
+    setFrameDialogOpen(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -296,23 +333,30 @@ export default function CharacterForm() {
         </div>
 
         <div>
-          <label className="block text-sm text-[var(--text-secondary)] mb-1">Marco del token (2D, sin modelo 3D)</label>
-          <select
-            className="w-full rounded border border-[var(--bg-tertiary)] bg-[var(--bg-secondary)] px-3 py-2 text-sm"
-            value={frame}
-            onChange={(e) => setFrame(e.target.value)}
-          >
-            <option value="none">Sin marco</option>
-            <option value="gold">Oro</option>
-            <option value="silver">Plata</option>
-            <option value="iron">Hierro</option>
-            <option value="magical">Mágico</option>
-          </select>
-          {frame !== 'none' && (
-            <div className="mt-2 flex justify-center">
-              <img src={`/frames/${frame}.svg`} alt="marco" className="w-16 h-16" />
-            </div>
-          )}
+          <label className="block text-sm text-[var(--text-secondary)] mb-1">
+            {t('characterForm.frame', 'Marco del token (2D, sin modelo 3D)')}
+          </label>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              aria-label={t('characterForm.frameOpen', 'Abrir editor de marcos')}
+              onClick={openFrameEditor}
+              className="flex items-center gap-3 rounded border border-[var(--bg-tertiary)] bg-[var(--bg-secondary)] px-3 py-2 text-sm hover:border-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+            >
+              {frame === 'none' ? (
+                <span className="grid h-10 w-10 place-items-center rounded bg-[var(--bg-tertiary)] text-xs text-[var(--text-secondary)]">—</span>
+              ) : (
+                <img src={`/frames/${frame}.svg`} alt="" className="h-10 w-10 object-contain" />
+              )}
+              <span>
+                {frameOptions.find((option) => option.id === frame)?.name ??
+                  (frame === 'none' ? t('characterForm.frameNone', 'Sin marco') : frame)}
+              </span>
+            </button>
+            <span className="text-xs text-[var(--text-secondary)]">
+              {t('characterForm.frameHint', 'Marco decorativo para el retrato 2D.')}
+            </span>
+          </div>
           <label className="flex items-center gap-2 mt-3 text-sm text-[var(--text-secondary)]">
             <input type="checkbox" checked={canUseVfx} onChange={(e) => setCanUseVfx(e.target.checked)} />
             Puede usar VFX (habilidades visuales)
@@ -357,6 +401,52 @@ export default function CharacterForm() {
           </Button>
         </div>
       </form>
+
+      <Dialog open={frameDialogOpen} onOpenChange={setFrameDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{t('characterForm.frameDialogTitle', 'Marco del personaje')}</DialogTitle>
+          </DialogHeader>
+          {frameError ? (
+            <p className="text-sm text-[var(--danger)]">{frameError}</p>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {frameOptions.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  aria-pressed={frameDraft === option.id}
+                  onClick={() => setFrameDraft(option.id)}
+                  className={`flex flex-col items-center gap-2 rounded border p-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
+                    frameDraft === option.id
+                      ? 'border-[var(--accent)] bg-[var(--bg-secondary)]'
+                      : 'border-[var(--bg-tertiary)] hover:border-[var(--accent)]'
+                  }`}
+                >
+                  <span className="grid h-24 w-24 place-items-center rounded bg-[var(--bg-tertiary)]">
+                    {option.url ? (
+                      <img src={option.url} alt="" className="h-20 w-20 object-contain" />
+                    ) : (
+                      <span className="text-xs text-[var(--text-secondary)]">
+                        {t('characterForm.frameNone', 'Sin marco')}
+                      </span>
+                    )}
+                  </span>
+                  <span>{option.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" type="button" onClick={() => setFrameDialogOpen(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button type="button" onClick={applyFrame}>
+              {t('characterForm.frameApply', 'Aplicar')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
