@@ -424,7 +424,7 @@ export default function CharacterForm() {
                 );
                 if (selected) return <FrameThumb option={selected} className="h-10 w-10" />;
                 if (frame !== 'none' && !frame.startsWith('asset:')) {
-                  return <img src={`/frames/${frame}.svg`} alt="" className="h-10 w-10 object-contain" />;
+                  return <img src={`/frames/${frame}${/^\d+$/.test(frame) ? '.webp' : '.svg'}`} alt="" className="h-10 w-10 object-contain" />;
                 }
                 return <span className="grid h-10 w-10 place-items-center rounded bg-[var(--bg-tertiary)] text-xs text-[var(--text-secondary)]">—</span>;
               })()}
@@ -484,7 +484,7 @@ export default function CharacterForm() {
       </form>
 
       <Dialog open={frameDialogOpen} onOpenChange={setFrameDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-h-[90dvh] max-w-2xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t('characterForm.frameDialogTitle', 'Marco del personaje')}</DialogTitle>
           </DialogHeader>
@@ -520,7 +520,7 @@ export default function CharacterForm() {
                   return selected ? (
                     <FrameThumb option={selected} />
                   ) : (
-                    <img src={`/frames/${frameDraft}.svg`} alt="" className="h-20 w-20 object-contain" />
+                    <img src={`/frames/${frameDraft}${/^\d+$/.test(frameDraft) ? '.webp' : '.svg'}`} alt="" className="h-20 w-20 object-contain" />
                   );
                 })()}
               </div>

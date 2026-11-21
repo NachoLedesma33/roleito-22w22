@@ -1856,7 +1856,7 @@ async def join_by_invite_code(
                     if not isinstance(frame_cfg, dict):
                         frame_cfg = {}
                     if frame != 'custom':
-                        frame_url = f"/frames/{frame}.svg"
+                        frame_url = f"/frames/{frame}.{'webp' if frame.isdigit() else 'svg'}"
                     else:
                         asset = assets_by_id.get(frame_cfg.get('assetId'))
                         if asset and (asset.asset_type or 'image') not in ('video', 'model'):

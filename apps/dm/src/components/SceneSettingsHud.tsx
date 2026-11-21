@@ -94,7 +94,7 @@ export default function SceneSettingsHud({ scene, onUpdate, onClose }: SceneSett
           <input
             type="range"
             min={0.1}
-            max={isModel ? 100 : 30}
+            max={isModel ? 1000 : 300}
             step={0.1}
             value={mapScale}
             onChange={(e) => {

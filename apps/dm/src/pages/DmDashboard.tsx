@@ -3706,7 +3706,7 @@ const startFogMode = useCallback(() => {
                     modelUrl: staticUrl(ent?.model_path ?? null),
                     frameUrl: (() => {
                       if (!ent?.frame || ent.frame === 'none') return null;
-                      if (ent.frame !== 'custom') return `/frames/${ent.frame}.svg`;
+                      if (ent.frame !== 'custom') return `/frames/${ent.frame}${/^\d+$/.test(ent.frame) ? '.webp' : '.svg'}`;
                       const cfg = (ent.visual_config_json?.frame ?? {}) as { assetId?: string };
                       const asset = frameAssets.find((item) => item.asset_id === cfg.assetId);
                       return asset?.type === 'video' ? null : (asset?.url ?? null);
@@ -4146,7 +4146,7 @@ const startFogMode = useCallback(() => {
           <input
             type="range"
             min={0.5}
-            max={3}
+            max={10}
             step={0.1}
             value={quickEditChar.token_scale ?? 1}
             onChange={(e) => handleTokenPatch(tokenQuickEdit.sceneCharId, { token_scale: parseFloat(e.target.value) })}

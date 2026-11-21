@@ -246,7 +246,7 @@ export default function CharacterDetail() {
         ) : (
           character.frame && character.frame !== 'none' && character.frame !== 'custom' && (
             <div className="mt-3 flex justify-center">
-              <img src={`/frames/${character.frame}.svg`} alt="marco" className="w-24 h-24" />
+              <img src={`/frames/${character.frame}${/^\d+$/.test(character.frame) ? '.webp' : '.svg'}`} alt="marco" className="w-24 h-24" />
             </div>
           )
         )}
