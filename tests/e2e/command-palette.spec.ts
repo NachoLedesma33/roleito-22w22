@@ -17,7 +17,7 @@ import { createScene } from '../helpers/api-helpers';
  */
 async function openPalette(page: Page, campaignId: string) {
   await page.goto(`/campaigns/${campaignId}`);
-  await expect(page.locator('header select')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByLabel('Escena activa')).toBeVisible({ timeout: 15_000 });
   await page.keyboard.press('Control+k');
   await expect(page.getByTestId('dm-command-palette')).toBeVisible();
 }

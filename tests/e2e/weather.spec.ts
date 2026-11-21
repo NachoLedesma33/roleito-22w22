@@ -12,8 +12,8 @@ test.describe('Weather / Atmosphere', () => {
     const scene = await createScene(request, campaign.id, 'Pradera W1');
 
     await page.goto(`/campaigns/${campaign.id}`);
-    await expect(page.locator('header select')).toContainText('Pradera W1', { timeout: 10_000 });
-    await page.locator('header select').selectOption(scene.id);
+    await expect(page.getByLabel('Escena activa')).toContainText('Pradera W1', { timeout: 10_000 });
+    await page.getByLabel('Escena activa').selectOption(scene.id);
 
     const weatherSelect = page.getByTestId('weather-select');
     await expect(weatherSelect).toContainText(WEATHER_NONE, { timeout: 10_000 });
@@ -81,8 +81,8 @@ test.describe('Weather / Atmosphere', () => {
     const code = await generateInviteCode(request, campaign.id);
 
     await page.goto(`/campaigns/${campaign.id}`);
-    await expect(page.locator('header select')).toContainText('Tormenta W3', { timeout: 10_000 });
-    await page.locator('header select').selectOption(scene.id);
+    await expect(page.getByLabel('Escena activa')).toContainText('Tormenta W3', { timeout: 10_000 });
+    await page.getByLabel('Escena activa').selectOption(scene.id);
 
     const weatherSelect = page.getByTestId('weather-select');
     await expect(weatherSelect).toContainText('Lluvia', { timeout: 10_000 });
@@ -125,8 +125,8 @@ test.describe('Weather / Atmosphere', () => {
   }) => {
     const scene = await createScene(request, campaign.id, 'Pradera W4');
     await page.goto(`/campaigns/${campaign.id}`);
-    await expect(page.locator('header select')).toContainText('Pradera W4', { timeout: 10_000 });
-    await page.locator('header select').selectOption(scene.id);
+    await expect(page.getByLabel('Escena activa')).toContainText('Pradera W4', { timeout: 10_000 });
+    await page.getByLabel('Escena activa').selectOption(scene.id);
 
     const weatherMenu = page.getByTestId('weather-menu');
     const lightingMenu = page.getByTestId('lighting-menu');
@@ -164,8 +164,8 @@ test.describe('Weather / Atmosphere', () => {
       multipart: { file: { name: 'bg.png', mimeType: 'image/png', buffer: PNG_1PX } },
     });
     await page.goto(`/campaigns/${campaign.id}`);
-    await expect(page.locator('header select')).toContainText('Meseta W5', { timeout: 10_000 });
-    await page.locator('header select').selectOption(scene.id);
+    await expect(page.getByLabel('Escena activa')).toContainText('Meseta W5', { timeout: 10_000 });
+    await page.getByLabel('Escena activa').selectOption(scene.id);
 
     const weatherSelect = page.getByTestId('weather-select');
     await weatherSelect.click();
@@ -222,8 +222,8 @@ test.describe('Weather / Atmosphere', () => {
       multipart: { file: { name: 'bg.png', mimeType: 'image/png', buffer: PNG_1PX } },
     });
     await page.goto(`/campaigns/${campaign.id}`);
-    await expect(page.locator('header select')).toContainText('Meseta W6', { timeout: 10_000 });
-    await page.locator('header select').selectOption(scene.id);
+    await expect(page.getByLabel('Escena activa')).toContainText('Meseta W6', { timeout: 10_000 });
+    await page.getByLabel('Escena activa').selectOption(scene.id);
 
     const weatherSelect = page.getByTestId('weather-select');
     await weatherSelect.click();

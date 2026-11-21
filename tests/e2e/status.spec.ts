@@ -23,7 +23,7 @@ async function openTokenMenu(
       buffer: PNG_1PX,
     });
     await page.goto(`/campaigns/${campaignId}`);
-    await page.locator('header select').selectOption(sceneId);
+    await page.getByLabel('Escena activa').selectOption(sceneId);
   }
   const canvas = page.locator('canvas').first();
   await expect(canvas).toBeVisible({ timeout: 15_000 });

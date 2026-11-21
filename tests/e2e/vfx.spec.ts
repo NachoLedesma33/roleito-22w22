@@ -22,8 +22,8 @@ test.describe('VFX', () => {
     page.on('pageerror', (err) => renderErrors.push(err.message));
 
     await page.goto(`/campaigns/${campaign.id}`);
-    await expect(page.locator('header select')).toContainText('Escena VFX1', { timeout: 10_000 });
-    await page.locator('header select').selectOption(scene.id);
+    await expect(page.getByLabel('Escena activa')).toContainText('Escena VFX1', { timeout: 10_000 });
+    await page.getByLabel('Escena activa').selectOption(scene.id);
 
     await page.getByTestId('fichas-toggle').click();
     const tray = page.getByTestId('hud-dm-token-tray-dock');
@@ -162,7 +162,7 @@ test.describe('VFX', () => {
     page.on('pageerror', (err) => renderErrors.push(err.message));
 
     await page.goto(`/campaigns/${campaign.id}`);
-    await page.locator('header select').selectOption(scene.id);
+    await page.getByLabel('Escena activa').selectOption(scene.id);
     await page.getByTestId('fichas-toggle').click();
     const tray = page.getByTestId('hud-dm-token-tray-dock');
     await expect(tray).toBeVisible();

@@ -168,7 +168,7 @@ test.describe('Auto wall detection', () => {
     const sceneId = await createSceneWithMap(request, authHeaders, campaign.id, png);
 
     await page.goto(`/campaigns/${campaign.id}`);
-    await page.locator('header select').selectOption(sceneId);
+    await page.getByLabel('Escena activa').selectOption(sceneId);
     await expect(page.locator('canvas').first()).toBeVisible({ timeout: 15_000 });
 
     // El botón vive en el menú Construir. Ojo: el texto del botón trae un
@@ -223,7 +223,7 @@ test.describe('Auto wall detection', () => {
     const sceneId = await createSceneWithMap(request, authHeaders, campaign.id, png);
 
     await page.goto(`/campaigns/${campaign.id}`);
-    await page.locator('header select').selectOption(sceneId);
+    await page.getByLabel('Escena activa').selectOption(sceneId);
     await expect(page.locator('canvas').first()).toBeVisible({ timeout: 15_000 });
     await page.getByRole('button', { name: 'Construir' }).click();
     await page.getByRole('button', { name: 'Detectar paredes' }).click();
@@ -283,7 +283,7 @@ test.describe('Auto wall detection', () => {
 
     const detectarYAprobar = async () => {
       await page.goto(`/campaigns/${campaign.id}`);
-      await page.locator('header select').selectOption(sceneId);
+      await page.getByLabel('Escena activa').selectOption(sceneId);
       await expect(page.locator('canvas').first()).toBeVisible({ timeout: 15_000 });
       await page.getByRole('button', { name: 'Construir' }).click();
       await page.getByRole('button', { name: 'Detectar paredes' }).click();
@@ -317,7 +317,7 @@ test.describe('Auto wall detection', () => {
     const sceneId = await createSceneWithMap(request, authHeaders, campaign.id, png);
 
     await page.goto(`/campaigns/${campaign.id}`);
-    await page.locator('header select').selectOption(sceneId);
+    await page.getByLabel('Escena activa').selectOption(sceneId);
     await expect(page.locator('canvas').first()).toBeVisible({ timeout: 15_000 });
 
     await page.getByRole('button', { name: 'Construir' }).click();
@@ -339,7 +339,7 @@ test.describe('Auto wall detection', () => {
     // El DM recarga sin revisar: la propuesta tiene que volver sola. Antes los
     // muros quedaban aceptados sin que nadie los mirara.
     await page.reload();
-    await page.locator('header select').selectOption(sceneId);
+    await page.getByLabel('Escena activa').selectOption(sceneId);
     await expect(page.getByTestId('detect-review')).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId('detect-review')).toContainText('Revisar detección');
 
@@ -361,7 +361,7 @@ test.describe('Auto wall detection', () => {
     const sceneB = await createSceneWithMap(request, authHeaders, campaign.id, png);
 
     await page.goto(`/campaigns/${campaign.id}`);
-    await page.locator('header select').selectOption(sceneA);
+    await page.getByLabel('Escena activa').selectOption(sceneA);
     await expect(page.locator('canvas').first()).toBeVisible({ timeout: 15_000 });
 
     await page.getByRole('button', { name: 'Construir' }).click();
@@ -381,7 +381,7 @@ test.describe('Auto wall detection', () => {
     }
 
     // Y al entrar a la segunda, el banner se reabre solo.
-    await page.locator('header select').selectOption(sceneB);
+    await page.getByLabel('Escena activa').selectOption(sceneB);
     await expect(page.getByTestId('detect-review')).toBeVisible({ timeout: 30_000 });
   });
 
@@ -436,7 +436,7 @@ test.describe('Auto wall detection', () => {
     expect(saveRes.status()).toBe(200);
 
     await page.goto(`/campaigns/${campaign.id}`);
-    await page.locator('header select').selectOption(sceneId);
+    await page.getByLabel('Escena activa').selectOption(sceneId);
     await expect(page.locator('canvas').first()).toBeVisible({ timeout: 15_000 });
     await page.getByRole('button', { name: 'Construir' }).click();
     await page.getByRole('button', { name: 'Detectar paredes' }).click();

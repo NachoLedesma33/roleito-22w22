@@ -117,7 +117,7 @@ test.describe('AI Provider Layer', () => {
       sessionStorage.setItem('roleito:auth:token', token);
     }, dmToken);
     await page.goto(`/campaigns/${campaign.id}`);
-    await page.locator('header select').selectOption(scene.id);
+    await page.getByLabel('Escena activa').selectOption(scene.id);
 
     // Dock siempre abierto en desktop: botones directos, sin ＋ intermedio.
     await page.getByTestId('ai-panel-button').click();
@@ -165,7 +165,7 @@ test.describe('AI Provider Layer', () => {
       sessionStorage.setItem('roleito:auth:token', token);
     }, dmToken);
     await page.goto(`/campaigns/${campaign.id}`);
-    await page.locator('header select').selectOption(scene.id);
+    await page.getByLabel('Escena activa').selectOption(scene.id);
 
     await page.getByTestId('ai-panel-button').click();
     const panel = page.getByTestId('ai-settings-panel');
@@ -191,7 +191,7 @@ test.describe('AI Provider Layer', () => {
       sessionStorage.setItem('roleito:auth:token', token);
     }, dmToken);
     await page.goto(`/campaigns/${campaign.id}`);
-    await page.locator('header select').selectOption(scene.id);
+    await page.getByLabel('Escena activa').selectOption(scene.id);
 
     await page.getByTestId('ai-panel-button').click();
     const panel = page.getByTestId('ai-settings-panel');
@@ -222,7 +222,7 @@ test.describe('AI Provider Layer', () => {
       sessionStorage.setItem('roleito:auth:token', token);
     }, dmToken);
     await page.goto(`/campaigns/${campaign.id}`);
-    await page.locator('header select').selectOption(scene.id);
+    await page.getByLabel('Escena activa').selectOption(scene.id);
 
     // Dock siempre abierto en desktop: botones directos, sin ＋ intermedio.
     await page.getByTestId('dm-assistant-button').click();

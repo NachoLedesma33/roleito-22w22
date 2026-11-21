@@ -12,7 +12,7 @@ async function openSceneWithBackground(
   sceneId: string,
 ) {
   await page.goto(`/campaigns/${campaignId}`);
-  await page.locator('header select').selectOption(sceneId);
+  await page.getByLabel('Escena activa').selectOption(sceneId);
   await page.setInputFiles('[data-testid="bg-upload-input"]', {
     name: 'bg.png',
     mimeType: 'image/png',
@@ -227,7 +227,7 @@ test.describe('Zones (Build menu)', () => {
     });
 
     await page.goto(`/campaigns/${campaign.id}`);
-    await page.locator('header select').selectOption(scene.id);
+    await page.getByLabel('Escena activa').selectOption(scene.id);
     await page.setInputFiles('[data-testid="bg-upload-input"]', {
       name: 'bg.png',
       mimeType: 'image/png',

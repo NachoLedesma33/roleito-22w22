@@ -26,9 +26,9 @@ test.describe('Scene Management', () => {
     const scene = await created.json();
 
     await page.goto(`/campaigns/${campaign.id}`);
-    await expect(page.locator('header select')).toContainText('Bosque');
+    await expect(page.getByLabel('Escena activa')).toContainText('Bosque');
 
-    await page.locator('header select').selectOption(scene.id);
+    await page.getByLabel('Escena activa').selectOption(scene.id);
 
     await page.setInputFiles('[data-testid="bg-upload-input"]', {
       name: 'bg.png',
@@ -55,7 +55,7 @@ test.describe('Scene Management', () => {
     });
 
     await expect(page.locator('canvas').first()).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('header select')).toContainText('Scene 1');
+    await expect(page.getByLabel('Escena activa')).toContainText('Scene 1');
 
     const scenes = await listScenes(request, campaign.id);
     expect(scenes).toHaveLength(1);
@@ -71,7 +71,7 @@ test.describe('Scene Management', () => {
     const scene = await created.json();
 
     await page.goto(`/campaigns/${campaign.id}`);
-    await page.locator('header select').selectOption(scene.id);
+    await page.getByLabel('Escena activa').selectOption(scene.id);
     await page.setInputFiles('[data-testid="bg-upload-input"]', {
       name: 'bg.png',
       mimeType: 'image/png',
