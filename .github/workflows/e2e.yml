@@ -54,8 +54,6 @@ jobs:
         shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v5
-        with:
-          lfs: true
       - uses: actions/setup-node@v5
         with:
           node-version: 22
