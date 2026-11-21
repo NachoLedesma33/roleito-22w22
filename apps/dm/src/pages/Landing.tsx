@@ -103,7 +103,7 @@ export default function Landing() {
       <header className="relative z-10 bg-bg">
         <div className="relative mx-auto max-w-6xl px-6">
           <img
-            src="/ui/logo22w22.png"
+            src="/ui/logo22w22.webp"
             alt={t('app.name')}
             className="absolute left-12 top-7 z-10 h-60 w-auto md:h-80"
           />
@@ -198,7 +198,7 @@ export default function Landing() {
             <div>
               <div className="flex items-center gap-3">
                 <img
-                  src="/ui/logo22w22.png"
+                  src="/ui/logo22w22.webp"
                   alt=""
                   aria-hidden="true"
                   className="h-9 w-auto"
