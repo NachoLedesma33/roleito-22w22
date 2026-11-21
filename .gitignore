@@ -110,10 +110,6 @@ test-results/
 playwright-report/
 .playwright-mcp/
 
-# Playwright
-test-results/
-playwright-report/
-
 # AI provider config (local only)
 data/ai_config.json
 data/ai_config.e2e.bak.json
