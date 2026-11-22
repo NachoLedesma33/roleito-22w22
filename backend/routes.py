@@ -33,6 +33,7 @@ from models import (
     LightRequest,
 )
 from services.assets import remove_asset_file, save_campaign_file
+from base_abilities import seed_base_abilities
 from schemas import (
     BulkDeleteRequest,
     BulkExportRequest,
@@ -642,6 +643,9 @@ async def create_campaign(
         settings_json=data.settings_json,
     )
     db.add(campaign)
+    await db.flush()
+    if not os.environ.get("ROLEITO_SKIP_SEEDS"):
+        await seed_base_abilities(db, campaign.id)
     await db.commit()
     await db.refresh(campaign)
     return campaign

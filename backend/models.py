@@ -163,6 +163,8 @@ class Ability(Base):
     icon = Column(String, nullable=True)
     # path absoluto del sonido de la habilidad (lo reproduce el botón Usar).
     audio_path = Column(String, nullable=True)
+    # slug de VfxType (apps/dm/src/lib/vfxParticles.ts); null = sin efecto.
+    vfx_type = Column(String, nullable=True)
 
 
 class CharacterAbility(Base):

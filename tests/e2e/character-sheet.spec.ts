@@ -153,9 +153,12 @@ test.describe('Character Sheet HUD', () => {
     await page.getByRole('button', { name: '+ Agregar conjuro' }).click();
     await putPromise;
 
+    const nueva = page
+      .locator('div.group')
+      .filter({ has: page.getByPlaceholder('Nombre del conjuro') });
     await expect(page.getByPlaceholder('Nombre del conjuro')).toHaveValue('Nuevo conjuro');
-    await expect(page.getByText('Lv1')).toBeVisible();
-    await expect(page.getByText('1 PM')).toBeVisible();
+    await expect(nueva).toContainText('Lv1');
+    await expect(nueva).toContainText('1 PM');
 
     const stored = await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/characters/${char.id}`);
     const body = await stored.json();
@@ -222,13 +225,19 @@ test.describe('Character Sheet HUD', () => {
 
     const catalog = await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/abilities`);
     expect(catalog.status()).toBe(200);
-    expect(await catalog.json()).toHaveLength(1);
+    const rowsBefore = await catalog.json();
+    expect(rowsBefore.filter((r: { id: string }) => r.id === spellId)).toHaveLength(1);
 
     await openSheet(page, campaign.id, scene.id, request, b);
     await page.getByRole('button', { name: 'Conjuros' }).click();
 
     await expect(page.getByText('Catálogo de la campaña')).toBeVisible();
-    await expect(page.getByText('Bola de Fuego')).toBeVisible();
+    const fila = page
+      .getByText('Bola de Fuego', { exact: true })
+      .locator('..')
+      .filter({ hasText: '5 PM' });
+    await expect(fila).toHaveCount(1);
+    await expect(fila).toBeVisible();
 
     const putPromise = page.waitForResponse(
       (res) =>
@@ -237,7 +246,7 @@ test.describe('Character Sheet HUD', () => {
         res.status() === 200,
       { timeout: 30_000 },
     );
-    await page.getByTitle('Aprender').click();
+    await fila.getByTitle('Aprender').click();
     await putPromise;
 
     const stored = await request.get(
@@ -253,8 +262,8 @@ test.describe('Character Sheet HUD', () => {
       `http://localhost:8000/api/campaigns/${campaign.id}/abilities`,
     );
     const rows = await finalCatalog.json();
-    expect(rows).toHaveLength(1);
-    expect(rows[0].owners).toBe(2);
+    expect(rows.filter((r: { id: string }) => r.id === spellId)).toHaveLength(1);
+    expect(rows.find((r: { id: string }) => r.id === spellId)?.owners).toBe(2);
   });
 
   test('CS10: el icono elegido en la ficha queda en el catálogo compartido', async ({
@@ -282,8 +291,13 @@ test.describe('Character Sheet HUD', () => {
     await openSheet(page, campaign.id, scene.id, request, b);
     await page.getByRole('button', { name: 'Conjuros' }).click();
 
-    // Sin icono, el chip muestra la inicial del nombre.
-    const chip = page.getByTitle('Elegir icono');
+    // Sin icono, el chip muestra la inicial del nombre. El pack base ya llena
+    // el catálogo, así que el chip se busca en la fila de esta habilidad.
+    const chip = page
+      .getByText('Bola de Fuego', { exact: true })
+      .locator('..')
+      .filter({ hasText: '5 PM' })
+      .getByTitle('Elegir icono');
     await expect(chip).toHaveText('B');
 
     await chip.click();
@@ -303,8 +317,7 @@ test.describe('Character Sheet HUD', () => {
     // la ve igual sin tocar su ficha.
     const catalog = await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/abilities`);
     const rows = await catalog.json();
-    expect(rows).toHaveLength(1);
-    expect(rows[0].icon).toBe('flame');
+    expect(rows.find((r: { id: string }) => r.id === spellId)?.icon).toBe('flame');
 
     const stored = await request.get(
       `http://localhost:8000/api/campaigns/${campaign.id}/characters/${a.id}`,
@@ -340,10 +353,15 @@ test.describe('Character Sheet HUD', () => {
 
     await openSheet(page, campaign.id, scene.id, request, b);
     await page.getByRole('button', { name: 'Conjuros' }).click();
-    await expect(page.getByText('Bola de Fuego')).toBeVisible();
+    const fila = page
+      .getByText('Bola de Fuego', { exact: true })
+      .locator('..')
+      .filter({ hasText: '5 PM' });
+    await expect(fila).toHaveCount(1);
+    await expect(fila).toBeVisible();
 
     // Modal de confirmación centrado, no un alert del navegador.
-    await page.getByTitle('Eliminar del catálogo').click();
+    await fila.getByTitle('Eliminar del catálogo').click();
     const modal = page.getByRole('dialog');
     await expect(modal).toBeVisible();
     // El aviso tenía que decir que la saben dos fichas, no una.
@@ -355,7 +373,8 @@ test.describe('Character Sheet HUD', () => {
     const stillThere = await request.get(
       `http://localhost:8000/api/campaigns/${campaign.id}/abilities`,
     );
-    expect(await stillThere.json()).toHaveLength(1);
+    const stillRows = await stillThere.json();
+    expect(stillRows.filter((r: { id: string }) => r.id === spellId)).toHaveLength(1);
 
     const delPromise = page.waitForResponse(
       (res) =>
@@ -364,16 +383,19 @@ test.describe('Character Sheet HUD', () => {
         res.status() === 200,
       { timeout: 30_000 },
     );
-    await page.getByTitle('Eliminar del catálogo').click();
+    await fila.getByTitle('Eliminar del catálogo').click();
     await page
       .getByRole('dialog')
       .getByRole('button', { name: 'Eliminar', exact: true })
       .click();
     await delPromise;
-    await expect(page.getByText('Bola de Fuego')).toHaveCount(0);
+    await expect(fila).toHaveCount(0);
+    // La del pack base sigue; solo se fue la fila creada por el test.
+    await expect(page.getByText('Bola de Fuego', { exact: true })).toHaveCount(1);
 
     const catalog = await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/abilities`);
-    expect(await catalog.json()).toHaveLength(0);
+    const finalRows = await catalog.json();
+    expect(finalRows.filter((r: { id: string }) => r.id === spellId)).toHaveLength(0);
 
     // Aria y Calen sí la sabían: el borrado es del catálogo, les desaparece.
     for (const char of [a, c]) {

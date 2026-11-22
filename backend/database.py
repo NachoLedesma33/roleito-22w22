@@ -103,6 +103,7 @@ MIGRATIONS = [
     ("scenes", "weather_intensity", "ALTER TABLE scenes ADD COLUMN weather_intensity FLOAT DEFAULT 1.0"),
     ("abilities", "icon", "ALTER TABLE abilities ADD COLUMN icon TEXT"),
     ("abilities", "audio_path", "ALTER TABLE abilities ADD COLUMN audio_path TEXT"),
+    ("abilities", "vfx_type", "ALTER TABLE abilities ADD COLUMN vfx_type TEXT"),
     ("scenes", "remember_explored", "ALTER TABLE scenes ADD COLUMN remember_explored INTEGER DEFAULT 0"),
     ("sessions", "ai_recap_json", "ALTER TABLE sessions ADD COLUMN ai_recap_json TEXT DEFAULT '{}'"),
 ]
@@ -204,6 +205,12 @@ async def init_db():
     await seed_test_dm()
     await seed_demo()
     await seed_demo_2()
+    from base_abilities import seed_base_abilities
+    async with async_session() as session:
+        campaign_ids = (await session.execute(text("SELECT id FROM campaigns"))).scalars().all()
+        for campaign_id in campaign_ids:
+            await seed_base_abilities(session, campaign_id)
+        await session.commit()
 
 
 async def seed_test_dm():

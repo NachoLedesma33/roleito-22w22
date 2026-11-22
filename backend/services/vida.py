@@ -27,6 +27,7 @@ def spell_payload(ability: Ability) -> dict:
         "cost_pm": ability.cost_pm,
         "icon": ability.icon,
         "audio_path": ability.audio_path,
+        "vfx_type": ability.vfx_type,
     }
 
 
@@ -94,6 +95,8 @@ async def replace_spells(
             ability.icon = raw.get("icon") or None
         if "audio_path" in raw:
             ability.audio_path = raw.get("audio_path") or None
+        if "vfx_type" in raw:
+            ability.vfx_type = raw.get("vfx_type") or None
 
         link = await db.execute(
             select(CharacterAbility).where(

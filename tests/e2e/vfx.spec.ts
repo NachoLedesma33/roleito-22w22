@@ -187,4 +187,72 @@ test.describe('VFX', () => {
     expect(posted).toEqual(['chainlightning', 'lifedrain', 'hex', 'earthquake']);
     expect(renderErrors.filter((msg) => /WebGL|shader|ERROR: 0:/i.test(msg))).toEqual([]);
   });
+
+  test('VFX4: usar habilidad base emite vfx por WS sin menú manual', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    const scene = await createScene(request, campaign.id, 'Escena VFX4');
+    const char = await createCharacter(request, campaign.id, { name: 'Maga VFX', max_pm: 8 });
+    await seedTokens(request, campaign.id, scene.id, [
+      { entityType: 'character', entityId: char.id, x: 1, z: 2 },
+    ]);
+    await updateScene(request, campaign.id, scene.id, { status: 'active' });
+
+    const catalogo = (await (
+      await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/abilities`)
+    ).json()) as Array<{
+      id: string;
+      name: string;
+      description: string;
+      level: number;
+      cost_pm: number;
+      vfx_type: string | null;
+    }>;
+    const fire = catalogo.find((a) => a.vfx_type === 'fire');
+    if (!fire) throw new Error('pack base sin fire');
+    const put = await request.put(
+      `http://localhost:8000/api/campaigns/${campaign.id}/characters/${char.id}`,
+      { data: { spells_json: [fire] } },
+    );
+    expect(put.status()).toBe(200);
+
+    const code = await generateInviteCode(request, campaign.id);
+    let manualPosts = 0;
+    page.on('request', (r) => {
+      if (r.url().includes(`/api/campaigns/invite/${code}/vfx`) && r.method() === 'POST') {
+        manualPosts += 1;
+      }
+    });
+
+    const wsPromise = page.waitForEvent('websocket', {
+      predicate: (ws) => ws.url().includes(`/api/ws/invite/${code}`),
+      timeout: 15_000,
+    });
+    await page.goto(`/campaigns/join/${code}`);
+    await expect(page.getByText('¿Quién sos?')).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('button', { name: /Maga VFX/ }).click();
+
+    const ws = await wsPromise;
+    const frames: string[] = [];
+    ws.on('framereceived', (frame) => frames.push(String(frame.payload)));
+
+    await page.getByRole('button', { name: 'Hech' }).click();
+    await expect(page.getByText('Bola de Fuego')).toBeVisible();
+    const usar = page.getByRole('button', { name: 'Usar' });
+    await expect(usar).toBeEnabled();
+    await usar.click();
+
+    await expect
+      .poll(() => {
+        const vfx = frames
+          .map((raw) => JSON.parse(raw) as { type?: string; vfx_type?: string; from?: number[]; to?: number[] })
+          .find((m) => m.type === 'vfx' && m.vfx_type === 'fire');
+        return vfx?.from && vfx?.to ? JSON.stringify([vfx.from, vfx.to]) : null;
+      }, { timeout: 10_000 })
+      .toBe(JSON.stringify([[1, 0.6, 2], [1, 0.6, 2]]));
+
+    expect(manualPosts).toBe(0);
+  });
 });

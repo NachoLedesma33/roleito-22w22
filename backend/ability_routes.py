@@ -7,7 +7,7 @@ from database import get_session
 from models import Ability, Campaign, Character, CharacterAbility, Event
 from services.assets import remove_asset_file, save_campaign_file
 from services.vida import apply_vida_response, spell_payload
-from routes import broadcast_revision
+from routes import broadcast_revision, ws_manager
 from auth import require_dm, AuthSession
 
 router = APIRouter(tags=["abilities"])
@@ -190,6 +190,8 @@ async def clear_ability_audio(
 
 class AbilityUseRequest(BaseModel):
     character_id: str
+    from_pos: list[float] | None = None
+    to_pos: list[float] | None = None
 
 
 @router.post("/campaigns/{campaign_id}/abilities/{ability_id}/use")
@@ -262,4 +264,12 @@ async def use_campaign_ability(
     await db.commit()
     await db.refresh(char)
     await broadcast_revision(db, campaign_id)
+    if ability.vfx_type:
+        origin = data.from_pos or [0, 0.6, 0]
+        await ws_manager.broadcast(campaign_id, {
+            "type": "vfx",
+            "vfx_type": ability.vfx_type,
+            "from": origin,
+            "to": data.to_pos or origin,
+        })
     return {"character": await apply_vida_response(db, char), "event_id": event_id}

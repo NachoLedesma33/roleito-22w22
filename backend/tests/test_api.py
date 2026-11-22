@@ -992,6 +992,93 @@ async def test_spells_es_un_catalogo_compartido(client):
 
 
 @pytest.mark.asyncio
+async def test_pack_base_de_habilidades(client):
+    """El pack base cubre los 36 VFX y es idempotente por campaña."""
+    from base_abilities import BASE_ABILITIES, seed_base_abilities
+
+    cid = (await client.post("/api/campaigns", json={"name": "Pack Base"})).json()["id"]
+    assert (await client.get(f"/api/campaigns/{cid}/abilities")).json() == []
+
+    async with async_session() as s:
+        inserted = await seed_base_abilities(s, cid)
+        await s.commit()
+    assert inserted == len(BASE_ABILITIES) == 36
+
+    catalogo = (await client.get(f"/api/campaigns/{cid}/abilities")).json()
+    assert {x["vfx_type"] for x in catalogo} == {a["vfx_type"] for a in BASE_ABILITIES}
+    assert {x["name"] for x in catalogo} == {a["name"] for a in BASE_ABILITIES}
+
+    async with async_session() as s:
+        assert await seed_base_abilities(s, cid) == 0
+
+
+@pytest.mark.asyncio
+async def test_vfx_type_viaja_en_catalogo_y_en_ficha(client):
+    """vfx_type nace en el catálogo base y sobrevive al guardado de la ficha."""
+    from base_abilities import seed_base_abilities
+
+    cid = (await client.post("/api/campaigns", json={"name": "VFX Type"})).json()["id"]
+    async with async_session() as s:
+        cols = {
+            row[1]
+            for row in (await s.execute(text("PRAGMA table_info(abilities)"))).all()
+        }
+        assert "vfx_type" in cols
+        await seed_base_abilities(s, cid)
+        await s.commit()
+
+    catalogo = (await client.get(f"/api/campaigns/{cid}/abilities")).json()
+    assert next(x for x in catalogo if x["vfx_type"] == "fire")["name"] == "Bola de Fuego"
+    assert all(x["vfx_type"] for x in catalogo)
+
+    char = (await client.post(f"/api/campaigns/{cid}/characters", json={"name": "Maga"})).json()
+    base = next(x for x in catalogo if x["vfx_type"] == "fire")
+    res = await client.put(
+        f"/api/campaigns/{cid}/characters/{char['id']}",
+        json={"spells_json": [{k: base[k] for k in ("id", "name", "description", "level", "cost_pm")}]},
+    )
+    assert res.status_code == 200, res.text
+    assert res.json()["spells_json"][0]["vfx_type"] == "fire"
+
+
+@pytest.mark.asyncio
+async def test_usar_habilidad_emite_vfx_por_ws(client, monkeypatch):
+    """Usar Bola de Fuego emite el mismo mensaje vfx que el panel del DM."""
+    from ability_routes import ws_manager
+    from base_abilities import seed_base_abilities
+
+    emitted = []
+
+    async def fake_broadcast(campaign_id, payload):
+        emitted.append((campaign_id, payload))
+
+    monkeypatch.setattr(ws_manager, "broadcast", fake_broadcast)
+
+    cid = (await client.post("/api/campaigns", json={"name": "VFX Auto"})).json()["id"]
+    async with async_session() as s:
+        await seed_base_abilities(s, cid)
+        await s.commit()
+    catalogo = (await client.get(f"/api/campaigns/{cid}/abilities")).json()
+    fire = next(x for x in catalogo if x["vfx_type"] == "fire")
+    char = (await client.post(f"/api/campaigns/{cid}/characters", json={"name": "Maga"})).json()
+    res = await client.put(
+        f"/api/campaigns/{cid}/characters/{char['id']}",
+        json={"spells_json": [{k: fire[k] for k in ("id", "name", "description", "level", "cost_pm")}]},
+    )
+    assert res.status_code == 200, res.text
+
+    res = await client.post(
+        f"/api/campaigns/{cid}/abilities/{fire['id']}/use",
+        json={"character_id": char["id"], "from_pos": [1, 0.6, 2], "to_pos": [3, 0.6, 4]},
+    )
+    assert res.status_code == 200, res.text
+    vfx = [payload for campaign_id, payload in emitted if payload.get("type") == "vfx"]
+    assert vfx == [
+        {"type": "vfx", "vfx_type": "fire", "from": [1, 0.6, 2], "to": [3, 0.6, 4]}
+    ]
+
+
+@pytest.mark.asyncio
 async def test_icono_viaja_con_el_catalogo(client):
     """El icono es un campo de la fila compartida, no de la ficha."""
     camp = (await client.post("/api/campaigns", json={"name": "Iconos Camp"})).json()

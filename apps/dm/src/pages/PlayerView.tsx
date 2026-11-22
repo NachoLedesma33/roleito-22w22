@@ -1156,9 +1156,12 @@ export default function PlayerView() {
         const url = staticUrl(spell.audio_path);
         if (url) void new Audio(url).play().catch(() => {});
       }
+      const sceneChar = data.characters.find((c) => c.id === mySceneCharId);
+      const pos = wasdTargetRef.current ?? sceneChar;
+      const point: [number, number, number] = pos ? [pos.x, 0.6, pos.z] : [0, 0.6, 0];
       setUsingSpellId(spell.id);
       try {
-        const used = await api.abilities.use(data.campaign_id, spell.id, myChar.id);
+        const used = await api.abilities.use(data.campaign_id, spell.id, myChar.id, { from: point, to: point });
         setMyChar(used.character);
       } catch {
         // sin respuesta no hay nada que descontar: la ficha queda como estaba

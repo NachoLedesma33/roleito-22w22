@@ -184,6 +184,8 @@ export interface Spell {
   icon: string | null;
   /** path absoluto del sonido que reproduce el botón Usar, o null. */
   audio_path: string | null;
+  /** slug de VfxType; null = la habilidad no dispara efecto visual. */
+  vfx_type?: string | null;
 }
 
 /** Habilidad del catálogo de campaña. `owners` = cuántas fichas la saben. */
@@ -797,10 +799,22 @@ export const api = {
     },
     clearAudio: (campaignId: string, abilityId: string) =>
       request<Spell>(`/campaigns/${campaignId}/abilities/${abilityId}/audio`, { method: 'DELETE' }),
-    use: (campaignId: string, abilityId: string, characterId: string) =>
+    use: (
+      campaignId: string,
+      abilityId: string,
+      characterId: string,
+      pos?: { from: [number, number, number]; to: [number, number, number] },
+    ) =>
       request<{ character: Character; event_id: string | null }>(
         `/campaigns/${campaignId}/abilities/${abilityId}/use`,
-        { method: 'POST', body: JSON.stringify({ character_id: characterId }) },
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            character_id: characterId,
+            from_pos: pos?.from,
+            to_pos: pos?.to,
+          }),
+        },
       ),
     remove: (campaignId: string, abilityId: string) =>
       request<{ status: string; id: string }>(`/campaigns/${campaignId}/abilities/${abilityId}`, {
