@@ -40,6 +40,11 @@ import { staticUrl } from '@/lib/staticUrl';
 import { type VfxType } from '@/lib/vfxParticles';
 
 const API_BASE = '/api';
+const vfxFingerprint = (type: VfxType, from: [number, number, number], to: [number, number, number]) =>
+  `${type}|${from[0].toFixed(3)}|${from[2].toFixed(3)}|${to[0].toFixed(3)}|${to[2].toFixed(3)}`;
+const LOS_MAX_GRID = 800;
+const losResolution = (visionRange: number, mapW: number, mapH: number) =>
+  Math.max(visionRange <= 8 ? 0.08 : visionRange <= 16 ? 0.12 : 0.18, Math.max(mapW, mapH) / LOS_MAX_GRID);
 const VIDA_LABELS: Record<string, string> = {
   vigor: 'V',
   intelligence: 'I',
@@ -196,6 +201,7 @@ export default function PlayerView() {
   const [imageAspect, setImageAspect] = useState(1);
   const [markers, setMarkers] = useState<Array<{ id: number; x: number; z: number; color: string }>>([]);
   const [vfx, setVfx] = useState<Array<{ id: number; type: VfxType; from: [number, number, number]; to: [number, number, number]; startedAt: number; duration: number }>>([]);
+  const localVfxEchoRef = useRef<Map<string, number>>(new Map());
   const [vfxMenuOpen, setVfxMenuOpen] = useState(false);
   const [pendingVfx, setPendingVfx] = useState<VfxType | null>(null);
   const [assetRefreshKey, setAssetRefreshKey] = useState(0);
@@ -221,7 +227,15 @@ export default function PlayerView() {
     setMarkers((prev) => [...prev, { id, x: m.x, z: m.z, color: m.color ?? '#facc15' }]);
     window.setTimeout(() => setMarkers((prev) => prev.filter((p) => p.id !== id)), m.ttl_ms ?? 3000);
   }, onVfx: (v) => {
-    const effect = { id: Date.now(), type: v.type as VfxType, from: v.from, to: v.to, startedAt: performance.now(), duration: 1500 };
+    const from = v.from;
+    const to = v.to;
+    const key = vfxFingerprint(v.type as VfxType, from, to);
+    const echoedAt = localVfxEchoRef.current.get(key);
+    if (echoedAt && Date.now() - echoedAt < 3000) {
+      localVfxEchoRef.current.delete(key);
+      return;
+    }
+    const effect = { id: Date.now(), type: v.type as VfxType, from, to, startedAt: performance.now(), duration: 1500 };
     setVfx((prev) => [...prev, effect]);
     window.setTimeout(() => setVfx((prev) => prev.filter((e) => e.id !== effect.id)), 2000);
   }, onAssetShared: () => {
@@ -561,7 +575,7 @@ export default function PlayerView() {
         range: visionRange,
         dimRange: visionType === 'normal' ? visionRange * 0.5 : 0,
       }]
-      const res = visionRange <= 8 ? 0.08 : visionRange <= 16 ? 0.12 : 0.18
+      const res = losResolution(visionRange, mapW, mapH)
       const jobId = (last?.jobId ?? 0) + 1
       lastLosRef.current = { x: pos.x, z: pos.z, sig: sigLine, jobId }
       const job: LosJob = {
@@ -619,8 +633,8 @@ export default function PlayerView() {
       const sc = d.characters.find((ch) => ch.entity_id === c.id)
       if (!sc) return
       const visionRange = sc.vision_range ?? 6
-      const res = visionRange <= 8 ? 0.08 : visionRange <= 16 ? 0.12 : 0.18
       const { w: mapW, h: mapH } = mapperRef.current
+      const res = losResolution(visionRange, mapW, mapH)
       void api.campaigns
         .publishReveal(code ?? '', {
           player_id: c.id,
@@ -865,7 +879,7 @@ export default function PlayerView() {
   // continuo; 40 ms era tan rapido que solo servia para saturar el backend, y con
   // el PATCH a 130 ms terminaba generando trabajo que no salia (ver `sendMove`).
   const MOVE_TICK_MS = 90;
-  const MOVE_SPEED = 0.7;
+  const MOVE_SPEED = 1.0;
 
   useEffect(() => {
     const c = choiceRef.current;
@@ -1490,6 +1504,16 @@ export default function PlayerView() {
                 const attacker = data.characters.find((c) => c.id === mySceneCharId);
                 const target = data.characters.find((c) => c.id === sceneCharId);
                 if (!attacker || !target) return;
+                const from: [number, number, number] = [attacker.x, 0.6, attacker.z];
+                const to: [number, number, number] = [target.x, 0.6, target.z];
+                const effect = { id: Date.now(), type: pendingVfx, from, to, startedAt: performance.now(), duration: 1500 };
+                const now = Date.now();
+                for (const [key, at] of localVfxEchoRef.current) {
+                  if (now - at > 3000) localVfxEchoRef.current.delete(key);
+                }
+                localVfxEchoRef.current.set(vfxFingerprint(pendingVfx, from, to), now);
+                setVfx((prev) => [...prev, effect]);
+                window.setTimeout(() => setVfx((prev) => prev.filter((e) => e.id !== effect.id)), 2000);
                 api.campaigns.placeVfxByInvite(code, {
                   type: pendingVfx,
                   from_x: attacker.x,

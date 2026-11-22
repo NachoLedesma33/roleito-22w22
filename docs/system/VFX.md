@@ -1,6 +1,6 @@
 # VFX de habilidades — renderer procedural por habilidad
 
-> Estado: evolución visual de las 36 habilidades implementada en `VfxBurst.tsx`. Contrato funcional y flujo DM→WS→jugador **sin cambios**.
+> Estado: evolución visual de las 36 habilidades implementada en `VfxBurst.tsx`. Contrato funcional sin cambios; el broadcast WS cubre DM→jugador y jugador→DM.
 > Alcance anterior (5 VFX, textura radial por familia, sin luces ni librerías externas): **RESUELTO / SUPERADO**. Se conserva aquí como registro histórico; ya no describe el renderer actual.
 
 ## Contrato `VfxEffect`
@@ -16,7 +16,7 @@ Definido en `apps/dm/src/components/VfxBurst.tsx`. `VfxType` vive en `apps/dm/sr
 | `duration` | `number` | `1500` ms | Fijado en `DmDashboard.tsx` / `PlayerView.tsx`. |
 | `startedAt` | `number \| undefined` | `performance.now()` | Renderer lo ignora: usa su primer frame para absorber latencia del WS. |
 
-## Flujo (congelado, solo lectura)
+## Flujo (DM ↔ jugador)
 
 ```
 DM: menú "Habilidades VFX" (data-anchor="vfx", testid vfx-menu)
@@ -25,11 +25,19 @@ DM: menú "Habilidades VFX" (data-anchor="vfx", testid vfx-menu)
   → POST /api/campaigns/{id}/vfx  { type, from_x, from_z, to_x, to_z }
   → backend/routes.py  → WS { type:'vfx', vfx_type, from:[x,0.6,z], to:[x,0.6,z] }
   → usePlayerSync.ts  → onVfx  → setVfx  [PlayerView.tsx]
-  → SceneRenderer.tsx  → <VfxBurst effect={e} />
+  → SceneRenderer.tsx  → <ScaledVfx> → <VfxBurst effect={e} />
   → cleanup local a los 2000 ms
+
+jugador: menú VFX → setVfx local (inmediato) + api.campaigns.placeVfxByInvite()
+   → POST /api/campaigns/invite/{code}/vfx
+   → backend/routes.py → WS a la sala de campaña
+   → DmDashboard.tsx onmessage → setVfx; descarta el eco de sus propios disparos
+     comparando huella type|from.x|from.z|to.x|to.z (ventana 3 s)
+   → usePlayerSync.ts → onVfx en el jugador; descarta su propio eco con la
+     misma huella (ventana 3 s), así no duplica el efecto ya mostrado localmente
 ```
 
-Archivos funcionales del flujo, **no tocar** en este alcance:
+Archivos funcionales del flujo (contrato congelado):
 `backend/routes.py`, `backend/models.py` (`can_use_vfx`), `backend/database.py`, `backend/schemas.py`,
 `apps/dm/src/lib/usePlayerSync.ts`, `apps/dm/src/pages/DmDashboard.tsx`,
 `apps/dm/src/pages/PlayerView.tsx`, `apps/dm/src/lib/api.ts`.

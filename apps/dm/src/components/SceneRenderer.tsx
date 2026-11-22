@@ -2393,6 +2393,43 @@ function CameraFollow({ x, z }: { x: number; z: number }) {
 
 const groundYRef = { current: 0 };
 
+function vfxEffectScale(effect: VfxEffect, chars: SceneEntity[]): number {
+  const nearest = (x: number, z: number): number => {
+    let best = Infinity;
+    let scale = 1;
+    for (const c of chars) {
+      const d = (c.x - x) ** 2 + (c.z - z) ** 2;
+      if (d < best) {
+        best = d;
+        scale = c.tokenScale ?? 1;
+      }
+    }
+    return scale;
+  };
+  const s = Math.max(
+    nearest(effect.from[0], effect.from[2]),
+    nearest(effect.to[0], effect.to[2]),
+  );
+  return s > 0 ? s : 1;
+}
+
+function ScaledVfx({ effect, offsetY, scale }: { effect: VfxEffect; offsetY: number; scale: number }) {
+  const cx = (effect.from[0] + effect.to[0]) / 2;
+  const cz = (effect.from[2] + effect.to[2]) / 2;
+  const local = useMemo(
+    () => ({
+      from: [(effect.from[0] - cx) / scale, effect.from[1], (effect.from[2] - cz) / scale] as [number, number, number],
+      to: [(effect.to[0] - cx) / scale, effect.to[1], (effect.to[2] - cz) / scale] as [number, number, number],
+    }),
+    [effect.from, effect.to, cx, cz, scale],
+  );
+  return (
+    <group position={[cx, offsetY, cz]} scale={scale}>
+      <VfxBurst effect={{ ...effect, from: local.from, to: local.to }} offsetY={0} sizeScale={scale} />
+    </group>
+  );
+}
+
 const SceneRendererImpl = function SceneRenderer({
   backgroundUrl,
   characters,
@@ -2518,10 +2555,8 @@ const SceneRendererImpl = function SceneRenderer({
     });
 
   const hasGlow = useMemo(
-    () =>
-      (vfx?.length ?? 0) > 0 ||
-      visibleCharsVisual.some((c) => (c.statuses ?? []).some((s) => GLOW_STATUSES.has(s))),
-    [visibleCharsVisual, vfx],
+    () => visibleCharsVisual.some((c) => (c.statuses ?? []).some((s) => GLOW_STATUSES.has(s))),
+    [visibleCharsVisual],
   );
   // El token que sigue la camara, con la posicion YA interpolada (la misma
   // que dibuja el modelo): asi la camara y la ficha van pegadas.
@@ -2650,6 +2685,7 @@ const SceneRendererImpl = function SceneRenderer({
         />
       )}
       <Canvas
+        dpr={readOnly ? [1, 1.5] : [1, 2]}
         camera={{ position: [skin.camera?.x ?? 0, skin.camera?.y ?? 8, skin.camera?.z ?? 8], fov: 50, near: 0.1, far: 1000000 }}
         onCreated={({ gl }) => { gl.setClearColor('#0b1020', 1); }}
         style={{ width: '100%', height: '100%' }}
@@ -2772,7 +2808,7 @@ const SceneRendererImpl = function SceneRenderer({
         </mesh>
       ))}
       {(vfx ?? []).map((e) => (
-        <VfxBurst key={e.id} effect={e} offsetY={tokenOffY} />
+        <ScaledVfx key={e.id} effect={e} offsetY={tokenOffY} scale={vfxEffectScale(e, characters)} />
       ))}
       {visibleCharsVisual.map((ch) => {
         const isMovable = movableEntityIds

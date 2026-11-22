@@ -81,6 +81,8 @@ const MELEE_RANGE_FALLBACK = 20;
 const MELEE_LUNGE_MIN_MS = 320;
 const MELEE_LUNGE_MAX_MS = 780;
 const meleeRangeUnits = (gridSize: number) => gridSize > 0 ? gridSize * MELEE_RANGE_SQUARES : MELEE_RANGE_FALLBACK;
+const vfxFingerprint = (type: VfxType, from: [number, number, number], to: [number, number, number]) =>
+  `${type}|${from[0].toFixed(3)}|${from[2].toFixed(3)}|${to[0].toFixed(3)}|${to[2].toFixed(3)}`;
 
 const VFX_GROUPS: Array<{ label: string; color: string; items: Array<[VfxType, string]> }> = [
   {
@@ -165,6 +167,7 @@ export default function DmDashboard() {
   const [sheetTokenId, setSheetTokenId] = useState<string | null>(null);
   const [markers, setMarkers] = useState<Array<{ id: number; x: number; z: number; color: string; ttl: number }>>([]);
   const [vfx, setVfx] = useState<Array<{ id: number; type: VfxType; from: [number, number, number]; to: [number, number, number]; startedAt: number; duration: number }>>([]);
+  const localVfxEchoRef = useRef<Map<string, number>>(new Map());
   const [pendingVfx, setPendingVfx] = useState<VfxType | null>(null);
   const [vfxMenuOpen, setVfxMenuOpen] = useState(false);
   const [lungeOverrides, setLungeOverrides] = useState<Record<string, { x: number; z: number; baseX: number; baseZ: number }>>({});
@@ -457,6 +460,9 @@ export default function DmDashboard() {
              z?: number;
              color?: string;
              ttl_ms?: number;
+             vfx_type?: string;
+             from?: [number, number, number];
+             to?: [number, number, number];
           };
           // Camino barato: un token se movio. Antes esto caia al `revision` y
           // hacia `GET /scenes/{id}/characters` por cada tick de teclado.
@@ -486,6 +492,19 @@ export default function DmDashboard() {
             const m = { id: Date.now(), x: msg.x ?? 0, z: msg.z ?? 0, color: msg.color ?? '#facc15', ttl: msg.ttl_ms ?? 3000 };
             setMarkers((prev) => [...prev, m]);
             window.setTimeout(() => setMarkers((prev) => prev.filter((p) => p.id !== m.id)), m.ttl);
+          } else if (msg.type === 'vfx') {
+            const type = (msg.vfx_type ?? 'fire') as VfxType;
+            const from = msg.from ?? ([0, 0.6, 0] as [number, number, number]);
+            const to = msg.to ?? ([0, 0.6, 0] as [number, number, number]);
+            const key = vfxFingerprint(type, from, to);
+            const echoedAt = localVfxEchoRef.current.get(key);
+            if (echoedAt && Date.now() - echoedAt < 3000) {
+              localVfxEchoRef.current.delete(key);
+              return;
+            }
+            const effect = { id: Date.now(), type, from, to, startedAt: performance.now(), duration: 1500 };
+            setVfx((prev) => [...prev, effect]);
+            window.setTimeout(() => setVfx((prev) => prev.filter((e) => e.id !== effect.id)), 2000);
           }
         } catch {
           // mensaje no JSON: ignorar
@@ -1721,6 +1740,11 @@ const startFogMode = useCallback(() => {
             [attacker.id]: { x: attacker.x, z: attacker.z, baseX: attacker.x, baseZ: attacker.z },
           }));
         }
+        const now = Date.now();
+        for (const [key, at] of localVfxEchoRef.current) {
+          if (now - at > 3000) localVfxEchoRef.current.delete(key);
+        }
+        localVfxEchoRef.current.set(vfxFingerprint(effect.type, effect.from, effect.to), now);
         setVfx((prev) => [...prev, effect]);
         window.setTimeout(() => setVfx((prev) => prev.filter((e) => e.id !== effect.id)), 2000);
         if (campaignId) {

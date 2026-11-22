@@ -1011,8 +1011,8 @@ function buildRibbon(strand: number): Ribbon {
   return { geometry, positions, glowGeometry, glowPositions, core, glow, coreMesh, glowMesh, strand };
 }
 
-export function VfxBurst({ effect, offsetY = 0 }: { effect: VfxEffect; offsetY?: number }) {
-  const startedRef = useRef<number | null>(null);
+export function VfxBurst({ effect, offsetY = 0, sizeScale = 1 }: { effect: VfxEffect; offsetY?: number; sizeScale?: number }) {
+  const startedRef = useRef<number | null>(effect.startedAt ?? null);
   const soundPlayedRef = useRef(false);
   const camera = useThree((s) => s.camera);
   const size = useThree((s) => s.size);
@@ -1217,7 +1217,7 @@ export function VfxBurst({ effect, offsetY = 0 }: { effect: VfxEffect; offsetY?:
       layer.geometry.attributes.aAge.needsUpdate = true;
       layer.geometry.attributes.aSize.needsUpdate = true;
       layer.geometry.attributes.aRot.needsUpdate = true;
-      layer.material.uniforms.uPixelScale.value = pixelScale;
+      layer.material.uniforms.uPixelScale.value = pixelScale * sizeScale;
     }
 
     if (engine.ribbons.length) {
