@@ -551,4 +551,23 @@ test.describe('Player View', () => {
     }));
     expect(raw.visible / raw.total).toBeGreaterThan(0.02);
   });
+
+  test('PV17: HUD de personajes se minimiza y se reabre', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    await setupActiveSceneWithTokens(request, campaign.id);
+    const code = await generateInviteCode(request, campaign.id);
+    await page.goto(`/campaigns/join/${code}`);
+    await page.getByRole('button', { name: 'Entrar como espectador' }).click();
+
+    await expect(page.getByTestId('on-scene-list')).toContainText('Aria');
+    await page.getByTestId('on-scene-list-minimize').click();
+    await expect(page.getByTestId('on-scene-list')).toHaveCount(0);
+    await expect(page.getByTestId('on-scene-list-reopen')).toContainText('En escena (2)');
+    await page.getByTestId('on-scene-list-reopen').click();
+    await expect(page.getByTestId('on-scene-list')).toContainText('Aria');
+    await expect(page.getByTestId('on-scene-list-reopen')).toHaveCount(0);
+  });
 });

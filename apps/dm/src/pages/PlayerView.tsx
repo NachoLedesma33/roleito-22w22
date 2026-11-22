@@ -5,7 +5,7 @@ import AudioSettingsMenu from '@/components/AudioSettingsMenu';
 import i18n from '@/lib/i18n';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
-import { BookOpen, CalendarDays, Dices, Flame, Flashlight, FolderOpen, Target, Volume2, VolumeX, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, RotateCcw, RotateCw, Printer, Download, Activity, Package, Sparkles, Image as ImageIcon, StickyNote } from 'lucide-react';
+import { BookOpen, CalendarDays, Dices, Flame, Flashlight, FolderOpen, Target, Volume2, VolumeX, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, RotateCcw, RotateCw, Printer, Download, Activity, Package, Sparkles, Image as ImageIcon, StickyNote, ChevronDown, Users } from 'lucide-react';
 import * as THREE from 'three';
 import SceneRenderer from '@/components/SceneRenderer';
 import AssetTray from '@/components/AssetTray';
@@ -203,6 +203,7 @@ export default function PlayerView() {
   const [vfx, setVfx] = useState<Array<{ id: number; type: VfxType; from: [number, number, number]; to: [number, number, number]; startedAt: number; duration: number }>>([]);
   const localVfxEchoRef = useRef<Map<string, number>>(new Map());
   const [vfxMenuOpen, setVfxMenuOpen] = useState(false);
+  const [onSceneMinimized, setOnSceneMinimized] = useState(false);
   const [pendingVfx, setPendingVfx] = useState<VfxType | null>(null);
   const [assetRefreshKey, setAssetRefreshKey] = useState(0);
   const handleAspectChange = useCallback((a: number) => {
@@ -1609,9 +1610,31 @@ export default function PlayerView() {
 
 
 
-        {data.characters.length > 0 && (
+        {data.characters.length > 0 && (onSceneMinimized ? (
+          <button
+            type="button"
+            onClick={() => setOnSceneMinimized(false)}
+            aria-label={t('pv.showOnScene', 'Mostrar personajes en escena')}
+            data-testid="on-scene-list-reopen"
+            className="absolute bottom-4 right-4 z-10 flex items-center gap-1.5 rounded-lg border border-subtle bg-surface px-2.5 py-1.5 text-[10px] text-white shadow-lg max-sm:bottom-auto max-sm:top-16 max-sm:right-2"
+          >
+            <Users className="h-3.5 w-3.5 text-[var(--accent)]" />
+            {t('dm.onScene', 'En escena ({{n}})', { n: data.characters.length })}
+          </button>
+        ) : (
           <div className="absolute bottom-4 right-4 z-10 bg-surface border border-subtle rounded-lg p-2 max-sm:bottom-auto max-sm:top-16 max-sm:right-2 max-sm:max-w-[140px]" data-testid="on-scene-list">
-            <p className="text-[10px] text-white mb-1 px-1">{t('dm.onScene', 'En escena ({{n}})', { n: data.characters.length })}</p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-[10px] text-white px-1 flex-1">{t('dm.onScene', 'En escena ({{n}})', { n: data.characters.length })}</p>
+              <button
+                type="button"
+                onClick={() => setOnSceneMinimized(true)}
+                aria-label={t('pv.minimizeOnScene', 'Minimizar lista de personajes')}
+                data-testid="on-scene-list-minimize"
+                className="rounded p-1 text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-white"
+              >
+                <ChevronDown className="h-3 w-3" />
+              </button>
+            </div>
             <div className="space-y-0.5">
               {data.characters.map((c) => (
                 <div key={c.id} className="flex items-center gap-1.5 px-1.5 py-0.5 text-xs text-[var(--text-primary)]">
@@ -1626,7 +1649,7 @@ export default function PlayerView() {
               ))}
             </div>
           </div>
-        )}
+        ))}
 
         {vfxAllowed && vfxMenuOpen && (
           <div className="absolute top-4 right-4 z-10 w-64 bg-surface border border-subtle rounded-lg shadow-lg" data-testid="pv-vfx-menu">
