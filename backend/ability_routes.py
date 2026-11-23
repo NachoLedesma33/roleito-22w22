@@ -4,6 +4,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 import os
 from database import get_session
+from base_abilities import seed_base_abilities
 from models import Ability, Campaign, Character, CharacterAbility, Event
 from services.assets import remove_asset_file, save_campaign_file
 from services.vida import apply_vida_response, spell_payload
@@ -50,6 +51,20 @@ async def list_campaign_abilities(
         .order_by(Ability.name)
     )
     return [{**spell_payload(a), "owners": owners} for a, owners in result.all()]
+
+
+@router.post("/campaigns/{campaign_id}/abilities/base-pack")
+async def add_base_abilities(
+    campaign_id: str,
+    db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+):
+    campaign = await db.get(Campaign, campaign_id)
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    added = await seed_base_abilities(db, campaign_id)
+    await db.commit()
+    return {"added": added}
 
 
 @router.delete("/campaigns/{campaign_id}/abilities/{ability_id}")

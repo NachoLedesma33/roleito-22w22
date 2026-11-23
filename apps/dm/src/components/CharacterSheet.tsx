@@ -184,6 +184,9 @@ export default function CharacterSheet({
     handleSaveSpells([...spells, newSpell]);
   };
 
+  const addBasePack = () =>
+    api.abilities.addBasePack(campaignId).then(() => reloadCatalog()).catch(() => {});
+
   const updateSpell = (id: string, field: keyof Spell, value: string | number) => {
     handleSaveSpells(spells.map((s) => (s.id === id ? { ...s, [field]: value } : s)));
   };
@@ -777,6 +780,12 @@ export default function CharacterSheet({
               className="w-full text-[10px] py-1.5 rounded border border-dashed border-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] transition-colors"
             >
               + Agregar conjuro
+            </button>
+            <button
+              onClick={addBasePack}
+              className="w-full text-[10px] py-1.5 rounded border border-dashed border-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] transition-colors"
+            >
+              Agregar pack base
             </button>
 
             {unknownAbilities.length > 0 && (

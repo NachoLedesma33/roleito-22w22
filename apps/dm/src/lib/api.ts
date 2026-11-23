@@ -133,6 +133,8 @@ export interface CampaignExport {
   locations: Record<string, unknown>[];
   events: Record<string, unknown>[];
   relationships: Record<string, unknown>[];
+  abilities?: Record<string, unknown>[];
+  character_abilities?: Record<string, unknown>[];
 }
 
 export interface Character {
@@ -769,6 +771,10 @@ export const api = {
 
   abilities: {
     list: (campaignId: string) => request<CampaignAbility[]>(`/campaigns/${campaignId}/abilities`),
+    addBasePack: (campaignId: string) =>
+      request<{ added: number }>(`/campaigns/${campaignId}/abilities/base-pack`, {
+        method: 'POST',
+      }),
     setIcon: (campaignId: string, abilityId: string, slug: string) =>
       request<Spell>(`/campaigns/${campaignId}/abilities/${abilityId}/icon/${encodeURIComponent(slug)}`, {
         method: 'PUT',

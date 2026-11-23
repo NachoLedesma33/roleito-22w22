@@ -406,6 +406,38 @@ test.describe('Character Sheet HUD', () => {
     }
   });
 
+  test('CS12: agregar pack base repuebla el catálogo de una campaña vacía', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    const initial = (await (
+      await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/abilities`)
+    ).json()) as Array<{ id: string }>;
+    for (const ability of initial) {
+      const del = await request.delete(
+        `http://localhost:8000/api/campaigns/${campaign.id}/abilities/${ability.id}`,
+      );
+      expect(del.status()).toBe(200);
+    }
+
+    const scene = await createScene(request, campaign.id, 'Escena CS12');
+    const char = await createCharacter(request, campaign.id, { name: 'Bruja CS12' });
+    await openSheet(page, campaign.id, scene.id, request, char);
+    await page.getByRole('button', { name: 'Conjuros' }).click();
+
+    const button = page.getByRole('button', { name: 'Agregar pack base' });
+    await expect(button).toBeVisible();
+    await button.click();
+    await expect(page.getByText('Catálogo de la campaña')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('Bola de Fuego', { exact: true })).toBeVisible();
+
+    const after = (await (
+      await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/abilities`)
+    ).json()) as Array<{ vfx_type: string | null }>;
+    expect(after).toHaveLength(36);
+  });
+
   test('CS20: muestra el marco propio animado en la ficha del tablero', async ({ page, campaign, request }) => {
     const scene = await createScene(request, campaign.id, 'Escena Marco');
     const uploaded = await request.post(`http://localhost:8000/api/campaigns/${campaign.id}/assets`, {

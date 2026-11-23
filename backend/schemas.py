@@ -67,6 +67,8 @@ class CampaignExport(BaseModel):
     quests: list[dict] = []
     campaign_calendars: list[dict] = []
     progress_clocks: list[dict] = []
+    abilities: list[dict] = []
+    character_abilities: list[dict] = []
 
 
 class CampaignImport(BaseModel):
@@ -94,6 +96,8 @@ class CampaignImport(BaseModel):
     quests: list[dict] = []
     campaign_calendars: list[dict] = []
     progress_clocks: list[dict] = []
+    abilities: list[dict] = []
+    character_abilities: list[dict] = []
 
 
 class CharacterCreate(BaseModel):

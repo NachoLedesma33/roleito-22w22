@@ -1682,6 +1682,60 @@ async def test_import_sin_fuente_deja_el_path_original(client):
 
 
 @pytest.mark.asyncio
+async def test_export_import_preserva_abilities_y_quien_las_sabe(client):
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Origen"})).json()
+    char = (await client.post(f"/api/campaigns/{camp['id']}/characters", json={"name": "Maga"})).json()
+    spell = {
+        "id": "hechizo-origen",
+        "name": "Rayo propio",
+        "description": "Hecho a mano",
+        "level": 2,
+        "cost_pm": 3,
+        "icon": "lightning",
+        "audio_path": None,
+        "vfx_type": "lightning",
+    }
+    put = await client.put(
+        f"/api/campaigns/{camp['id']}/characters/{char['id']}",
+        json={"spells_json": [spell]},
+    )
+    assert put.status_code == 200, put.text
+
+    export = (await client.get(f"/api/campaigns/{camp['id']}/export")).json()
+    assert [a["id"] for a in export["abilities"]] == [spell["id"]]
+    assert export["abilities"][0]["vfx_type"] == "lightning"
+    assert any(
+        link["entity_id"] == char["id"] and link["ability_id"] == spell["id"]
+        for link in export["character_abilities"]
+    )
+
+    imported = (await client.post("/api/campaigns/import", json={**export, "name": "Copia"})).json()
+    cid = imported["id"]
+    abilities = (await client.get(f"/api/campaigns/{cid}/abilities")).json()
+    assert len(abilities) == 1
+    copied = abilities[0]
+    assert copied["id"] != spell["id"]
+    assert copied["vfx_type"] == "lightning"
+    assert copied["icon"] == "lightning"
+
+    chars = (await client.get(f"/api/campaigns/{cid}/characters")).json()
+    learned = (await client.get(f"/api/campaigns/{cid}/characters/{chars[0]['id']}")).json()
+    assert [s["id"] for s in learned["spells_json"]] == [copied["id"]]
+
+
+@pytest.mark.asyncio
+async def test_agregar_pack_base_a_campana_vieja(client):
+    camp = (await client.post("/api/campaigns", json={"name": "Camp Vieja"})).json()
+    assert (await client.get(f"/api/campaigns/{camp['id']}/abilities")).json() == []
+    first = await client.post(f"/api/campaigns/{camp['id']}/abilities/base-pack")
+    assert first.status_code == 200, first.text
+    assert first.json()["added"] == 36
+    second = await client.post(f"/api/campaigns/{camp['id']}/abilities/base-pack")
+    assert second.json()["added"] == 0
+    assert len((await client.get(f"/api/campaigns/{camp['id']}/abilities")).json()) == 36
+
+
+@pytest.mark.asyncio
 async def test_detect_walls_no_persiste_la_propuesta(client):
     """La detección devuelve una propuesta, no geometría guardada.
 

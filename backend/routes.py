@@ -1195,6 +1195,14 @@ async def export_campaign(
     asset_rows_r = await db.execute(
         select(Asset).where(Asset.campaign_id == campaign_id)
     )
+    abilities = (await db.execute(
+        select(Ability).where(Ability.campaign_id == campaign_id)
+    )).scalars().all()
+    character_abilities_r = await db.execute(
+        select(CharacterAbility).where(
+            CharacterAbility.ability_id.in_([a.id for a in abilities])
+        )
+    )
 
     return CampaignExport(
         campaign=CampaignResponse.model_validate(campaign),
@@ -1218,6 +1226,8 @@ async def export_campaign(
         quests=[to_dict(q) for q in quests_r.scalars().all()],
         campaign_calendars=[to_dict(ca) for ca in calendars_r.scalars().all()],
         progress_clocks=[to_dict(pc) for pc in clocks_r.scalars().all()],
+        abilities=[to_dict(a) for a in abilities],
+        character_abilities=[to_dict(link) for link in character_abilities_r.scalars().all()],
     )
 
 
@@ -1350,6 +1360,36 @@ async def import_campaign(
         db.add(new_npc)
         await db.flush()
         id_map[old_id] = new_npc.id
+
+    ability_map: dict[str, str] = {}
+    for a in data.abilities:
+        old_id = a.get("id", "")
+        new_ability = Ability(
+            campaign_id=campaign.id,
+            name=a.get("name", ""),
+            description=a.get("description", ""),
+            level=a.get("level") or 1,
+            cost_pm=a.get("cost_pm") or 1,
+            icon=imported_path(a.get("icon")),
+            audio_path=imported_path(a.get("audio_path")),
+            vfx_type=a.get("vfx_type") or None,
+        )
+        db.add(new_ability)
+        await db.flush()
+        ability_map[old_id] = new_ability.id
+
+    for link in data.character_abilities:
+        entity_id = id_map.get(link.get("entity_id", ""))
+        ability_id = ability_map.get(link.get("ability_id", ""))
+        if not entity_id or not ability_id:
+            continue
+        db.add(
+            CharacterAbility(
+                entity_type=link.get("entity_type", "character"),
+                entity_id=entity_id,
+                ability_id=ability_id,
+            )
+        )
 
     for loc in data.locations:
         old_id = loc.get("id", "")
