@@ -1,0 +1,27 @@
+{
+  "name": "Roleito - DM",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.11",
+      "installTools": false
+    }
+  },
+  "forwardPorts": [8000, 5173],
+  "portsAttributes": {
+    "5173": {
+      "label": "Roleito frontend",
+      "onAutoForward": "notify"
+    },
+    "8000": {
+      "label": "Roleito backend",
+      "onAutoForward": "silent"
+    }
+  },
+  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y git-lfs && git lfs install && npm ci && python -m pip install -r backend/requirements.txt -r backend/requirements-test.txt && npx playwright install --with-deps chromium",
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python", "dbaeumer.vscode-eslint"]
+    }
+  }
+}

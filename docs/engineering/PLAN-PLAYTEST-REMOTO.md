@@ -455,3 +455,61 @@ haya dominio propio, se agrega ahí (una linea) ✓.
    VPS es la migracion posterior, cuando las partidas sean regulares.
 4. **¿Que falta decidir?** → El **dominio**: hace falta uno (Cloudflare lo
    hospeda en el plan free, pero el dominio se paga aparte: ~€8-15/año).
+
+---
+
+## 13. Otro DM clona y corre la app (devcontainer)
+
+Para que un amigo tenga el codigo en su compu sin pelear con versiones de Node,
+Python ni paths de Windows. El entorno vive en `.devcontainer/devcontainer.json`.
+
+### 13.1 En la compu del amigo, una vez
+
+- Docker Desktop y VS Code con la extension *Dev Containers*.
+- Git con Git LFS (`git lfs install`).
+- Tailscale (plan Personal gratis) con **Funnel habilitado** (se hace una vez,
+  con login). Es lo unico que da URL fija y deja pasar el WS del POV (§12.1).
+
+### 13.2 Clonar (ojo con el bandwidth)
+
+`git clone <repo>` con LFS baja **~978 MB** medidos (dominan los `.glb` de
+`apps/dm/public/room/`). Ese consumo se descuenta del **bandwidth del dueno del
+repo**, no de quien clona (§12). Un par de clones agotan la cuota gratis.
+
+Si no hace falta todo: `GIT_LFS_SKIP_SMUDGE=1 git clone <repo>` y despues
+`git lfs pull --include="ruta/que/falte"`. Sin los `.glb` la app no tiene fondos
+de sala, asi que para jugar de verdad hay que bajarlos.
+
+### 13.3 Abrir y correr
+
+Abrir la carpeta en VS Code → *Reopen in Container*. El contenedor instala Node
+22, Python 3.11, git-lfs, `npm ci`, los requirements y chromium para Playwright.
+La primera vez tarda varios minutos; las siguientes reusan la imagen.
+
+Dentro del contenedor, **dos terminales**:
+
+```bash
+npm run dev:backend:ci          # backend en 8000 (python, sin venv de Windows)
+npm run build:prod && npm run serve:prod   # frontend en 5173
+```
+
+Despues, **en el host** (Tailscale ya logueado):
+
+```bash
+tailscale funnel --bg 5173
+```
+
+Da la URL fija `https://<maquina>.<tailnet>.ts.net`. En el menu "Invitar" se
+pega en "URL publica" y se copia el link con codigo (§12.5).
+
+`npm run playtest` **no sirve adentro del contenedor**: `scripts/playtest.mjs`
+llama a `dev:backend`, que hardcodea `..\venv\Scripts\python.exe` (path de
+Windows). Tampoco hace falta su tunel: Tailscale corre en el host y los puertos
+ya estan reenviados. Si todos estan en la misma wifi alcanza con
+`npm run dev:lan` y no hace falta tunel.
+
+### 13.4 Lo que NO se clona
+
+SQLite, campanas y assets subidos viven en `data/` (ignorado por git): el amigo
+arranca con el mundo vacio. Para "tal cual" hay que copiar `data/` aparte, por
+otro medio (no va en el clon ni en LFS). Lo mismo vale para `tunnel_url.txt`.
