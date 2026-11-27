@@ -320,7 +320,7 @@ export default function Landing() {
                 </Link>
               </nav>
               <a
-                href="https://github.com/NachoLedesma33/roleito-22w22"
+                href="https://github.com/NachoLedesma33/22W22-DnD-VTT"
                 aria-label="GitHub"
                 className={`transition-colors hover:text-ink ${linkFocus}`}
               >

@@ -266,6 +266,11 @@ Componente `Island` reutilizable implementado una vez. Resuelve P1/P10.
 `PinLogin.tsx` se re-estiliza (misma lógica, misma seguridad). Teclado grande tipo llave;
 errores claros (a11y).
 
+- **HECHO 2026-11-27 (`160176e`)**: el fondo de video de `LoginShell` usa
+  `<video autoplay loop muted playsInline>` desde el montaje. Antes `play()` se llamaba al
+  confirmar sesión: el video arrancaba desde cero y rebufferneaba justo al abrirse el portal.
+  Regresión cubierta por `tests/e2e/login.spec.ts` L4.
+
 ### 6.3 Intro / Lobby loader (video)
 
 Al iniciar un perfil (una vez autenticado/elegido):
