@@ -85,6 +85,7 @@ Lista priorizada de mejoras futuras. Cada item: problema → propuesta → notas
 
 - **Problema**: el footer tenia un link `Contacto` que no llevaba a ningun lugar y no habia canal para escribir sin publicar un correo en un repo publico.
 - **Implementacion**: `POST /api/contact` publico con validacion estricta (longitudes, email, sin saltos de linea en cabeceras), honeypot y 3 envios por IP/hora. Guarda en `contact_messages`, devuelve ticket y poda a 90 dias (30 si se marco respondido). El correo a `ROLEITO_CONTACT_EMAIL` sale por SMTP con STARTTLS solo si `ROLEITO_CONTACT_SMTP_ENABLED=1`; las credenciales y el destinatario viven en `.env` (ver `.env.example`).
+- **UI**: `/contact` con campos obligatorios, consentimiento sin pre-marcar, honeypot oculto, avisos de conservación/destinatario/derechos y modal con ticket después del guardado. No hay acuse por correo; el ticket es la prueba de recepción. e2e `C01`-`C03` con la API mockeada.
 - **Aviso legal tecnico (no dictamen)**: el formulario dice para que se usan los datos, quien los recibe, el plazo de conservacion y que no es canal de emergencias. Abogado debe revisar Textos/Terminos antes de publicar.
 
 ## 11. Guía del DM (HECHO 2026-11-27)

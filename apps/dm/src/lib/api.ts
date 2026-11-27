@@ -600,6 +600,22 @@ export type PlayerSceneToken = Pick<
     frame_scale?: number;
   };
 
+export interface ContactInput {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  consent: true;
+  website: string;
+}
+
+export interface ContactReceipt {
+  ok: boolean;
+  stored: boolean;
+  ticket: string | null;
+  email_sent: boolean;
+}
+
 type EventCreateFields = {
   session_id: string;
   type: string;
@@ -1355,6 +1371,13 @@ export const api = {
     },
     clearImage: (campaignId: string, handoutId: string) =>
       request<HandoutResponse>(`/campaigns/${campaignId}/handouts/${handoutId}/image`, { method: 'DELETE' }),
+  },
+  contact: {
+    send: (data: ContactInput) =>
+      request<ContactReceipt>('/contact', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
   },
   calendar: {
     get: (campaignId: string) =>

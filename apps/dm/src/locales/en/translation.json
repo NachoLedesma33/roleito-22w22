@@ -745,6 +745,25 @@
     "opening": "Opening the game...",
     "noOpenGame": "There is no open game. Ask the DM."
   },
+  "contact": {
+    "close": "Close",
+    "consent": "I agree that my data is stored on this server so this enquiry can be answered.",
+    "consentError": "You need to accept consent before sending the message.",
+    "dialogBody": "Your ticket is {{ticket}}. We use it to locate the message. We do not send email acknowledgements.",
+    "dialogTitle": "Message stored",
+    "email": "Email",
+    "error": "Could not send. Please try again later.",
+    "intro": "Questions, bugs or suggestions: this form is not an emergency channel.",
+    "message": "Message",
+    "name": "Name",
+    "notice": "Your message is stored on this server for 90 days (30 if marked as answered). Only the team running Roleito reads it; the destination address is configured on the server and is not published. You can request access, correction or deletion through this same channel. This is not an emergency channel.",
+    "noticeTitle": "How your data is used",
+    "rateLimited": "Too many messages. Please try later.",
+    "sending": "Sending...",
+    "subject": "Subject",
+    "submit": "Send message",
+    "title": "Contact"
+  },
   "dmGuide": {
     "ai": "The AI proposes: it drafts scenes, recaps sessions and suggests events. Everything it writes stays as a PROPOSAL until you approve it. If you configure an external provider, campaign text travels to that service; with a local provider it never leaves your machine. A daily per-campaign budget stops calls before overspending.",
     "canon": "Nothing enters the world without your seal. Events and proposals go through review: PROPOSED → REVIEW → APPROVED or REJECTED. You have the final word, even on AI suggestions. The world stores what is approved and uses it in the next session.",

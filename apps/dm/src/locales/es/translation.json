@@ -745,6 +745,25 @@
     "opening": "Abriendo la partida...",
     "noOpenGame": "No hay ninguna partida abierta. Preguntale al DM."
   },
+  "contact": {
+    "close": "Cerrar",
+    "consent": "Acepto que se guarden mis datos en este servidor para responder esta consulta.",
+    "consentError": "Necesitás aceptar el consentimiento para enviar el mensaje.",
+    "dialogBody": "Tu ticket es {{ticket}}. Lo usamos para ubicar el mensaje. No enviamos acuses por correo.",
+    "dialogTitle": "Mensaje guardado",
+    "email": "Correo electrónico",
+    "error": "No se pudo enviar. Intentá de nuevo más tarde.",
+    "intro": "Consultas, errores o sugerencias: este formulario no es un canal de emergencias.",
+    "message": "Mensaje",
+    "name": "Nombre",
+    "notice": "Tu mensaje se guarda en este servidor durante 90 días (30 si se marca respondido). Solo lo lee el equipo que administra Roleito; la dirección de destino se configura en el servidor y no se publica. Podés pedir acceso, corrección o borrado escribiendo por este mismo canal. No es un canal de emergencias.",
+    "noticeTitle": "Cómo se usan tus datos",
+    "rateLimited": "Demasiados mensajes. Probá más tarde.",
+    "sending": "Enviando...",
+    "subject": "Asunto",
+    "submit": "Enviar mensaje",
+    "title": "Contacto"
+  },
   "dmGuide": {
     "ai": "La IA propone: redacta escenas, resume sesiones y sugiere eventos. Todo lo que escribe queda como PROPUESTA hasta que lo aprobás. Si configurás un proveedor externo, el texto de la campaña viaja a ese servicio; con proveedor local, no sale de tu máquina. El presupuesto diario por campaña corta las llamadas antes de gastar de más.",
     "canon": "Nada entra al mundo sin tu firma. Los eventos y propuestas pasan por revisión: PROPUESTO → REVISIÓN → APROBADO o RECHAZADO. Vos tenés la última palabra, incluso sobre lo que sugiere la IA. El mundo guarda lo aprobado y lo usa en la siguiente sesión.",

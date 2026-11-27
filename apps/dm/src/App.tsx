@@ -44,6 +44,7 @@ const NotFound = lazy(() => import('@/pages/NotFound'));
 const MemoryView = lazy(() => import('@/pages/MemoryView'));
 const PlaceholderPage = lazy(() => import('@/pages/PlaceholderPage'));
 const DmGuide = lazy(() => import('@/pages/DmGuide'));
+const Contact = lazy(() => import('@/pages/Contact'));
 
 function Splash() {
   return (
@@ -93,6 +94,7 @@ function App() {
         <Route path="/" element={<HomeRoute />} />
         <Route path="/login" element={<LoginRoute />} />
         <Route path="/guide" element={<DmGuide />} />
+        <Route path="/contact" element={<Contact />} />
         <Route path="/faq" element={<PlaceholderPage page="faq" />} />
         <Route path="/discord" element={<PlaceholderPage page="discord" />} />
         <Route path="/blog" element={<PlaceholderPage page="blog" />} />
