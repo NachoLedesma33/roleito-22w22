@@ -1,6 +1,6 @@
 # DICE-SYSTEM.md
 
-> Sistema de dados para Roleito.
+> Sistema de dados para 22W22.
 >
 > Permite a jugadores y DM tirar dados personalizados.
 >

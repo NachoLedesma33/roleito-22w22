@@ -2,13 +2,13 @@
 
 ## 1. Overview
 
-Roleito uses a local-first, manifest-driven asset system designed around a single constraint: **all assets must be CC0 or Public Domain**. No freemium assets, no attribution-required content, no non-commercial licenses. Every asset can be used, modified, and redistributed without restriction.
+22W22 uses a local-first, manifest-driven asset system designed around a single constraint: **all assets must be CC0 or Public Domain**. No freemium assets, no attribution-required content, no non-commercial licenses. Every asset can be used, modified, and redistributed without restriction.
 
 The asset system manages three storage pools:
 
 - **Campaign-specific** — `data/campaigns/{id}/assets/` — assets unique to a campaign
 - **Shared** — `data/shared/assets/` — reusable across campaigns
-- **Bundled** — `assets/bundled/` — ships with Roleito
+- **Bundled** — `assets/bundled/` — ships with 22W22
 
 Assets are discovered through JSON manifests that describe each asset's metadata, licensing, and file references. The manifest system enables fast search, filtering, and validation without scanning the filesystem.
 
@@ -188,7 +188,7 @@ When an asset is requested by ID, the system resolves it in this order:
 
 1. **Campaign-specific** — `data/campaigns/{id}/assets/` — highest priority, allows campaign overrides
 2. **Shared** — `data/shared/assets/` — reusable assets available to all campaigns
-3. **Bundled** — `assets/bundled/` — Roleito's default asset library
+3. **Bundled** — `assets/bundled/` — 22W22's default asset library
 4. **External URL** — fallback for remote assets, with disk caching
 
 This hierarchy lets campaigns customize shared assets without modifying the originals. A campaign can override a shared goblin token with its own variant, and all references resolve automatically.
