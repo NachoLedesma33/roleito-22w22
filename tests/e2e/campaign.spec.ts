@@ -555,16 +555,33 @@ test.describe('Campaign Import', () => {
     await page.getByTestId('fichas-toggle').click();
     await expect(page.getByText('Recursos (1)')).toBeVisible({ timeout: 10_000 });
     await page.waitForSelector('canvas', { timeout: 15_000 });
+    const tile = page.getByTestId('dm-resource-asset');
+    await expect
+      .poll(
+        () => tile.locator('img').evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0),
+        { timeout: 10_000 },
+      )
+      .toBe(true);
 
-    const relUrl = `/api/static/${asset.file_path.replace(/\\/g, '/').split('/assets/')[1]}`;
+    const listRes = await request.get(`${BACKEND_URL}/api/campaigns/${camp.id}/assets`, {
+      headers: authHeaders,
+    });
+    expect(listRes.status()).toBe(200);
+    const listed = (await listRes.json()) as { assets: Array<{ asset_id: string; url: string }> };
+    const relUrl = listed.assets.find((a) => a.asset_id === asset.id)!.url;
     let dropped = false;
+    let rawPayload: string | null = null;
+    let dropCanvas = -1;
     for (let attempt = 0; attempt < 10 && !dropped; attempt++) {
-      dropped = await page.evaluate(
-      (payload) => {
+      const result = await page.evaluate(() => {
+        const el = document.querySelector('[data-testid="dm-resource-asset"]') as HTMLElement | null;
+        if (!el) return { accepted: false, raw: null, canvas: -1 };
         const dt = new DataTransfer();
-        dt.setData('roleito/asset', JSON.stringify(payload));
+        el.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt }));
+        const raw = dt.getData('roleito/asset');
         let accepted = false;
-        for (const cv of Array.from(document.querySelectorAll('canvas'))) {
+        let canvas = -1;
+        for (const [idx, cv] of Array.from(document.querySelectorAll('canvas')).entries()) {
           const rect = cv.getBoundingClientRect();
           const clientX = rect.left + rect.width / 2;
           const clientY = rect.top + rect.height / 2;
@@ -572,17 +589,22 @@ test.describe('Campaign Import', () => {
           if (!cv.dispatchEvent(over)) {
             cv.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, clientX, clientY, dataTransfer: dt }));
             accepted = true;
+            canvas = idx;
             break;
           }
           cv.dispatchEvent(new DragEvent('dragleave', { bubbles: true, cancelable: true }));
         }
-        return accepted;
-      },
-      { name: 'Árbol', url: relUrl, assetId: asset.id },
-    );
+        return { accepted, raw, canvas };
+      });
+      rawPayload = result.raw;
+      dropped = result.accepted;
+      dropCanvas = result.canvas;
       if (!dropped) await page.waitForTimeout(300);
     }
     expect(dropped).toBe(true);
+    const payload = JSON.parse(rawPayload ?? '{}') as { name: string; url: string; assetId: string };
+    expect(payload.url).toBe(relUrl);
+    expect(payload.assetId).toBe(asset.id);
 
     await page.waitForTimeout(900);
     const itemsRes = await request.get(`${BACKEND_URL}/api/campaigns/${camp.id}/scenes/${scene.id}/items`, {
@@ -596,7 +618,31 @@ test.describe('Campaign Import', () => {
     expect(placed).toBeTruthy();
     expect(placed!.metadata.assetId).toBe(asset.id);
     expect(placed!.image).toContain(relUrl);
-    expect(placed!.name).toBe('Árbol');
+    expect(placed!.name).toBe(asset.name);
+
+    expect(dropCanvas).toBeGreaterThanOrEqual(0);
+    await page.locator('canvas').nth(dropCanvas).dblclick();
+    const quickEdit = page.getByTestId('asset-quick-edit');
+    await expect(quickEdit).toBeVisible({ timeout: 10_000 });
+    await quickEdit.locator('input[type="range"]').focus();
+    await quickEdit.locator('input[type="range"]').press('End');
+    await expect(quickEdit.locator('span.font-mono')).toHaveText('10.0x');
+    await expect
+      .poll(async () => {
+        const res = await request.get(`${BACKEND_URL}/api/campaigns/${camp.id}/scenes/${scene.id}/items`, {
+          headers: authHeaders,
+        });
+        const body = (await res.json()) as { items: Array<{ metadata: { type: string }; scale: number }> };
+        return body.items.find((i) => i.metadata?.type === 'image')?.scale;
+      }, { timeout: 10_000 })
+      .toBe(10);
+
+    await page.setInputFiles('[data-testid="dm-assets-import-input"]', {
+      name: 'importado.png',
+      mimeType: 'image/png',
+      buffer: PNG_1PX,
+    });
+    await expect(page.getByText('Recursos (2)')).toBeVisible({ timeout: 15_000 });
 
     await request.delete(`${BACKEND_URL}/api/campaigns/${camp.id}`, {
       headers: authHeaders,

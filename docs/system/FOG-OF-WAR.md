@@ -121,6 +121,10 @@ area_visibility:
 └─────────────────────────────────────────┘
 ```
 
+### Mostrar mapa a los jugadores
+
+El panel `Capas y niebla` tiene `Mostrar mapa a los jugadores` / `Ocultar mapa a los jugadores`. Prende un item de niebla con id `fog-reveal-all-map`, modo `reveal` y polígono normalizado `[0,0, 1,0, 1,1, 0,1]` insertado **primero** en `items_json`. `buildDmFogGrid` respeta el primer rol por celda, así que el reveal cubre cubierturas y secretos ya pintados; el jugador ve el mapa completo aunque no tenga luz ni visión. Apagarlo quita el item y restaura la percepción normal. No hay columna nueva ni flag de escena: usa el mismo contrato de niebla que el pincel.
+
 ---
 
 ## Object Visibility Control

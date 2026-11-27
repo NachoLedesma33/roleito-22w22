@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, Suspense, useCallback, useMemo } from 'rea
 import { useTranslation } from 'react-i18next';
 import i18n from '@/lib/i18n';
 import { useParams, Link } from 'react-router-dom';
-import { api, Campaign, Scene, SceneCharacter, Character, NPC, Map as GameMap, LightRequest, Asset, type SharedAudioTrack } from '@/lib/api';
+import { api, Campaign, Scene, SceneCharacter, Character, NPC, Map as GameMap, LightRequest, type SharedAudioTrack } from '@/lib/api';
 import { SceneItem, ZoneMetadata, SceneLayer, PortalRef } from '@core/domain/types';
 import { useSceneGraph } from '@/lib/useSceneGraph';
 import { useWallDetection } from '@/lib/useWallDetection';
@@ -74,13 +74,14 @@ import AssetTray from '@/components/AssetTray';
 import ToolButton from '@/components/ui/ToolButton';
 import IconButton from '@/components/ui/IconButton';
 import { staticUrl } from '@/lib/staticUrl';
-import { Dices, Swords, NotebookPen, ClipboardList, CalendarDays, ScrollText, FolderOpen, Map as MapIcon, Bot, MessageCircle, Zap, BookOpen, StickyNote, LayoutGrid, Brush, SquareDashed, PaintBucket, Undo2, Redo2, CloudSun, Settings, ImagePlus, Wand2, Square, Mountain, ChevronDown, Users, Layers, Lightbulb, Trash, Sparkles, CircleDot, Eye, EyeOff, Package } from 'lucide-react';
+import { Dices, Swords, NotebookPen, ClipboardList, CalendarDays, ScrollText, FolderOpen, Map as MapIcon, Bot, MessageCircle, Zap, BookOpen, StickyNote, LayoutGrid, Brush, SquareDashed, PaintBucket, Undo2, Redo2, CloudSun, Settings, ImagePlus, Wand2, Square, Mountain, ChevronDown, Users, Layers, Lightbulb, Trash, Sparkles, CircleDot, Eye, EyeOff, Package, Upload } from 'lucide-react';
 
 const MELEE_RANGE_SQUARES = 4;
 const MELEE_RANGE_FALLBACK = 20;
 const MELEE_LUNGE_MIN_MS = 320;
 const MELEE_LUNGE_MAX_MS = 780;
 const meleeRangeUnits = (gridSize: number) => gridSize > 0 ? gridSize * MELEE_RANGE_SQUARES : MELEE_RANGE_FALLBACK;
+const REVEAL_ALL_FOG_ID = 'fog-reveal-all-map';
 const vfxFingerprint = (type: VfxType, from: [number, number, number], to: [number, number, number]) =>
   `${type}|${from[0].toFixed(3)}|${from[2].toFixed(3)}|${to[0].toFixed(3)}|${to[2].toFixed(3)}`;
 
@@ -129,7 +130,7 @@ export default function DmDashboard() {
   const { id: campaignId } = useParams<{ id: string }>();
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [scenes, setScenes] = useState<Scene[]>([]);
-  const [assets, setAssets] = useState<Asset[]>([]);
+  const [assets, setAssets] = useState<Array<{ asset_id: string; name: string; type: string; url: string }>>([]);
   const [frameAssets, setFrameAssets] = useState<Array<{ asset_id: string; url: string; type: string; category?: string }>>([]);
   const [activeScene, setActiveScene] = useState<Scene | null>(null);
   const [sceneChars, setSceneChars] = useState<SceneCharacter[]>([]);
@@ -256,6 +257,7 @@ export default function DmDashboard() {
   const [distanceTo, setDistanceTo] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
   const [tokenQuickEdit, setTokenQuickEdit] = useState<{ sceneCharId: string; x: number; y: number } | null>(null);
+  const [assetQuickEdit, setAssetQuickEdit] = useState<{ itemId: string; x: number; y: number } | null>(null);
   const [lightRequests, setLightRequests] = useState<LightRequest[]>([]);
   const { toasts: toastQueue, push, pushMany, dismiss } = useToastQueue();
   /**
@@ -353,6 +355,9 @@ export default function DmDashboard() {
   } | null>(null);
   const [bgCSS, setBgCSS] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const assetFileInput = useRef<HTMLInputElement>(null);
+  const lastPointerRef = useRef({ x: 0, y: 0 });
+  const lastItemClickRef = useRef<{ id: string; at: number } | null>(null);
   // La marca de la ultima tirada vista. Arranca en AHORA (no en 0): con 0 el
   // primer poll traia TODAS las tiradas guardadas y el DM veia, al entrar a
   // la campana, un aluvion de toasts de partidas anteriores. El historial
@@ -385,7 +390,7 @@ export default function DmDashboard() {
       api.characters.list(campaignId).catch(() => []),
       api.npcs.list(campaignId).catch(() => []),
       api.maps.list(campaignId).catch(() => []),
-      api.assets.list(campaignId).catch(() => []),
+      api.campaigns.listAssets(campaignId).catch(() => ({ assets: [] })),
     ])
       .then(([c, sc, chars, npcList, mapList, assetList]) => {
         setCampaign(c);
@@ -393,7 +398,7 @@ export default function DmDashboard() {
         setCharacters(chars);
         setNpcs(npcList);
         setMaps(mapList);
-        setAssets((assetList as { assets?: Asset[] })?.assets ?? []);
+        setAssets(assetList.assets);
         const active = sc.find((s) => s.status === 'active') || sc[0] || null;
         setActiveScene(active);
       })
@@ -877,6 +882,40 @@ const startFogMode = useCallback(() => {
     })
   }, [graphRef, handleItemsChange, push]);
 
+  const revealAllActive = sceneItems.some((item: SceneItem) => item.id === REVEAL_ALL_FOG_ID);
+  const toggleRevealAllFog = useCallback(() => {
+    const items = graphRef.getItems()
+    if (items.some((item: SceneItem) => item.id === REVEAL_ALL_FOG_ID)) {
+      graphRef.removeItem(REVEAL_ALL_FOG_ID)
+    } else {
+      const revealItem: SceneItem = {
+        id: REVEAL_ALL_FOG_ID,
+        name: 'Full map reveal',
+        x: 0,
+        y: 0,
+        zIndex: 0,
+        scale: 1,
+        rotation: 0,
+        width: 0,
+        height: 0,
+        opacity: 1,
+        visible: true,
+        locked: false,
+        disableHit: true,
+        disableAutoZIndex: false,
+        attachmentIds: [],
+        disableAttachmentBehavior: [],
+        layer: SceneLayer.FOG,
+        shape: { type: 'polygon', points: [0, 0, 1, 0, 1, 1, 0, 1], fill: '#000000' },
+        metadata: { type: 'fog', fogType: 'static', mode: 'reveal', revealed: true },
+      }
+      graphRef.clear()
+      graphRef.addItem(revealItem)
+      items.forEach((item: SceneItem) => graphRef.addItem(item))
+    }
+    handleItemsChange(graphRef.getItems())
+  }, [graphRef, handleItemsChange]);
+
   const handleClearAllLights = useCallback(() => {
     const items = graphRef.getItems()
     const toRemove = items.filter(
@@ -1147,6 +1186,15 @@ const startFogMode = useCallback(() => {
       return
     }
     handleDoorItemClick(itemId)
+    const now = Date.now()
+    const prev = lastItemClickRef.current
+    if (prev?.id === itemId && now - prev.at < 400 && graphRef.getItem(itemId)?.metadata.type === 'image') {
+      setTokenQuickEdit(null)
+      setAssetQuickEdit({ itemId, x: lastPointerRef.current.x, y: lastPointerRef.current.y })
+      lastItemClickRef.current = null
+    } else {
+      lastItemClickRef.current = { id: itemId, at: now }
+    }
   }, [attachLightMode, graphRef, handleDoorItemClick])
 
   const handleDoorContextMenu = useCallback((itemId: string, clientX: number, clientY: number) => {
@@ -1991,6 +2039,19 @@ const startFogMode = useCallback(() => {
     handleItemsChange(graphRef.getItems());
   }, [graphRef, handleItemsChange]);
 
+  const handleImportAssets = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = '';
+    if (!campaignId || files.length === 0) return;
+    try {
+      for (const file of files) await api.assets.upload(campaignId, file);
+      const res = await api.campaigns.listAssets(campaignId);
+      setAssets(res.assets);
+    } catch (err) {
+      console.error('Failed to import resources:', err);
+    }
+  }, [campaignId]);
+
   const handleRemoveFromScene = useCallback(async (sceneCharId: string) => {
     if (!campaignId || !activeScene) return;
     const updated = sceneChars.filter((sc) => sc.id !== sceneCharId);
@@ -2161,13 +2222,15 @@ const startFogMode = useCallback(() => {
 
   const quickEditRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!tokenQuickEdit) return;
+    if (!tokenQuickEdit && !assetQuickEdit) return;
     const handleDown = (e: MouseEvent) => {
-      if (quickEditRef.current && !quickEditRef.current.contains(e.target as Node)) setTokenQuickEdit(null);
+      if (quickEditRef.current?.contains(e.target as Node)) return;
+      setTokenQuickEdit(null);
+      setAssetQuickEdit(null);
     };
     document.addEventListener('mousedown', handleDown);
     return () => document.removeEventListener('mousedown', handleDown);
-  }, [tokenQuickEdit]);
+  }, [tokenQuickEdit, assetQuickEdit]);
   useEffect(() => {
     if (tokenQuickEdit && !sceneChars.some((s) => s.id === tokenQuickEdit.sceneCharId)) setTokenQuickEdit(null);
   }, [tokenQuickEdit, sceneChars]);
@@ -2253,6 +2316,7 @@ const startFogMode = useCallback(() => {
   }, [sceneChars, allEntities, handleToggleVisibility, handleRemoveFromScene, graphRef, handleTokenLightAttach, handleTokenLightDetach, handleCreateAndAttachLight, handleToggleStatus, campaignId]);
 
   const handleTokenDoubleClick = useCallback((sceneCharId: string, clientX: number, clientY: number) => {
+    setAssetQuickEdit(null);
     setTokenQuickEdit({ sceneCharId, x: clientX, y: clientY });
   }, []);
 
@@ -2272,8 +2336,9 @@ const startFogMode = useCallback(() => {
         case 'Escape':
           if (viewingMap) {
             setViewingMap(null);
-          } else if (tokenQuickEdit) {
+          } else if (tokenQuickEdit || assetQuickEdit) {
             setTokenQuickEdit(null);
+            setAssetQuickEdit(null);
           } else if (selectedTokenId) {
             setSelectedTokenId(null);
           } else if (showDiceRoller) {
@@ -2351,7 +2416,7 @@ const startFogMode = useCallback(() => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [scenes, activeScene, selectedTokenId, showQuickActions, showSessionLog, showSceneNotes, showDiceRoller, showRecap, showNotebook, showAssistant, showTokenTray, showLayers, viewingMap, tokenQuickEdit, handleRemoveFromScene, setContextMenu]);
+  }, [scenes, activeScene, selectedTokenId, showQuickActions, showSessionLog, showSceneNotes, showDiceRoller, showRecap, showNotebook, showAssistant, showTokenTray, showLayers, viewingMap, tokenQuickEdit, assetQuickEdit, handleRemoveFromScene, setContextMenu]);
 
   // La ficha mira `sheetTokenId` (la que el DM abrio a proposito), no el token
   // merely seleccionado: seleccionar no abre la ficha ✓.
@@ -2368,6 +2433,9 @@ const startFogMode = useCallback(() => {
   const quickEditEntity = quickEditChar
     ? allEntities.find((e) => e.id === quickEditChar.entity_id)
     : null;
+  const quickEditAsset = assetQuickEdit
+    ? sceneItems.find((item) => item.id === assetQuickEdit.itemId)
+    : undefined;
   const quickEditFrameScale =
     quickEditEntity && !quickEditEntity.model_path && quickEditEntity.frame && quickEditEntity.frame !== 'none'
       ? (((quickEditEntity.visual_config_json?.frame as { scale?: number } | undefined)?.scale) ?? 1)
@@ -2470,7 +2538,10 @@ const startFogMode = useCallback(() => {
   const weatherIntensityK = clampWeatherIntensity(activeScene?.weather_intensity);
 
   return (
-    <div className="h-full flex flex-col bg-black overflow-hidden select-none">
+    <div
+      className="h-full flex flex-col bg-black overflow-hidden select-none"
+      onClickCapture={(e) => { lastPointerRef.current = { x: e.clientX, y: e.clientY }; }}
+    >
       <h1 className="sr-only">{t('dm.tableTitle', 'Mesa de juego')}</h1>
       <TopBar
         title={campaign.name}
@@ -3540,6 +3611,18 @@ const startFogMode = useCallback(() => {
             active={zoneFogActive}
             onClick={startZoneFogMode}
           />
+          <ToolButton
+            icon={revealAllActive ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            label={revealAllActive
+              ? t('dm.hideWholeMap', 'Ocultar mapa a los jugadores')
+              : t('dm.showWholeMap', 'Mostrar mapa a los jugadores')}
+            title={revealAllActive
+              ? t('dm.hideWholeMapHint', 'Los jugadores vuelven a ver solo su percepción')
+              : t('dm.showWholeMapHint', 'Los jugadores ven todo el mapa, sin niebla')}
+            active={revealAllActive}
+            testId="reveal-all-map"
+            onClick={toggleRevealAllFog}
+          />
           <div className="my-2 border-t border-[var(--bg-tertiary)]" />
           <button
             onClick={handleClearAllFog}
@@ -3970,34 +4053,54 @@ const startFogMode = useCallback(() => {
             )}
 
             {/* Recursos del DM — arrastrá al mapa para colocar */}
+            <div className="flex items-center justify-between mt-2 px-1">
+              <p className="text-[10px] text-white">{t('dm.assets', 'Recursos ({{n}})', { n: assets.length })}</p>
+              <button
+                type="button"
+                data-testid="dm-import-assets"
+                onClick={() => assetFileInput.current?.click()}
+                className="flex items-center gap-1 text-[9px] text-white/80 hover:text-white"
+                title={t('dm.importAssetsTitle', 'Importar imágenes como recursos')}
+              >
+                <Upload className="h-3 w-3" aria-hidden="true" />
+                {t('dm.importAssets', 'Importar')}
+              </button>
+              <input
+                ref={assetFileInput}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleImportAssets}
+                data-testid="dm-assets-import-input"
+              />
+            </div>
             {assets.length > 0 && (
-              <>
-                <p className="text-[10px] text-white mb-1 px-1 mt-2">{t('dm.assets', 'Recursos ({{n}})', { n: assets.length })}</p>
-                <div className="grid grid-cols-4 gap-1 max-h-24 overflow-y-auto">
-                  {assets.map((a) => (
-                    <div
-                      key={a.id}
-                      draggable
-                      onDragStart={(e) => {
-                        e.dataTransfer.setData(
-                          'roleito/asset',
-                          JSON.stringify({ name: a.name, url: staticUrl(a.file_path), assetId: a.id }),
-                        );
-                        e.dataTransfer.effectAllowed = 'copy';
-                      }}
-                      className="aspect-square rounded overflow-hidden border border-[var(--bg-tertiary)] hover:border-[var(--accent)] transition-colors cursor-grab"
-                      title={t('dm.assetDrag', '{{name}} (arrastrá al mapa)', { name: a.name })}
-                    >
-                      <img
-                        src={staticUrl(a.file_path)!}
-                        alt={a.name}
-                        className="w-full h-full object-cover"
-                        draggable={false}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </>
+              <div className="grid grid-cols-4 gap-1 max-h-24 overflow-y-auto">
+                {assets.map((a) => (
+                  <div
+                    key={a.asset_id}
+                    data-testid="dm-resource-asset"
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData(
+                        'roleito/asset',
+                        JSON.stringify({ name: a.name, url: a.url, assetId: a.asset_id }),
+                      );
+                      e.dataTransfer.effectAllowed = 'copy';
+                    }}
+                    className="aspect-square rounded overflow-hidden border border-[var(--bg-tertiary)] hover:border-[var(--accent)] transition-colors cursor-grab"
+                    title={t('dm.assetDrag', '{{name}} (arrastrá al mapa)', { name: a.name })}
+                  >
+                    <img
+                      src={a.url}
+                      alt={a.name}
+                      className="w-full h-full object-cover"
+                      draggable={false}
+                    />
+                  </div>
+                ))}
+              </div>
             )}
 
           </HudPanel>}
@@ -4239,6 +4342,38 @@ const startFogMode = useCallback(() => {
               className="w-full h-1 accent-[var(--accent)]"
             />
           </div>
+        </div>
+      )}
+
+      {assetQuickEdit && quickEditAsset && (
+        <div
+          ref={quickEditRef}
+          data-testid="asset-quick-edit"
+          className="fixed z-50 w-56 rounded-lg border border-[var(--bg-tertiary)] bg-[var(--bg-secondary)] px-3 py-2 shadow-xl animate-in fade-in"
+          style={{
+            left: Math.min(assetQuickEdit.x, window.innerWidth - 240),
+            top: Math.max(8, Math.min(assetQuickEdit.y, window.innerHeight - 140)),
+          }}
+        >
+          <p className="text-xs font-semibold text-[var(--text-primary)] mb-2 truncate">{quickEditAsset.name}</p>
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] text-white">{t('dm.resourceSize', 'Tamaño del recurso')}</span>
+            <span className="text-[10px] text-[var(--accent)] font-mono">{quickEditAsset.scale.toFixed(1)}x</span>
+          </div>
+          <input
+            type="range"
+            aria-label={t('dm.resourceSize', 'Tamaño del recurso')}
+            min={0.1}
+            max={10}
+            step={0.1}
+            value={quickEditAsset.scale}
+            onChange={(e) => {
+              const scale = parseFloat(e.target.value);
+              graphRef.updateItem(quickEditAsset.id, { scale });
+              handleItemsChange(graphRef.getItems());
+            }}
+            className="w-full h-1 accent-[var(--accent)]"
+          />
         </div>
       )}
 

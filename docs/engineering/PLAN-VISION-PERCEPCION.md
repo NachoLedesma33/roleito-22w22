@@ -79,6 +79,8 @@ La pregunta era "quién gana cuando la visión topa con la niebla del DM". La re
 
 **Por qué el default es "Cubrir"**: es el comportamiento actual (no hay regresión) y el que menos surprising para el jugador.
 
+**Excepción (2026-11-22)**: `Mostrar mapa a los jugadores` del panel `Capas y niebla` sí es global, pero no es una bandera: crea un item de reveal a pantalla completa (`fog-reveal-all-map`) al frente de `items`, así que usa el mismo rol por celda de §4.1. Sirve para campañas sin niebla y no multiplica los tres modos.
+
 ---
 
 ## 4. Arquitectura del cambio

@@ -535,4 +535,55 @@ test.describe('Fog (Phase D)', () => {
       .poll(async () => pixelBrightness(await readViewPixel(page, 0.5, 0.5)), { timeout: 20_000 })
       .toBeLessThan(90);
   });
+
+  test('F10: mostrar mapa revela todo y ocultar restaura la percepción', async ({
+    page,
+    campaign,
+    request,
+  }) => {
+    const scene = await createScene(request, campaign.id, 'Fog Reveal All');
+    const char = await createCharacter(request, campaign.id, { name: 'Vane' });
+    await seedTokens(request, campaign.id, scene.id, [
+      { entityType: 'character', entityId: char.id, x: 0, z: 0, visionType: 'darkvision', visionRange: 14 },
+    ]);
+    await putSceneItems(request, campaign.id, scene.id, [
+      fogPolygon('fog-f10-secret', false, 0.5, 0.5, 0.75, 'secret'),
+    ]);
+    await updateScene(request, campaign.id, scene.id, { status: 'active' });
+    const code = await generateInviteCode(request, campaign.id);
+
+    await openScene(page, campaign.id, scene.id);
+    await page.getByTestId('layers-toggle').click();
+    const putPromise = page.waitForResponse(
+      (res) => res.url().includes(`/scenes/${scene.id}/items`) && res.request().method() === 'PUT',
+      { timeout: 20_000 },
+    );
+    await page.getByTestId('reveal-all-map').click();
+    await putPromise;
+
+    const { items } = await getSceneItems(request, campaign.id, scene.id);
+    expect(items[0].id).toBe('fog-reveal-all-map');
+    expect((items[0].metadata as { mode?: string }).mode).toBe('reveal');
+    expect(items[0].shape?.points).toEqual([0, 0, 1, 0, 1, 1, 0, 1]);
+    await expect(page.getByTestId('reveal-all-map')).toHaveAttribute('aria-pressed', 'true');
+
+    await page.goto(`/campaigns/join/${code}`);
+    await page.getByRole('button', { name: /Vane/ }).click();
+    const mask = page.getByTestId('perception-mask');
+    await expect.poll(async () => Number(await mask.getAttribute('data-cols')), { timeout: 25_000 }).toBeGreaterThan(0);
+    await expect
+      .poll(async () => {
+        const cols = Number(await mask.getAttribute('data-cols'));
+        const rows = Number(await mask.getAttribute('data-rows'));
+        return Number(await mask.getAttribute('data-visible-cells')) === cols * rows;
+      }, { timeout: 25_000 })
+      .toBe(true);
+
+    await page.goto(`/campaigns/${campaign.id}`);
+    await page.getByTestId('layers-toggle').click();
+    await page.getByTestId('reveal-all-map').click();
+    await expect
+      .poll(async () => (await getSceneItems(request, campaign.id, scene.id)).items.some((i) => i.id === 'fog-reveal-all-map'), { timeout: 20_000 })
+      .toBe(false);
+  });
 });
