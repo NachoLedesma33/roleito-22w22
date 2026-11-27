@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Doc-Code Consistency Checker for Roleito.
+Doc-Code Consistency Checker for 22W22.
 
 Scans docs/ and source code for type definitions, checks for:
 1. Naming collisions between docs and code
@@ -221,7 +221,7 @@ def check_frontmatter():
 
 def main():
     print("=" * 60)
-    print("Roleito Doc-Code Consistency Check")
+    print("22W22 Doc-Code Consistency Check")
     print("=" * 60)
 
     code_types = scan_code_types()

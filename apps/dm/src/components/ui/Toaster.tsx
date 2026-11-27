@@ -3,7 +3,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 
 const LIGHT_THEMES = new Set<string>(['vitela'])
 
-/** Toaster de Roleito: mapea el tema de UI a light/dark y usa tokens. */
+/** Toaster de 22W22: mapea el tema de UI a light/dark y usa tokens. */
 export function Toaster(props: ToasterProps) {
   const { theme } = useTheme()
   return (
