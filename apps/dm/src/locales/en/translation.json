@@ -447,6 +447,11 @@
       "rights": "Made for D&D tables."
     },
     "login": "Sign in",
+    "nav": {
+      "contact": "Contact",
+      "faq": "FAQ",
+      "guide": "DM Guide"
+    },
     "subtitle": "A persistent engine for your campaign."
   },
   "lobby": {
@@ -739,5 +744,17 @@
   "join": {
     "opening": "Opening the game...",
     "noOpenGame": "There is no open game. Ask the DM."
+  },
+  "public": {
+    "backHome": "Back home",
+    "soon": "Coming soon",
+    "soonBody": "Nothing here yet. We are building this section; check back soon.",
+    "pages": {
+      "blog": "Blog",
+      "discord": "Discord",
+      "docs": "Documentation",
+      "faq": "FAQ",
+      "news": "News"
+    }
   }
 }

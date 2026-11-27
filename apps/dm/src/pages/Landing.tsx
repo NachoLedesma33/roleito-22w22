@@ -105,9 +105,20 @@ export default function Landing() {
           <img
             src="/ui/logo22w22.webp"
             alt={t('app.name')}
-            className="absolute left-12 top-7 z-10 h-60 w-auto md:h-80"
+            className="absolute left-14 top-7 z-10 h-60 w-auto sm:left-16 md:left-20 md:h-80"
           />
-          <div className="flex justify-end pt-4">
+          <div className="flex items-center justify-end gap-5 pt-4">
+            <nav aria-label={t('landing.footer.resources', 'Recursos')} className="hidden items-center gap-5 text-sm sm:flex">
+              <Link to="/guide" className={`text-ink-muted transition-colors hover:text-ink ${linkFocus}`}>
+                {t('landing.nav.guide', 'Guía del DM')}
+              </Link>
+              <Link to="/faq" className={`text-ink-muted transition-colors hover:text-ink ${linkFocus}`}>
+                {t('landing.nav.faq', 'Preguntas frecuentes')}
+              </Link>
+              <Link to="/contact" className={`text-ink-muted transition-colors hover:text-ink ${linkFocus}`}>
+                {t('landing.nav.contact', 'Contacto')}
+              </Link>
+            </nav>
             <Link
               to="/login"
               className={`rounded-md border border-border px-4 py-2 text-sm text-ink transition-colors hover:bg-surface-2 ${linkFocus}`}
@@ -231,9 +242,9 @@ export default function Landing() {
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="transition-colors hover:text-ink">
+                  <Link to="/news" className={`transition-colors hover:text-ink ${linkFocus}`}>
                     {t('landing.footer.productNews', 'Novedades')}
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </nav>
@@ -244,19 +255,19 @@ export default function Landing() {
               </h2>
               <ul className="mt-4 space-y-2 text-sm text-ink-muted">
                 <li>
-                  <a href="#" className="transition-colors hover:text-ink">
+                  <Link to="/docs" className={`transition-colors hover:text-ink ${linkFocus}`}>
                     {t('landing.footer.resourcesDocs', 'Documentación')}
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a href="#" className="transition-colors hover:text-ink">
+                  <Link to="/guide" className={`transition-colors hover:text-ink ${linkFocus}`}>
                     {t('landing.footer.resourcesGuide', 'Guía del DM')}
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a href="#" className="transition-colors hover:text-ink">
+                  <Link to="/faq" className={`transition-colors hover:text-ink ${linkFocus}`}>
                     {t('landing.footer.resourcesFaq', 'Preguntas frecuentes')}
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </nav>
@@ -267,19 +278,19 @@ export default function Landing() {
               </h2>
               <ul className="mt-4 space-y-2 text-sm text-ink-muted">
                 <li>
-                  <a href="#" className="transition-colors hover:text-ink">
+                  <Link to="/discord" className={`transition-colors hover:text-ink ${linkFocus}`}>
                     {t('landing.footer.communityDiscord', 'Discord')}
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a href="#" className="transition-colors hover:text-ink">
+                  <Link to="/blog" className={`transition-colors hover:text-ink ${linkFocus}`}>
                     {t('landing.footer.communityBlog', 'Blog')}
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a href="#" className="transition-colors hover:text-ink">
+                  <Link to="/contact" className={`transition-colors hover:text-ink ${linkFocus}`}>
                     {t('landing.footer.communityContact', 'Contacto')}
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </nav>
@@ -298,13 +309,13 @@ export default function Landing() {
               >
                 <GitFork className="h-4 w-4" aria-hidden="true" />
               </a>
-              <a
-                href="#"
+              <Link
+                to="/contact"
                 aria-label={t('landing.footer.contact', 'Contacto')}
                 className={`transition-colors hover:text-ink ${linkFocus}`}
               >
                 <Mail className="h-4 w-4" aria-hidden="true" />
-              </a>
+              </Link>
             </div>
           </div>
         </div>

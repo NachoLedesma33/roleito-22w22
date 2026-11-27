@@ -42,6 +42,7 @@ const TTSPanel = lazy(() => import('@/pages/TTSPanel'));
 const WorldStateView = lazy(() => import('@/pages/WorldStateView'));
 const NotFound = lazy(() => import('@/pages/NotFound'));
 const MemoryView = lazy(() => import('@/pages/MemoryView'));
+const PlaceholderPage = lazy(() => import('@/pages/PlaceholderPage'));
 
 function Splash() {
   return (
@@ -90,6 +91,11 @@ function App() {
         {/* Public entry: landing pre-login + PIN login */}
         <Route path="/" element={<HomeRoute />} />
         <Route path="/login" element={<LoginRoute />} />
+        <Route path="/faq" element={<PlaceholderPage page="faq" />} />
+        <Route path="/discord" element={<PlaceholderPage page="discord" />} />
+        <Route path="/blog" element={<PlaceholderPage page="blog" />} />
+        <Route path="/news" element={<PlaceholderPage page="news" />} />
+        <Route path="/docs" element={<PlaceholderPage page="docs" />} />
 
         {/* DM routes — protected by PIN auth */}
         <Route element={<AuthGuard />}>

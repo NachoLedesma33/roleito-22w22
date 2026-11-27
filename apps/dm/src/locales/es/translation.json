@@ -447,6 +447,11 @@
       "rights": "Hecho para mesas de D&D."
     },
     "login": "Ingresar",
+    "nav": {
+      "contact": "Contacto",
+      "faq": "Preguntas frecuentes",
+      "guide": "Guía del DM"
+    },
     "subtitle": "Un engine persistente para tu campaña."
   },
   "lobby": {
@@ -739,5 +744,17 @@
   "join": {
     "opening": "Abriendo la partida...",
     "noOpenGame": "No hay ninguna partida abierta. Preguntale al DM."
+  },
+  "public": {
+    "backHome": "Volver al inicio",
+    "soon": "En preparación",
+    "soonBody": "Todavía no hay nada acá. Estamos armando esta sección; volvé pronto.",
+    "pages": {
+      "blog": "Blog",
+      "discord": "Discord",
+      "docs": "Documentación",
+      "faq": "Preguntas frecuentes",
+      "news": "Novedades"
+    }
   }
 }
