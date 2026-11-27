@@ -1,4 +1,4 @@
-# Diagnóstico y plan de modularización — Roleito
+# Diagnóstico y plan de modularización — 22W22
 
 **Directiva aplicada:** `docs/ROLEITO_GUIA_MODULARIZACION_ARQUITECTURA.md`  
 **Revisión:** 2da pasada, 2026-10-16. Cada afirmación fue verificada contra el código real (conteo de líneas, grep de símbolos, lectura de archivos).  

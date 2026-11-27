@@ -276,7 +276,7 @@ interface SceneCanvasProps {
 **Expanded state:** Full sidebar with labels:
 ```
 ← Campaigns
-Roleito
+22W22
 ────────────
 ◆ Overview
 ♦ Characters
