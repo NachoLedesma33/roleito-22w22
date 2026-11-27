@@ -39,6 +39,8 @@ interface AuthContextType {
   changePin: (currentPin: string | undefined, newPin: string) => Promise<void>;
   logout: () => Promise<void>;
   logoutAll: () => Promise<void>;
+  exportMyData: () => Promise<unknown>;
+  deleteMyData: () => Promise<void>;
   getToken: () => string | null;
 }
 
@@ -67,6 +69,16 @@ function storeProfile(profile: DMProfile): DMProfile[] {
     profile,
     ...readProfiles().filter((p) => p.id !== profile.id),
   ].slice(0, MAX_PROFILES);
+  try {
+    localStorage.setItem(PROFILES_KEY, JSON.stringify(next));
+  } catch {
+    // localStorage lleno o bloqueado: la lista igual queda en memoria.
+  }
+  return next;
+}
+
+function forgetProfile(dmId: string): DMProfile[] {
+  const next = readProfiles().filter((p) => p.id !== dmId);
   try {
     localStorage.setItem(PROFILES_KEY, JSON.stringify(next));
   } catch {
@@ -202,13 +214,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
   }, []);
 
+  const exportMyData = useCallback(async () => {
+    const token = sessionStorage.getItem('roleito:auth:token');
+    if (!token) throw new Error('No hay sesión activa');
+    const res = await fetch(`${API_BASE}/auth/me/export`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'No se pudo exportar' }));
+      throw new Error(err.detail || 'No se pudo exportar');
+    }
+    return (await res.json()) as unknown;
+  }, []);
+
+  const deleteMyData = useCallback(async () => {
+    const token = sessionStorage.getItem('roleito:auth:token');
+    if (token) {
+      const res = await fetch(`${API_BASE}/auth/me`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ confirmation: 'DELETE' }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: 'No se pudo borrar el perfil' }));
+        throw new Error(err.detail || 'No se pudo borrar el perfil');
+      }
+    }
+    sessionStorage.removeItem('roleito:auth:token');
+    setSession(null);
+    if (session) setProfiles(forgetProfile(session.dm_id));
+  }, [session]);
+
   const getToken = useCallback(() => {
     return sessionStorage.getItem('roleito:auth:token');
   }, []);
 
   return (
     <AuthContext.Provider
-      value={{ session, loading, profiles, login, registerDm, changePin, logout, logoutAll, getToken }}
+      value={{ session, loading, profiles, login, registerDm, changePin, logout, logoutAll, exportMyData, deleteMyData, getToken }}
     >
       {children}
     </AuthContext.Provider>

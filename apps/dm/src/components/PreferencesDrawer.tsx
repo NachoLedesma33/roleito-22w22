@@ -41,7 +41,7 @@ export default function PreferencesDrawer({
 }) {
   const { t, i18n } = useTranslation();
   const { theme, setTheme } = useTheme();
-  const { logoutAll } = useAuth();
+  const { logoutAll, exportMyData, deleteMyData } = useAuth();
   const navigate = useNavigate();
 
   const [language, setLanguage] = useState<Language>(() =>
@@ -52,6 +52,10 @@ export default function PreferencesDrawer({
   const [logoutAllOpen, setLogoutAllOpen] = useState(false);
   const [killing, setKilling] = useState(false);
   const [killError, setKillError] = useState('');
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [privacyError, setPrivacyError] = useState('');
 
   useEffect(() => {
     const el = document.documentElement;
@@ -89,6 +93,42 @@ export default function PreferencesDrawer({
       setKillError(err instanceof Error ? err.message : t('common.error', 'Error'));
     } finally {
       setKilling(false);
+    }
+  };
+
+  const downloadData = async () => {
+    setExporting(true);
+    setPrivacyError('');
+    try {
+      const data = await exportMyData();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `roleito-datos-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setPrivacyError(err instanceof Error ? err.message : t('common.error', 'Error'));
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    setDeleting(true);
+    setPrivacyError('');
+    try {
+      await deleteMyData();
+      setDeleteOpen(false);
+      onOpenChange(false);
+      navigate('/');
+    } catch (err) {
+      setPrivacyError(err instanceof Error ? err.message : t('common.error', 'Error'));
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -185,6 +225,39 @@ export default function PreferencesDrawer({
               {t('settings.logoutAll', 'Cerrar todas las sesiones')}
             </button>
           </div>
+
+          <div className="border-t border-[var(--bg-tertiary)] pt-5" data-testid="privacy-section">
+            <h3 className="text-sm font-semibold text-[var(--text-primary)]">
+              {t('settings.privacyTitle', 'Tus datos')}
+            </h3>
+            <p className="mt-2 text-sm text-[var(--text-secondary)]">
+              {t('settings.privacyBody', 'Descargá tus datos o borrá este perfil. Las campañas de la instalación no se borran.')}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                data-testid="privacy-export-button"
+                disabled={exporting}
+                onClick={() => void downloadData()}
+                className="rounded px-3 py-2 text-sm border border-[var(--bg-tertiary)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors disabled:opacity-60"
+              >
+                {exporting
+                  ? t('settings.exporting', 'Descargando...')
+                  : t('settings.exportData', 'Descargar mis datos')}
+              </button>
+              <button
+                type="button"
+                data-testid="privacy-delete-button"
+                onClick={() => {
+                  setPrivacyError('');
+                  setDeleteOpen(true);
+                }}
+                className="rounded px-3 py-2 text-sm border border-[var(--danger)] text-[var(--danger)] hover:bg-[var(--bg-tertiary)] transition-colors"
+              >
+                {t('settings.deleteData', 'Borrar mi perfil')}
+              </button>
+            </div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
@@ -214,6 +287,36 @@ export default function PreferencesDrawer({
             className="text-sm text-white bg-[var(--accent)] hover:bg-[var(--accent-hover)] rounded px-3 py-1.5 transition-colors disabled:opacity-60"
           >
             {killing ? t('settings.logoutAllWorking', 'Cerrando...') : t('settings.logoutAll', 'Cerrar todas las sesiones')}
+          </button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t('settings.deleteTitle', '¿Borrar tu perfil?')}</DialogTitle>
+          <DialogDescription>
+            {t('settings.deleteDesc', 'Se borran tu perfil y todas sus sesiones. Las campañas de esta instalación siguen existiendo: descargá tus datos antes si querés conservarlas.')}
+          </DialogDescription>
+        </DialogHeader>
+        {privacyError && <p role="alert" className="text-sm text-[var(--danger)]">{privacyError}</p>}
+        <DialogFooter>
+          <button
+            type="button"
+            onClick={() => setDeleteOpen(false)}
+            className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+          >
+            {t('common.cancel')}
+          </button>
+          <button
+            type="button"
+            data-testid="privacy-delete-confirm"
+            disabled={deleting}
+            onClick={() => void confirmDelete()}
+            className="text-sm text-white bg-[var(--danger)] hover:opacity-90 rounded px-3 py-1.5 transition-colors disabled:opacity-60"
+          >
+            {deleting ? t('settings.deleting', 'Borrando...') : t('settings.deleteData', 'Borrar mi perfil')}
           </button>
         </DialogFooter>
       </DialogContent>
