@@ -1,4 +1,4 @@
-# Guía de refactorización arquitectónica y calidad de código para Roleito
+# Guía de refactorización arquitectónica y calidad de código para 22W22
 
 **Tipo:** directiva de ingeniería para agentes de programación  
 **Alcance:** frontend, backend, integración entre capas, pruebas y evolución del proyecto  
@@ -8,7 +8,7 @@
 
 ## 1. Objetivo
 
-Mejorar de forma sostenida la estructura interna de Roleito para que el código sea **modular, legible, cohesivo, reutilizable, testeable y fácil de extender**, evitando duplicación, componentes sobredimensionados, dependencias innecesarias y abstracciones prematuras.
+Mejorar de forma sostenida la estructura interna de 22W22 para que el código sea **modular, legible, cohesivo, reutilizable, testeable y fácil de extender**, evitando duplicación, componentes sobredimensionados, dependencias innecesarias y abstracciones prematuras.
 
 El agente debe revisar el código existente antes de modificarlo y refactorizarlo con cambios pequeños, verificables y compatibles con el comportamiento actual. La meta no es maximizar la cantidad de patrones de diseño, interfaces, carpetas o archivos: es reducir el coste de comprender, probar, corregir y extender el sistema.
 
@@ -25,7 +25,7 @@ Esta directiva abarca, entre otros:
 
 ## 2. Contexto técnico conocido
 
-Roleito es una mesa virtual para campañas de rol, con mapas 2D, escenas, personajes, herramientas de dirección de juego y evolución prevista hacia experiencias 3D.
+22W22 es una mesa virtual para campañas de rol, con mapas 2D, escenas, personajes, herramientas de dirección de juego y evolución prevista hacia experiencias 3D.
 
 Stack conocido:
 
@@ -344,7 +344,7 @@ Si una tarea de análisis, generación o procesamiento puede ser larga, no bloqu
 
 El agente debe seleccionar patrones según el problema concreto, no intentar utilizar todos.
 
-| Patrón / técnica | Aplicación potencial en Roleito | Evitar cuando |
+| Patrón / técnica | Aplicación potencial en 22W22 | Evitar cuando |
 |---|---|---|
 | **Strategy** | Variantes intercambiables de detección, colisión, selección de algoritmo o proveedor | Solo existe una implementación y no se prevén variantes razonables |
 | **Adapter** | Encapsular OpenCV, almacenamiento, API o renderer detrás de un contrato estable | El adaptador solo reenvía llamadas y no reduce acoplamiento |
@@ -586,7 +586,7 @@ El checklist no debe aplicarse mecánicamente para crear archivos o capas que no
 
 ---
 
-## 16. Revisión arquitectónica inicial sugerida para Roleito
+## 16. Revisión arquitectónica inicial sugerida para 22W22
 
 En una primera pasada, inspeccionar —sin asumir de antemano que estén mal diseñados— estos posibles límites:
 

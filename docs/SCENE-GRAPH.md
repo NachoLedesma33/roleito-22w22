@@ -650,7 +650,7 @@ for fog in fogItems:
 
 ## 10. Integration Points
 
-The Scene Graph connects to every major subsystem in Roleito.
+The Scene Graph connects to every major subsystem in 22W22.
 
 ### World State
 
