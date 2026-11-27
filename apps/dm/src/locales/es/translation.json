@@ -739,6 +739,12 @@
     "textSize": "Tamaño de texto",
     "textSmall": "Pequeño",
     "theme": "Tema",
+    "securityBody": "Cerrá todas las sesiones de tu perfil, incluida esta.",
+    "securityTitle": "Seguridad",
+    "logoutAll": "Cerrar todas las sesiones",
+    "logoutAllDesc": "Se cierran todas las pestañas y dispositivos de este perfil, incluida la actual. Necesitás el PIN para volver a entrar.",
+    "logoutAllTitle": "¿Cerrar todas las sesiones?",
+    "logoutAllWorking": "Cerrando...",
     "title": "Ajustes"
   },
   "join": {

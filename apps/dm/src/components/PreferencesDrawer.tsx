@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/Dialog';
+import { useAuth } from '@/contexts/AuthContext';
 import { THEMES, useTheme } from '@/contexts/ThemeContext';
 import { LANGUAGES, type Language } from '@/lib/i18n';
 
@@ -38,12 +41,17 @@ export default function PreferencesDrawer({
 }) {
   const { t, i18n } = useTranslation();
   const { theme, setTheme } = useTheme();
+  const { logoutAll } = useAuth();
+  const navigate = useNavigate();
 
   const [language, setLanguage] = useState<Language>(() =>
     i18n.language === 'en' ? 'en' : 'es'
   );
   const [reduced, setReduced] = useState(() => readStored<string>(REDUCED_KEY, '0') === '1');
   const [textSize, setTextSize] = useState(() => readStored<string>(TEXT_KEY, 'md'));
+  const [logoutAllOpen, setLogoutAllOpen] = useState(false);
+  const [killing, setKilling] = useState(false);
+  const [killError, setKillError] = useState('');
 
   useEffect(() => {
     const el = document.documentElement;
@@ -69,8 +77,24 @@ export default function PreferencesDrawer({
     }
   }, [textSize]);
 
+  const confirmLogoutAll = async () => {
+    setKilling(true);
+    setKillError('');
+    try {
+      await logoutAll();
+      setLogoutAllOpen(false);
+      onOpenChange(false);
+      navigate('/');
+    } catch (err) {
+      setKillError(err instanceof Error ? err.message : t('common.error', 'Error'));
+    } finally {
+      setKilling(false);
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md h-full max-h-full sm:max-h-full rounded-none right-0 left-auto top-0 translate-x-0 -translate-y-0 sm:translate-x-0 sm:translate-y-0 overflow-y-auto max-sm:left-auto max-sm:top-0 max-sm:bottom-auto max-sm:max-h-full">
         <DialogHeader>
           <DialogTitle>{t('settings.title')}</DialogTitle>
@@ -144,8 +168,56 @@ export default function PreferencesDrawer({
               className="w-4 h-4 rounded border-[var(--bg-tertiary)] text-[var(--accent)] focus:ring-[var(--accent)]"
             />
           </label>
+
+          <div className="border-t border-[var(--bg-tertiary)] pt-5">
+            <h3 className="text-sm font-semibold text-[var(--text-primary)]">
+              {t('settings.securityTitle', 'Seguridad')}
+            </h3>
+            <p className="mt-2 text-sm text-[var(--text-secondary)]">
+              {t('settings.securityBody', 'Cerrá todas las sesiones de tu perfil, incluida esta.')}
+            </p>
+            <button
+              type="button"
+              data-testid="logout-all-button"
+              onClick={() => setLogoutAllOpen(true)}
+              className="mt-3 rounded px-3 py-2 text-sm border border-[var(--bg-tertiary)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+            >
+              {t('settings.logoutAll', 'Cerrar todas las sesiones')}
+            </button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
+
+    <Dialog open={logoutAllOpen} onOpenChange={setLogoutAllOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t('settings.logoutAllTitle', '¿Cerrar todas las sesiones?')}</DialogTitle>
+          <DialogDescription>
+            {t('settings.logoutAllDesc', 'Se cierran todas las pestañas y dispositivos de este perfil, incluida la actual. Necesitás el PIN para volver a entrar.')}
+          </DialogDescription>
+        </DialogHeader>
+        {killError && <p role="alert" className="text-sm text-[var(--danger)]">{killError}</p>}
+        <DialogFooter>
+          <button
+            type="button"
+            onClick={() => setLogoutAllOpen(false)}
+            className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+          >
+            {t('common.cancel')}
+          </button>
+          <button
+            type="button"
+            data-testid="logout-all-confirm"
+            disabled={killing}
+            onClick={confirmLogoutAll}
+            className="text-sm text-white bg-[var(--accent)] hover:bg-[var(--accent-hover)] rounded px-3 py-1.5 transition-colors disabled:opacity-60"
+          >
+            {killing ? t('settings.logoutAllWorking', 'Cerrando...') : t('settings.logoutAll', 'Cerrar todas las sesiones')}
+          </button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

@@ -151,10 +151,11 @@ async def delete_session(token: str):
         await db.commit()
 
 
-async def invalidate_all_dm_sessions(dm_id: str):
+async def invalidate_all_dm_sessions(dm_id: str) -> int:
     async with async_session() as db:
-        await db.execute(delete(AuthSession).where(AuthSession.dm_id == dm_id))
+        result = await db.execute(delete(AuthSession).where(AuthSession.dm_id == dm_id))
         await db.commit()
+        return result.rowcount or 0
 
 
 async def get_active_sessions() -> list[dict]:

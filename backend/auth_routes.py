@@ -16,6 +16,7 @@ from auth import (
     get_active_sessions,
     get_current_session,
     get_dm_by_id,
+    invalidate_all_dm_sessions,
     is_any_dm_set,
     kill_session,
     record_failed_attempt,
@@ -194,6 +195,13 @@ async def logout(session: AuthSession = Depends(get_current_session)):
 async def list_sessions(_session: AuthSession = Depends(require_dm)):
     """List active sessions."""
     return await get_active_sessions()
+
+
+@router.delete("/sessions")
+async def kill_all_sessions(session: AuthSession = Depends(require_dm)):
+    """Cierra todas las sesiones de este DM, incluida la actual."""
+    killed = await invalidate_all_dm_sessions(session.dm_id)
+    return {"ok": True, "killed": killed}
 
 
 @router.delete("/sessions/{session_id}")

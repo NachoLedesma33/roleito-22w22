@@ -93,6 +93,12 @@ Lista priorizada de mejoras futuras. Cada item: problema → propuesta → notas
 - **Problema**: el link "Guía del DM" del footer no llevaba a ningún lugar y no había un manual público que explicara qué hace el engine ni dónde están los límites de seguridad.
 - **Implementación**: ruta `/guide` con seis secciones (flujo de sesión, VTT, canon, IA, seguridad, límites) y textos es/en. La seguridad se describe sin ambigüedad: PIN con hash, sesión de 24 horas ligada a la pestaña, lockout tras 5 intentos, invitaciones de 12 horas rotables/revocables, archivos confinados a `data/assets`. Aclara que el texto es técnico, no legal, y que los textos legales necesitan revisión de abogado.
 
+## 12. Cerrar todas las sesiones (HECHO 2026-11-27)
+
+- **Problema**: había cierre Individual (`DELETE /auth/sessions/{id}`) y `change-pin` invalidaba todo, pero el DM no tenía forma de desloguear otras pestañas/dispositivos sin cambiar el PIN.
+- **Implementación**: `DELETE /api/auth/sessions` con `require_dm`, alcance por `dm_id`, incluye la sesión actual. El botón vive en Ajustes → Seguridad con confirmación; el contador de sesiones cerradas se devuelve al cliente. La UI limpia el token local y vuelve a la landing.
+- **Seguridad**: un token de jugador no puede invocarlo (403); sin token da 401; las sesiones de otros DMs no se tocan.
+
 ## Prioridad sugerida
 
 P1: seguridad login, race condition personaje, fluidez movimiento.

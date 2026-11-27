@@ -38,6 +38,7 @@ interface AuthContextType {
   registerDm: (name: string, pin: string) => Promise<void>;
   changePin: (currentPin: string | undefined, newPin: string) => Promise<void>;
   logout: () => Promise<void>;
+  logoutAll: () => Promise<void>;
   getToken: () => string | null;
 }
 
@@ -185,12 +186,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
   }, []);
 
+  const logoutAll = useCallback(async () => {
+    const token = sessionStorage.getItem('roleito:auth:token');
+    if (token) {
+      const res = await fetch(`${API_BASE}/auth/sessions`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: 'No se pudieron cerrar las sesiones' }));
+        throw new Error(err.detail || 'No se pudieron cerrar las sesiones');
+      }
+    }
+    sessionStorage.removeItem('roleito:auth:token');
+    setSession(null);
+  }, []);
+
   const getToken = useCallback(() => {
     return sessionStorage.getItem('roleito:auth:token');
   }, []);
 
   return (
-    <AuthContext.Provider value={{ session, loading, profiles, login, registerDm, changePin, logout, getToken }}>
+    <AuthContext.Provider
+      value={{ session, loading, profiles, login, registerDm, changePin, logout, logoutAll, getToken }}
+    >
       {children}
     </AuthContext.Provider>
   );

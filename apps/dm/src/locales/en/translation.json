@@ -739,6 +739,12 @@
     "textSize": "Text size",
     "textSmall": "Small",
     "theme": "Theme",
+    "securityBody": "Sign out of every session for this profile, including this one.",
+    "securityTitle": "Security",
+    "logoutAll": "Sign out everywhere",
+    "logoutAllDesc": "Every tab and device for this profile is signed out, including this one. You need your PIN to get back in.",
+    "logoutAllTitle": "Sign out everywhere?",
+    "logoutAllWorking": "Signing out...",
     "title": "Settings"
   },
   "join": {
