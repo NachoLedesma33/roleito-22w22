@@ -13,14 +13,14 @@ export default function LegalPage({ kind }: { kind: LegalKind }) {
       title: t('legal.terms.title', 'Términos de uso'),
       intro: t(
         'legal.terms.intro',
-        'Borrador técnico. Define cómo se usa Roleito. Requiere revisión de un abogado antes de publicarse.'
+        'Borrador técnico. Define cómo se usa 22W22. Requiere revisión de un abogado antes de publicarse.'
       ),
       sections: [
         {
-          title: t('legal.terms.scopeTitle', 'Qué es Roleito'),
+          title: t('legal.terms.scopeTitle', 'Qué es 22W22'),
           body: t(
             'legal.terms.scope',
-            'Roleito es un motor local-first para manejar campañas de rol. El DM decide qué entra en la campaña y qué se comparte con los jugadores.'
+            '22W22 es un motor local-first para manejar campañas de rol. El DM decide qué entra en la campaña y qué se comparte con los jugadores.'
           ),
         },
         {
@@ -57,7 +57,7 @@ export default function LegalPage({ kind }: { kind: LegalKind }) {
       title: t('legal.privacy.title', 'Privacidad'),
       intro: t(
         'legal.privacy.intro',
-        'Borrador técnico. Explica qué datos maneja Roleito. Requiere revisión de un abogado antes de publicarse.'
+        'Borrador técnico. Explica qué datos maneja 22W22. Requiere revisión de un abogado antes de publicarse.'
       ),
       sections: [
         {
@@ -71,7 +71,7 @@ export default function LegalPage({ kind }: { kind: LegalKind }) {
           title: t('legal.privacy.contactTitle', 'Formulario de contacto'),
           body: t(
             'legal.privacy.contact',
-            'Nombre, correo, asunto y mensaje se guardan 90 días, o 30 si se marca respondido. Solo los lee el equipo que administra Roleito. No es un canal de emergencias.'
+            'Nombre, correo, asunto y mensaje se guardan 90 días, o 30 si se marca respondido. Solo los lee el equipo que administra 22W22. No es un canal de emergencias.'
           ),
         },
         {
@@ -124,14 +124,14 @@ export default function LegalPage({ kind }: { kind: LegalKind }) {
       title: t('legal.content.title', 'Aviso sobre contenido'),
       intro: t(
         'legal.content.intro',
-        'Borrador técnico. Define responsabilidad sobre el contenido creado en Roleito. Requiere revisión de un abogado antes de publicarse.'
+        'Borrador técnico. Define responsabilidad sobre el contenido creado en 22W22. Requiere revisión de un abogado antes de publicarse.'
       ),
       sections: [
         {
           title: t('legal.content.ownershipTitle', 'Contenido del DM'),
           body: t(
             'legal.content.ownership',
-            'Las campañas, mapas, notas y personajes que cargues son tuyos. Roleito no reclama propiedad sobre ese contenido.'
+            'Las campañas, mapas, notas y personajes que cargues son tuyos. 22W22 no reclama propiedad sobre ese contenido.'
           ),
         },
         {
@@ -154,7 +154,7 @@ export default function LegalPage({ kind }: { kind: LegalKind }) {
       title: t('legal.credits.title', 'Créditos'),
       intro: t(
         'legal.credits.intro',
-        'Programas y assets usados por Roleito. Las licencias completas están en el archivo NOTICE del repositorio.'
+        'Programas y assets usados por 22W22. Las licencias completas están en el archivo NOTICE del repositorio.'
       ),
       sections: [
         {

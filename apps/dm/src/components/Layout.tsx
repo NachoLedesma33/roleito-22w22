@@ -114,7 +114,7 @@ export default function Layout() {
     <Dialog open={logoutOpen} onOpenChange={setLogoutOpen}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t('dialog.logoutTitle', '¿Salir de 22w22?')}</DialogTitle>
+          <DialogTitle>{t('dialog.logoutTitle', '¿Salir de 22W22?')}</DialogTitle>
           <DialogDescription>
             {t('dialog.logoutDesc', 'Para volver a entrar vas a necesitar el PIN.')}
           </DialogDescription>
@@ -143,7 +143,7 @@ export default function Layout() {
       <div className="min-h-screen flex flex-col">
         <header className="relative z-10 border-b border-[var(--bg-tertiary)] bg-[var(--surface)] px-6 py-3 flex items-center gap-6">
           <Link to="/" className="text-lg font-bold text-[var(--text-primary)]">
-            22w22
+            {t('app.name')}
           </Link>
           <nav className="flex gap-4">
             <Link
