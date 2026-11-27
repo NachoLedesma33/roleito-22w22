@@ -1,5 +1,5 @@
 {
-  "name": "Roleito - DM",
+  "name": "22W22 - DM",
   "image": "mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm",
   "features": {
     "ghcr.io/devcontainers/features/python:1": {
@@ -10,11 +10,11 @@
   "forwardPorts": [8000, 5173],
   "portsAttributes": {
     "5173": {
-      "label": "Roleito frontend",
+      "label": "22W22 frontend",
       "onAutoForward": "notify"
     },
     "8000": {
-      "label": "Roleito backend",
+      "label": "22W22 backend",
       "onAutoForward": "silent"
     }
   },

@@ -52,7 +52,7 @@ logger = logging.getLogger("roleito")
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    logger.info("Starting Roleito API...")
+    logger.info("Starting 22W22 API...")
     await init_db()
     register_default_handlers(get_event_bus())
     # La config de IA vieja (provider/remote_base_url/model) se migra a un
@@ -66,11 +66,11 @@ async def lifespan(_app: FastAPI):
         logger.warning(f"No se pudo migrar la config de IA: {e}")
     logger.info("Database initialized")
     yield
-    logger.info("Shutting down Roleito API")
+    logger.info("Shutting down 22W22 API")
 
 
 app = FastAPI(
-    title="Roleito API",
+    title="22W22 - D&D VTT API",
     description="Persistent AI RPG World Engine — Backend",
     version="0.1.0",
     lifespan=lifespan,
