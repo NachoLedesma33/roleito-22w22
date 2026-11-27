@@ -519,6 +519,22 @@ class AuthSession(Base):
     campaign_id = Column(String, nullable=True)
 
 
+class ContactMessage(Base):
+    """Mensaje del formulario publico. Se poda solo: 90 dias, 30 si se respondio."""
+
+    __tablename__ = "contact_messages"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    ticket = Column(String, nullable=False, unique=True)
+    name = Column(String, nullable=False)
+    email = Column(String, nullable=False)
+    subject = Column(String, nullable=False)
+    body = Column(Text, nullable=False)
+    consent = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    answered_at = Column(DateTime, nullable=True)
+
+
 class LightRequest(Base):
     __tablename__ = "light_requests"
 

@@ -81,6 +81,12 @@ Lista priorizada de mejoras futuras. Cada item: problema → propuesta → notas
 - **i18n completo**: faltan claves en inglés para algunas pantallas.
 - **Tests e2e**: estabilizar flaky (aumentar timeouts, retry en CI ya configurado).
 
+## 10. Formulario de contacto (HECHO 2026-11-27)
+
+- **Problema**: el footer tenia un link `Contacto` que no llevaba a ningun lugar y no habia canal para escribir sin publicar un correo en un repo publico.
+- **Implementacion**: `POST /api/contact` publico con validacion estricta (longitudes, email, sin saltos de linea en cabeceras), honeypot y 3 envios por IP/hora. Guarda en `contact_messages`, devuelve ticket y poda a 90 dias (30 si se marco respondido). El correo a `ROLEITO_CONTACT_EMAIL` sale por SMTP con STARTTLS solo si `ROLEITO_CONTACT_SMTP_ENABLED=1`; las credenciales y el destinatario viven en `.env` (ver `.env.example`).
+- **Aviso legal tecnico (no dictamen)**: el formulario dice para que se usan los datos, quien los recibe, el plazo de conservacion y que no es canal de emergencias. Abogado debe revisar Textos/Terminos antes de publicar.
+
 ## Prioridad sugerida
 
 P1: seguridad login, race condition personaje, fluidez movimiento.
