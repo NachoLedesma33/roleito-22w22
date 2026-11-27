@@ -14,6 +14,7 @@ interface Handout {
   title: string;
   content: string;
   image_path: string | null;
+  image_url?: string | null;
   visible_to_players: boolean;
 }
 
@@ -82,7 +83,10 @@ test.describe('Handouts', () => {
 
     const img = page.getByTestId('handout-image');
     await expect(img).toBeVisible();
-    await expect(img).toHaveAttribute('src', /\/api\/static\//);
+    await expect(img).toHaveAttribute('src', /\/api\/static\/.+\?exp=\d+&sig=[0-9a-f]+/);
+    await expect
+      .poll(() => img.evaluate((el) => (el as HTMLImageElement).naturalWidth > 0))
+      .toBe(true);
 
     const withImage = await listHandouts(request, campaign.id);
     expect(withImage[0].image_path).toContain('handouts');
@@ -167,7 +171,10 @@ test.describe('Handouts', () => {
     await expect(p.getByText(/La puerta de la bóveda/)).toBeVisible();
     const img = p.getByTestId('player-handout-image');
     await expect(img).toBeVisible();
-    await expect(img).toHaveAttribute('src', /\/api\/static\//);
+    await expect(img).toHaveAttribute('src', /\/api\/static\/.+\?exp=\d+&sig=[0-9a-f]+/);
+    await expect
+      .poll(() => img.evaluate((el) => (el as HTMLImageElement).naturalWidth > 0))
+      .toBe(true);
 
     await ctx.close();
   });

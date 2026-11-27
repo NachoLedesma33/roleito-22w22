@@ -31,6 +31,7 @@ build/
 data/*.db
 data/**/*.db
 data/*.db.bak-*
+data/*.key
 # Archivos auxiliares de SQLite (aparecen con el backend corriendo; `*.db` no
 # los cubre porque llevan sufijo). Un journal commiteado puede abrir la base corrupta.
 *.db-journal

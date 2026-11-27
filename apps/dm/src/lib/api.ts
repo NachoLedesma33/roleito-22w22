@@ -496,6 +496,7 @@ export interface HandoutResponse {
   title: string;
   content: string;
   image_path: string | null;
+  image_url: string | null;
   visible_to_players: boolean;
   created_at: string;
   updated_at: string;

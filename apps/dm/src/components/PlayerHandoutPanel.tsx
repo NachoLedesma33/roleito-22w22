@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import HudPanel from './HudPanel';
 import { api, type HandoutResponse } from '@/lib/api';
-import { staticUrl } from '@/lib/staticUrl';
 
 interface PlayerHandoutPanelProps {
   campaignId: string;
@@ -61,7 +60,7 @@ export default function PlayerHandoutPanel({
 
         {handouts.map((h) => {
           const open = openId === h.id;
-          const img = staticUrl(h.image_path);
+          const img = h.image_url;
           return (
             <div
               key={h.id}

@@ -602,6 +602,7 @@ class HandoutOut(BaseModel):
     title: str
     content: str
     image_path: str | None
+    image_url: str | None = None
     visible_to_players: bool
     created_at: datetime
     updated_at: datetime

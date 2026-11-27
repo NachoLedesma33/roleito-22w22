@@ -8,7 +8,7 @@ from database import get_session
 from models import Campaign, Handout
 from routes import broadcast_revision
 from schemas import HandoutIn, HandoutOut
-from services.assets import ASSETS_DIR
+from services.assets import ASSETS_DIR, signed_asset_url
 from auth import require_dm, AuthSession
 
 router = APIRouter(tags=["handouts"])
@@ -21,6 +21,7 @@ def _to_out(h: Handout) -> HandoutOut:
         title=h.title,
         content=h.content or "",
         image_path=h.image_path,
+        image_url=signed_asset_url(h.image_path) if h.image_path else None,
         visible_to_players=bool(h.visible_to_players),
         created_at=h.created_at,
         updated_at=h.updated_at,

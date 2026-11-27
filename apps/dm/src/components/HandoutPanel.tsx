@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Eye, EyeOff, Image as ImageIcon, Pencil, Trash2 } from 'lucide-react';
 import HudPanel from './HudPanel';
 import { api, type HandoutInput, type HandoutResponse } from '@/lib/api';
-import { staticUrl } from '@/lib/staticUrl';
 
 interface HandoutPanelProps {
   campaignId: string;
@@ -151,7 +150,7 @@ export default function HandoutPanel({ campaignId, onClose }: HandoutPanelProps)
 
         <div className="space-y-1.5 max-h-72 overflow-y-auto">
           {handouts.map((h) => {
-            const img = staticUrl(h.image_path);
+            const img = h.image_url;
             return (
               <div
                 key={h.id}

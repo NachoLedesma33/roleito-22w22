@@ -5,7 +5,7 @@ from pathlib import Path
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -41,7 +41,7 @@ from combat_routes import router as combat_router
 from quest_routes import router as quest_router
 from handout_routes import router as handout_router
 from calendar_routes import router as calendar_router
-from services.assets import ASSETS_DIR
+from services.assets import ASSETS_DIR, is_private_asset, verify_asset_signature
 
 logging.basicConfig(
     level=logging.INFO,
@@ -182,6 +182,17 @@ class AssetsStatic(StaticFiles):
         response = super().file_response(*args, **kwargs)
         response.headers["Cache-Control"] = "no-cache"
         return response
+
+    async def get_response(self, path: str, scope):
+        if is_private_asset(path):
+            request = Request(scope)
+            if not verify_asset_signature(
+                path,
+                request.query_params.get("exp"),
+                request.query_params.get("sig"),
+            ):
+                return PlainTextResponse("Invalid asset signature", status_code=403)
+        return await super().get_response(path, scope)
 
 
 app.mount("/api/static", AssetsStatic(directory=ASSETS_DIR), name="static")

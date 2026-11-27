@@ -10,7 +10,12 @@ Un path de JSON = `data/assets/campaña/...` (con `/`, para cruzar SO).
 """
 
 import base64
+import hashlib
+import hmac
 import os
+import secrets
+import time
+from urllib.parse import quote
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,6 +30,76 @@ ASSETS_DIR = os.path.normpath(
 # campaña. Si lo supera, el asset no viaja (queda fuera del JSON) y la columna
 # sigue apuntando al archivo original.
 MAX_ASSET_BYTES = 8 * 1024 * 1024
+
+SIGNED_ASSET_TTL = 3600
+_PRIVATE_MARKERS = ("/handouts/",)
+
+
+def signing_secret() -> bytes:
+    """Secreto para firmar URLs. Env gana; si no, archivo local bajo `data/`.
+
+    El archivo es persistente: una URL firmada sigue sirviendo después de
+    reiniciar el backend (y no se commitea, porque `data/` está ignorado).
+    """
+    env = os.getenv("ROLEITO_ASSET_SIGNING_SECRET")
+    if env:
+        return env.encode()
+    key_path = os.path.join(os.path.dirname(ASSETS_DIR), "asset_signing.key")
+    try:
+        with open(key_path, "rb") as fh:
+            return fh.read().strip()
+    except FileNotFoundError:
+        key = secrets.token_hex(32).encode()
+        os.makedirs(os.path.dirname(key_path), exist_ok=True)
+        with open(key_path, "wb") as fh:
+            fh.write(key)
+        return key
+
+
+def _canonical_asset_rel(path: str) -> str:
+    norm = path.replace("\\", "/").lstrip("/")
+    lowered = norm.lower()
+    for prefix in ("api/static/", "data/assets/"):
+        idx = lowered.find(prefix)
+        if idx != -1:
+            return norm[idx + len(prefix) :]
+    return norm
+
+
+def is_private_asset(path: str) -> bool:
+    """Handouts = privados. Audio bundled y el resto siguen siendo públicos."""
+    normalized = f"/{_canonical_asset_rel(path)}"
+    return any(marker in normalized for marker in _PRIVATE_MARKERS)
+
+
+def signed_asset_url(path: str, ttl: int = SIGNED_ASSET_TTL) -> str | None:
+    """URL con `exp`/`sig`. Sirve en `<img>`/`<audio>`: no necesita headers."""
+    rel = _canonical_asset_rel(path)
+    if not rel:
+        return None
+    exp = int(time.time()) + ttl
+    sig = hmac.new(
+        signing_secret(), f"{rel}:{exp}".encode(), hashlib.sha256
+    ).hexdigest()
+    return f"/api/static/{quote(rel, safe='/')}?exp={exp}&sig={sig}"
+
+
+def verify_asset_signature(
+    path: str, exp: str | None, sig: str | None
+) -> bool:
+    if not exp or not sig:
+        return False
+    try:
+        exp_i = int(exp)
+    except ValueError:
+        return False
+    if exp_i < int(time.time()):
+        return False
+    rel = _canonical_asset_rel(path)
+    expected = hmac.new(
+        signing_secret(), f"{rel}:{exp}".encode(), hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(expected, sig)
 
 
 def save_campaign_file(
