@@ -782,6 +782,63 @@
     "title": "Manual de uso del DM",
     "vtt": "El mapa usa grilla exacta. Dibujás paredes, zonas y luces; la niebla se pinta con pincel o rectángulo y cada jugador ve solo lo que su personaje puede ver. Los tokens se mueven con teclado o arrastrando; el arrastre ajusta a la grilla, el teclado es libre. Las capas de audio, clima y efectos acompañan la escena."
   },
+  "legal": {
+    "ai": {
+      "intro": "Borrador técnico. Explica cuándo interviene la IA. Requiere revisión de un abogado antes de publicarse.",
+      "limits": "La IA es probabilística y puede equivocarse. Revisá siempre el resultado antes de aprobarlo. No es una fuente de consejos legales, médicos ni financieros.",
+      "limitsTitle": "Límites",
+      "provider": "Con proveedor local, el texto no sale de la máquina. Con proveedor externo, el texto de la campaña viaja a ese servicio; el tratamiento depende del contrato que tengas con él.",
+      "providerTitle": "Proveedores",
+      "role": "La IA redacta escenas, resume sesiones y sugiere eventos. Todo lo que escribe queda como propuesta hasta que el DM lo aprueba.",
+      "roleTitle": "Qué hace",
+      "title": "Aviso sobre IA"
+    },
+    "content": {
+      "assets": "Los assets incluidos conservan la licencia de sus autores. La lista de créditos está en la sección Créditos.",
+      "assetsTitle": "Assets de terceros",
+      "intro": "Borrador técnico. Define responsabilidad sobre el contenido creado en Roleito. Requiere revisión de un abogado antes de publicarse.",
+      "ownership": "Las campañas, mapas, notas y personajes que cargues son tuyos. Roleito no reclama propiedad sobre ese contenido.",
+      "ownershipTitle": "Contenido del DM",
+      "response": "Si encontrás contenido que vulnera estos términos, escribí por el formulario de contacto con el link o la referencia. El equipo puede revisarlo y retirarlo.",
+      "responseTitle": "Reportes",
+      "title": "Aviso sobre contenido"
+    },
+    "credits": {
+      "assets": "Los mapas, audio y efectos bundled se listan en el archivo NOTICE con su fuente y licencia. Los archivos que subas vos no se incluyen ahí.",
+      "assetsTitle": "Assets",
+      "intro": "Programas y assets usados por Roleito. Las licencias completas están en el archivo NOTICE del repositorio.",
+      "software": "React, TypeScript, Vite, Tailwind CSS, Three.js, React Three Fiber, FastAPI, SQLAlchemy y SQLite. Cada proyecto mantiene su propia licencia.",
+      "softwareTitle": "Software",
+      "title": "Créditos"
+    },
+    "draft": "Borrador — revisión legal pendiente",
+    "privacy": {
+      "contact": "Nombre, correo, asunto y mensaje se guardan 90 días, o 30 si se marca respondido. Solo los lee el equipo que administra Roleito. No es un canal de emergencias.",
+      "contactTitle": "Formulario de contacto",
+      "intro": "Borrador técnico. Explica qué datos maneja Roleito. Requiere revisión de un abogado antes de publicarse.",
+      "local": "Las campañas, personajes, eventos y world state se guardan en la base local del servidor. No se envían a un proveedor externo salvo que actives una integración de IA.",
+      "localTitle": "Datos de campaña",
+      "logs": "El servidor puede registrar IP, hora y tipo de solicitud para limitar abusos y diagnosticar fallos. Los tokens de sesión viven en la pestaña del navegador.",
+      "logsTitle": "Registros técnicos",
+      "rights": "Podés pedir acceso, corrección o borrado de tus mensajes por el formulario de contacto. Los textos legales definitivos deben confirmar el alcance de esos derechos.",
+      "rightsTitle": "Tus derechos",
+      "title": "Privacidad"
+    },
+    "terms": {
+      "accounts": "El acceso usa un PIN elegido por el DM. Cerrar el navegador termina la sesión de esa pestaña. No compartas tu PIN ni tus links de invitación.",
+      "accountsTitle": "Perfil y sesiones",
+      "changes": "Estos textos pueden cambiar. La versión publicada en el sitio es la que aplica desde su fecha de actualización.",
+      "changesTitle": "Cambios",
+      "files": "La base y los assets viven en la máquina donde corre el servidor. Hacer backups es tu responsabilidad.",
+      "filesTitle": "Tus archivos",
+      "intro": "Borrador técnico. Define cómo se usa Roleito. Requiere revisión de un abogado antes de publicarse.",
+      "scope": "Roleito es un motor local-first para manejar campañas de rol. El DM decide qué entra en la campaña y qué se comparte con los jugadores.",
+      "scopeTitle": "Qué es Roleito",
+      "title": "Términos de uso",
+      "use": "Usá el engine para tus campañas y contenido propio. No lo uses para acosar, suplantar identidades, publicar material ilegal ni saturar el servicio.",
+      "useTitle": "Uso permitido"
+    }
+  },
   "public": {
     "backHome": "Volver al inicio",
     "soon": "En preparación",
