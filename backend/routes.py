@@ -55,7 +55,7 @@ import shutil
 import base64
 import socket
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from services.assets import (
     asset_abs,
@@ -66,6 +66,32 @@ from services.assets import (
 )
 from services.item_validation import validate_scene_items
 from auth import require_dm, AuthSession
+
+
+INVITE_TTL_HOURS = float(os.getenv("ROLEITO_INVITE_TTL_HOURS", "12"))
+
+
+def _invite_alive(campaign: Campaign) -> bool:
+    """Un invite sin fecha de expiracion no es valido (codigos legacy)."""
+    settings = campaign.settings_json
+    if not isinstance(settings, dict):
+        return False
+    raw = settings.get("invite_expires_at")
+    if not raw:
+        return False
+    try:
+        expires = datetime.fromisoformat(str(raw))
+    except ValueError:
+        return False
+    return datetime.utcnow() < expires
+
+
+async def find_invite_campaign(db: AsyncSession, code: str) -> Campaign | None:
+    result = await db.execute(select(Campaign).where(Campaign.invite_code == code))
+    campaign = result.scalar_one_or_none()
+    if not campaign or not _invite_alive(campaign):
+        return None
+    return campaign
 
 
 def _parse_dt(value):
@@ -280,8 +306,7 @@ async def invite_ws(
     code: str,
     db: AsyncSession = Depends(get_session),
 ):
-    result = await db.execute(select(Campaign).where(Campaign.invite_code == code))
-    campaign = result.scalar_one_or_none()
+    campaign = await find_invite_campaign(db, code)
     if not campaign:
         await websocket.close(code=4404)
         return
@@ -370,8 +395,7 @@ async def place_marker_invite(
     data: MarkerRequest,
     db: AsyncSession = Depends(get_session),
 ):
-    result = await db.execute(select(Campaign).where(Campaign.invite_code == code))
-    campaign = result.scalar_one_or_none()
+    campaign = await find_invite_campaign(db, code)
     if not campaign:
         raise HTTPException(status_code=404, detail="invite not found")
     await ws_manager.broadcast(campaign.id, {
@@ -559,8 +583,7 @@ async def list_assets_invite(
     db: AsyncSession = Depends(get_session),
 ):
     """Lista los assets de una campaña accesibles por un jugador (shared_with = player_id o null)."""
-    result = await db.execute(select(Campaign).where(Campaign.invite_code == code))
-    campaign = result.scalar_one_or_none()
+    campaign = await find_invite_campaign(db, code)
     if not campaign:
         raise HTTPException(status_code=404, detail="invite not found")
     q = select(Asset).where(Asset.campaign_id == campaign.id)
@@ -617,8 +640,7 @@ async def place_vfx_invite(
     data: VfxRequest,
     db: AsyncSession = Depends(get_session),
 ):
-    result = await db.execute(select(Campaign).where(Campaign.invite_code == code))
-    campaign = result.scalar_one_or_none()
+    campaign = await find_invite_campaign(db, code)
     if not campaign:
         raise HTTPException(status_code=404, detail="invite not found")
     await ws_manager.broadcast(campaign.id, {
@@ -739,7 +761,7 @@ async def active_invite(db: AsyncSession = Depends(get_session)):
         settings = campaign.settings_json or {}
         if not isinstance(settings, dict):
             continue
-        if settings.get("public_join") and campaign.invite_code:
+        if settings.get("public_join") and campaign.invite_code and _invite_alive(campaign):
             return {
                 "invite_code": campaign.invite_code,
                 "campaign_id": campaign.id,
@@ -1715,6 +1737,34 @@ async def generate_invite_code(
         raise HTTPException(status_code=404, detail="Campaign not found")
 
     campaign.invite_code = secrets.token_urlsafe(8)
+    settings = dict(campaign.settings_json or {})
+    settings["invite_expires_at"] = (
+        datetime.utcnow() + timedelta(hours=INVITE_TTL_HOURS)
+    ).isoformat()
+    campaign.settings_json = settings
+    await db.commit()
+    await db.refresh(campaign)
+    return campaign
+
+
+@campaigns_router.delete("/campaigns/{campaign_id}/invite-code", response_model=CampaignResponse)
+async def revoke_invite_code(
+    campaign_id: str,
+    db: AsyncSession = Depends(get_session),
+    _auth: AuthSession = Depends(require_dm),
+):
+    """Revoca el codigo: el link viejo deja de abrir y el fijo se cierra."""
+    result = await db.execute(
+        select(Campaign).where(Campaign.id == campaign_id)
+    )
+    campaign = result.scalar_one_or_none()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    campaign.invite_code = None
+    settings = dict(campaign.settings_json or {})
+    settings.pop("invite_expires_at", None)
+    settings["public_join"] = False
+    campaign.settings_json = settings
     await db.commit()
     await db.refresh(campaign)
     return campaign
@@ -1725,10 +1775,7 @@ async def invite_revision(
     code: str,
     db: AsyncSession = Depends(get_session),
 ):
-    result = await db.execute(
-        select(Campaign).where(Campaign.invite_code == code)
-    )
-    campaign = result.scalar_one_or_none()
+    campaign = await find_invite_campaign(db, code)
     if not campaign:
         raise HTTPException(status_code=404, detail="Invalid invite code")
 
@@ -1751,10 +1798,7 @@ async def publish_reveal(
     payload: dict = Body(...),
     db: AsyncSession = Depends(get_session),
 ):
-    result = await db.execute(
-        select(Campaign).where(Campaign.invite_code == code)
-    )
-    campaign = result.scalar_one_or_none()
+    campaign = await find_invite_campaign(db, code)
     if not campaign:
         raise HTTPException(status_code=404, detail="Invalid invite code")
 
@@ -1834,10 +1878,7 @@ async def join_by_invite_code(
     code: str,
     db: AsyncSession = Depends(get_session),
 ):
-    result = await db.execute(
-        select(Campaign).where(Campaign.invite_code == code)
-    )
-    campaign = result.scalar_one_or_none()
+    campaign = await find_invite_campaign(db, code)
     if not campaign:
         raise HTTPException(status_code=404, detail="Invalid invite code")
 

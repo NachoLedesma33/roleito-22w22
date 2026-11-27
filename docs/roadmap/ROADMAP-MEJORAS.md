@@ -7,7 +7,7 @@ Lista priorizada de mejoras futuras. Cada item: problema → propuesta → notas
 - **PIN con lockout por IP real (RESUELTO 2026-11-27)**: el backend usa PIN de 4-8 dígitos hasheados con bcrypt y bloquea tras 5 intentos fallidos durante 5 minutos. Antes la clave era la IP del socket (`127.0.0.1` detrás del túnel): un visitante podía dejar sin login a todos. Ahora `register`/`login` usan `client_key()` de `rate_limit.py` (`CF-Connecting-IP` → `X-Forwarded-For` → socket), igual que el rate limit. Queda pendiente: persistir el contador entre reinicios y además por perfil DM, no solo por IP. Tests: `backend/tests/test_auth_lockout.py` (RED→GREEN, 2 tests).
   - Tokens de sesión: agregar refresh token + revocación (logout real).
   - CORS: revisar orígenes permitidos en producción (no `*`).
-  - Invites: códigos de un solo uso / expiración temporal para joins públicos.
+  - Invites: **expiración + revocación HECHAS 2026-11-27** (12 h por defecto, `ROLEITO_INVITE_TTL_HOURS`; `DELETE /campaigns/{id}/invite-code` revoca y cierra `/join`). La rotación ya existía (`POST /invite-code`) y ahora se verificó que invalida el código anterior en todas las rutas `/invite/{code}`. Queda: PIN de jugador opcional y ámbito por sesión.
 
 ## 2. Race condition al seleccionar personaje (player join)
 
