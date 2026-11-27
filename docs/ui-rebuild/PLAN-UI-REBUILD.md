@@ -1,6 +1,6 @@
-# PLAN — Rearmado de UI/UX de Roleito (de la landing al cierre de sesión)
+# PLAN — Rearmado de UI/UX de 22W22 (de la landing al cierre de sesión)
 
-> **Proyecto**: Roleito — Persistent AI RPG World Engine
+> **Proyecto**: 22W22 — Persistent AI RPG World Engine
 > **Fecha**: 2026-10-07
 > **Estado**: PROPUESTA (pendiente de revisión del DM)
 > **Alcance**: rediseño integral de la experiencia de UI/UX, de punta a punta:
@@ -31,7 +31,7 @@ el dominio y el World State mandan (CONTEXT.md §4, §10).
 
 ## 1. Resumen ejecutivo
 
-La UI actual de Roleito es funcional pero plana: una paleta mínima (7 variables), iconos de
+La UI actual de 22W22 es funcional pero plana: una paleta mínima (7 variables), iconos de
 barra de navegación como glifos Unicode (`◆ ◇ ♦ ♠`), una sidebar con 14 ítems, HUDs de ancho
 fijo y páginas CRUD sin lenguaje visual común. El DM percibe "agobio": muchas herramientas en
 un solo lugar, poca jerarquía, cero personalización.
@@ -195,7 +195,7 @@ profesional).
 
 ```
 ┌───────────────────────────────────────────────────────────────────┐
-│ ⌘  Roleito · [Campaña ▾] · Pan de la Torre      ● Sesión activa    │
+│ ⌘  22W22 · [Campaña ▾] · Pan de la Torre      ● Sesión activa    │
 │    [🔍 Buscar o ⌘K…]            avatares…   🔔  ⚙  ▣DM              │
 ├────┬──────────────────────────────────────────────────────────────┤
 │ 🎲 │                                                              │
@@ -250,7 +250,7 @@ Componente `Island` reutilizable implementado una vez. Resuelve P1/P10.
 
 ```
 ┌───────────────────────────────────────────────────────────────┐
-│  Roleito                                   [Ingresar] [Demo]   │
+│  22W22                                   [Ingresar] [Demo]   │
 ├───────────────────────────────────────────────────────────────┤
 │   EL MUNDO QUE TUS SESIONES             [ hero: imagen/video   │
 │   RECUERDAN                              arte del DM ]         │
@@ -380,7 +380,7 @@ Toasts → sonner. Paneles → react-resizable-panels + `HudPanel` actual. Islas
 | `assets/video/22w22Logo-animado.mp4` | video | intro/loader al iniciar perfil (portal que se abre) |
 
 > La imagen es el logo "22w22". Mimo (§9) la describe: ilustración dark-fantasy, marca de agua
-> incluida. Para landing/lobby sirve de fondo; **no** como logo de Roleito (dice 22w22).
+> incluida. Para landing/lobby sirve de fondo y como logo de 22W22 (dice 22w22).
 
 | Tipo | Carpeta | Reglas |
 |------|---------|--------|
@@ -415,7 +415,7 @@ Devolvé una ficha por imagen:
 - composición/layout
 - texto legible (transcribir)
 - estilo (dark fantasy, ilustración, UI, foto…)
-- uso sugerido en Roleito (landing / cover lobby / icono / referencia)
+- uso sugerido en 22W22 (landing / cover lobby / icono / referencia)
 - problemas (baja res, watermark, licencia dudosa)
 No inventes; si algo no se ve, decí "ilegible".
 ```

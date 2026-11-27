@@ -12,7 +12,7 @@
 
 ## 1. Contexto y Enfoque
 
-Roleito cuenta con un motor de IA capaz de detectar automáticamente muros en
+22W22 cuenta con un motor de IA capaz de detectar automáticamente muros en
 mapas importados (`backend/wall_detection/`, botón "AI" del Build menu).
 Para maximizar la flexibilidad, cubrir casos límite (mapas abstractos, bocetos
 rápidos, falsos positivos de la IA) y permitir crear mapas desde cero en
