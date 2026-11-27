@@ -33,6 +33,7 @@ router = APIRouter(prefix="", tags=["contact"])
 RETENTION_DAYS = 90
 ANSWERED_RETENTION_DAYS = 30
 WINDOW_SECONDS = 3600
+CONSENT_VERSION = "2026-11-27"
 
 _contact_hits: dict[str, deque[float]] = defaultdict(deque)
 
@@ -46,6 +47,7 @@ class ContactCreate(BaseModel):
     subject: str = Field(..., min_length=3, max_length=120, pattern=r"^[^\r\n]+$")
     message: str = Field(..., min_length=10, max_length=5000)
     consent: Literal[True]
+    consent_version: Literal["2026-11-27"]
     website: str = Field(default="", max_length=200)  # honeypot: los bots lo rellenan
 
 
@@ -124,6 +126,7 @@ async def submit_contact(body: ContactCreate, request: Request):
             subject=body.subject.strip(),
             body=body.message.strip(),
             consent=True,
+            consent_version=body.consent_version,
         )
         db.add(row)
         await db.commit()

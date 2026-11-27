@@ -755,6 +755,7 @@
     "close": "Cerrar",
     "consent": "Acepto que se guarden mis datos en este servidor para responder esta consulta.",
     "consentError": "Necesitás aceptar el consentimiento para enviar el mensaje.",
+    "consentVersion": "Versión {{version}}",
     "dialogBody": "Tu ticket es {{ticket}}. Lo usamos para ubicar el mensaje. No enviamos acuses por correo.",
     "dialogTitle": "Mensaje guardado",
     "email": "Correo electrónico",

@@ -755,6 +755,7 @@
     "close": "Close",
     "consent": "I agree that my data is stored on this server so this enquiry can be answered.",
     "consentError": "You need to accept consent before sending the message.",
+    "consentVersion": "Version {{version}}",
     "dialogBody": "Your ticket is {{ticket}}. We use it to locate the message. We do not send email acknowledgements.",
     "dialogTitle": "Message stored",
     "email": "Email",

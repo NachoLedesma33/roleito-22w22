@@ -601,12 +601,15 @@ export type PlayerSceneToken = Pick<
     frame_scale?: number;
   };
 
+export const CONTACT_CONSENT_VERSION = '2026-11-27';
+
 export interface ContactInput {
   name: string;
   email: string;
   subject: string;
   message: string;
   consent: true;
+  consent_version: typeof CONTACT_CONSENT_VERSION;
   website: string;
 }
 

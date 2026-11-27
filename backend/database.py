@@ -106,6 +106,7 @@ MIGRATIONS = [
     ("abilities", "vfx_type", "ALTER TABLE abilities ADD COLUMN vfx_type TEXT"),
     ("scenes", "remember_explored", "ALTER TABLE scenes ADD COLUMN remember_explored INTEGER DEFAULT 0"),
     ("sessions", "ai_recap_json", "ALTER TABLE sessions ADD COLUMN ai_recap_json TEXT DEFAULT '{}'"),
+    ("contact_messages", "consent_version", "ALTER TABLE contact_messages ADD COLUMN consent_version TEXT DEFAULT '2026-11-27'"),
 ]
 
 VIDA_ATTRS = ["vigor", "intelligence", "dexterity", "cunning"]

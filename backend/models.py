@@ -531,6 +531,7 @@ class ContactMessage(Base):
     subject = Column(String, nullable=False)
     body = Column(Text, nullable=False)
     consent = Column(Boolean, nullable=False, default=False)
+    consent_version = Column(String, nullable=False, default="2026-11-27")
     created_at = Column(DateTime, default=datetime.utcnow)
     answered_at = Column(DateTime, nullable=True)
 

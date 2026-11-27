@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/Dialog';
-import { api } from '@/lib/api';
+import { api, CONTACT_CONSENT_VERSION } from '@/lib/api';
 
 export default function Contact() {
   const { t } = useTranslation();
@@ -38,6 +38,7 @@ export default function Contact() {
         subject: String(data.get('subject') ?? '').trim(),
         message: String(data.get('message') ?? '').trim(),
         consent: true,
+        consent_version: CONTACT_CONSENT_VERSION,
         website: String(data.get('website') ?? ''),
       });
       if (!receipt.stored || !receipt.ticket) {
@@ -152,7 +153,12 @@ export default function Contact() {
 
           <label htmlFor="contact-consent" className="flex items-start gap-3 text-sm">
             <input id="contact-consent" name="consent" type="checkbox" required className="mt-1" />
-            <span>{t('contact.consent')}</span>
+            <span>
+              {t('contact.consent')}{' '}
+              <span className="text-ink-muted">
+                ({t('contact.consentVersion', 'Versión {{version}}', { version: CONTACT_CONSENT_VERSION })})
+              </span>
+            </span>
           </label>
 
           <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">

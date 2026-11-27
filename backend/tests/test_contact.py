@@ -19,6 +19,7 @@ BASE = {
     "subject": "Consulta sobre una campaña",
     "message": "Hola, tengo una duda sobre el manejo de las sesiones.",
     "consent": True,
+    "consent_version": "2026-11-27",
     "website": "",
 }
 
@@ -47,6 +48,30 @@ async def test_contact_guarda_mensaje_y_devuelve_ticket(anon_client):
     assert data["ticket"]
     assert "visitante@example.com" not in res.text
     assert await _count() == before + 1
+
+
+@pytest.mark.asyncio
+async def test_contact_guarda_version_del_consentimiento(anon_client):
+    res = await anon_client.post(
+        "/api/contact", json=BASE, headers={"X-Forwarded-For": f"198.51.100.{uuid4().int % 200 + 1}"}
+    )
+    assert res.status_code == 200, res.text
+    ticket = res.json()["ticket"]
+    async with async_session() as db:
+        row = (
+            await db.execute(select(ContactMessage).where(ContactMessage.ticket == ticket))
+        ).scalar_one()
+    assert row.consent_version == "2026-11-27"
+
+
+@pytest.mark.asyncio
+async def test_contact_rechaza_version_de_consentimiento_desconocida(anon_client):
+    res = await anon_client.post(
+        "/api/contact",
+        json=dict(BASE, consent_version="1999-01-01"),
+        headers={"X-Forwarded-For": f"198.51.100.{uuid4().int % 200 + 1}"},
+    )
+    assert res.status_code == 422
 
 
 @pytest.mark.asyncio

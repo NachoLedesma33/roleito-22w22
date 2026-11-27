@@ -16,13 +16,15 @@ async function fill(page: import('@playwright/test').Page) {
 
 test.describe('Formulario de contacto', () => {
   test('C01: guarda, muestra el ticket y avisa conservación', async ({ page }) => {
-    await page.route('**/api/contact', (route) =>
-      route.fulfill({
+    let payload: { consent_version?: string } | null = null;
+    await page.route('**/api/contact', async (route) => {
+      payload = route.request().postDataJSON() as { consent_version?: string };
+      await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({ ok: true, stored: true, ticket: 'ROL-ABCDEF1234', email_sent: false }),
-      }),
-    );
+      });
+    });
     await page.goto('/contact');
     await expect(page.getByText(/durante 90 días/)).toBeVisible();
     await expect(page.getByText(/No es un canal de emergencias/)).toBeVisible();
@@ -35,6 +37,7 @@ test.describe('Formulario de contacto', () => {
     await expect(page.getByTestId('contact-success')).toBeVisible();
     await expect(page.getByTestId('contact-ticket')).toHaveText(/^ROL-[A-Z0-9]{10}$/);
     await expect(page.getByText(/No enviamos acuses por correo/)).toBeVisible();
+    expect(payload?.consent_version).toBe('2026-11-27');
   });
 
   test('C02: sin consentimiento no envía', async ({ page }) => {
