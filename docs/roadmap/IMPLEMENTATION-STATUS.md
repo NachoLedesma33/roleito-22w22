@@ -1,6 +1,6 @@
 # IMPLEMENTATION-STATUS.md
 
-> Living document tracking implementation progress across all Roleito systems.
+> Living document tracking implementation progress across all 22W22 systems.
 >
 > Update this file as work progresses.
 

@@ -1,4 +1,4 @@
-# Roleito — Plan de mejoras (roadmap)
+# 22W22 — Plan de mejoras (roadmap)
 
 Lista priorizada de mejoras futuras. Cada item: problema → propuesta → notas de implementación.
 
