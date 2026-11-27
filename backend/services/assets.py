@@ -12,6 +12,7 @@ Un path de JSON = `data/assets/campaña/...` (con `/`, para cruzar SO).
 import base64
 import hashlib
 import hmac
+import ntpath
 import os
 import secrets
 import time
@@ -133,17 +134,27 @@ def asset_rel(path: str | None) -> str | None:
 
     El JSON de import es datos del usuario: un `data/assets/../../x` no es un
     asset, es un intento de salir del árbol. Se rechaza en la frontera para que
-    `asset_abs()` nunca pueda escribir afuera.
+    `asset_abs()` nunca pueda escribir afuera. Un absoluto solo se acepta si
+    vive bajo `ASSETS_DIR`; así funciona igual en Windows y en Linux.
     """
     if not path:
         return None
     norm = path.replace("\\", "/")
-    if norm.startswith("/"):
-        return None
-    idx = norm.find("data/assets")
-    if idx == -1 or (idx > 0 and norm[idx - 1] != "/"):
-        return None
-    rel = norm[idx:]
+    if ntpath.isabs(path):
+        native = path.replace("/", os.sep).replace("\\", os.sep)
+        root = os.path.realpath(ASSETS_DIR)
+        try:
+            suffix = os.path.relpath(os.path.realpath(native), root)
+        except ValueError:
+            return None
+        if suffix == os.pardir or suffix.startswith(os.pardir + os.sep):
+            return None
+        rel = "data/assets/" + suffix.replace(os.sep, "/")
+    else:
+        idx = norm.find("data/assets")
+        if idx == -1 or (idx > 0 and norm[idx - 1] != "/"):
+            return None
+        rel = norm[idx:]
     if ".." in rel.split("/"):
         return None
     return rel
