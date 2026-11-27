@@ -109,13 +109,13 @@ export default function Landing() {
           />
           <div className="flex items-center justify-end gap-5 pt-4">
             <nav aria-label={`${t('landing.nav.guide', 'Guía del DM')} · ${t('landing.nav.faq', 'Preguntas frecuentes')} · ${t('landing.nav.contact', 'Contacto')}`} className="hidden items-center gap-5 text-sm sm:flex">
-              <Link to="/guide" className={`text-ink-muted transition-colors hover:text-ink ${linkFocus}`}>
+              <Link to="/guide" className={`text-[var(--landing-muted)] transition-colors hover:text-ink ${linkFocus}`}>
                 {t('landing.nav.guide', 'Guía del DM')}
               </Link>
-              <Link to="/faq" className={`text-ink-muted transition-colors hover:text-ink ${linkFocus}`}>
+              <Link to="/faq" className={`text-[var(--landing-muted)] transition-colors hover:text-ink ${linkFocus}`}>
                 {t('landing.nav.faq', 'Preguntas frecuentes')}
               </Link>
-              <Link to="/contact" className={`text-ink-muted transition-colors hover:text-ink ${linkFocus}`}>
+              <Link to="/contact" className={`text-[var(--landing-muted)] transition-colors hover:text-ink ${linkFocus}`}>
                 {t('landing.nav.contact', 'Contacto')}
               </Link>
             </nav>
@@ -134,7 +134,7 @@ export default function Landing() {
           <div>
             <h1 className="text-4xl font-bold leading-tight md:text-5xl">{t('app.tagline')}</h1>
             <div className="mt-6 h-1 w-24 bg-brand" aria-hidden="true" />
-            <p className="mt-6 text-lg text-ink-muted">
+            <p className="mt-6 text-lg text-[var(--landing-muted)]">
               {t('landing.subtitle', 'Un engine persistente para tu campaña.')}
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
@@ -176,7 +176,7 @@ export default function Landing() {
             <h2 className="mt-10 text-2xl font-semibold">
               {t('landing.featuresTitle', 'Todo en una sola mesa')}
             </h2>
-            <p className="mt-2 max-w-2xl text-ink-muted">
+            <p className="mt-2 max-w-2xl text-[var(--landing-muted)]">
               {t(
                 'landing.featuresIntro',
                 'Seis piezas que se construyen solas mientras jugás: todo lo que la mesa necesita, sin configurar nada dos veces.',
@@ -194,7 +194,7 @@ export default function Landing() {
                   <div className="p-5">
                     <feature.icon className="h-6 w-6 text-brand" aria-hidden="true" />
                     <h3 className="mt-3 font-medium">{feature.title}</h3>
-                    <p className="mt-1 text-sm text-ink-muted">{feature.desc}</p>
+                    <p className="mt-1 text-sm text-[var(--landing-muted)]">{feature.desc}</p>
                   </div>
                 </div>
               ))}
@@ -218,7 +218,7 @@ export default function Landing() {
                   {t('app.name')}
                 </span>
               </div>
-              <p className="mt-4 max-w-xs text-sm leading-relaxed text-ink-muted">
+              <p className="mt-4 max-w-xs text-sm leading-relaxed text-[var(--landing-muted)]">
                 {t(
                   'landing.footer.blurb',
                   'Engine local-first para tus campañas de D&D. El mundo recuerda cada sesión.',
@@ -230,7 +230,7 @@ export default function Landing() {
               <h2 className="text-sm font-semibold text-ink">
                 {t('landing.footer.product', 'Producto')}
               </h2>
-              <ul className="mt-4 space-y-2 text-sm text-ink-muted">
+              <ul className="mt-4 space-y-2 text-sm text-[var(--landing-muted)]">
                 <li>
                   <a href="#features" className="transition-colors hover:text-ink">
                     {t('landing.footer.productFeatures', 'Características')}
@@ -253,7 +253,7 @@ export default function Landing() {
               <h2 className="text-sm font-semibold text-ink">
                 {t('landing.footer.resources', 'Recursos')}
               </h2>
-              <ul className="mt-4 space-y-2 text-sm text-ink-muted">
+              <ul className="mt-4 space-y-2 text-sm text-[var(--landing-muted)]">
                 <li>
                   <Link to="/docs" className={`transition-colors hover:text-ink ${linkFocus}`}>
                     {t('landing.footer.resourcesDocs', 'Documentación')}
@@ -276,7 +276,7 @@ export default function Landing() {
               <h2 className="text-sm font-semibold text-ink">
                 {t('landing.footer.community', 'Comunidad')}
               </h2>
-              <ul className="mt-4 space-y-2 text-sm text-ink-muted">
+              <ul className="mt-4 space-y-2 text-sm text-[var(--landing-muted)]">
                 <li>
                   <Link to="/discord" className={`transition-colors hover:text-ink ${linkFocus}`}>
                     {t('landing.footer.communityDiscord', 'Discord')}
@@ -296,7 +296,7 @@ export default function Landing() {
             </nav>
           </div>
 
-          <div className="mt-12 flex flex-col gap-4 pt-6 text-xs text-ink-muted md:flex-row md:items-center md:justify-between">
+          <div className="mt-12 flex flex-col gap-4 pt-6 text-xs text-[var(--landing-muted)] md:flex-row md:items-center md:justify-between">
             <p>
               © {new Date().getFullYear()} {t('app.name')} ·{' '}
               {t('landing.footer.rights', 'Hecho para mesas de D&D.')}

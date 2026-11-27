@@ -35,6 +35,7 @@
   --ring: var(--arcana-500);
   --ink: #ece9e2;
   --ink-muted: var(--slate-ink);
+  --landing-muted: #c9cede;
   --ink-faint: var(--muted-ink);
   --brand: var(--arcana-500);
   --brand-hover: var(--arcana-600);
@@ -93,6 +94,7 @@
   --ink: #1a1614;
   --ink-muted: var(--muted-ink);
   --ink-faint: var(--slate-ink);
+  --landing-muted: #3d4354;
 }
 
 /* Tema: Brasa (calido) */
@@ -102,6 +104,7 @@
   --surface-2: #291f16;
   --border: #3a2c1e;
   --ink: #f5e9d8;
+  --landing-muted: #d8c4a7;
   --brand: #e0922f;
   --brand-hover: #c97e24;
 }
@@ -113,6 +116,7 @@
   --surface-2: #112536;
   --border: #1b3a52;
   --ink: #e2f1ff;
+  --landing-muted: #bcd9ee;
   --brand: #4cc2ff;
   --brand-hover: #35a8e8;
 }
@@ -126,6 +130,7 @@
   --ink: #ffffff;
   --ink-muted: #cbd5e1;
   --ink-faint: #94a3b8;
+  --landing-muted: #e2e8f0;
   --brand: #a78bfa;
   --brand-hover: #c4b5fd;
 }
