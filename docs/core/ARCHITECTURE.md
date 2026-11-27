@@ -1688,7 +1688,7 @@ Advanced AI features
 
 ## 27.1 Overview
 
-Roleito follows the three-state model from Owlbear Rodeo:
+22W22 follows the three-state model from Owlbear Rodeo:
 
 ```text
 PERSISTENT STATE          TRANSIENT STATE          EPHEMERAL STATE
@@ -1886,11 +1886,11 @@ The following systems were designed based on analysis of Owlbear Rodeo architect
 | Status | `IMPLEMENTATION-STATUS.md` | What's built vs planned |
 
 ### Key Differentiator
-Owlbear does NOT semantically interpret map images. Roleito builds:
+Owlbear does NOT semantically interpret map images. 22W22 builds:
 ```text
 Map Analyzer → Semantic Scene → 2D Battlemap + 3D Immersive View
 ```
-from the same source image. This is Roleito's core advantage.
+from the same source image. This is 22W22's core advantage.
 
 ---
 

@@ -8,7 +8,7 @@ sources: [docs/core/CONTEXT.md]
 
 ## Estado Actual
 
-Roleito está en **fase VTT funcional** — el core del mapa, tokens, iluminación dinámica, niebla de guerra, y visión por conos funciona. Falta el layer de combate, dados, y UI de jugador completa.
+22W22 está en **fase VTT funcional** — el core del mapa, tokens, iluminación dinámica, niebla de guerra, y visión por conos funciona. Falta el layer de combate, dados, y UI de jugador completa.
 
 ## Features Implementadas
 
@@ -75,7 +75,7 @@ Roleito está en **fase VTT funcional** — el core del mapa, tokens, iluminaci�
 
 ## Nuestra Ventaja Competitiva
 
-| Feature | Roleito | Roll20 | Foundry | Owlbear |
+| Feature | 22W22 | Roll20 | Foundry | Owlbear |
 |---------|---------|--------|---------|---------|
 | Auto wall detection | ✅ único | ❌ | ❌ | ❌ |
 | 3D renderer nativo | ✅ | ❌ | ❌ módulos | ❌ |
