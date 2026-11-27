@@ -1340,8 +1340,11 @@ async def import_campaign(
             content = base64.b64decode(asset.get("data_base64", ""))
         except ValueError:
             continue
-        new_rel = rewrite_campaign_prefix(rel, campaign.id)
-        target = asset_abs(new_rel)
+        try:
+            new_rel = rewrite_campaign_prefix(rel, campaign.id)
+            target = asset_abs(new_rel)
+        except ValueError:
+            continue  # path no canónico: se ignora el asset, nunca se escribe afuera
         os.makedirs(os.path.dirname(target), exist_ok=True)
         with open(target, "wb") as f:
             f.write(content)

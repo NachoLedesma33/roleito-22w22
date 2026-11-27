@@ -53,6 +53,37 @@ def remove_asset_file(path: str | None) -> None:
         os.remove(real)
 
 
+def asset_rel(path: str | None) -> str | None:
+    """Reduce un path de columna a la forma relativa canónica `data/assets/...`.
+
+    El JSON de import es datos del usuario: un `data/assets/../../x` no es un
+    asset, es un intento de salir del árbol. Se rechaza en la frontera para que
+    `asset_abs()` nunca pueda escribir afuera.
+    """
+    if not path:
+        return None
+    norm = path.replace("\\", "/")
+    if norm.startswith("/"):
+        return None
+    idx = norm.find("data/assets")
+    if idx == -1 or (idx > 0 and norm[idx - 1] != "/"):
+        return None
+    rel = norm[idx:]
+    if ".." in rel.split("/"):
+        return None
+    return rel
+
+
+def asset_abs(rel: str) -> str:
+    """El absoluto de un path relativo canónico, confinado a `ASSETS_DIR`."""
+    suffix = rel[len("data/assets"):].lstrip("/").replace("/", os.sep)
+    target = os.path.join(ASSETS_DIR, suffix)
+    root = os.path.realpath(ASSETS_DIR)
+    if os.path.commonpath([root, os.path.realpath(target)]) != root:
+        raise ValueError("asset path outside data/assets")
+    return target
+
+
 def rewrite_campaign_prefix(rel: str, campaign_id: str) -> str:
     """Cambia la campaña de un path relativo canónico `data/assets/...`.
 
@@ -61,26 +92,13 @@ def rewrite_campaign_prefix(rel: str, campaign_id: str) -> str:
     importada queda apuntando a los archivos de la otra y borrar la de origen
     rompería la copia.
     """
+    if asset_rel(rel) != rel:
+        raise ValueError("invalid canonical asset path")
     parts = rel[len("data/assets/"):].split("/", 1)
     tail = parts[1] if len(parts) > 1 else ""
-    return f"data/assets/{campaign_id}/{tail}"
-
-
-def asset_rel(path: str | None) -> str | None:
-    """Reduce un path de columna al forma relativo portable 'data/assets/...'."""
-    if not path:
-        return None
-    norm = path.replace("\\", "/")
-    idx = norm.find("data/assets")
-    if idx == -1:
-        return None
-    return norm[idx:]
-
-
-def asset_abs(rel: str) -> str:
-    """El absoluto de un path relativo canónico."""
-    suffix = rel[len("data/assets"):].lstrip("/").replace("/", os.sep)
-    return os.path.join(ASSETS_DIR, suffix)
+    new_rel = f"data/assets/{campaign_id}/{tail}"
+    asset_abs(new_rel)  # valida que el resultado siga confinado
+    return new_rel
 
 
 def import_asset_path(value: str | None) -> str | None:
