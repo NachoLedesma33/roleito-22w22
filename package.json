@@ -8,6 +8,8 @@
     "dev:dm": "npm run dev --workspace=apps/dm",
     "dev:lan": "npm run dev:lan --workspace=apps/dm",
     "dev:all": "node scripts/dev-all.mjs",
+    "dev:backend:alt": "cd backend && ..\\venv\\Scripts\\python.exe -m uvicorn main:app --port 8001 --reload",
+    "dev:dm:alt": "set ROLEITO_BACKEND=http://localhost:8001&& npm run dev --workspace=apps/dm -- --port 5181",
     "build:prod": "npm run build --workspace=apps/dm",
     "serve:prod": "npm run serve:prod --workspace=apps/dm",
     "serve:lan": "npm run serve:lan --workspace=apps/dm",

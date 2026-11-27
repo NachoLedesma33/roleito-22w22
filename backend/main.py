@@ -8,6 +8,24 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 
+
+def _load_env_local() -> None:
+    env_path = Path(__file__).with_name(".env.local")
+    if not env_path.exists():
+        return
+    for raw in env_path.read_text(encoding="utf-8-sig").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        if not key:
+            continue
+        os.environ.setdefault(key, value.strip().strip('"').strip("'"))
+
+
+_load_env_local()
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from database import init_db

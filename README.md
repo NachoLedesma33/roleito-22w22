@@ -67,6 +67,8 @@ Determinista → código (movimiento, coords, escena, visibilidad). Probabilíst
 ```bash
 npm run dev          # frontend (5173, proxy a backend)
 npm run dev:backend  # backend (8000, con venv)
+npm run dev:backend:alt # backend (8001, con venv)
+npm run dev:dm:alt   # frontend (5181, proxy a 8001)
 npm run dev:all      # todo en una terminal (backend + frontend + túnel)
 npm run dev:lan      # frontend accesible en LAN
 npm run setup:tunnel # setup one-time de Tailscale Funnel (URL fija)
@@ -74,6 +76,8 @@ npm run typecheck    # tsc --noEmit
 npm run lint         # eslint
 npm run test --workspace=apps/dm  # vitest
 ```
+
+Para varios localhost: `dev:backend:alt` + `dev:dm:alt` en dos terminales. Frontend fijo en `5181`, backend en `8001`; no toca `4345`, `8000` ni `5173`. Cambiar puertos con `ROLEITO_BACKEND=<backend>` y `--port <frontend>`. Verificar: POST inválido a `/api/contact` debe dar `422`, nunca `404`.
 
 ## Verificación
 
