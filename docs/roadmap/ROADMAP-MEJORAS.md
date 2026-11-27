@@ -106,6 +106,20 @@ Lista priorizada de mejoras futuras. Cada item: problema → propuesta → notas
 - **Implementación**: job `audit` en `.github/workflows/e2e.yml` con `continue-on-error: true`; corre `npm audit --json` y `pip-audit --format json` y sube ambos JSON como artifact `dependency-audit` (`if: always()`, `if-no-files-found: ignore`). No toca `needs` de `test`, así que los jobs verdes siguen verdes. `checkout` sin `lfs: true`.
 - **Nota**: es reporte, no solución. La deuda de dependencias sigue pendiente; el job solo la hace visible sin frenar el pipeline.
 
+## 14. Avisos legales y consentimiento versionado (HECHO 2026-11-27)
+
+- **Problema**: el footer linkaba avisos que no existían y el formulario de contacto no dejaba constancia de qué texto de privacidad se aceptó.
+- **Implementación**: componente único `LegalPage` con `kind` y rutas `/terms`, `/privacy`, `/ai-notice`, `/content-notice`, `/credits`; textos es/en bajo `legal.*` y etiqueta visible «Borrador — revisión legal pendiente». `NOTICE` se construye desde `docs/audio/CREDITS.md` y las librerías usadas; no se inventan licencias.
+- **Consentimiento**: `CONSENT_VERSION = "2026-11-27"` aparece en el formulario y el backend solo acepta ese literal en el payload. e2e `C01` envía `consent_version`.
+- **Aviso**: son textos técnicos de orientación, no dictamen. Publicación requiere revisión de abogado.
+
+## 15. Portabilidad y borrado del perfil DM (HECHO 2026-11-27)
+
+- **Problema**: el DM no tenía forma de descargar sus datos ni de borrar su perfil; un borrado naive podía llevarse campañas compartidas por otros perfiles.
+- **Backend**: `GET /api/auth/me/export` devuelve perfil, sesiones y campañas (reutiliza `export_campaign`); `DELETE /api/auth/me` exige `{"confirmation":"DELETE"}` y borra perfil + sus sesiones, sin tocar campañas. Tests RED→GREEN: `backend/tests/test_dm_data_rights.py` (4).
+- **UI**: Ajustes → Tus datos, con descarga JSON y confirmación de borrado; la sesión local se limpia y el perfil desaparece de la lista del navegador. e2e `L1`–`L2` verifica el archivo descargado, los 401 de ambos tokens y que la campaña sigue accesible.
+- **Límite**: la portabilidad cubre perfil/sesiones/campanas de la instalación; los mensajes de contacto se siguen gestionando por el formulario y el plazo de retención documentado.
+
 ## Prioridad sugerida
 
 P1: seguridad login, race condition personaje, fluidez movimiento.
