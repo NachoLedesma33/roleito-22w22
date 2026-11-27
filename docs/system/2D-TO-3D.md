@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-Roleito renders the same scene graph through two distinct lenses:
+22W22 renders the same scene graph through two distinct lenses:
 
 - **2D View** — Tactical battlemap. Grid-based, top-down, token icons, flat colors. The primary interface for combat encounters and spatial planning.
 - **3D View** — Immersive Three.js scene. Character models, volumetric lighting, environmental detail. Used for exploration, cinematic moments, and atmosphere.
@@ -789,7 +789,7 @@ const fogShader = {
 
 ### Hybrid Approach
 
-Roleito uses a hybrid approach:
+22W22 uses a hybrid approach:
 - **Explored but not visible**: Semi-transparent fog (post-processing)
 - **Never explored**: Opaque fog (volumetric)
 - **Visible**: No fog
@@ -980,7 +980,7 @@ function profileScene(scene: THREE.Scene): void {
 
 ## 12. Integration Points
 
-The 3D renderer connects to every major subsystem in Roleito.
+The 3D renderer connects to every major subsystem in 22W22.
 
 ### Scene Graph
 

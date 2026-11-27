@@ -2,7 +2,7 @@
 
 > Integracion de IA para entornos 3D virtuales.
 >
-> Enfoque pratico para Roleito: tablero virtual inmersivo.
+> Enfoque pratico para 22W22: tablero virtual inmersivo.
 >
 > **ESTADO: DRAFT**
 
