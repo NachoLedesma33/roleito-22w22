@@ -1,9 +1,9 @@
 ---
 name: roleito-docsync
-description: OBLIGATORIA al cerrar o cambiar algo importante en Roleito — feature/fase cerrada, bugfix relevante, decisión de producto o arquitectura, cambio de comportamiento/contrato o de idea. Antes de commitear, actualiza la documentación afectada para que ningún doc quede afirmando algo desactualizado. Checklist de qué docs tocar y verificación final.
+description: OBLIGATORIA al cerrar o cambiar algo importante en 22W22 — feature/fase cerrada, bugfix relevante, decisión de producto o arquitectura, cambio de comportamiento/contrato o de idea. Antes de commitear, actualiza la documentación afectada para que ningún doc quede afirmando algo desactualizado. Checklist de qué docs tocar y verificación final.
 ---
 
-# Doc sync — Roleito
+# Doc sync — 22W22
 
 Regla: **cada cambio importante cierra con sus docs al día**. Un doc que afirma algo
 falso cuesta más tiempo que el cambio mismo. Lección pagada: el roadmap de "visión por

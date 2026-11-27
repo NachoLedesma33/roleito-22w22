@@ -1,9 +1,9 @@
 ---
 name: roleito-bg-models
-description: Carga un modelo 3D nuevo al catálogo de ambientes de fondo (room skins) de Roleito. Usar cuando el usuario pasa un archivo .glb/.gltf y pide agregarlo al catálogo de fondos.
+description: Carga un modelo 3D nuevo al catálogo de ambientes de fondo (room skins) de 22W22. Usar cuando el usuario pasa un archivo .glb/.gltf y pide agregarlo al catálogo de fondos.
 ---
 
-# Roleito — Cargar modelo de fondo (room skin)
+# 22W22 — Cargar modelo de fondo (room skin)
 
 ## Pasos
 
