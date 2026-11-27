@@ -1,4 +1,4 @@
-# Roleito — Plan: Replay de sesión + Recap con IA
+# 22W22 — Plan: Replay de sesión + Recap con IA
 
 ## Objetivo
 Grabar los eventos de una sesión y reproducirlos como timeline. Al cerrar la sesión, procesar los eventos con IA para extraer lo importante (combates, decisiones, loot, cambios de estado) y generar un recap filtrado. Análogo a apps de transcripción de reuniones (Otter, Fireflies).

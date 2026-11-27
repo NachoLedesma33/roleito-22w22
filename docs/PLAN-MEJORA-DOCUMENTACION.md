@@ -1,4 +1,4 @@
-# Roleito — Plan de mejora del manejo de documentación
+# 22W22 — Plan de mejora del manejo de documentación
 
 Mejoras incrementales basadas en conceptos de LLM Wiki (Karpathy) pero adaptadas a la estructura existente. Sin crear wiki/ ni raw/ nuevos.
 
