@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "22w22",
+    "name": "22W22 - D&D VTT",
     "tagline": "El mundo que tus sesiones recuerdan"
   },
   "audio": {
@@ -84,7 +84,7 @@
   },
   "dialog": {
     "logoutDesc": "Para volver a entrar vas a necesitar el PIN.",
-    "logoutTitle": "¿Salir de 22w22?"
+    "logoutTitle": "¿Salir de 22W22?"
   },
   "dm": {
     "inviteNoTunnel": "No hay tunel: la URL de arriba es de esta maquina. Levantalo con npm run tunnel o pega la URL del tunel.",
@@ -771,7 +771,7 @@
     "intro": "Consultas, errores o sugerencias: este formulario no es un canal de emergencias.",
     "message": "Mensaje",
     "name": "Nombre",
-    "notice": "Tu mensaje se guarda en este servidor durante 90 días (30 si se marca respondido). Solo lo lee el equipo que administra Roleito; la dirección de destino se configura en el servidor y no se publica. Podés pedir acceso, corrección o borrado escribiendo por este mismo canal. No es un canal de emergencias.",
+    "notice": "Tu mensaje se guarda en este servidor durante 90 días (30 si se marca respondido). Solo lo lee el equipo que administra 22W22; la dirección de destino se configura en el servidor y no se publica. Podés pedir acceso, corrección o borrado escribiendo por este mismo canal. No es un canal de emergencias.",
     "noticeTitle": "Cómo se usan tus datos",
     "rateLimited": "Demasiados mensajes. Probá más tarde.",
     "sending": "Enviando...",
@@ -805,8 +805,8 @@
     "content": {
       "assets": "Los assets incluidos conservan la licencia de sus autores. La lista de créditos está en la sección Créditos.",
       "assetsTitle": "Assets de terceros",
-      "intro": "Borrador técnico. Define responsabilidad sobre el contenido creado en Roleito. Requiere revisión de un abogado antes de publicarse.",
-      "ownership": "Las campañas, mapas, notas y personajes que cargues son tuyos. Roleito no reclama propiedad sobre ese contenido.",
+      "intro": "Borrador técnico. Define responsabilidad sobre el contenido creado en 22W22. Requiere revisión de un abogado antes de publicarse.",
+      "ownership": "Las campañas, mapas, notas y personajes que cargues son tuyos. 22W22 no reclama propiedad sobre ese contenido.",
       "ownershipTitle": "Contenido del DM",
       "response": "Si encontrás contenido que vulnera estos términos, escribí por el formulario de contacto con el link o la referencia. El equipo puede revisarlo y retirarlo.",
       "responseTitle": "Reportes",
@@ -815,7 +815,7 @@
     "credits": {
       "assets": "Los mapas, audio y efectos bundled se listan en el archivo NOTICE con su fuente y licencia. Los archivos que subas vos no se incluyen ahí.",
       "assetsTitle": "Assets",
-      "intro": "Programas y assets usados por Roleito. Las licencias completas están en el archivo NOTICE del repositorio.",
+      "intro": "Programas y assets usados por 22W22. Las licencias completas están en el archivo NOTICE del repositorio.",
       "software": "React, TypeScript, Vite, Tailwind CSS, Three.js, React Three Fiber, FastAPI, SQLAlchemy y SQLite. Cada proyecto mantiene su propia licencia.",
       "softwareTitle": "Software",
       "title": "Créditos"
@@ -825,9 +825,9 @@
       "title": "Avisos legales"
     },
     "privacy": {
-      "contact": "Nombre, correo, asunto y mensaje se guardan 90 días, o 30 si se marca respondido. Solo los lee el equipo que administra Roleito. No es un canal de emergencias.",
+      "contact": "Nombre, correo, asunto y mensaje se guardan 90 días, o 30 si se marca respondido. Solo los lee el equipo que administra 22W22. No es un canal de emergencias.",
       "contactTitle": "Formulario de contacto",
-      "intro": "Borrador técnico. Explica qué datos maneja Roleito. Requiere revisión de un abogado antes de publicarse.",
+      "intro": "Borrador técnico. Explica qué datos maneja 22W22. Requiere revisión de un abogado antes de publicarse.",
       "local": "Las campañas, personajes, eventos y world state se guardan en la base local del servidor. No se envían a un proveedor externo salvo que actives una integración de IA.",
       "localTitle": "Datos de campaña",
       "logs": "El servidor puede registrar IP, hora y tipo de solicitud para limitar abusos y diagnosticar fallos. Los tokens de sesión viven en la pestaña del navegador.",
@@ -843,9 +843,9 @@
       "changesTitle": "Cambios",
       "files": "La base y los assets viven en la máquina donde corre el servidor. Hacer backups es tu responsabilidad.",
       "filesTitle": "Tus archivos",
-      "intro": "Borrador técnico. Define cómo se usa Roleito. Requiere revisión de un abogado antes de publicarse.",
-      "scope": "Roleito es un motor local-first para manejar campañas de rol. El DM decide qué entra en la campaña y qué se comparte con los jugadores.",
-      "scopeTitle": "Qué es Roleito",
+      "intro": "Borrador técnico. Define cómo se usa 22W22. Requiere revisión de un abogado antes de publicarse.",
+      "scope": "22W22 es un motor local-first para manejar campañas de rol. El DM decide qué entra en la campaña y qué se comparte con los jugadores.",
+      "scopeTitle": "Qué es 22W22",
       "title": "Términos de uso",
       "use": "Usá el engine para tus campañas y contenido propio. No lo uses para acosar, suplantar identidades, publicar material ilegal ni saturar el servicio.",
       "useTitle": "Uso permitido"

@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "22w22",
+    "name": "22W22 - D&D VTT",
     "tagline": "The world your sessions remember"
   },
   "audio": {
@@ -84,7 +84,7 @@
   },
   "dialog": {
     "logoutDesc": "To get back in you will need the PIN.",
-    "logoutTitle": "Leave 22w22?"
+    "logoutTitle": "Leave 22W22?"
   },
   "dm": {
     "inviteCopyLink": "Copy the game link",
@@ -771,7 +771,7 @@
     "intro": "Questions, bugs or suggestions: this form is not an emergency channel.",
     "message": "Message",
     "name": "Name",
-    "notice": "Your message is stored on this server for 90 days (30 if marked as answered). Only the team running Roleito reads it; the destination address is configured on the server and is not published. You can request access, correction or deletion through this same channel. This is not an emergency channel.",
+    "notice": "Your message is stored on this server for 90 days (30 if marked as answered). Only the team running 22W22 reads it; the destination address is configured on the server and is not published. You can request access, correction or deletion through this same channel. This is not an emergency channel.",
     "noticeTitle": "How your data is used",
     "rateLimited": "Too many messages. Please try later.",
     "sending": "Sending...",
@@ -805,8 +805,8 @@
     "content": {
       "assets": "Bundled assets keep their authors' licenses. The credits list is in the Credits section.",
       "assetsTitle": "Third-party assets",
-      "intro": "Technical draft. Defines responsibility for content created in Roleito. Requires a lawyer's review before publication.",
-      "ownership": "Campaigns, maps, notes and characters you add are yours. Roleito claims no ownership over that content.",
+      "intro": "Technical draft. Defines responsibility for content created in 22W22. Requires a lawyer's review before publication.",
+      "ownership": "Campaigns, maps, notes and characters you add are yours. 22W22 claims no ownership over that content.",
       "ownershipTitle": "DM content",
       "response": "If you find content that breaks these terms, use the contact form with the link or reference. The team may review and remove it.",
       "responseTitle": "Reports",
@@ -815,7 +815,7 @@
     "credits": {
       "assets": "Bundled maps, audio and effects are listed in the NOTICE file with their source and license. Files you upload are not included there.",
       "assetsTitle": "Assets",
-      "intro": "Software and assets used by Roleito. Full licenses are in the repository's NOTICE file.",
+      "intro": "Software and assets used by 22W22. Full licenses are in the repository's NOTICE file.",
       "software": "React, TypeScript, Vite, Tailwind CSS, Three.js, React Three Fiber, FastAPI, SQLAlchemy and SQLite. Each project keeps its own license.",
       "softwareTitle": "Software",
       "title": "Credits"
@@ -825,9 +825,9 @@
       "title": "Legal notices"
     },
     "privacy": {
-      "contact": "Name, email, subject and message are stored for 90 days, or 30 if marked as answered. Only the team running Roleito reads them. This is not an emergency channel.",
+      "contact": "Name, email, subject and message are stored for 90 days, or 30 if marked as answered. Only the team running 22W22 reads them. This is not an emergency channel.",
       "contactTitle": "Contact form",
-      "intro": "Technical draft. Explains what data Roleito handles. Requires a lawyer's review before publication.",
+      "intro": "Technical draft. Explains what data 22W22 handles. Requires a lawyer's review before publication.",
       "local": "Campaigns, characters, events and world state are stored in the server's local database. They are not sent to an external provider unless you enable an AI integration.",
       "localTitle": "Campaign data",
       "logs": "The server may log IP, time and request type to limit abuse and diagnose failures. Session tokens live in the browser tab.",
@@ -843,9 +843,9 @@
       "changesTitle": "Changes",
       "files": "The database and assets live on the machine running the server. Backups are your responsibility.",
       "filesTitle": "Your files",
-      "intro": "Technical draft. Defines how Roleito is used. Requires a lawyer's review before publication.",
-      "scope": "Roleito is a local-first engine for running tabletop RPG campaigns. The DM decides what enters the campaign and what is shared with players.",
-      "scopeTitle": "What Roleito is",
+      "intro": "Technical draft. Defines how 22W22 is used. Requires a lawyer's review before publication.",
+      "scope": "22W22 is a local-first engine for running tabletop RPG campaigns. The DM decides what enters the campaign and what is shared with players.",
+      "scopeTitle": "What 22W22 is",
       "title": "Terms of use",
       "use": "Use the engine for your campaigns and own content. Do not use it to harass, impersonate, publish illegal material or overload the service.",
       "useTitle": "Allowed use"
