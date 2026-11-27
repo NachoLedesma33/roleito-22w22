@@ -108,7 +108,7 @@ export default function Landing() {
             className="absolute left-14 top-7 z-10 h-60 w-auto sm:left-16 md:left-20 md:h-80"
           />
           <div className="flex items-center justify-end gap-5 pt-4">
-            <nav aria-label={t('landing.footer.resources', 'Recursos')} className="hidden items-center gap-5 text-sm sm:flex">
+            <nav aria-label={`${t('landing.nav.guide', 'Guía del DM')} · ${t('landing.nav.faq', 'Preguntas frecuentes')} · ${t('landing.nav.contact', 'Contacto')}`} className="hidden items-center gap-5 text-sm sm:flex">
               <Link to="/guide" className={`text-ink-muted transition-colors hover:text-ink ${linkFocus}`}>
                 {t('landing.nav.guide', 'Guía del DM')}
               </Link>

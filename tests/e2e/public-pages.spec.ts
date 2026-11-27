@@ -26,7 +26,7 @@ test.describe('Páginas públicas', () => {
 
   test('P07: la navbar de la landing ofrece guía, FAQ y contacto', async ({ page }) => {
     await page.goto('/');
-    const nav = page.getByRole('navigation', { name: 'Recursos' }).first();
+    const nav = page.getByRole('navigation', { name: /Guía del DM.*Preguntas frecuentes.*Contacto/ });
     await expect(nav.getByRole('link', { name: 'Guía del DM' })).toBeVisible();
     await expect(nav.getByRole('link', { name: 'Preguntas frecuentes' })).toBeVisible();
     await expect(nav.getByRole('link', { name: 'Contacto' })).toBeVisible();
