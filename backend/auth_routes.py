@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
@@ -25,7 +28,7 @@ from auth import (
 )
 from database import async_session as get_db
 from sqlalchemy import func, select
-from models import DM
+from models import AuthSession as AuthSessionRow, Campaign, DM
 from rate_limit import client_key
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -66,6 +69,10 @@ class LoginResponse(BaseModel):
     role: str
     dm_id: str
     dm_name: str
+
+
+class DeleteDmRequest(BaseModel):
+    confirmation: Literal["DELETE"]
 
 
 @router.get("/status")
@@ -182,6 +189,68 @@ async def get_me(session: AuthSession = Depends(get_current_session)):
         dm_id=session.dm_id,
         dm_name=dm.name if dm else "Unknown",
     )
+
+
+@router.get("/me/export")
+async def export_my_data(session: AuthSession = Depends(require_dm)):
+    """Exporta perfil, sesiones y campañas en un único JSON."""
+    dm = await get_dm_by_id(session.dm_id)
+    if not dm:
+        raise HTTPException(status_code=404, detail="DM not found")
+
+    from routes import export_campaign
+
+    async with get_db() as db:
+        session_rows = (
+            await db.execute(
+                select(AuthSessionRow).where(AuthSessionRow.dm_id == dm.id)
+            )
+        ).scalars().all()
+        campaign_rows = (
+            await db.execute(select(Campaign).order_by(Campaign.created_at))
+        ).scalars().all()
+        campaigns = [await export_campaign(c.id, db) for c in campaign_rows]
+
+    return {
+        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "dm": {
+            "id": dm.id,
+            "name": dm.name,
+            "created_at": dm.created_at.isoformat(),
+        },
+        "sessions": [
+            {
+                "id": s.id,
+                "role": s.role,
+                "campaign_id": s.campaign_id,
+                "created_at": s.created_at.isoformat(),
+                "last_seen": s.last_seen.isoformat(),
+            }
+            for s in session_rows
+        ],
+        "campaigns": [c.model_dump(mode="json") for c in campaigns],
+    }
+
+
+@router.delete("/me")
+async def delete_my_data(
+    body: DeleteDmRequest, session: AuthSession = Depends(require_dm)
+):
+    """Borra el perfil y sus sesiones; las campañas compartidas siguen."""
+    async with get_db() as db:
+        sessions = await db.scalar(
+            select(func.count())
+            .select_from(AuthSessionRow)
+            .where(AuthSessionRow.dm_id == session.dm_id)
+        )
+    if not await delete_dm(session.dm_id):
+        raise HTTPException(status_code=404, detail="DM not found")
+    return {
+        "ok": True,
+        "deleted_dm": session.dm_id,
+        "sessions": sessions or 0,
+        "campaigns": 0,
+    }
 
 
 @router.post("/logout")
