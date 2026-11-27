@@ -33,16 +33,12 @@ const PARTICLES = Array.from({ length: 18 }, (_, i) => {
 export default function LoginShell({ onExitComplete }: { onExitComplete: () => void }) {
   const { session } = useAuth();
   const [unlocking, setUnlocking] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const doneRef = useRef(onExitComplete);
   doneRef.current = onExitComplete;
 
   useEffect(() => {
     if (!session || unlocking) return;
     setUnlocking(true);
-    // El video arranca recién cuando el perfil fue corroborado: simula la
-    // entrada al lobby mientras el formulario se abre.
-    void videoRef.current?.play().catch(() => {});
   }, [session, unlocking]);
 
   useEffect(() => {
@@ -54,8 +50,9 @@ export default function LoginShell({ onExitComplete }: { onExitComplete: () => v
   return (
     <main className="relative min-h-screen overflow-hidden bg-black">
       <video
-        ref={videoRef}
         src={VIDEO_SRC}
+        autoPlay
+        loop
         muted
         playsInline
         preload="auto"

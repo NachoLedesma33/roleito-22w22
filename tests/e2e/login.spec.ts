@@ -77,4 +77,12 @@ test.describe('Login nombre + PIN', () => {
     await expect(page.getByTestId('login-error')).toHaveText('Nombre o PIN incorrectos.');
     await expect(page.getByTestId('login-submit')).toBeVisible();
   });
+
+  test('L4: el video de marca entra en loop desde la pantalla de login', async ({ page }) => {
+    await page.goto('/login');
+    const video = page.locator('main video').first();
+    await expect(video).toHaveAttribute('autoplay', '');
+    await expect(video).toHaveAttribute('loop', '');
+    await expect(video).toHaveJSProperty('muted', true);
+  });
 });
