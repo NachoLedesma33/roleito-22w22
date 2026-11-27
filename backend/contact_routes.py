@@ -79,7 +79,7 @@ def _send_email(row: ContactMessage) -> bool:
     mail["From"] = user
     mail["To"] = recipient
     mail["Reply-To"] = row.email
-    mail["Subject"] = f"[Roleito] {row.subject}"
+    mail["Subject"] = f"[22W22] {row.subject}"
     mail.set_content(
         f"Ticket: {row.ticket}\nNombre: {row.name}\nEmail: {row.email}\n"
         f"Asunto: {row.subject}\n\n{row.body}"

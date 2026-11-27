@@ -27,7 +27,7 @@ function hasTailscale() {
 const ts = hasTailscale();
 const plat = platform();
 
-console.log('=== Roleito: setup de tunnel remoto (Tailscale Funnel) ===\n');
+console.log('=== 22W22: setup de tunnel remoto (Tailscale Funnel) ===\n');
 
 if (!ts) {
   console.log('Tailscale NO esta instalado. Instalalo una vez:\n');
