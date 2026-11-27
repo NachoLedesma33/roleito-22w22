@@ -25,6 +25,7 @@ from auth import (
 from database import async_session as get_db
 from sqlalchemy import func, select
 from models import DM
+from rate_limit import client_key
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -75,7 +76,7 @@ async def auth_status():
 @router.post("/register", response_model=LoginResponse)
 async def register_dm(body: DMCreateRequest, request: Request):
     """Register a new DM with name + PIN. Creates session."""
-    ip = request.client.host if request.client else "unknown"
+    ip, _ = client_key(request.headers, request.client.host if request.client else None)
     if check_lockout(ip):
         raise HTTPException(status_code=429, detail="Too many attempts. Try later.")
 
@@ -104,7 +105,7 @@ async def login(body: PinLoginRequest, request: Request):
     ("DM not found" vs "Invalid PIN") le sirve a un atacante para enumerar qué
     perfiles existen en la máquina.
     """
-    ip = request.client.host if request.client else "unknown"
+    ip, _ = client_key(request.headers, request.client.host if request.client else None)
     if check_lockout(ip):
         raise HTTPException(status_code=429, detail="Too many attempts. Try later.")
 

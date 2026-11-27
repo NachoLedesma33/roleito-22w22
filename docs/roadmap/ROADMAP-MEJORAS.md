@@ -4,8 +4,7 @@ Lista priorizada de mejoras futuras. Cada item: problema → propuesta → notas
 
 ## 1. Seguridad de login
 
-- **PIN en texto plano / sin rate limit**: el backend usa PIN de 4-8 dígitos sin lockout. Un atacante puede brute-force.
-  - Propuesta: lockout tras N intentos fallidos (por IP + por DM), hash con bcrypt/argon2 (ya se hashea, verificar costo), expiración de token JWT.
+- **PIN con lockout por IP real (RESUELTO 2026-11-27)**: el backend usa PIN de 4-8 dígitos hasheados con bcrypt y bloquea tras 5 intentos fallidos durante 5 minutos. Antes la clave era la IP del socket (`127.0.0.1` detrás del túnel): un visitante podía dejar sin login a todos. Ahora `register`/`login` usan `client_key()` de `rate_limit.py` (`CF-Connecting-IP` → `X-Forwarded-For` → socket), igual que el rate limit. Queda pendiente: persistir el contador entre reinicios y además por perfil DM, no solo por IP. Tests: `backend/tests/test_auth_lockout.py` (RED→GREEN, 2 tests).
   - Tokens de sesión: agregar refresh token + revocación (logout real).
   - CORS: revisar orígenes permitidos en producción (no `*`).
   - Invites: códigos de un solo uso / expiración temporal para joins públicos.
