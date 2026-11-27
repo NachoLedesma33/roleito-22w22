@@ -4,7 +4,7 @@ import es from '../locales/es/translation.json'
 import en from '../locales/en/translation.json'
 
 /**
- * i18n de Roleito. Preferencia de UI (no de campaña) persistida en localStorage.
+ * i18n de 22W22. Preferencia de UI (no de campaña) persistida en localStorage.
  * Los nombres de campaña/personaje son datos y no se traducen.
  * Los archivos de idioma (src/locales/{es,en}/translation.json) son generados
  * y mantenidos con `i18next-parser` (`npm run i18n:extract`).
