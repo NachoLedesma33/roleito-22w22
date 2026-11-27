@@ -21,7 +21,7 @@ class AgentResult:
 
 
 class BaseAgent(ABC):
-    """Base class for all AI agents in Roleito."""
+    """Base class for all AI agents in 22W22."""
 
     agent_id: str = "base"
     version: str = "1.0"
