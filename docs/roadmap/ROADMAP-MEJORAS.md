@@ -100,6 +100,12 @@ Lista priorizada de mejoras futuras. Cada item: problema → propuesta → notas
 - **Implementación**: `DELETE /api/auth/sessions` con `require_dm`, alcance por `dm_id`, incluye la sesión actual. El botón vive en Ajustes → Seguridad con confirmación; el contador de sesiones cerradas se devuelve al cliente. La UI limpia el token local y vuelve a la landing.
 - **Seguridad**: un token de jugador no puede invocarlo (403); sin token da 401; las sesiones de otros DMs no se tocan.
 
+## 13. Auditoría de dependencias no bloqueante (HECHO 2026-11-27)
+
+- **Problema**: `npm audit` reporta 6 high y 3 critical (28 total). Ponerlo como gate dejaría el CI rojo desde el primer push y no arregla la deuda.
+- **Implementación**: job `audit` en `.github/workflows/e2e.yml` con `continue-on-error: true`; corre `npm audit --json` y `pip-audit --format json` y sube ambos JSON como artifact `dependency-audit` (`if: always()`, `if-no-files-found: ignore`). No toca `needs` de `test`, así que los jobs verdes siguen verdes. `checkout` sin `lfs: true`.
+- **Nota**: es reporte, no solución. La deuda de dependencias sigue pendiente; el job solo la hace visible sin frenar el pipeline.
+
 ## Prioridad sugerida
 
 P1: seguridad login, race condition personaje, fluidez movimiento.
