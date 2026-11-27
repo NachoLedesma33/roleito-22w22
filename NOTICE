@@ -1,0 +1,77 @@
+Roleito — NOTICE de software y assets
+
+Este archivo acompaña al repositorio. No reemplaza la revisión legal de los textos públicos.
+
+1. Software de terceros
+
+Roleito usa, entre otros:
+
+- React — MIT
+- TypeScript — Apache-2.0
+- Vite — MIT
+- Tailwind CSS — MIT
+- Three.js — MIT
+- React Three Fiber — MIT
+- FastAPI — MIT
+- SQLAlchemy — MIT
+- SQLite — dominio público
+
+Las versiones exactas están en `package-lock.json` y `backend/requirements.txt`. Cada
+proyecto conserva su licencia original.
+
+2. Audio
+
+Fuente de verdad: `docs/audio/CREDITS.md`. Solo se importan assets con licencia verificada
+en ese archivo. Los packs CC0 no requieren atribución, pero quedan registrados ahí.
+
+Atribución obligatoria para audio incluido en el repositorio:
+
+- Horror SFX Volume 1 — ObsydianX (itch.io), CC BY 4.0,
+  https://obsydianx.itch.io/horror-sfx-volume-1
+- Pink Bloom Synthwave Music Pack — David KBD (itch.io), CC BY 4.0,
+  https://davidkbd.itch.io/pink-bloom-synthwave-music-pack
+- Code Injection Dark Techno Music Pack — David KBD (itch.io), CC BY 4.0,
+  https://davidkbd.itch.io/code-injection-dark-techno-music-pack
+- Soundscape and Ambient Music Pack: LOST — MakotoHiramatsu (itch.io), CC BY 4.0,
+  https://makotohiramatsu.itch.io/lost
+- North Sea — MakotoHiramatsu (itch.io), CC BY 4.0,
+  https://makotohiramatsu.itch.io/north-sea
+- Ambiences Music Pack — JDSherbert (itch.io), licencia propia con crédito obligatorio,
+  https://jdsherbert.itch.io/ambiences-music-pack
+- Epic Orchestral Fantasy Theme — linxiaoma (OpenGameArt), CC BY 4.0,
+  https://opengameart.org/content/epic-orchestral-fantasy-theme
+- Sci-Fi Ambient — Crashed Ship — Wolfgang_ (OpenGameArt), CC BY 3.0,
+  https://opengameart.org/content/sci-fi-ambient-crashed-ship
+- "Heartbeat, Regular, Single, 01-01, LOOP.wav" by InspectorJ (www.jshaw.co.uk) of
+  Freesound.org, CC BY 4.0, https://freesound.org/s/485076/
+- "Radio, Noise, Long-Wave, 01-01 LOOP.wav" by InspectorJ (www.jshaw.co.uk) of
+  Freesound.org, CC BY 4.0, https://freesound.org/s/485420/
+
+Para cualquier tema de Kevin MacLeod incluido según `docs/audio/CREDITS.md`, conservar el
+bloque exacto:
+
+  <Title> Kevin MacLeod (incompetech.com)
+  Licensed under Creative Commons: By Attribution 4.0
+  https://creativecommons.org/licenses/by/4.0/
+
+3. Modelos 3D
+
+- Oggy's Room — abhayexe, Sketchfab Standard,
+  https://sketchfab.com/3d-models/vr-room-oggys-room-baked-674cdeccd00c4f9c95a1b41905a6cb4c
+  Licencia local: `apps/dm/public/room/oggys-room/license.txt`.
+
+- Los restantes modelos y skyboxes de `apps/dm/public/room/` no tienen archivo de licencia
+  verificado en el repositorio. Pendiente: revisar ficha de origen de cada uno antes de
+  distribuirlos públicamente. No declararlos CC0 sin esa verificación.
+
+4. Imágenes, logos y marcos de la interfaz
+
+Los archivos de `apps/dm/public/ui/` y `apps/dm/public/frames/` se crearon para Roleito.
+Si alguno procede de un tercero, debe registrarse aquí su autor, fuente y licencia antes de
+publicarse.
+
+5. Contenido del usuario
+
+Campañas, mapas, notas, personajes y archivos subidos por el DM no se incluyen en este
+NOTICE. Su titularidad y responsabilidad se describen en `/terms`, `/content-notice` y
+`/privacy`.
