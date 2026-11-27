@@ -1,4 +1,4 @@
-# Roleito — Glosario de términos
+# 22W22 — Glosario de términos
 
 Términos clave del proyecto y dónde encontrarlos.
 

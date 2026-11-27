@@ -1,4 +1,4 @@
-# Roleito — Plan: Assets 2D/3D drag&drop en el mapa
+# 22W22 — Plan: Assets 2D/3D drag&drop en el mapa
 
 Feature P2 del roadmap. Permite al DM subir/colocar componentes (imagen, glb, gltf, fbx, video) como items de escena.
 
