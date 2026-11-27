@@ -1,4 +1,4 @@
-# Roleito — Plan: LLM Wiki para documentación del proyecto
+# 22W22 — Plan: LLM Wiki para documentación del proyecto
 
 Complemento a `graphify` (grafo de código). Investigación + plan de implementación.
 Referencia: concepto de Andrej Karpathy (LLM Wiki), implementación `Astro-Han/karpathy-llm-wiki`.
@@ -70,7 +70,7 @@ Input: "lint my wiki"
 - Páginas huérfanas
 - Auto-fix + reporte de issues
 
-## 5. Fuentes iniciales (raw/) para Roleito
+## 5. Fuentes iniciales (raw/) para 22W22
 
 Prioridad alta:
 - `docs/core/CONTEXT.md`, `PRODUCT.md`, `ARCHITECTURE.md`, `DOMAIN.md`, `DATABASE.md`, `EVENT-SYSTEM.md`

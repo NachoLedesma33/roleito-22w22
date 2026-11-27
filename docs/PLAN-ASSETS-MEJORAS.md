@@ -1,4 +1,4 @@
-# Roleito — Plan: Mejoras del sistema de Assets
+# 22W22 — Plan: Mejoras del sistema de Assets
 
 Extensión del plan base `docs/PLAN-ASSETS-2D3D.md`. Features adicionales solicitadas.
 
