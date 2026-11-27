@@ -1,4 +1,4 @@
-# Roleito — Plan de audio ambiental (catálogo libre)
+# 22W22 — Plan de audio ambiental (catálogo libre)
 
 Documento de investigación. **No importa assets ni modifica la app.** Todo lo listado acá es candidato a evaluar; nada se descarga ni se commitea sin revisión de licencia ítem por ítem y confirmación explícita.
 
@@ -8,11 +8,11 @@ Objetivo: cubrir ambientación medieval/fantasía, sci-fi/retro/techno, combate,
 
 Interpretación de licencias según Fuente/FAQ oficial (ver §7).
 
-| Licencia | Uso comercial | Atribución | Modificar | Nota para Roleito |
+| Licencia | Uso comercial | Atribución | Modificar | Nota para 22W22 |
 |---|---|---|---|---|
 | **CC0 / Public Domain** | Sí | No | Sí | Preferida. Sin obligaciones. |
 | **CC BY 4.0** | Sí | **Sí (visible)** | Sí | Requiere crédito exacto en UI o archivo de créditos. |
-| **CC BY-NC 4.0** | **No** | Sí | Sí | **_descartar_**: Roleito es local-first pero cualquier monetización/distribución rompe NC. |
+| **CC BY-NC 4.0** | **No** | Sí | Sí | **_descartar_**: 22W22 es local-first pero cualquier monetización/distribución rompe NC. |
 | **Sampling+ (legacy Freesound)** | Restringido | Sí | Parcial | **descartar**: licencia retirada por CC, ambigua. |
 | **Royalty-free de store (Mixkit/Pixabay/itch "commercial use")** | Sí, según términos | Varía | Sí | Tratar como "marketing" hasta leer el texto legal completo. |
 | **OGA-BY / CC-BY-SA / GPL (OpenGameArt)** | Sí | Sí | Sí, con condiciones | Revisar share-alike: puede contagiar el asset derivado. Evitar SA si se recorta/mezcla. |
@@ -67,7 +67,7 @@ David KBD también publicó packs de **metal sci-fi** y **horror**; **DESCARTADO
 
 ### 2.3 Freesound — licencia POR SONIDO
 
-Fuente: `https://freesound.org/`. Cada sound tiene su propia licencia: **CC0 / CC BY 4.0 / CC BY-NC 4.0** (+ legacy Sampling+). Filtrar en búsqueda: `f=license:"Creative Commons 0"`. Formatos: mp3, FLAC, Ogg, WAV/AIFF. **Nunca mezclar NC en Roleito.** Crédito obligatorio para CC BY (plantilla §4).
+Fuente: `https://freesound.org/`. Cada sound tiene su propia licencia: **CC0 / CC BY 4.0 / CC BY-NC 4.0** (+ legacy Sampling+). Filtrar en búsqueda: `f=license:"Creative Commons 0"`. Formatos: mp3, FLAC, Ogg, WAV/AIFF. **Nunca mezclar NC en 22W22.** Crédito obligatorio para CC BY (plantilla §4).
 
 Búsquedas y hallazgos medievales (CC0):
 
@@ -79,7 +79,7 @@ Búsquedas y hallazgos medievales (CC0):
   - `Big Medieval Door - open and close` 0:13 — puerta
 - Autor útil: `InspectorJ` — `https://freesound.org/people/InspectorJ/sounds/` (miles de sounds; **ojo**: muchos son CC BY, no CC0 — verificar cada uno). Fase 0 verificó `Heartbeat, Regular, Single, LOOP` (0:02, CC BY 4.0) y `Radio, Noise, Long-Wave, LOOP` (0:04, CC BY 4.0); ambos en `docs/audio/CREDITS.md`. Resto (glitch, zorros/ranas) **sin verificar** — no importar.
 
-Nota Freesound: si un sound termina en un video con Content ID, la defensa es link al sound + fecha. No aplica a Roleito salvo que se exporten videos.
+Nota Freesound: si un sound termina en un video con Content ID, la defensa es link al sound + fecha. No aplica a 22W22 salvo que se exporten videos.
 
 ### 2.4 OpenGameArt — licencia POR ITEM
 
@@ -95,7 +95,7 @@ Fuente: `https://opengameart.org/` (directo 403; usar `https://r.jina.ai/https:/
 
 Fuente: `https://mixkit.co/free-sound-effects/`. Clips listos para usar, sin signup, sin atribución. **Fase 0 extrajo el texto legal del modal** `https://mixkit.co/license/modal/sfxFree/`: comercial OK, modificar/distribuir en videojuegos OK; **no redistribuir el clip suelto**, no registrar como propio.
 
-⚠️ **Stock Music Free License NO permite video games** (`https://mixkit.co/license/modal/musicFree/`): DESCARTADA para Roleito. Solo se aprueban SFX.
+⚠️ **Stock Music Free License NO permite video games** (`https://mixkit.co/license/modal/musicFree/`): DESCARTADA para 22W22. Solo se aprueban SFX.
 
 Ejemplos detectados: `Arcade retro game over`, `Crickets and insects in the wild ambience`, `Fast rocket whoosh`, `Game show suspense waiting`, `Retro game emergency alarm`, `Cinematic transition swoosh heartbeat trailer`.
 
@@ -107,7 +107,7 @@ Fuentes: `https://pixabay.com/music/search/medieval/` (1,818+ resultados Medieva
 
 Permite: **gratis, sin atribución, modificar/adaptar**. Prohíbe: vender/distribuir **standalone** (sin esfuerzo creativo), usar marcas/logos reconocibles con fines comerciales, uso inmoral/ilegal/engañoso, usar contenido como marca registrada. Responsabilidad del usuario si el contenido tiene derechos de terceros.
 
-Uso: música medieval, buffers de campaña. **No redistribuir los mp3 sueltos como asset descargable dentro de Roleito.**
+Uso: música medieval, buffers de campaña. **No redistribuir los mp3 sueltos como asset descargable dentro de 22W22.**
 
 ### 2.7 incompetech (Kevin MacLeod) — CC BY 4.0, crédito visible obligatorio
 

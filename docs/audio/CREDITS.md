@@ -1,4 +1,4 @@
-# Roleito — Audio credits / license gate
+# 22W22 — Audio credits / license gate
 
 Fuente de verdad de licencias para audio. **Si un asset no está en esta tabla, no entra al repo.** Cerrada 2026-11-18. Cada fila verificada en la página del autor o en el texto legal de la fuente.
 
@@ -75,7 +75,7 @@ Columnas: `título | autor | fuente | licencia | URL | atribución requerida | a
 
 | Fuente / pack | Motivo |
 |---|---|
-| Mixkit Stock Music Free License | **Prohíbe explícitamente video games** —incompatible con Roleito. Solo se aprueban sus SFX. |
+| Mixkit Stock Music Free License | **Prohíbe explícitamente video games** —incompatible con 22W22. Solo se aprueban sus SFX. |
 | 1644 Sound Effects (Nox) | Link 404 al verificar. |
 | Free to Use Sounds | `/license/` 404 —licencia no verificable. |
 | Free Music Archive / chiptune | Licencia por track, FAQ 404 —requiere verificación track por track. |
