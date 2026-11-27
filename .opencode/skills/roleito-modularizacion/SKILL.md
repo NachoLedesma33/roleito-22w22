@@ -1,9 +1,9 @@
 ---
 name: roleito-modularizacion
-description: OBLIGATORIA al escribir, modificar o refactorizar cualquier código de Roleito (frontend apps/dm, backend, core). Aplica la directiva transversal de ingeniería y el plan de fases. Usar en CUALQUIER tarea que toque código, no solo refactors — incluye features nuevas, bugfixes y cambios de UI. Antes de commitear, ejecuta el gate de verificación.
+description: OBLIGATORIA al escribir, modificar o refactorizar cualquier código de 22W22 (frontend apps/dm, backend, core). Aplica la directiva transversal de ingeniería y el plan de fases. Usar en CUALQUIER tarea que toque código, no solo refactors — incluye features nuevas, bugfixes y cambios de UI. Antes de commitear, ejecuta el gate de verificación.
 ---
 
-# Modularización y calidad de código — Roleito
+# Modularización y calidad de código — 22W22
 
 Directiva transversal. Aplica a **toda** tarea que toque código: feature nueva, bugfix,
 refactor, cambio de UI. No es opcional y no aplica solo a "refactors".
