@@ -212,7 +212,7 @@ export default function Landing() {
                   src="/ui/logo22w22.webp"
                   alt=""
                   aria-hidden="true"
-                  className="h-9 w-auto"
+                  className="h-12 w-auto brightness-[1.9]"
                 />
                 <span className="font-display text-lg font-semibold text-ink">
                   {t('app.name')}
