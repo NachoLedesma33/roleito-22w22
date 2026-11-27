@@ -48,6 +48,7 @@ from schemas import (
 )
 import secrets
 from pathlib import Path
+from urllib.parse import urlsplit
 import hashlib
 import json
 import os
@@ -268,6 +269,55 @@ class CampaignWSManager:
 
 ws_manager = CampaignWSManager()
 
+WS_ALLOWED_ORIGINS = [
+    o.strip().rstrip("/")
+    for o in os.getenv(
+        "CORS_ORIGINS", "http://localhost:5173,http://localhost:5174"
+    ).split(",")
+    if o.strip()
+]
+WS_MAX_MESSAGE_BYTES = int(os.getenv("ROLEITO_WS_MAX_BYTES", "65536"))
+WS_MAX_FRAMES_PER_SEC = int(os.getenv("ROLEITO_WS_MAX_FRAMES", "200"))
+
+
+def is_ws_origin_allowed(origin: str | None, host: str | None) -> bool:
+    """Browsers mandan Origin en el handshake; los scripts no.
+
+    Detras del tunel el Origin y el Host son el mismo dominio publico, asi que
+    ademas de la lista CORS se acepta el mismo origen. Cualquier otro origen
+    es un sitio ajeno intentando colgarse de la sala.
+    """
+    if not origin:
+        return True
+    parsed = urlsplit(origin)
+    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+        return False
+    if origin.rstrip("/") in WS_ALLOWED_ORIGINS:
+        return True
+    return bool(host) and parsed.netloc.lower() == host.lower()
+
+
+async def drain_ws(websocket: WebSocket) -> None:
+    """Los frames entrantes se descartan, con techo de tamano y de caudal."""
+    window_start = time.monotonic()
+    frames = 0
+    while True:
+        message = await websocket.receive()
+        if message["type"] == "websocket.disconnect":
+            return
+        text = message.get("text") or ""
+        raw = message.get("bytes") or b""
+        if len(text.encode()) + len(raw) > WS_MAX_MESSAGE_BYTES:
+            await websocket.close(code=1009)
+            return
+        now = time.monotonic()
+        if now - window_start >= 1.0:
+            window_start, frames = now, 0
+        frames += 1
+        if frames > WS_MAX_FRAMES_PER_SEC:
+            await websocket.close(code=1008)
+            return
+
 
 async def broadcast_revision(db: AsyncSession, campaign_id: str) -> None:
     """Empuja la revisi??n actual a los players conectados (wake de snapshot)."""
@@ -306,15 +356,19 @@ async def invite_ws(
     code: str,
     db: AsyncSession = Depends(get_session),
 ):
+    if not is_ws_origin_allowed(
+        websocket.headers.get("origin"), websocket.headers.get("host")
+    ):
+        await websocket.close(code=1008)
+        return
     campaign = await find_invite_campaign(db, code)
     if not campaign:
         await websocket.close(code=4404)
         return
     await ws_manager.connect(campaign.id, websocket)
     try:
-        while True:
-            await websocket.receive_text()
-    except WebSocketDisconnect:
+        await drain_ws(websocket)
+    finally:
         ws_manager.disconnect(campaign.id, websocket)
 
 
@@ -352,6 +406,11 @@ async def campaign_ws(
     campaign_id: str,
     db: AsyncSession = Depends(get_session),
 ):
+    if not is_ws_origin_allowed(
+        websocket.headers.get("origin"), websocket.headers.get("host")
+    ):
+        await websocket.close(code=1008)
+        return
     result = await db.execute(select(Campaign).where(Campaign.id == campaign_id))
     campaign = result.scalar_one_or_none()
     if not campaign:
@@ -359,9 +418,8 @@ async def campaign_ws(
         return
     await ws_manager.connect(campaign.id, websocket)
     try:
-        while True:
-            await websocket.receive_text()
-    except WebSocketDisconnect:
+        await drain_ws(websocket)
+    finally:
         ws_manager.disconnect(campaign.id, websocket)
 
 
