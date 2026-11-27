@@ -1,4 +1,4 @@
-# PLAN DE IMPLEMENTACIÓN — Editor y catálogo de marcos para personajes de Roleito
+# PLAN DE IMPLEMENTACIÓN — Editor y catálogo de marcos para personajes de 22W22
 
 > **Tipo:** Plan de análisis e implementación incremental  
 > **Módulo:** Creación y edición de personajes dentro de una campaña  
@@ -6,7 +6,7 @@
 > **Prioridad:** Media/Alta  
 > **Estado:** Fase 0 (auditoría) CERRADA — adaptado el 2026-11-20 al flujo real de `apps/dm/src/pages/CharacterForm.tsx`.
 > **Decisiones confirmadas:** configuración versionada en `visual_config_json`; marcos animados (GIF/WebM/MP4) permitidos como capa decorativa del retrato.
-> **Regla principal:** adaptar la arquitectura existente de Roleito. No crear un subsistema paralelo ni reemplazar el flujo actual de personajes.
+> **Regla principal:** adaptar la arquitectura existente de 22W22. No crear un subsistema paralelo ni reemplazar el flujo actual de personajes.
 
 ---
 
@@ -313,7 +313,7 @@ No crear `FrameAsset` ni tablas nuevas. La entidad de marcos propios es `Asset` 
 
 ### 7.1 Mapeo a lo que ya existe
 
-| Concepto del plan original | Realidad en Roleito |
+| Concepto del plan original | Realidad en 22W22 |
 |---|---|
 | `FrameAsset` | `Asset` con `asset_type='image'`, `category='frames'` |
 | `is_system` | Marcos base en `/frames/*.svg`; no son filas en DB |
@@ -399,7 +399,7 @@ Seguridad:
 
 ## 10. Experiencia visual y calidad
 
-El editor debe sentirse parte de Roleito, no una página externa incrustada.
+El editor debe sentirse parte de 22W22, no una página externa incrustada.
 
 Criterios:
 

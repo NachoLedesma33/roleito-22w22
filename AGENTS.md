@@ -1,4 +1,4 @@
-# Roleito — AGENTS.md
+# 22W22 — AGENTS.md
 
 Persistent AI RPG World Engine. Local-first platform for tabletop RPG campaigns.
 DM authority + AI assistant. World State = source of truth.
