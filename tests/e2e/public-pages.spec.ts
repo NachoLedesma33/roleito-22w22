@@ -39,4 +39,28 @@ test.describe('Páginas públicas', () => {
     await expect(page.getByText(/Nada entra al mundo sin tu firma/)).toBeVisible();
     await expect(page.getByText(/5 intentos fallidos/)).toBeVisible();
   });
+
+  for (const [path, title] of [
+    ['/terms', 'Términos de uso'],
+    ['/privacy', 'Privacidad'],
+    ['/ai-notice', 'Aviso sobre IA'],
+    ['/content-notice', 'Aviso sobre contenido'],
+    ['/credits', 'Créditos'],
+  ] as const) {
+    test(`P09${path}: ${title} marca borrador legal`, async ({ page }) => {
+      await page.goto(path);
+      await expect(page.getByTestId('legal-page')).toBeVisible();
+      await expect(page.getByRole('heading', { name: title })).toBeVisible();
+      await expect(page.getByText(/revisión legal pendiente/)).toBeVisible();
+    });
+  }
+
+  test('P10: el footer enlaza los avisos legales', async ({ page }) => {
+    await page.goto('/');
+    const legal = page.getByRole('navigation', { name: 'Avisos legales' });
+    await expect(legal.getByRole('link', { name: 'Términos de uso' })).toBeVisible();
+    await expect(legal.getByRole('link', { name: 'Privacidad' })).toBeVisible();
+    await legal.getByRole('link', { name: 'Créditos' }).click();
+    await expect(page).toHaveURL(/\/credits$/);
+  });
 });

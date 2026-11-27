@@ -301,7 +301,24 @@ export default function Landing() {
               © {new Date().getFullYear()} {t('app.name')} ·{' '}
               {t('landing.footer.rights', 'Hecho para mesas de D&D.')}
             </p>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <nav aria-label={t('legal.nav.title', 'Avisos legales')} className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                <Link to="/terms" className={`transition-colors hover:text-ink ${linkFocus}`}>
+                  {t('legal.terms.title')}
+                </Link>
+                <Link to="/privacy" className={`transition-colors hover:text-ink ${linkFocus}`}>
+                  {t('legal.privacy.title')}
+                </Link>
+                <Link to="/ai-notice" className={`transition-colors hover:text-ink ${linkFocus}`}>
+                  {t('legal.ai.title')}
+                </Link>
+                <Link to="/content-notice" className={`transition-colors hover:text-ink ${linkFocus}`}>
+                  {t('legal.content.title')}
+                </Link>
+                <Link to="/credits" className={`transition-colors hover:text-ink ${linkFocus}`}>
+                  {t('legal.credits.title')}
+                </Link>
+              </nav>
               <a
                 href="https://github.com/NachoLedesma33/roleito-22w22"
                 aria-label="GitHub"
