@@ -1,3 +1,4 @@
+import { BACKEND_URL } from '../config';
 import { expect, test } from '../fixtures/auth-fixture';
 import {
   createCharacter,
@@ -5,7 +6,7 @@ import {
   createSession,
 } from '../helpers/api-helpers';
 
-const API = 'http://localhost:8000/api';
+const API = `${BACKEND_URL}/api`;
 
 test.describe('Agent Routes', () => {
   test('AG1: lore query responde con answer y confidence', async ({

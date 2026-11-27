@@ -1,8 +1,9 @@
+import { BACKEND_URL } from '../config';
 import { expect, test } from '../fixtures/campaign-fixture';
 import { uploadBackground } from '../helpers/api-helpers';
 import { blueprintMapPng } from '../helpers/image-helpers';
 
-const API = 'http://localhost:8000/api';
+const API = `${BACKEND_URL}/api`;
 
 interface DetectWallsResponse {
   wall_count: number;

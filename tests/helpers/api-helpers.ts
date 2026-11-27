@@ -1,8 +1,9 @@
+import { BACKEND_URL } from '../config';
 import fs from 'node:fs';
 import path from 'node:path';
 import { APIRequestContext } from '@playwright/test';
 
-export const API_BASE = 'http://localhost:8000/api';
+export const API_BASE = `${BACKEND_URL}/api`;
 
 export const PNG_1PX = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',

@@ -1,6 +1,7 @@
+import { BACKEND_URL } from '../config';
 import { test, expect } from '../fixtures/auth-fixture';
 
-const API = 'http://localhost:8000/api';
+const API = `${BACKEND_URL}/api`;
 
 test.describe('Orchestrator Agent', () => {
   test('ORCH1: Invalid task type returns 400', async ({ request, authHeaders, campaign }) => {

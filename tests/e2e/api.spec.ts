@@ -1,6 +1,7 @@
+import { BACKEND_URL } from '../config';
 import { expect, test } from '@playwright/test';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = BACKEND_URL;
 const FRONTEND_ORIGIN = 'http://localhost:5173';
 
 test.describe('API Health', () => {

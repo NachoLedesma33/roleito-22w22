@@ -1,10 +1,11 @@
+import { BACKEND_URL } from '../config';
 import { test as base, expect, APIRequestContext } from '@playwright/test';
 import {
   Campaign,
   withAuth,
 } from '../helpers/api-helpers';
 
-const API = 'http://localhost:8000/api';
+const API = `${BACKEND_URL}/api`;
 
 let _cachedToken: string | null = null;
 

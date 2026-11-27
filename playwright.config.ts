@@ -1,5 +1,8 @@
 import { defineConfig } from '@playwright/test';
 
+const BACKEND_URL = process.env.ROLEITO_E2E_BACKEND ?? 'http://localhost:8000';
+const BACKEND_PORT = new URL(BACKEND_URL).port || '8000';
+
 export default defineConfig({
   globalSetup: './tests/global-setup.ts',
   globalTeardown: './tests/global-teardown.ts',
@@ -25,8 +28,8 @@ export default defineConfig({
       timeout: 120_000,
     },
     {
-      command: process.env.CI ? 'npm run dev:backend:ci' : 'npm run dev:backend',
-      url: 'http://localhost:8000/health',
+      command: `${process.env.CI ? 'npm run dev:backend:ci' : 'npm run dev:backend'} -- --port ${BACKEND_PORT}`,
+      url: `${BACKEND_URL}/health`,
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
     },

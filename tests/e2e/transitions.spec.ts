@@ -1,7 +1,8 @@
+import { BACKEND_URL } from '../config';
 import { expect, test } from '../fixtures/campaign-fixture';
 import { createScene } from '../helpers/api-helpers';
 
-const API_BASE = 'http://localhost:8000/api';
+const API_BASE = `${BACKEND_URL}/api`;
 
 const SIZED_SVG = Buffer.from(
   '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400">' +

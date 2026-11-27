@@ -1,3 +1,4 @@
+import { BACKEND_URL } from '../config';
 import { expect, test } from '../fixtures/campaign-fixture';
 import { getCharacter, PNG_1PX } from '../helpers/api-helpers';
 
@@ -36,7 +37,7 @@ test.describe('Character CRUD', () => {
 
   test('CH2: edita personaje existente', async ({ page, campaign, request }) => {
     const created = await request.post(
-      `http://localhost:8000/api/campaigns/${campaign.id}/characters`,
+      `${BACKEND_URL}/api/campaigns/${campaign.id}/characters`,
       { data: { name: 'Borin', type: 'player' } },
     );
     const char = await created.json();
@@ -54,7 +55,7 @@ test.describe('Character CRUD', () => {
 
   test('CH3: elimina personaje con confirmación', async ({ page, campaign, request }) => {
     await request.post(
-      `http://localhost:8000/api/campaigns/${campaign.id}/characters`,
+      `${BACKEND_URL}/api/campaigns/${campaign.id}/characters`,
       { data: { name: 'Nadia', type: 'player' } },
     );
 
@@ -69,7 +70,7 @@ test.describe('Character CRUD', () => {
 
   test('CH4: sube portrait de personaje', async ({ page, campaign, request }) => {
     const created = await request.post(
-      `http://localhost:8000/api/campaigns/${campaign.id}/characters`,
+      `${BACKEND_URL}/api/campaigns/${campaign.id}/characters`,
       { data: { name: 'Cael', type: 'player' } },
     );
     const char = await created.json();

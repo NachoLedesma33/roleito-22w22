@@ -1,7 +1,8 @@
+import { BACKEND_URL } from '../config';
 import { test, expect } from '../fixtures/campaign-fixture';
 import { setupAuth, withAuth } from '../helpers/api-helpers';
 
-const API = 'http://localhost:8000/api';
+const API = `${BACKEND_URL}/api`;
 
 let campaignId = '';
 let sessionId = '';

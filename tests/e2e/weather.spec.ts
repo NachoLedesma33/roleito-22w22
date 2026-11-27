@@ -1,7 +1,8 @@
+import { BACKEND_URL } from '../config';
 import { expect, test } from '../fixtures/campaign-fixture';
 import { createScene, generateInviteCode, PNG_1PX } from '../helpers/api-helpers';
 
-const API = 'http://localhost:8000/api';
+const API = `${BACKEND_URL}/api`;
 
 test.describe('Weather / Atmosphere', () => {
   test('W1: DM cambia clima desde el dashboard — persiste y se limpia', async ({

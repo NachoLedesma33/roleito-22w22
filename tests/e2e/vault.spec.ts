@@ -1,6 +1,7 @@
+import { BACKEND_URL } from '../config';
 import { expect, test } from '../fixtures/auth-fixture';
 
-const API = 'http://localhost:8000/api';
+const API = `${BACKEND_URL}/api`;
 
 test.describe('Vault Routes', () => {
   test('VT1: status devuelve providers con booleanos', async ({

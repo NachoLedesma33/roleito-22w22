@@ -1,3 +1,4 @@
+import { BACKEND_URL } from '../config';
 import { randomUUID } from 'node:crypto';
 import { expect, test } from '../fixtures/campaign-fixture';
 import { createCharacter, createScene, seedToken } from '../helpers/api-helpers';
@@ -89,7 +90,7 @@ test.describe('Character Sheet HUD', () => {
 
     await expect(page.getByPlaceholder('Nombre del objeto')).toHaveValue('Nuevo objeto');
 
-    const stored = await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/characters/${char.id}`);
+    const stored = await request.get(`${BACKEND_URL}/api/campaigns/${campaign.id}/characters/${char.id}`);
     const body = await stored.json();
     expect(body.inventory_json).toHaveLength(1);
     expect(body.inventory_json[0].name).toBe('Nuevo objeto');
@@ -98,7 +99,7 @@ test.describe('Character Sheet HUD', () => {
   test('CS5: toggle equipped cambia estado del item', async ({ page, campaign, request }) => {
     const scene = await createScene(request, campaign.id, 'Escena Equip');
     const char = await createCharacter(request, campaign.id, { name: 'Cedric' });
-    await request.put(`http://localhost:8000/api/campaigns/${campaign.id}/characters/${char.id}`, {
+    await request.put(`${BACKEND_URL}/api/campaigns/${campaign.id}/characters/${char.id}`, {
       data: {
         inventory_json: [{ id: 'item-1', name: 'Espada', description: '', quantity: 1 }],
       },
@@ -121,7 +122,7 @@ test.describe('Character Sheet HUD', () => {
     await putPromise;
     await expect(checkbox).toBeChecked();
 
-    const stored = await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/characters/${char.id}`);
+    const stored = await request.get(`${BACKEND_URL}/api/campaigns/${campaign.id}/characters/${char.id}`);
     const body = await stored.json();
     expect(body.inventory_json[0].equipped).toBe(true);
   });
@@ -160,7 +161,7 @@ test.describe('Character Sheet HUD', () => {
     await expect(nueva).toContainText('Lv1');
     await expect(nueva).toContainText('1 PM');
 
-    const stored = await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/characters/${char.id}`);
+    const stored = await request.get(`${BACKEND_URL}/api/campaigns/${campaign.id}/characters/${char.id}`);
     const body = await stored.json();
     expect(body.spells_json).toHaveLength(1);
     expect(body.spells_json[0].name).toBe('Nuevo conjuro');
@@ -197,7 +198,7 @@ test.describe('Character Sheet HUD', () => {
 
     await expect(pvInput).toHaveValue('12');
 
-    const stored = await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/characters/${char.id}`);
+    const stored = await request.get(`${BACKEND_URL}/api/campaigns/${campaign.id}/characters/${char.id}`);
     const body = await stored.json();
     expect(body.current_pv).toBe(12);
   });
@@ -212,7 +213,7 @@ test.describe('Character Sheet HUD', () => {
     // Aria ya sabe una habilidad: tiene que aparecer en el catalogo de Borin,
     // sin duplicar la fila del catalogo.
     const put = await request.put(
-      `http://localhost:8000/api/campaigns/${campaign.id}/characters/${a.id}`,
+      `${BACKEND_URL}/api/campaigns/${campaign.id}/characters/${a.id}`,
       {
         data: {
           spells_json: [
@@ -223,7 +224,7 @@ test.describe('Character Sheet HUD', () => {
     );
     expect(put.status()).toBe(200);
 
-    const catalog = await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/abilities`);
+    const catalog = await request.get(`${BACKEND_URL}/api/campaigns/${campaign.id}/abilities`);
     expect(catalog.status()).toBe(200);
     const rowsBefore = await catalog.json();
     expect(rowsBefore.filter((r: { id: string }) => r.id === spellId)).toHaveLength(1);
@@ -250,7 +251,7 @@ test.describe('Character Sheet HUD', () => {
     await putPromise;
 
     const stored = await request.get(
-      `http://localhost:8000/api/campaigns/${campaign.id}/characters/${b.id}`,
+      `${BACKEND_URL}/api/campaigns/${campaign.id}/characters/${b.id}`,
     );
     const body = await stored.json();
     expect(body.spells_json).toHaveLength(1);
@@ -259,7 +260,7 @@ test.describe('Character Sheet HUD', () => {
 
     // Una sola fila en el catalogo aunque dos fichas la sepan.
     const finalCatalog = await request.get(
-      `http://localhost:8000/api/campaigns/${campaign.id}/abilities`,
+      `${BACKEND_URL}/api/campaigns/${campaign.id}/abilities`,
     );
     const rows = await finalCatalog.json();
     expect(rows.filter((r: { id: string }) => r.id === spellId)).toHaveLength(1);
@@ -277,7 +278,7 @@ test.describe('Character Sheet HUD', () => {
     const spellId = `spell-${randomUUID()}`;
 
     const put = await request.put(
-      `http://localhost:8000/api/campaigns/${campaign.id}/characters/${a.id}`,
+      `${BACKEND_URL}/api/campaigns/${campaign.id}/characters/${a.id}`,
       {
         data: {
           spells_json: [
@@ -315,12 +316,12 @@ test.describe('Character Sheet HUD', () => {
 
     // El icono vive en la fila del catálogo: Aria, que sí sabe la habilidad,
     // la ve igual sin tocar su ficha.
-    const catalog = await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/abilities`);
+    const catalog = await request.get(`${BACKEND_URL}/api/campaigns/${campaign.id}/abilities`);
     const rows = await catalog.json();
     expect(rows.find((r: { id: string }) => r.id === spellId)?.icon).toBe('flame');
 
     const stored = await request.get(
-      `http://localhost:8000/api/campaigns/${campaign.id}/characters/${a.id}`,
+      `${BACKEND_URL}/api/campaigns/${campaign.id}/characters/${a.id}`,
     );
     expect((await stored.json()).spells_json[0].icon).toBe('flame');
   });
@@ -339,7 +340,7 @@ test.describe('Character Sheet HUD', () => {
 
     for (const char of [a, c]) {
       const put = await request.put(
-        `http://localhost:8000/api/campaigns/${campaign.id}/characters/${char.id}`,
+        `${BACKEND_URL}/api/campaigns/${campaign.id}/characters/${char.id}`,
         {
           data: {
             spells_json: [
@@ -371,7 +372,7 @@ test.describe('Character Sheet HUD', () => {
     await modal.getByRole('button', { name: 'Cancelar' }).click();
     await expect(modal).toHaveCount(0);
     const stillThere = await request.get(
-      `http://localhost:8000/api/campaigns/${campaign.id}/abilities`,
+      `${BACKEND_URL}/api/campaigns/${campaign.id}/abilities`,
     );
     const stillRows = await stillThere.json();
     expect(stillRows.filter((r: { id: string }) => r.id === spellId)).toHaveLength(1);
@@ -393,14 +394,14 @@ test.describe('Character Sheet HUD', () => {
     // La del pack base sigue; solo se fue la fila creada por el test.
     await expect(page.getByText('Bola de Fuego', { exact: true })).toHaveCount(1);
 
-    const catalog = await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/abilities`);
+    const catalog = await request.get(`${BACKEND_URL}/api/campaigns/${campaign.id}/abilities`);
     const finalRows = await catalog.json();
     expect(finalRows.filter((r: { id: string }) => r.id === spellId)).toHaveLength(0);
 
     // Aria y Calen sí la sabían: el borrado es del catálogo, les desaparece.
     for (const char of [a, c]) {
       const stored = await request.get(
-        `http://localhost:8000/api/campaigns/${campaign.id}/characters/${char.id}`,
+        `${BACKEND_URL}/api/campaigns/${campaign.id}/characters/${char.id}`,
       );
       expect((await stored.json()).spells_json).toHaveLength(0);
     }
@@ -412,11 +413,11 @@ test.describe('Character Sheet HUD', () => {
     request,
   }) => {
     const initial = (await (
-      await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/abilities`)
+      await request.get(`${BACKEND_URL}/api/campaigns/${campaign.id}/abilities`)
     ).json()) as Array<{ id: string }>;
     for (const ability of initial) {
       const del = await request.delete(
-        `http://localhost:8000/api/campaigns/${campaign.id}/abilities/${ability.id}`,
+        `${BACKEND_URL}/api/campaigns/${campaign.id}/abilities/${ability.id}`,
       );
       expect(del.status()).toBe(200);
     }
@@ -433,14 +434,14 @@ test.describe('Character Sheet HUD', () => {
     await expect(page.getByText('Bola de Fuego', { exact: true })).toBeVisible();
 
     const after = (await (
-      await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/abilities`)
+      await request.get(`${BACKEND_URL}/api/campaigns/${campaign.id}/abilities`)
     ).json()) as Array<{ vfx_type: string | null }>;
     expect(after).toHaveLength(36);
   });
 
   test('CS20: muestra el marco propio animado en la ficha del tablero', async ({ page, campaign, request }) => {
     const scene = await createScene(request, campaign.id, 'Escena Marco');
-    const uploaded = await request.post(`http://localhost:8000/api/campaigns/${campaign.id}/assets`, {
+    const uploaded = await request.post(`${BACKEND_URL}/api/campaigns/${campaign.id}/assets`, {
       multipart: {
         file: { name: 'aur.gif', mimeType: 'image/gif', buffer: Buffer.from('GIF89a\x01\x00\x01\x00', 'binary') },
         category: 'frames',
@@ -449,7 +450,7 @@ test.describe('Character Sheet HUD', () => {
     expect(uploaded.ok()).toBeTruthy();
     const assetId = (await uploaded.json()).asset_id as string;
 
-    const created = await request.post(`http://localhost:8000/api/campaigns/${campaign.id}/characters`, {
+    const created = await request.post(`${BACKEND_URL}/api/campaigns/${campaign.id}/characters`, {
       data: {
         name: 'Mara',
         frame: 'custom',

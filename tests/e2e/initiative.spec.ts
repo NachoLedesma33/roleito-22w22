@@ -1,3 +1,4 @@
+import { BACKEND_URL } from '../config';
 import { expect, test } from '../fixtures/campaign-fixture';
 import {
   createCharacter,
@@ -135,7 +136,7 @@ test.describe('Initiative Tracker', () => {
     const body = await res.json();
     expect(body.current_pv).toBe(body.max_pv - 1);
 
-    const stored = await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/characters/${body.id}`);
+    const stored = await request.get(`${BACKEND_URL}/api/campaigns/${campaign.id}/characters/${body.id}`);
     expect((await stored.json()).current_pv).toBe(body.max_pv - 1);
   });
 
@@ -183,7 +184,7 @@ test.describe('Initiative Tracker', () => {
     await expect(page.locator('span.w-4.text-center').first()).toHaveText(/^[1-6]$/);
 
     const combat = await (
-      await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/scenes/${scene.id}/combat`)
+      await request.get(`${BACKEND_URL}/api/campaigns/${campaign.id}/scenes/${scene.id}/combat`)
     ).json();
     const stored = combat.combatants.find((c: { entity_id: string }) => c.entity_id === aria.id);
     expect(stored.initiative).toBe(ariaCc.initiative);
@@ -233,7 +234,7 @@ test.describe('Initiative Tracker', () => {
     expect(ra.status()).toBe(200);
 
     const combat = await (
-      await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/scenes/${scene.id}/combat`)
+      await request.get(`${BACKEND_URL}/api/campaigns/${campaign.id}/scenes/${scene.id}/combat`)
     ).json();
     const seqs = combat.combatants.map((c: { roll_seq: number }) => c.roll_seq).sort();
     expect(seqs).toEqual([1, 2]);

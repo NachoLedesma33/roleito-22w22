@@ -1,3 +1,4 @@
+import { BACKEND_URL } from '../config';
 import { expect, test } from '../fixtures/campaign-fixture';
 import type { Page } from '@playwright/test';
 import {
@@ -23,7 +24,7 @@ test.describe('Player Shell — Grimorio', () => {
     const scene = await createScene(request, campaignId, 'Grimorio Test');
     const char = await createCharacter(request, campaignId, { name, max_pm: 8 });
     const put = await request.put(
-      `http://localhost:8000/api/campaigns/${campaignId}/characters/${char.id}`,
+      `${BACKEND_URL}/api/campaigns/${campaignId}/characters/${char.id}`,
       {
         data: {
           spells_json: [
@@ -52,13 +53,13 @@ test.describe('Player Shell — Grimorio', () => {
     await updateScene(request, campaignId, scene.id, { status: 'active' });
     // C4: usar habilidad necesita sesión activa
     const session = await request.post(
-      `http://localhost:8000/api/campaigns/${campaignId}/sessions`,
+      `${BACKEND_URL}/api/campaigns/${campaignId}/sessions`,
       { data: { number: 1, date: '2026-10-08' } },
     );
     expect(session.status()).toBe(200);
     const sessionId = (await session.json()).id;
     const started = await request.post(
-      `http://localhost:8000/api/campaigns/${campaignId}/sessions/${sessionId}/start`,
+      `${BACKEND_URL}/api/campaigns/${campaignId}/sessions/${sessionId}/start`,
     );
     expect(started.status()).toBe(200);
     return char;

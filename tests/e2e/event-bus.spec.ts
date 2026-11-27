@@ -1,6 +1,7 @@
+import { BACKEND_URL } from '../config';
 import { test, expect } from '../fixtures/campaign-fixture';
 
-const API = 'http://localhost:8000/api';
+const API = `${BACKEND_URL}/api`;
 
 test.describe('Event Bus', () => {
   test('EB1: GET status returns handler count', async ({ request }) => {

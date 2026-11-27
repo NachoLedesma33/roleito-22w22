@@ -1,10 +1,11 @@
+import { BACKEND_URL } from '../config';
 import { expect, test, type Page } from '@playwright/test';
 
 // Flujo intro → lobby: entrada real por login (sin fixture que inyecte token).
 // El lobby usa strings i18n y 'Saltar' es fijo; fijar idioma para aserciones estables.
 test.use({ locale: 'es-ES' });
 
-const API = 'http://localhost:8000/api';
+const API = `${BACKEND_URL}/api`;
 
 async function loginAndSkipIntro(page: Page, name: string) {
   await page.goto('/login');

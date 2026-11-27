@@ -1,3 +1,4 @@
+import { BACKEND_URL } from '../config';
 import { expect, test } from '../fixtures/campaign-fixture';
 import {
   createCharacter,
@@ -88,7 +89,7 @@ test.describe('Status markers', () => {
 
     const chs = await (
       await request.get(
-        `http://localhost:8000/api/campaigns/${campaign.id}/scenes/${scene.id}/characters`
+        `${BACKEND_URL}/api/campaigns/${campaign.id}/scenes/${scene.id}/characters`
       )
     ).json();
     expect(chs[0].statuses).toContain('poisoned');
@@ -108,7 +109,7 @@ test.describe('Status markers', () => {
 
     const after = await (
       await request.get(
-        `http://localhost:8000/api/campaigns/${campaign.id}/scenes/${scene.id}/characters`
+        `${BACKEND_URL}/api/campaigns/${campaign.id}/scenes/${scene.id}/characters`
       )
     ).json();
     expect(after[0].statuses).toEqual([]);
@@ -147,7 +148,7 @@ test.describe('Status markers', () => {
     await expect
       .poll(async () => {
         const snap = (await (
-          await request.get(`http://localhost:8000/api/campaigns/invite/${code}`)
+          await request.get(`${BACKEND_URL}/api/campaigns/invite/${code}`)
         ).json()) as { characters: Array<{ statuses?: string[]; entity_id: string }> };
         return snap.characters[0].statuses ?? [];
       }, { timeout: 10_000 })
@@ -183,18 +184,18 @@ test.describe('Status markers', () => {
 
     const base = await (
       await request.get(
-        `http://localhost:8000/api/campaigns/${campaign.id}/scenes/${scene.id}/characters`
+        `${BACKEND_URL}/api/campaigns/${campaign.id}/scenes/${scene.id}/characters`
       )
     ).json();
     expect(base[0].entity_id).toBe(aria.id);
 
     await request.put(
-      `http://localhost:8000/api/campaigns/${campaign.id}/scenes/${scene.id}/characters`,
+      `${BACKEND_URL}/api/campaigns/${campaign.id}/scenes/${scene.id}/characters`,
       { data: [{ ...base[0], statuses: ['bleeding', 'invisible'] }] }
     );
 
     const snap = await (
-      await request.get(`http://localhost:8000/api/campaigns/invite/${code}`)
+      await request.get(`${BACKEND_URL}/api/campaigns/invite/${code}`)
     ).json();
     const ch = snap.characters.find((c: { entity_id: string }) => c.entity_id === aria.id);
     expect(ch).toBeDefined();
@@ -218,11 +219,11 @@ test.describe('Status markers', () => {
     await updateScene(request, campaign.id, scene.id, { status: 'active' });
     const chars = await (
       await request.get(
-        `http://localhost:8000/api/campaigns/${campaign.id}/scenes/${scene.id}/characters`
+        `${BACKEND_URL}/api/campaigns/${campaign.id}/scenes/${scene.id}/characters`
       )
     ).json();
     await request.put(
-      `http://localhost:8000/api/campaigns/${campaign.id}/scenes/${scene.id}/characters`,
+      `${BACKEND_URL}/api/campaigns/${campaign.id}/scenes/${scene.id}/characters`,
       { data: [{ ...chars[0], statuses: ['cursed'] }] },
     );
 

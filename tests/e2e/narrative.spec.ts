@@ -1,10 +1,11 @@
+import { BACKEND_URL } from '../config';
 import { expect, test } from '../fixtures/campaign-fixture';
 import { createCharacter, createNpc, createSession } from '../helpers/api-helpers';
 
 // El rail del Layout traduce (claves i18n); fijar idioma para anclas estables en español.
 test.use({ locale: 'es-ES' });
 
-const API = 'http://localhost:8000/api';
+const API = `${BACKEND_URL}/api`;
 
 async function createLocation(
   request: import('@playwright/test').APIRequestContext,

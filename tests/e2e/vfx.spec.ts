@@ -1,3 +1,4 @@
+import { BACKEND_URL } from '../config';
 import { expect, test } from '../fixtures/campaign-fixture';
 import { createCharacter, createMapWithFile, createScene, generateInviteCode, PNG_1PX, seedTokens, updateScene } from '../helpers/api-helpers';
 
@@ -95,13 +96,13 @@ test.describe('VFX', () => {
     const map = await createMapWithFile(request, campaign.id, 'Mapa VFX2');
     await updateScene(request, campaign.id, scene.id, { map_id: map.id, status: 'active' });
     await request.post(
-      `http://localhost:8000/api/campaigns/${campaign.id}/scenes/${scene.id}/upload-background`,
+      `${BACKEND_URL}/api/campaigns/${campaign.id}/scenes/${scene.id}/upload-background`,
       { multipart: { file: { name: 'background.png', mimeType: 'image/png', buffer: PNG_1PX } } },
     );
-    await request.post(`http://localhost:8000/api/campaigns/${campaign.id}/scenes/${scene.id}/sync`);
+    await request.post(`${BACKEND_URL}/api/campaigns/${campaign.id}/scenes/${scene.id}/sync`);
     const code = await generateInviteCode(request, campaign.id);
     await request.put(
-      `http://localhost:8000/api/campaigns/${campaign.id}/characters/${attacker.id}`,
+      `${BACKEND_URL}/api/campaigns/${campaign.id}/characters/${attacker.id}`,
       { data: { name: attacker.name, can_use_vfx: true } },
     );
 
@@ -201,7 +202,7 @@ test.describe('VFX', () => {
     await updateScene(request, campaign.id, scene.id, { status: 'active' });
 
     const catalogo = (await (
-      await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/abilities`)
+      await request.get(`${BACKEND_URL}/api/campaigns/${campaign.id}/abilities`)
     ).json()) as Array<{
       id: string;
       name: string;
@@ -213,7 +214,7 @@ test.describe('VFX', () => {
     const fire = catalogo.find((a) => a.vfx_type === 'fire');
     if (!fire) throw new Error('pack base sin fire');
     const put = await request.put(
-      `http://localhost:8000/api/campaigns/${campaign.id}/characters/${char.id}`,
+      `${BACKEND_URL}/api/campaigns/${campaign.id}/characters/${char.id}`,
       { data: { spells_json: [fire] } },
     );
     expect(put.status()).toBe(200);

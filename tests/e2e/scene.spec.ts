@@ -1,3 +1,4 @@
+import { BACKEND_URL } from '../config';
 import { expect, test } from '../fixtures/campaign-fixture';
 import { listScenes, PNG_1PX } from '../helpers/api-helpers';
 
@@ -20,7 +21,7 @@ test.describe('Scene Management', () => {
 
   test('S2: sube background a escena existente y lo renderiza', async ({ page, campaign, request }) => {
     const created = await request.post(
-      `http://localhost:8000/api/campaigns/${campaign.id}/scenes`,
+      `${BACKEND_URL}/api/campaigns/${campaign.id}/scenes`,
       { data: { name: 'Bosque' } },
     );
     const scene = await created.json();
@@ -65,7 +66,7 @@ test.describe('Scene Management', () => {
 
   test('S4: los ajustes de escena.detectan la grilla del fondo', async ({ page, campaign, request }) => {
     const created = await request.post(
-      `http://localhost:8000/api/campaigns/${campaign.id}/scenes`,
+      `${BACKEND_URL}/api/campaigns/${campaign.id}/scenes`,
       { data: { name: 'Con grilla' } },
     );
     const scene = await created.json();

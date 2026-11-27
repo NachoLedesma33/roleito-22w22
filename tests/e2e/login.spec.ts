@@ -1,3 +1,4 @@
+import { BACKEND_URL } from '../config';
 import { expect, test } from '@playwright/test';
 
 // A diferencia del resto de los specs, este usa el `test` de Playwright pelado:
@@ -6,7 +7,7 @@ import { expect, test } from '@playwright/test';
 // mensajes de validación (mismos textos que el resto de la suite).
 test.use({ locale: 'es-ES' });
 
-const API = 'http://localhost:8000/api';
+const API = `${BACKEND_URL}/api`;
 
 test.describe('Login nombre + PIN', () => {
   test('L1: entra con nombre de perfil + PIN', async ({ page, request }) => {

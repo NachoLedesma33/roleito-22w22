@@ -1,3 +1,4 @@
+import { BACKEND_URL } from '../config';
 import { expect, test } from '../fixtures/campaign-fixture';
 import {
   createCharacter,
@@ -89,7 +90,7 @@ test.describe('Calendar & Progress Clocks', () => {
     const getFilled = async () =>
       (
         await (
-          await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/calendar`)
+          await request.get(`${BACKEND_URL}/api/campaigns/${campaign.id}/calendar`)
         ).json()
       ).clocks[0].segments_filled;
     await page.getByTitle('Marcar un segmento').click();
@@ -102,7 +103,7 @@ test.describe('Calendar & Progress Clocks', () => {
     await expect
       .poll(async () => {
         const s = await (
-          await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/calendar`)
+          await request.get(`${BACKEND_URL}/api/campaigns/${campaign.id}/calendar`)
         ).json();
         return s.clocks[0].visible_to_players;
       })

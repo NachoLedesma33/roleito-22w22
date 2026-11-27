@@ -1,3 +1,4 @@
+import { BACKEND_URL } from '../config';
 import { expect, test } from '../fixtures/campaign-fixture';
 import {
   assetExists,
@@ -305,7 +306,7 @@ test.describe('Dashboard VTT Core', () => {
 
     const seeded = (await listScenes(request, campaign.id)).find((s) => s.id === scene.id);
     expect(seeded?.background_path).toBeTruthy();
-    const bgUrl = `http://localhost:8000/api/static/${seeded!.background_path!
+    const bgUrl = `${BACKEND_URL}/api/static/${seeded!.background_path!
       .replace(/\\/g, '/')
       .split('/assets/')[1]}`;
 
@@ -343,7 +344,7 @@ test.describe('Dashboard VTT Core', () => {
 
   test('D20: ajusta el tamaño del marco desde doble clic en token 2D', async ({ page, campaign, request }) => {
     const scene = await createScene(request, campaign.id, 'Escena Marco 2D');
-    const created = await request.post(`http://localhost:8000/api/campaigns/${campaign.id}/characters`, {
+    const created = await request.post(`${BACKEND_URL}/api/campaigns/${campaign.id}/characters`, {
       data: {
         name: 'Marco2D',
         frame: 'gold',
@@ -381,7 +382,7 @@ test.describe('Dashboard VTT Core', () => {
     });
     await putPromise;
 
-    const stored = await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/characters/${char.id}`);
+    const stored = await request.get(`${BACKEND_URL}/api/campaigns/${campaign.id}/characters/${char.id}`);
     const config = (await stored.json()) as { visual_config_json: { frame: { scale: number } } };
     expect(config.visual_config_json.frame.scale).toBe(1.6);
   });

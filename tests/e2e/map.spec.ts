@@ -1,3 +1,4 @@
+import { BACKEND_URL } from '../config';
 import { expect, test } from '../fixtures/campaign-fixture';
 import {
   createMap,
@@ -6,7 +7,7 @@ import {
   PNG_1PX,
 } from '../helpers/api-helpers';
 
-const API_BASE = 'http://localhost:8000/api';
+const API_BASE = `${BACKEND_URL}/api`;
 
 test.describe('Map System', () => {
   async function openDashboard(

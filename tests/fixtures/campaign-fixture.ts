@@ -1,10 +1,11 @@
+import { BACKEND_URL } from '../config';
 import { appendFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { test as base, expect } from '@playwright/test';
 import { Campaign, withAuth } from '../helpers/api-helpers';
 
-const API = 'http://localhost:8000/api';
+const API = `${BACKEND_URL}/api`;
 
 // Registro de lo que crean los tests. El fixture borra la campaña por la API al
 // final de cada test, así que después la fila ya no está y la única forma de

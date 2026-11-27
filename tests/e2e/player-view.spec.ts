@@ -1,3 +1,4 @@
+import { BACKEND_URL } from '../config';
 import { expect, test } from '../fixtures/campaign-fixture';
 import type { Page } from '@playwright/test';
 import {
@@ -328,7 +329,7 @@ test.describe('Player View', () => {
     await setupActiveSceneWithTokens(request, campaign.id);
     const char = await createCharacter(request, campaign.id, { name: 'Sera', max_pm: 8 });
     const put = await request.put(
-      `http://localhost:8000/api/campaigns/${campaign.id}/characters/${char.id}`,
+      `${BACKEND_URL}/api/campaigns/${campaign.id}/characters/${char.id}`,
       {
         data: {
           spells_json: [
@@ -340,20 +341,20 @@ test.describe('Player View', () => {
     expect(put.status()).toBe(200);
     // C5: audio de la habilidad subido por el DM; viaja en spells_json.
     const audio = await request.post(
-      `http://localhost:8000/api/campaigns/${campaign.id}/abilities/spell-luz/audio`,
+      `${BACKEND_URL}/api/campaigns/${campaign.id}/abilities/spell-luz/audio`,
       { multipart: { file: { name: 'luz.mp3', mimeType: 'audio/mpeg', buffer: Buffer.from('fake-mp3') } } },
     );
     expect(audio.status()).toBe(200);
     expect((await audio.json()).audio_path).toBeTruthy();
     // C4 necesita sesión activa: el evento ability_used se cuelga de ella.
     const session = await request.post(
-      `http://localhost:8000/api/campaigns/${campaign.id}/sessions`,
+      `${BACKEND_URL}/api/campaigns/${campaign.id}/sessions`,
       { data: { number: 1, date: '2026-10-07' } },
     );
     expect(session.status()).toBe(200);
     const sessionId = (await session.json()).id;
     const started = await request.post(
-      `http://localhost:8000/api/campaigns/${campaign.id}/sessions/${sessionId}/start`,
+      `${BACKEND_URL}/api/campaigns/${campaign.id}/sessions/${sessionId}/start`,
     );
     expect(started.status()).toBe(200);
     const code = await generateInviteCode(request, campaign.id);
@@ -382,14 +383,14 @@ test.describe('Player View', () => {
 
     // el descuento quedó en el back, no solo en el DOM
     const stored = await request.get(
-      `http://localhost:8000/api/campaigns/${campaign.id}/characters/${char.id}`,
+      `${BACKEND_URL}/api/campaigns/${campaign.id}/characters/${char.id}`,
     );
     expect((await stored.json()).current_pm).toBe(2);
 
     // C4: cada uso dejó un ability_used CANON en la sesión (auto-canon de bajo
     // impacto, sin review del DM) — es lo que alimenta el World State.
     const events = await (
-      await request.get(`http://localhost:8000/api/campaigns/${campaign.id}/events`)
+      await request.get(`${BACKEND_URL}/api/campaigns/${campaign.id}/events`)
     ).json();
     const used = events.filter((e: { type: string }) => e.type === 'ability_used');
     expect(used).toHaveLength(2);

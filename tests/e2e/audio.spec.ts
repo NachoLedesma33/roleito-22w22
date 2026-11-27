@@ -1,7 +1,8 @@
+import { BACKEND_URL } from '../config';
 import { expect, test } from '../fixtures/campaign-fixture';
 import { createScene, generateInviteCode } from '../helpers/api-helpers';
 
-const API = 'http://localhost:8000/api';
+const API = `${BACKEND_URL}/api`;
 
 function wavBytes(): Buffer {
   const b = Buffer.alloc(44);

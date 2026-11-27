@@ -1,3 +1,4 @@
+import { BACKEND_URL } from '../config';
 import { expect, test } from '../fixtures/campaign-fixture';
 import { PNG_1PX, createScene } from '../helpers/api-helpers';
 
@@ -58,8 +59,8 @@ test.describe('Campaign CRUD', () => {
     campaign,
   }) => {
     // El DM abre la partida al publico (el interruptor del menu de invitacion).
-    await request.post(`http://localhost:8000/api/campaigns/${campaign.id}/invite-code`);
-    await request.put(`http://localhost:8000/api/campaigns/${campaign.id}/public-join`, {
+    await request.post(`${BACKEND_URL}/api/campaigns/${campaign.id}/invite-code`);
+    await request.put(`${BACKEND_URL}/api/campaigns/${campaign.id}/public-join`, {
       data: { enabled: true },
     });
 
@@ -69,7 +70,7 @@ test.describe('Campaign CRUD', () => {
     await expect(page).toHaveURL(/\/campaigns\/join\//, { timeout: 15_000 });
 
     // Se cierra: la partida publica es de la sesion, no queda abierta sola.
-    await request.put(`http://localhost:8000/api/campaigns/${campaign.id}/public-join`, {
+    await request.put(`${BACKEND_URL}/api/campaigns/${campaign.id}/public-join`, {
       data: { enabled: false },
     });
   });
@@ -98,7 +99,7 @@ test.describe('Campaign Bulk Operations', () => {
     const ids: string[] = [];
 
     for (const name of names) {
-      const res = await request.post('http://localhost:8000/api/campaigns', {
+      const res = await request.post(`${BACKEND_URL}/api/campaigns`, {
         headers: { Authorization: `Bearer ${dmToken}` },
         data: { name },
       });
@@ -134,7 +135,7 @@ test.describe('Campaign Bulk Operations', () => {
     const ids: string[] = [];
 
     for (const name of names) {
-      const res = await request.post('http://localhost:8000/api/campaigns', {
+      const res = await request.post(`${BACKEND_URL}/api/campaigns`, {
         headers: { Authorization: `Bearer ${dmToken}` },
         data: { name },
       });
@@ -158,7 +159,7 @@ test.describe('Campaign Bulk Operations', () => {
     expect(download.suggestedFilename()).toMatch(/campaigns-bulk-.*\.json/);
 
     for (const id of ids) {
-      await request.delete(`http://localhost:8000/api/campaigns/${id}`, {
+      await request.delete(`${BACKEND_URL}/api/campaigns/${id}`, {
         headers: { Authorization: `Bearer ${dmToken}` },
       });
     }
@@ -170,7 +171,7 @@ test.describe('Campaign Bulk Operations', () => {
     const newName = `Editado ${Date.now()}`;
 
     for (const name of names) {
-      const res = await request.post('http://localhost:8000/api/campaigns', {
+      const res = await request.post(`${BACKEND_URL}/api/campaigns`, {
         headers: { Authorization: `Bearer ${dmToken}` },
         data: { name },
       });
@@ -195,7 +196,7 @@ test.describe('Campaign Bulk Operations', () => {
     await expect(page.getByRole('link', { name: newName })).toHaveCount(2);
 
     for (const id of ids) {
-      await request.delete(`http://localhost:8000/api/campaigns/${id}`, {
+      await request.delete(`${BACKEND_URL}/api/campaigns/${id}`, {
         headers: { Authorization: `Bearer ${dmToken}` },
       });
     }
@@ -238,7 +239,7 @@ test.describe('Campaign Import', () => {
       relationships: [{ id: 'rel-old', source_entity_id: 'char-old', target_entity_id: 'loc-old', type: 'LOCATED_IN', strength: 1.0, status: 'active', source_event_id: 'evt-old' }],
     };
 
-    const importRes = await request.post('http://localhost:8000/api/campaigns/import', {
+    const importRes = await request.post(`${BACKEND_URL}/api/campaigns/import`, {
       headers: authHeaders,
       data: payload,
     });
@@ -248,7 +249,7 @@ test.describe('Campaign Import', () => {
     expect(imported.description).toBe('desc import');
     expect(imported.settings_json?.theme).toBe('dark');
 
-    const exportRes = await request.get(`http://localhost:8000/api/campaigns/${imported.id}/export`, {
+    const exportRes = await request.get(`${BACKEND_URL}/api/campaigns/${imported.id}/export`, {
       headers: authHeaders,
     });
     expect(exportRes.status()).toBe(200);
@@ -278,7 +279,7 @@ test.describe('Campaign Import', () => {
     expect(rel.target_entity_id).toBe(loc.id);
     expect(rel.source_event_id).toBe(evt.id);
 
-    await request.delete(`http://localhost:8000/api/campaigns/${imported.id}`, {
+    await request.delete(`${BACKEND_URL}/api/campaigns/${imported.id}`, {
       headers: authHeaders,
     });
   });
@@ -311,14 +312,14 @@ test.describe('Campaign Import', () => {
       notebook_versions: [{ id: 'nv-old', notebook_id: 'nb-old', title: 'Plan sesión', content: 'matar dragón', version_number: 1 }],
     };
 
-    const importRes = await request.post('http://localhost:8000/api/campaigns/import', {
+    const importRes = await request.post(`${BACKEND_URL}/api/campaigns/import`, {
       headers: authHeaders,
       data: payload,
     });
     expect(importRes.status()).toBe(200);
     const imported = await importRes.json();
 
-    const exportRes = await request.get(`http://localhost:8000/api/campaigns/${imported.id}/export`, {
+    const exportRes = await request.get(`${BACKEND_URL}/api/campaigns/${imported.id}/export`, {
       headers: authHeaders,
     });
     expect(exportRes.status()).toBe(200);
@@ -347,20 +348,20 @@ test.describe('Campaign Import', () => {
     expect(nv.notebook_id).toBe(nb.id);
     expect(scene.items_json).toContain('item-1');
 
-    await request.delete(`http://localhost:8000/api/campaigns/${imported.id}`, {
+    await request.delete(`${BACKEND_URL}/api/campaigns/${imported.id}`, {
       headers: authHeaders,
     });
   });
 
   test('C11: assets binarios viajan en export e import', async ({ request, authHeaders }) => {
-    const res = await request.post('http://localhost:8000/api/campaigns', {
+    const res = await request.post(`${BACKEND_URL}/api/campaigns`, {
       headers: authHeaders,
       data: { name: `Assets ${Date.now()}` },
     });
     expect(res.status()).toBe(200);
     const camp = await res.json();
 
-    const charRes = await request.post(`http://localhost:8000/api/campaigns/${camp.id}/characters`, {
+    const charRes = await request.post(`${BACKEND_URL}/api/campaigns/${camp.id}/characters`, {
       headers: authHeaders,
       data: { name: 'Ardan imgs', type: 'player', vigor: '/', intelligence: '/', dexterity: '/', cunning: '/' },
     });
@@ -368,7 +369,7 @@ test.describe('Campaign Import', () => {
     const char = await charRes.json();
 
     const uploadRes = await request.post(
-      `http://localhost:8000/api/campaigns/${camp.id}/characters/${char.id}/portrait`,
+      `${BACKEND_URL}/api/campaigns/${camp.id}/characters/${char.id}/portrait`,
       {
         headers: authHeaders,
         multipart: { file: { name: 'portrait.png', mimeType: 'image/png', buffer: PNG_1PX } },
@@ -376,7 +377,7 @@ test.describe('Campaign Import', () => {
     );
     expect(uploadRes.status()).toBe(200);
 
-    const expRes = await request.get(`http://localhost:8000/api/campaigns/${camp.id}/export`, {
+    const expRes = await request.get(`${BACKEND_URL}/api/campaigns/${camp.id}/export`, {
       headers: authHeaders,
     });
     expect(expRes.status()).toBe(200);
@@ -389,14 +390,14 @@ test.describe('Campaign Import', () => {
     expect(asset!.data_base64.length).toBeGreaterThan(0);
     expect(exp.characters[0].portrait_path).toBeTruthy();
 
-    const impRes = await request.post('http://localhost:8000/api/campaigns/import', {
+    const impRes = await request.post(`${BACKEND_URL}/api/campaigns/import`, {
       headers: authHeaders,
       data: exp,
     });
     expect(impRes.status()).toBe(200);
     const imported = await impRes.json();
 
-    const impExpRes = await request.get(`http://localhost:8000/api/campaigns/${imported.id}/export`, {
+    const impExpRes = await request.get(`${BACKEND_URL}/api/campaigns/${imported.id}/export`, {
       headers: authHeaders,
     });
     expect(impExpRes.status()).toBe(200);
@@ -412,10 +413,10 @@ test.describe('Campaign Import', () => {
     expect(dstPath).not.toBe(exp.characters[0].portrait_path);
     expect(dstPath).toMatch(/data[\\/]assets/);
 
-    await request.delete(`http://localhost:8000/api/campaigns/${imported.id}`, {
+    await request.delete(`${BACKEND_URL}/api/campaigns/${imported.id}`, {
       headers: authHeaders,
     });
-    await request.delete(`http://localhost:8000/api/campaigns/${camp.id}`, {
+    await request.delete(`${BACKEND_URL}/api/campaigns/${camp.id}`, {
       headers: authHeaders,
     });
   });
@@ -474,14 +475,14 @@ test.describe('Campaign Import', () => {
       combat_combatants: [{ id: 'cc-old', combat_id: 'cbt-old', entity_type: 'character', entity_id: 'char-old', initiative: 4, roll_seq: 1, pending_roll: 0 }],
     };
 
-    const importRes = await request.post('http://localhost:8000/api/campaigns/import', {
+    const importRes = await request.post(`${BACKEND_URL}/api/campaigns/import`, {
       headers: authHeaders,
       data: payload,
     });
     expect(importRes.status()).toBe(200);
     const imported = await importRes.json();
 
-    const exportRes = await request.get(`http://localhost:8000/api/campaigns/${imported.id}/export`, {
+    const exportRes = await request.get(`${BACKEND_URL}/api/campaigns/${imported.id}/export`, {
       headers: authHeaders,
     });
     expect(exportRes.status()).toBe(200);
@@ -516,13 +517,13 @@ test.describe('Campaign Import', () => {
     expect(JSON.parse(scene.items_json)[0].metadata.attachedTo).toBe(sc.id);
     expect(JSON.parse(scene.items_json)[0].metadata.attachedTo).not.toBe('sc-old');
 
-    await request.delete(`http://localhost:8000/api/campaigns/${imported.id}`, {
+    await request.delete(`${BACKEND_URL}/api/campaigns/${imported.id}`, {
       headers: authHeaders,
     });
   });
 
   test('C12: recurso arrastrado al mapa crea item imagen', async ({ page, request, authHeaders }) => {
-    const res = await request.post('http://localhost:8000/api/campaigns', {
+    const res = await request.post(`${BACKEND_URL}/api/campaigns`, {
       headers: authHeaders,
       data: { name: `Drag Asset ${Date.now()}` },
     });
@@ -532,7 +533,7 @@ test.describe('Campaign Import', () => {
     const scene = await createScene(request, camp.id, 'Escena Assets');
 
     const bgRes = await request.post(
-      `http://localhost:8000/api/campaigns/${camp.id}/scenes/${scene.id}/upload-background`,
+      `${BACKEND_URL}/api/campaigns/${camp.id}/scenes/${scene.id}/upload-background`,
       {
         headers: authHeaders,
         multipart: { file: { name: 'fondo.png', mimeType: 'image/png', buffer: PNG_1PX } },
@@ -540,7 +541,7 @@ test.describe('Campaign Import', () => {
     );
     expect(bgRes.status()).toBe(200);
 
-    const uploadRes = await request.post(`http://localhost:8000/api/campaigns/${camp.id}/assets/upload`, {
+    const uploadRes = await request.post(`${BACKEND_URL}/api/campaigns/${camp.id}/assets/upload`, {
       headers: authHeaders,
       multipart: {
         file: { name: 'arbol.png', mimeType: 'image/png', buffer: PNG_1PX },
@@ -584,7 +585,7 @@ test.describe('Campaign Import', () => {
     expect(dropped).toBe(true);
 
     await page.waitForTimeout(900);
-    const itemsRes = await request.get(`http://localhost:8000/api/campaigns/${camp.id}/scenes/${scene.id}/items`, {
+    const itemsRes = await request.get(`${BACKEND_URL}/api/campaigns/${camp.id}/scenes/${scene.id}/items`, {
       headers: authHeaders,
     });
     expect(itemsRes.status()).toBe(200);
@@ -597,7 +598,7 @@ test.describe('Campaign Import', () => {
     expect(placed!.image).toContain(relUrl);
     expect(placed!.name).toBe('Árbol');
 
-    await request.delete(`http://localhost:8000/api/campaigns/${camp.id}`, {
+    await request.delete(`${BACKEND_URL}/api/campaigns/${camp.id}`, {
       headers: authHeaders,
     });
   });
