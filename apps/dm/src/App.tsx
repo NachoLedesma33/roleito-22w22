@@ -43,6 +43,7 @@ const WorldStateView = lazy(() => import('@/pages/WorldStateView'));
 const NotFound = lazy(() => import('@/pages/NotFound'));
 const MemoryView = lazy(() => import('@/pages/MemoryView'));
 const PlaceholderPage = lazy(() => import('@/pages/PlaceholderPage'));
+const DmGuide = lazy(() => import('@/pages/DmGuide'));
 
 function Splash() {
   return (
@@ -91,6 +92,7 @@ function App() {
         {/* Public entry: landing pre-login + PIN login */}
         <Route path="/" element={<HomeRoute />} />
         <Route path="/login" element={<LoginRoute />} />
+        <Route path="/guide" element={<DmGuide />} />
         <Route path="/faq" element={<PlaceholderPage page="faq" />} />
         <Route path="/discord" element={<PlaceholderPage page="discord" />} />
         <Route path="/blog" element={<PlaceholderPage page="blog" />} />

@@ -87,6 +87,11 @@ Lista priorizada de mejoras futuras. Cada item: problema → propuesta → notas
 - **Implementacion**: `POST /api/contact` publico con validacion estricta (longitudes, email, sin saltos de linea en cabeceras), honeypot y 3 envios por IP/hora. Guarda en `contact_messages`, devuelve ticket y poda a 90 dias (30 si se marco respondido). El correo a `ROLEITO_CONTACT_EMAIL` sale por SMTP con STARTTLS solo si `ROLEITO_CONTACT_SMTP_ENABLED=1`; las credenciales y el destinatario viven en `.env` (ver `.env.example`).
 - **Aviso legal tecnico (no dictamen)**: el formulario dice para que se usan los datos, quien los recibe, el plazo de conservacion y que no es canal de emergencias. Abogado debe revisar Textos/Terminos antes de publicar.
 
+## 11. Guía del DM (HECHO 2026-11-27)
+
+- **Problema**: el link "Guía del DM" del footer no llevaba a ningún lugar y no había un manual público que explicara qué hace el engine ni dónde están los límites de seguridad.
+- **Implementación**: ruta `/guide` con seis secciones (flujo de sesión, VTT, canon, IA, seguridad, límites) y textos es/en. La seguridad se describe sin ambigüedad: PIN con hash, sesión de 24 horas ligada a la pestaña, lockout tras 5 intentos, invitaciones de 12 horas rotables/revocables, archivos confinados a `data/assets`. Aclara que el texto es técnico, no legal, y que los textos legales necesitan revisión de abogado.
+
 ## Prioridad sugerida
 
 P1: seguridad login, race condition personaje, fluidez movimiento.

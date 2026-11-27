@@ -31,4 +31,12 @@ test.describe('Páginas públicas', () => {
     await expect(nav.getByRole('link', { name: 'Preguntas frecuentes' })).toBeVisible();
     await expect(nav.getByRole('link', { name: 'Contacto' })).toBeVisible();
   });
+
+  test('P08: la guía explica canon, sesiones y límites de seguridad', async ({ page }) => {
+    await page.goto('/guide');
+    await expect(page.getByTestId('dm-guide')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Manual de uso del DM' })).toBeVisible();
+    await expect(page.getByText(/Nada entra al mundo sin tu firma/)).toBeVisible();
+    await expect(page.getByText(/5 intentos fallidos/)).toBeVisible();
+  });
 });

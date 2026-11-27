@@ -745,6 +745,18 @@
     "opening": "Abriendo la partida...",
     "noOpenGame": "No hay ninguna partida abierta. Preguntale al DM."
   },
+  "dmGuide": {
+    "ai": "La IA propone: redacta escenas, resume sesiones y sugiere eventos. Todo lo que escribe queda como PROPUESTA hasta que lo aprobás. Si configurás un proveedor externo, el texto de la campaña viaja a ese servicio; con proveedor local, no sale de tu máquina. El presupuesto diario por campaña corta las llamadas antes de gastar de más.",
+    "canon": "Nada entra al mundo sin tu firma. Los eventos y propuestas pasan por revisión: PROPUESTO → REVISIÓN → APROBADO o RECHAZADO. Vos tenés la última palabra, incluso sobre lo que sugiere la IA. El mundo guarda lo aprobado y lo usa en la siguiente sesión.",
+    "contactBody": "Usá el formulario de contacto para consultas, errores o sugerencias. No es un canal de emergencias.",
+    "contactTitle": "¿Quedó una duda?",
+    "flow": "Creás una campaña, cargás personajes y NPCs, preparás mapas y escenas, abrís una sesión y compartís el link de invitación con los jugadores. Cada jugador entra a su vista con su personaje; vos seguís en el dashboard con el control total.",
+    "intro": "Esta guía explica qué hace el engine, qué decidís vos y cuáles son los límites reales. Es información técnica, no un dictamen legal.",
+    "limits": "El engine es local-first: la base vive en tu máquina, así que hacer backups es tu responsabilidad. La IA es probabilística y puede equivocarse: revisá siempre antes de aprobar. Los textos legales del sitio necesitan revisión de un abogado antes de publicarse.",
+    "security": "Tu perfil se abre con PIN de 4 a 8 dígitos guardado con hash. La sesión dura 24 horas y el token vive solo en la pestaña: cerrar el navegador te desloguea. Tras 5 intentos fallidos hay 5 minutos de bloqueo por IP. Los links de invitación vencen en 12 horas, se pueden rotar y revocar. Los archivos importados quedan confinados a la carpeta de assets.",
+    "title": "Manual de uso del DM",
+    "vtt": "El mapa usa grilla exacta. Dibujás paredes, zonas y luces; la niebla se pinta con pincel o rectángulo y cada jugador ve solo lo que su personaje puede ver. Los tokens se mueven con teclado o arrastrando; el arrastre ajusta a la grilla, el teclado es libre. Las capas de audio, clima y efectos acompañan la escena."
+  },
   "public": {
     "backHome": "Volver al inicio",
     "soon": "En preparación",
@@ -754,6 +766,7 @@
       "discord": "Discord",
       "docs": "Documentación",
       "faq": "Preguntas frecuentes",
+      "guide": "Guía del DM",
       "news": "Novedades"
     }
   }

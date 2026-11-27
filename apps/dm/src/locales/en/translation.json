@@ -745,6 +745,18 @@
     "opening": "Opening the game...",
     "noOpenGame": "There is no open game. Ask the DM."
   },
+  "dmGuide": {
+    "ai": "The AI proposes: it drafts scenes, recaps sessions and suggests events. Everything it writes stays as a PROPOSAL until you approve it. If you configure an external provider, campaign text travels to that service; with a local provider it never leaves your machine. A daily per-campaign budget stops calls before overspending.",
+    "canon": "Nothing enters the world without your seal. Events and proposals go through review: PROPOSED → REVIEW → APPROVED or REJECTED. You have the final word, even on AI suggestions. The world stores what is approved and uses it in the next session.",
+    "contactBody": "Use the contact form for questions, bugs or suggestions. It is not an emergency channel.",
+    "contactTitle": "Still have a question?",
+    "flow": "You create a campaign, add characters and NPCs, prepare maps and scenes, start a session and share the invite link with players. Each player joins their own view with their character; you stay in the dashboard with full control.",
+    "intro": "This guide explains what the engine does, what you decide and the real limits. It is technical information, not legal advice.",
+    "limits": "The engine is local-first: the database lives on your machine, so backups are your responsibility. The AI is probabilistic and can be wrong: always review before approving. The site's legal texts need a lawyer's review before publishing.",
+    "security": "Your profile opens with a 4 to 8 digit PIN stored as a hash. Sessions last 24 hours and the token lives only in the tab: closing the browser logs you out. After 5 failed attempts there is a 5 minute lockout per IP. Invite links expire in 12 hours and can be rotated or revoked. Imported files stay confined to the assets folder.",
+    "title": "DM User Manual",
+    "vtt": "The map uses an exact grid. You draw walls, zones and lights; fog is painted with brush or rectangle and each player sees only what their character can see. Tokens move by keyboard or drag; dragging snaps to the grid, keyboard movement is free. Audio, weather and effects follow the scene."
+  },
   "public": {
     "backHome": "Back home",
     "soon": "Coming soon",
@@ -754,6 +766,7 @@
       "discord": "Discord",
       "docs": "Documentation",
       "faq": "FAQ",
+      "guide": "DM Guide",
       "news": "News"
     }
   }
