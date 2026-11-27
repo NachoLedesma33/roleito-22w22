@@ -1,10 +1,10 @@
-Roleito — NOTICE de software y assets
+22W22 — NOTICE de software y assets
 
 Este archivo acompaña al repositorio. No reemplaza la revisión legal de los textos públicos.
 
 1. Software de terceros
 
-Roleito usa, entre otros:
+22W22 usa, entre otros:
 
 - React — MIT
 - TypeScript — Apache-2.0
@@ -66,7 +66,7 @@ bloque exacto:
 
 4. Imágenes, logos y marcos de la interfaz
 
-Los archivos de `apps/dm/public/ui/` y `apps/dm/public/frames/` se crearon para Roleito.
+Los archivos de `apps/dm/public/ui/` y `apps/dm/public/frames/` se crearon para 22W22.
 Si alguno procede de un tercero, debe registrarse aquí su autor, fuente y licencia antes de
 publicarse.
 

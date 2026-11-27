@@ -1,4 +1,4 @@
-# Roleito — Documentación
+# 22W22 — Documentación
 
 Índice enriquecido. Cada entrada: archivo → resumen de 1 línea.
 
