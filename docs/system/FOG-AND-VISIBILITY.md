@@ -7,7 +7,7 @@
 
 ## 1. Overview
 
-Roleito implements two distinct fog systems that work together to create immersive visibility mechanics:
+22W22 implements two distinct fog systems that work together to create immersive visibility mechanics:
 
 - **Static Fog**: Persistent map exploration (what has been seen before)
 - **Dynamic Fog**: Per-turn Line of Sight visibility (what is currently visible)
