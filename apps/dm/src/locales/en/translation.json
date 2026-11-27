@@ -745,6 +745,14 @@
     "logoutAllDesc": "Every tab and device for this profile is signed out, including this one. You need your PIN to get back in.",
     "logoutAllTitle": "Sign out everywhere?",
     "logoutAllWorking": "Signing out...",
+    "exportData": "Download my data",
+    "exporting": "Downloading...",
+    "deleteData": "Delete my profile",
+    "deleteDesc": "Your profile and all its sessions are deleted. Campaigns on this installation remain: download your data first if you want to keep them.",
+    "deleteTitle": "Delete your profile?",
+    "deleting": "Deleting...",
+    "privacyBody": "Download your data or delete this profile. Campaigns on this installation are not deleted.",
+    "privacyTitle": "Your data",
     "title": "Settings"
   },
   "join": {
@@ -813,6 +821,9 @@
       "title": "Credits"
     },
     "draft": "Draft — legal review pending",
+    "nav": {
+      "title": "Legal notices"
+    },
     "privacy": {
       "contact": "Name, email, subject and message are stored for 90 days, or 30 if marked as answered. Only the team running Roleito reads them. This is not an emergency channel.",
       "contactTitle": "Contact form",
@@ -821,7 +832,7 @@
       "localTitle": "Campaign data",
       "logs": "The server may log IP, time and request type to limit abuse and diagnose failures. Session tokens live in the browser tab.",
       "logsTitle": "Technical logs",
-      "rights": "You can request access, correction or deletion of your messages through the contact form. Final legal texts must confirm the scope of those rights.",
+      "rights": "You can request access, correction or deletion of your messages through the contact form. Your profile and its sessions can be downloaded or deleted from Settings. Final legal texts must confirm the scope of those rights.",
       "rightsTitle": "Your rights",
       "title": "Privacy"
     },

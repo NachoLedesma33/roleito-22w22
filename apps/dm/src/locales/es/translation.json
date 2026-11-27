@@ -745,6 +745,14 @@
     "logoutAllDesc": "Se cierran todas las pestañas y dispositivos de este perfil, incluida la actual. Necesitás el PIN para volver a entrar.",
     "logoutAllTitle": "¿Cerrar todas las sesiones?",
     "logoutAllWorking": "Cerrando...",
+    "exportData": "Descargar mis datos",
+    "exporting": "Descargando...",
+    "deleteData": "Borrar mi perfil",
+    "deleteDesc": "Se borran tu perfil y todas sus sesiones. Las campañas de esta instalación siguen existiendo: descargá tus datos antes si querés conservarlas.",
+    "deleteTitle": "¿Borrar tu perfil?",
+    "deleting": "Borrando...",
+    "privacyBody": "Descargá tus datos o borrá este perfil. Las campañas de la instalación no se borran.",
+    "privacyTitle": "Tus datos",
     "title": "Ajustes"
   },
   "join": {
@@ -813,6 +821,9 @@
       "title": "Créditos"
     },
     "draft": "Borrador — revisión legal pendiente",
+    "nav": {
+      "title": "Avisos legales"
+    },
     "privacy": {
       "contact": "Nombre, correo, asunto y mensaje se guardan 90 días, o 30 si se marca respondido. Solo los lee el equipo que administra Roleito. No es un canal de emergencias.",
       "contactTitle": "Formulario de contacto",
@@ -821,7 +832,7 @@
       "localTitle": "Datos de campaña",
       "logs": "El servidor puede registrar IP, hora y tipo de solicitud para limitar abusos y diagnosticar fallos. Los tokens de sesión viven en la pestaña del navegador.",
       "logsTitle": "Registros técnicos",
-      "rights": "Podés pedir acceso, corrección o borrado de tus mensajes por el formulario de contacto. Los textos legales definitivos deben confirmar el alcance de esos derechos.",
+      "rights": "Podés pedir acceso, corrección o borrado de tus mensajes por el formulario de contacto. Tu perfil y sus sesiones se descargan o se borran desde Ajustes. Los textos legales definitivos deben confirmar el alcance de esos derechos.",
       "rightsTitle": "Tus derechos",
       "title": "Privacidad"
     },
